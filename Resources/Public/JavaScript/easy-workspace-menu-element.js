@@ -71,10 +71,39 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this._config = this._readConfig();
     this.mode = this._config.defaultMode;
     this._refresh();
+
+    // Re-fetch whenever the editor's selected page changes. v14
+    // dispatches this event from ModuleStateStorage.commit() on
+    // top.document.
+    this._navListener = () => this._refresh();
+    try {
+      window.top?.document.addEventListener('typo3:module-state-storage:update:web', this._navListener);
+      window.top?.document.addEventListener('typo3:module-state-storage:update-with-tree-identifier:web', this._navListener);
+    } catch {
+      // top.document may throw on cross-origin frames — fall back to local doc.
+      document.addEventListener('typo3:module-state-storage:update:web', this._navListener);
+    }
+
+    // Refresh on dropdown open (covers cases where the URL changed
+    // via History API without a state-storage event).
     const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item');
     if (dropdownHost) {
       dropdownHost.addEventListener('shown.bs.dropdown', () => this._refresh());
+      // Belt + braces: also refresh on a direct click on the toggle.
+      const toggle = dropdownHost.querySelector('.dropdown-toggle');
+      toggle?.addEventListener('click', () => this._refresh());
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._navListener) {
+      try {
+        window.top?.document.removeEventListener('typo3:module-state-storage:update:web', this._navListener);
+        window.top?.document.removeEventListener('typo3:module-state-storage:update-with-tree-identifier:web', this._navListener);
+      } catch { /* noop */ }
+      document.removeEventListener('typo3:module-state-storage:update:web', this._navListener);
     }
   }
 
@@ -374,16 +403,42 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _detectContext() {
-    const params = new URLSearchParams(window.location.search);
-    const pageUid = parseInt(params.get('id') || '0', 10);
+    // Primary source: v14's ModuleStateStorage tracks the currently
+    // selected page in the Web module group (id stored in sessionStorage,
+    // mutated whenever the page tree selection changes).
+    let pageUid = 0;
+    try {
+      const storage = window.top?.ModuleStateStorage || window.ModuleStateStorage;
+      if (storage && typeof storage.current === 'function') {
+        const state = storage.current('web');
+        const identifier = parseInt(String(state?.identifier || '0'), 10);
+        if (identifier > 0) {
+          pageUid = identifier;
+        }
+      }
+    } catch {
+      // Cross-frame access errors → fall through to URL parsing.
+    }
+
+    // Fallback: URL ?id= parameter (e.g. when a module link was opened
+    // before any page-tree selection happened in this session).
+    if (pageUid <= 0) {
+      const fromUrl = parseInt(new URLSearchParams(window.location.search).get('id') || '0', 10);
+      if (fromUrl > 0) {
+        pageUid = fromUrl;
+      }
+    }
+
+    // News context: edit[tx_news_domain_model_news][N]=edit in URL.
     let newsUid = 0;
-    for (const key of params.keys()) {
+    for (const key of new URLSearchParams(window.location.search).keys()) {
       const match = key.match(/^edit\[tx_news_domain_model_news\]\[(\d+)\]$/);
       if (match) {
         newsUid = parseInt(match[1], 10);
         break;
       }
     }
+
     return { pageUid: pageUid > 0 ? pageUid : 0, newsUid };
   }
 
