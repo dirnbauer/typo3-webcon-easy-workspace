@@ -169,9 +169,7 @@ webcon-easy-workspace-menu {
     position: relative;
 }
 .wew-list__row:last-child { border-bottom: 0; }
-.wew-list__row[data-table="tt_content"]:hover {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 7%, transparent);
-}
+/* No row-level highlight any more — the eye icon is the affordance. */
 .wew-list__row--primary {
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent);
 }
@@ -206,14 +204,41 @@ webcon-easy-workspace-menu {
 
 .wew-list__label {
     display: grid;
-    /* checkbox | title (flex) | optional thumbnail. The third column
-       collapses to 0 width when no <span.wew-list__thumb> is rendered. */
-    grid-template-columns: auto 1fr auto;
+    /* checkbox | title (flex) | optional eye-button | optional thumbnail.
+       Trailing columns whose elements aren't rendered collapse to 0 px
+       width via grid auto-flow, so rows reflow naturally. */
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
     gap: .55rem;
     padding: .45rem .75rem .45rem .9rem;
     cursor: pointer;
     margin: 0;
+}
+
+.wew-list__locate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d));
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
+}
+.wew-list__locate:hover,
+.wew-list__locate:focus-visible {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+    color: var(--typo3-link-color, var(--bs-primary));
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    outline: none;
+    transform: scale(1.05);
+}
+.wew-list__locate svg {
+    display: block;
 }
 .wew-list__row--unchanged .wew-list__label { cursor: default; }
 .wew-list__check-cell {
