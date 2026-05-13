@@ -29,7 +29,8 @@
         "typo3/cms-workspaces": "^14.3"
     },
     "suggest": {
-        "georgringer/news": "Adds news-bundle publishing (news record + content elements via tx_news_related_news)."
+        "georgringer/news": "Adds news-bundle publishing (news record + content elements via tx_news_related_news).",
+        "friendsoftypo3/visual-editor": "Enables the per-row eye icon to scroll & outline a content element inside the Visual Editor iframe. The dropdown works without it; the eye gracefully falls back to typo3/cms-viewpage's preview iframe."
     },
     "autoload": {
         "psr-4": {

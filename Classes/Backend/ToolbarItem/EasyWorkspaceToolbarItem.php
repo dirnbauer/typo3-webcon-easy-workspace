@@ -11,6 +11,7 @@ use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 
 /**
@@ -69,7 +70,15 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function getDropDown(): string
     {
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
-        $view->assign('configJson', json_encode($this->configurationProvider->get(), JSON_THROW_ON_ERROR));
+        // Merge user-configurable TSconfig with detected runtime
+        // capabilities so the Lit element can adapt its messaging
+        // (eye icon tooltip, "no iframe" notification) to what's
+        // actually installed instead of always saying "Visual Editor".
+        $payload = $this->configurationProvider->get() + [
+            'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
+            'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
+        ];
+        $view->assign('configJson', json_encode($payload, JSON_THROW_ON_ERROR));
         return $view->render('ToolbarItems/EasyWorkspaceDropDown');
     }
 

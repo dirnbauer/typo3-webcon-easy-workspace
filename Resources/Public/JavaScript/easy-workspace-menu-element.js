@@ -43,6 +43,10 @@ const DEFAULT_CONFIG = Object.freeze({
   enableNewsBundles: true,
   enableHoverHighlight: true,
   enableRevert: true,
+  // Runtime-detected environment (NOT user-configurable). Set by
+  // EasyWorkspaceToolbarItem::getDropDown() via ExtensionManagementUtility::isLoaded.
+  hasVisualEditor: false,
+  hasViewpage: false,
 });
 
 // Inline highlight styles applied to the iframe element. Hard-coded
@@ -151,11 +155,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const iframe = this._findVisualEditorIframe();
     if (!iframe) {
       if (announce) {
-        Notification.info(
-          'Show in editor',
-          'Open the page in the Visual Editor to see the highlight.',
-          4,
-        );
+        const hint = this._config.hasVisualEditor
+          ? 'Open the page in the Visual Editor module to see the highlight.'
+          : (this._config.hasViewpage
+              ? 'Open the page in the Web → View module so the preview iframe is present.'
+              : 'No page preview iframe found in this view. Install friendsoftypo3/visual-editor or use Web → View to enable inline locating.');
+        Notification.info('Show in preview', hint, 5);
       }
       return;
     }
@@ -217,13 +222,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _findVisualEditorIframe() {
     const tries = [
-      // Same document the toolbar runs in.
+      // friendsoftypo3/visual-editor — the canonical selector
       () => document.querySelector('iframe#visual-editor-iframe'),
       () => document.querySelector('iframe[id*="visual-editor"]'),
-      // Top frame (Bootstrap modal might re-host elements).
       () => window.top?.document?.querySelector('iframe#visual-editor-iframe'),
       () => window.top?.document?.querySelector('iframe[id*="visual-editor"]'),
-      // Page module / preview module fallbacks.
+      // typo3/cms-viewpage — Web → View module
+      () => document.querySelector('iframe#tx_viewpage_iframe'),
+      () => window.top?.document?.querySelector('iframe#tx_viewpage_iframe'),
+      // Page module / preview module fallbacks
       () => window.top?.document?.querySelector('iframe[id*="page-preview"], iframe[id*="pagepreview"], iframe[name*="pagepreview"], iframe[name*="preview"]'),
       // Final fallback: any iframe whose contentDocument we can read.
       () => {
@@ -568,12 +575,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * actions-eye icon (currentColor).
    */
   _renderLocateButton(item) {
+    const tooltip = this._config.hasVisualEditor
+      ? 'Show in Visual Editor'
+      : (this._config.hasViewpage ? 'Show in page preview' : 'Show in preview');
     return html`
       <button
         type="button"
         class="wew-list__locate"
-        title="Show in editor"
-        aria-label="Show this content element in the editor"
+        title=${tooltip}
+        aria-label=${tooltip}
         @mouseenter=${(e) => { e.stopPropagation(); this._highlightInIframe(item); }}
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
