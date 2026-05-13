@@ -433,7 +433,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
           </div>
         </header>
         ${this._renderFilter()}
-        ${this._renderSelectionBar()}
         ${this._renderBody()}
         ${this._renderFooter()}
       </div>
@@ -784,6 +783,18 @@ class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
+  /**
+   * Footer is the action area of the dropdown. Three visual tiers,
+   * left-to-right:
+   *
+   *   tier 3 (least): tiny icon-only Preview link
+   *   tier 2:         tri-state master checkbox + "N of M selected"
+   *   tier 1 (most):  the primary "Publish to live" button
+   *
+   * On narrow viewports the three tiers stack onto separate rows in
+   * the same order, keeping Publish at the bottom-right (thumb-zone
+   * on touch).
+   */
   _renderFooter() {
     if (this.state !== 'loaded') {
       return nothing;
@@ -791,14 +802,20 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const { pageUid } = this._detectContext();
     const showPreview = this._config.enablePreviewLink && pageUid > 0;
     const changeable = this.items.filter((i) => i.isChanged);
+    const total = changeable.length;
     const selectedCount = this.selection.size;
+    const allChecked = total > 0 && selectedCount === total;
+    const someChecked = selectedCount > 0 && selectedCount < total;
+    const selectLabel = allChecked
+      ? 'Deselect all'
+      : (someChecked ? 'Select all' : 'Select all');
     return html`
       <footer class="wew-menu__foot">
-        <div class="wew-menu__tools">
+        <div class="wew-menu__foot-preview">
           ${showPreview
             ? html`<button
                 type="button"
-                class="btn btn-sm btn-default wew-menu__preview"
+                class="wew-menu__preview-icon"
                 title="Copy a shareable preview link for this page"
                 aria-label="Copy preview link"
                 @click=${() => this._copyPreviewLink(pageUid)}
@@ -807,12 +824,31 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 ${this.copyingPreview
                   ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
                   : this._linkIcon()}
-                <span class="wew-menu__preview-label">Preview link</span>
               </button>`
             : nothing}
         </div>
-        <div class="wew-menu__publish-group">
-          <span class="wew-menu__count" aria-live="polite">${selectedCount} of ${changeable.length} selected</span>
+
+        <div class="wew-menu__foot-selection">
+          ${total > 0 ? html`
+            <label class="wew-menu__selectall">
+              <input
+                type="checkbox"
+                class="wew-menu__selectall-check"
+                .checked=${allChecked}
+                .indeterminate=${someChecked}
+                aria-checked=${allChecked ? 'true' : (someChecked ? 'mixed' : 'false')}
+                aria-label=${allChecked ? 'Deselect all changes' : 'Select all changes'}
+                @change=${() => this._selectAll(!allChecked)}
+              />
+              <span class="wew-menu__selectall-label">${selectLabel}</span>
+            </label>
+            <span class="wew-menu__count" aria-live="polite">
+              <strong>${selectedCount}</strong> of ${total}
+            </span>
+          ` : nothing}
+        </div>
+
+        <div class="wew-menu__foot-action">
           <button
             type="button"
             class="btn btn-primary wew-menu__publish"
