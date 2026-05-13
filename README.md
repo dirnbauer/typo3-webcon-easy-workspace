@@ -85,6 +85,12 @@ options.webcon_easy_workspace {
     # corresponding content element into view inside the Visual
     # Editor iframe (#visual-editor-iframe) and outlines it.
     enableHoverHighlight = 1
+
+    # Show a per-row "revert" button next to the eye icon (for every
+    # changed record). Clicking it opens a warning confirmation modal
+    # and flushes the workspace version — the live row stays untouched
+    # but the staged change is gone for good.
+    enableRevert = 1
 }
 ```
 
@@ -104,6 +110,18 @@ Every **content-element** row in the dropdown has an **eye icon** (TYPO3's `acti
 - Applies an inline outline + soft glow so the editor can immediately see *which* CE the dropdown row refers to.
 
 Both effects are reverted on `mouseleave` / `blur` and again on element disconnect. Clicking the eye triggers the same scroll-and-highlight as hovering, useful on touch devices. The eye is shown only for `tt_content` rows; the affordance can be switched off via `options.webcon_easy_workspace.enableHoverHighlight = 0`.
+
+### Revert (discard) a single change
+
+Next to the eye, every **changed** row also has a curved-arrow **revert** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to `/ajax/webcon-easy-workspace/discard`, which runs `DataHandler` with the v14-canonical command:
+
+```php
+$cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];
+```
+
+This deletes the workspace version of that record only — the **live** row stays untouched. The dropdown auto-refreshes after the discard so the row disappears (in "Changes only" mode) or its badge flips back to "Live" (in "All on page" mode).
+
+Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`.
 
 ## Architecture
 

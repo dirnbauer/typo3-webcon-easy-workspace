@@ -50,4 +50,10 @@ options.webcon_easy_workspace {
     # Editor iframe (#visual-editor-iframe) and outline it. Disable to
     # turn the hover bridge off entirely. Default: 1
     enableHoverHighlight = 1
+
+    # Show a "revert" button on every changed row that flushes the
+    # workspace version (discards the staged change). Triggers a
+    # warning confirmation modal — the operation cannot be undone.
+    # Default: 1
+    enableRevert = 1
 }

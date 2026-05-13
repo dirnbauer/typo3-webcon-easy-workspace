@@ -26,6 +26,7 @@ final readonly class ConfigurationProvider
         'enableThumbnails' => true,
         'maxItems' => 200,
         'enableHoverHighlight' => true,
+        'enableRevert' => true,
     ];
 
     private const NAMESPACE_KEY = 'webcon_easy_workspace.';
@@ -70,6 +71,7 @@ final readonly class ConfigurationProvider
             'enableThumbnails' => $this->toBool($merged['enableThumbnails']),
             'maxItems' => max(1, (int)$merged['maxItems']),
             'enableHoverHighlight' => $this->toBool($merged['enableHoverHighlight']),
+            'enableRevert' => $this->toBool($merged['enableRevert']),
         ];
     }
 

@@ -215,12 +215,20 @@ webcon-easy-workspace-menu {
     margin: 0;
 }
 
-.wew-list__locate {
+.wew-list__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    flex-shrink: 0;
+}
+
+.wew-list__locate,
+.wew-list__revert {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     padding: 0;
     border: 1px solid transparent;
     background: transparent;
@@ -229,6 +237,9 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
+.wew-list__locate svg,
+.wew-list__revert svg { display: block; }
+
 .wew-list__locate:hover,
 .wew-list__locate:focus-visible {
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
@@ -237,8 +248,16 @@ webcon-easy-workspace-menu {
     outline: none;
     transform: scale(1.05);
 }
-.wew-list__locate svg {
-    display: block;
+
+/* Revert intentionally uses the warning hue so it reads as
+   destructive even before the user clicks it. */
+.wew-list__revert:hover,
+.wew-list__revert:focus-visible {
+    background: color-mix(in srgb, var(--bs-warning, #e8a33d) 18%, transparent);
+    color: var(--bs-warning, #e8a33d);
+    border-color: color-mix(in srgb, var(--bs-warning, #e8a33d) 45%, transparent);
+    outline: none;
+    transform: scale(1.05);
 }
 .wew-list__row--unchanged .wew-list__label { cursor: default; }
 .wew-list__check-cell {

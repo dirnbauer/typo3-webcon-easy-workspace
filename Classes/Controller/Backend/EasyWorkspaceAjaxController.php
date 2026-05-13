@@ -82,6 +82,24 @@ final readonly class EasyWorkspaceAjaxController
         return new JsonResponse($this->publishService->publish($selections));
     }
 
+    public function discardAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $payload = $this->decodeBody($request);
+        $table = (string)($payload['table'] ?? '');
+        $workspaceUid = (int)($payload['workspaceUid'] ?? 0);
+        if ($table === '' || $workspaceUid <= 0) {
+            return new JsonResponse(['error' => 'Missing table / workspaceUid.'], 400);
+        }
+        $config = $this->configurationProvider->get();
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+        }
+        if (!($config['enableRevert'] ?? true)) {
+            return new JsonResponse(['error' => 'Revert is disabled by TSconfig.'], 403);
+        }
+        return new JsonResponse($this->publishService->discard($table, $workspaceUid));
+    }
+
     public function previewLinkAction(ServerRequestInterface $request): ResponseInterface
     {
         $pageUid = (int)($request->getQueryParams()['pageUid'] ?? 0);

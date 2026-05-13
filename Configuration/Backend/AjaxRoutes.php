@@ -17,4 +17,8 @@ return [
         'path' => '/webcon-easy-workspace/preview-link',
         'target' => EasyWorkspaceAjaxController::class . '::previewLinkAction',
     ],
+    'webcon_easy_workspace_discard' => [
+        'path' => '/webcon-easy-workspace/discard',
+        'target' => EasyWorkspaceAjaxController::class . '::discardAction',
+    ],
 ];

@@ -17,11 +17,14 @@
 import { LitElement, html, nothing } from 'lit';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
+import Modal from '@typo3/backend/modal.js';
+import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 const ENDPOINTS = {
   items: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_items || '',
   publish: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_publish || '',
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
+  discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
 };
 
 // Fallback defaults — overridden by the TSconfig-driven JSON the
@@ -342,6 +345,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     ].filter(Boolean).join(' ');
 
     const locatable = this._config.enableHoverHighlight && item.table === 'tt_content';
+    const revertable = this._config.enableRevert && item.isChanged;
+    const hasActions = locatable || revertable;
     return html`
       <li class=${stateClasses} data-table=${item.table}>
         <label class="wew-list__label" for=${item.isChanged ? id : nothing}>
@@ -372,13 +377,92 @@ class WebconEasyWorkspaceMenu extends LitElement {
               </span>
             </span>
           </span>
-          ${locatable ? this._renderLocateButton(item) : nothing}
+          ${hasActions
+            ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
+                ${locatable ? this._renderLocateButton(item) : nothing}
+                ${revertable ? this._renderRevertButton(item) : nothing}
+              </span>`
+            : nothing}
           ${this._config.enableThumbnails && item.thumbnailUrl
             ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
             : nothing}
         </label>
       </li>
     `;
+  }
+
+  /**
+   * The "revert" button — discard the workspace version of a single
+   * record after a warning confirmation modal. SVG inlined from TYPO3
+   * core's actions-undo icon (currentColor).
+   */
+  _renderRevertButton(item) {
+    return html`
+      <button
+        type="button"
+        class="wew-list__revert"
+        title="Revert this change"
+        aria-label="Revert this workspace change"
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._confirmAndRevert(item); }}
+      >
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M8 2c-1.8 0-3.4.8-4.5 2l-1-1c-.2-.2-.4-.1-.4.1l-.9 3.8c0 .2.1.3.3.3l3.8-.9c.2 0 .3-.3.1-.4l-1-1c.9-1 2.2-1.7 3.7-1.7 2.7 0 4.9 2.2 4.9 4.9S10.8 13 8.1 13c-1.5 0-2.8-.7-3.7-1.7l-.9.7c1.1 1.2 2.7 2 4.5 2 3.3 0 6-2.7 6-6s-2.7-6-6-6z"
+          />
+        </svg>
+      </button>
+    `;
+  }
+
+  /**
+   * Confirm and run the discard via the v14 DataHandler flush command.
+   * Confirmation modal uses SeverityEnum.warning + a btn-warning
+   * confirm action so editors clearly see the operation is destructive.
+   */
+  async _confirmAndRevert(item) {
+    if (!ENDPOINTS.discard) return;
+
+    const modal = Modal.confirm(
+      'Revert this change?',
+      `“${item.title}” (${item.tableLabel || item.table}) will lose its workspace edits. The live record stays untouched — but the staged change is gone for good. This cannot be undone.`,
+      SeverityEnum.warning,
+      [
+        { text: 'Cancel', btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },
+        { text: 'Revert', btnClass: 'btn-warning', name: 'revert', active: true, trigger: () => modal.hideModal() },
+      ],
+    );
+
+    return new Promise((resolve) => {
+      modal.addEventListener('button.clicked', async (event) => {
+        const choice = event.target?.getAttribute('name');
+        if (choice !== 'revert') {
+          resolve(false);
+          return;
+        }
+        try {
+          const response = await new AjaxRequest(ENDPOINTS.discard)
+            .post(
+              { table: item.table, workspaceUid: item.workspaceUid },
+              { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
+            );
+          const result = await response.resolve();
+          if (result?.success) {
+            Notification.success('Reverted', `Workspace version of “${item.title}” discarded.`, 4);
+            await this._refresh();
+          } else {
+            const errors = Array.isArray(result?.errors) && result.errors.length
+              ? result.errors.join(' / ')
+              : (result?.error || 'Unknown error.');
+            Notification.error('Could not revert', errors);
+          }
+        } catch (error) {
+          Notification.error('Revert failed', error?.message || 'Unexpected error.');
+        } finally {
+          resolve(true);
+        }
+      });
+    });
   }
 
   /**
