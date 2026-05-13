@@ -153,10 +153,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const uid = item?.liveUid;
     if (!uid) return;
 
-    // Scan EVERY reachable iframe for the element. Picking "the
-    // visual-editor iframe" and looking only there is fragile when
-    // there are nested or hidden iframes; locating by content is
-    // both correct and tolerant of wrappers we don't know about.
+    // Prefer visual-editor's own <ve-content-element uid="X"> wrapper
+    // if present — dispatching mouseenter on it triggers the dashed
+    // border + the floating action-bar (Text & Images, edit / hide /
+    // delete) the editor expects. Fall back to a custom outline on
+    // the rendered <div id="cX"> if visual-editor isn't active.
     const located = this._locateInAnyIframe(uid);
     if (!located) {
       if (announce) {
@@ -174,64 +175,56 @@ class WebconEasyWorkspaceMenu extends LitElement {
         } else {
           Notification.warning(
             'Show in preview',
-            `Searched ${accessible.length} preview iframe(s) but did not find #c${uid}. The content element might be wrapped without an id="c${uid}" attribute.`,
+            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${uid}.`,
             6,
           );
         }
       }
       return;
     }
-    const { el } = located;
+    const { el, isVeWrapper } = located;
 
-    // Remember inline styles so we can restore them cleanly.
-    const previous = {};
-    for (const key of Object.keys(IFRAME_HIGHLIGHT_STYLE)) {
-      previous[key] = el.style[key];
-    }
-    Object.assign(el.style, IFRAME_HIGHLIGHT_STYLE);
-
-    // Centre the CE in the iframe viewport — smooth scroll, no jump.
+    // Centre the element in the iframe viewport — smooth scroll, no jump.
     try {
       el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     } catch {
       el.scrollIntoView();
     }
 
-    this._iframeHighlight = { el, previous };
-  }
-
-  /**
-   * Open the standard TYPO3 FormEngine edit form for a record in a
-   * backend modal — same form the page tree's context-menu "Edit"
-   * opens. The URL is pre-built server-side via BackendUriBuilder
-   * (`record_edit` route) and shipped on each PendingItem.
-   *
-   * When the modal closes the dropdown reloads so any in-modal save
-   * is reflected in the change state (badge, checkbox).
-   */
-  _openEditModal(item) {
-    if (!item?.editUrl) {
-      Notification.info('Edit', 'No editor URL available for this record.', 4);
+    if (isVeWrapper) {
+      // Visual-editor path: dispatch the same native events its own
+      // <ve-content-element> listens to. This shows the dashed border
+      // and the floating action-bar (Text & Images, edit, hide, delete)
+      // exactly as if the editor moved their mouse onto the element.
+      try {
+        el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      } catch { /* event constructor failed - ignore */ }
+      this._iframeHighlight = { el, isVeWrapper: true };
       return;
     }
-    const modal = Modal.advanced({
-      type: Modal.types.iframe,
-      title: `Edit: ${item.title}`,
-      content: item.editUrl,
-      size: Modal.sizes.large,
-      buttons: [
-        { text: 'Close', btnClass: 'btn-default', name: 'close', trigger: () => modal.hideModal() },
-      ],
-    });
-    modal.addEventListener('typo3-modal-hidden', () => this._refresh(), { once: true });
+
+    // Fallback: cms-viewpage / plain frontend — no <ve-content-element>
+    // to lean on, so paint our own outline + glow and revert on leave.
+    const previous = {};
+    for (const key of Object.keys(IFRAME_HIGHLIGHT_STYLE)) {
+      previous[key] = el.style[key];
+    }
+    Object.assign(el.style, IFRAME_HIGHLIGHT_STYLE);
+    this._iframeHighlight = { el, isVeWrapper: false, previous };
   }
 
   _clearIframeHighlight() {
     const current = this._iframeHighlight;
     if (!current) return;
     try {
-      for (const [key, value] of Object.entries(current.previous)) {
-        current.el.style[key] = value ?? '';
+      if (current.isVeWrapper) {
+        // Tell visual-editor's <ve-content-element> the mouse has left.
+        current.el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      } else if (current.previous) {
+        for (const [key, value] of Object.entries(current.previous)) {
+          current.el.style[key] = value ?? '';
+        }
       }
     } catch { /* element may already be detached */ }
     this._iframeHighlight = null;
@@ -262,11 +255,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   /**
    * Iterate every reachable iframe and return the first one whose
-   * contentDocument contains a content element matching `uid`.
-   * Replaces "find the right iframe by selector, then search inside"
-   * with "find the iframe that actually has the content".
+   * contentDocument contains a content element matching `uid`. We
+   * prefer the visual-editor <ve-content-element> wrapper because
+   * dispatching mouseenter on it triggers the editor's native
+   * dashed border + floating action-bar. Only if no wrapper is
+   * present do we fall back to the rendered <div id="cX">.
    *
-   * @returns {{ iframe: HTMLIFrameElement, doc: Document, el: HTMLElement }|null}
+   * @returns {{ iframe: HTMLIFrameElement, doc: Document, el: HTMLElement, isVeWrapper: boolean }|null}
    */
   _locateInAnyIframe(uid) {
     for (const iframe of this._collectIframes()) {
@@ -275,8 +270,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
         doc = iframe.contentDocument || iframe.contentWindow?.document;
       } catch { continue; }
       if (!doc) continue;
+
+      // First-choice: visual-editor's wrapper.
+      const veEl = doc.querySelector(
+        `ve-content-element[uid="${uid}"][table="tt_content"], ve-content-element[id="tt_content:${uid}"]`,
+      );
+      if (veEl) return { iframe, doc, el: veEl, isVeWrapper: true };
+
+      // Fallback for cms-viewpage / plain frontend rendering.
       const el = this._findContentElement(doc, uid);
-      if (el) return { iframe, doc, el };
+      if (el) return { iframe, doc, el, isVeWrapper: false };
     }
     return null;
   }
@@ -644,9 +647,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * actions-eye icon (currentColor).
    */
   _renderLocateButton(item) {
-    const tooltip = item.editUrl
-      ? 'Hover to locate in preview · Click to edit'
-      : (this._config.hasVisualEditor ? 'Show in Visual Editor' : 'Show in preview');
+    const tooltip = this._config.hasVisualEditor
+      ? 'Hover or click to focus this element in the Visual Editor'
+      : 'Hover or click to locate in preview';
     return html`
       <button
         type="button"
@@ -657,7 +660,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
         @blur=${() => this._clearIframeHighlight()}
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openEditModal(item); }}
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._highlightInIframe(item, { announce: true }); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
