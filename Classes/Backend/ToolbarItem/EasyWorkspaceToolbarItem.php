@@ -11,14 +11,14 @@ use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 
 /**
  * Renders the "Easy Workspace" trigger in the top-right backend toolbar.
  *
- * The trigger shows a publish-style icon; the dropdown is owned by a Lit
- * custom element (<webcon-easy-workspace-menu>) which fetches the list of
- * pending workspace changes for the current page context and lets the
- * editor publish them to live in one shot.
+ * Visibility and the available dropdown features are driven by User
+ * TSconfig — see Configuration/user.tsconfig for the auto-loaded
+ * defaults.
  */
 #[Autoconfigure(public: true)]
 final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwareToolbarItemInterface
@@ -29,6 +29,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly BackendViewFactory $backendViewFactory,
         private readonly PageRenderer $pageRenderer,
         private readonly Context $context,
+        private readonly ConfigurationProvider $configurationProvider,
     ) {}
 
     public function setRequest(ServerRequestInterface $request): void
@@ -36,15 +37,13 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         $this->request = $request;
     }
 
-    /**
-     * Only show the toolbar item to users that have access to at least
-     * one (offline) workspace. In live mode the dropdown would be empty,
-     * so we hide it entirely to keep the toolbar quiet.
-     */
     public function checkAccess(): bool
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
         if ($backendUser === null) {
+            return false;
+        }
+        if (!$this->configurationProvider->get()['enabled']) {
             return false;
         }
         if ($backendUser->isAdmin()) {
@@ -70,6 +69,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function getDropDown(): string
     {
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
+        $view->assign('configJson', json_encode($this->configurationProvider->get(), JSON_THROW_ON_ERROR));
         return $view->render('ToolbarItems/EasyWorkspaceDropDown');
     }
 
@@ -83,11 +83,6 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         ];
     }
 
-    /**
-     * Sort order on the toolbar. Lower numbers are further to the right.
-     * 45 sits to the LEFT of the help dropdown (40) and to the RIGHT of
-     * most module-related items.
-     */
     public function getIndex(): int
     {
         return 45;

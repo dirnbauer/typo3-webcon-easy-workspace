@@ -1,0 +1,47 @@
+# =============================================================
+# Easy Workspace — default User TSconfig
+#
+# This file is auto-loaded by TYPO3 v14 from
+# EXT:webcon_easy_workspace/Configuration/user.tsconfig
+# and applies to every backend user unless explicitly overridden
+# at user / group / page level.
+#
+# To override per group or user, set the same keys under
+# "TSconfig" on the be_users / be_groups record. To override per
+# page tree, mirror these options under Page TSconfig (the
+# extension reads both, with Page TSconfig winning when present).
+# =============================================================
+
+options.webcon_easy_workspace {
+    # Master switch — set to 0 to hide the toolbar item entirely
+    # (e.g. while developing or in a workspace where it should not
+    # appear). Default: 1
+    enabled = 1
+
+    # Show the "Preview link" button in the dropdown header.
+    # Clicking it copies a workspace preview URL via TYPO3's
+    # \TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder. Default: 1
+    enablePreviewLink = 1
+
+    # Show the filter chip row ("To publish" / "All on page").
+    # When 0, the dropdown always shows only changed records.
+    # Default: 1
+    enableFilter = 1
+
+    # Default filter mode when the dropdown opens.
+    # Allowed values: changed | all
+    # Default: changed
+    defaultMode = changed
+
+    # Show the "Hidden" badge and the diagonal-stripe overlay on
+    # records that have hidden=1. When 0, hidden records are
+    # filtered out entirely on the server side. Default: 1
+    showHidden = 1
+
+    # Render the first-image thumbnail for each row. Default: 1
+    enableThumbnails = 1
+
+    # Maximum rows fetched per request — hard cap so the dropdown
+    # never grows unbounded on huge pages. Default: 200
+    maxItems = 200
+}

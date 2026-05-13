@@ -51,20 +51,68 @@ Or as a VCS dependency in your project's `composer.json`:
 
 The toolbar item is automatically hidden while you are in the live workspace.
 
+## Configuration (TSconfig)
+
+Every feature can be toggled via **User TSconfig** (and overridden per page via **Page TSconfig**). The extension ships a default `Configuration/user.tsconfig` that is **auto-loaded on activation** — you don't need to import it manually. To customize, copy any of these keys into your group/user TSconfig field or your project's `Configuration/user.tsconfig`.
+
+```typoscript
+options.webcon_easy_workspace {
+    # Master switch. 0 hides the toolbar item entirely.
+    enabled = 1
+
+    # Show the "Preview link" button in the header.
+    enablePreviewLink = 1
+
+    # Show the filter chips ("To publish" / "All on page").
+    # When 0, the dropdown always shows changes only.
+    enableFilter = 1
+
+    # Initial filter mode. Allowed: changed | all
+    defaultMode = changed
+
+    # Show the "Hidden" badge + diagonal-stripe thumbnail overlay
+    # for records with hidden=1. When 0, hidden records are
+    # filtered out server-side.
+    showHidden = 1
+
+    # Resolve and render the first-image thumbnail of each row.
+    enableThumbnails = 1
+
+    # Hard cap on rows returned per request.
+    maxItems = 200
+}
+```
+
+**Override precedence** (highest wins): Page TSconfig at the current page → User TSconfig on the user record → User TSconfig on the user's group → defaults shipped with the extension.
+
+The values are read server-side by `Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider` (which calls `BackendUserAuthentication::getTSConfig()` and `BackendUtility::getPagesTSconfig()` — both public TYPO3 v14 APIs) and then handed to the dropdown's Lit element as a JSON payload on its `config` attribute. The same flags are also enforced on the backend so that, for example, hidden records are filtered out of the AJAX response entirely when `showHidden = 0` — not just hidden in CSS.
+
+### Preview link & OS clipboard
+
+The "Preview link" button calls `\TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder::buildUriForPage($pageUid)` (TYPO3 v14's public API) and copies the resulting URL straight to the **operating-system clipboard** via `navigator.clipboard.writeText()` (with a hidden-textarea + `document.execCommand('copy')` fallback for non-secure contexts). It does **not** use TYPO3's record clipboard.
+
 ## Architecture
 
 ```
 Classes/
-├── Backend/ToolbarItem/EasyWorkspaceToolbarItem.php   # Toolbar registration
-├── Controller/Backend/EasyWorkspaceAjaxController.php # /ajax/items + /ajax/publish
+├── Backend/ToolbarItem/EasyWorkspaceToolbarItem.php   # Toolbar registration + config injection
+├── Configuration/ConfigurationProvider.php            # Reads & normalizes TSconfig
+├── Controller/Backend/EasyWorkspaceAjaxController.php # /ajax/items + /ajax/publish + /ajax/preview-link
 ├── Service/
-│   ├── PendingItemsService.php                       # Aggregates page + ce + news
+│   ├── PendingItemsService.php                       # Aggregates page + ce + news (honors config)
 │   └── PublishSelectedService.php                    # DataHandler publish cmdmap
 └── Dto/PendingItem.php
 
+Configuration/
+├── Backend/AjaxRoutes.php                            # 3 AJAX routes (items, publish, preview-link)
+├── Services.yaml                                     # DI / autowiring
+├── Icons.php                                         # Toolbar icon registration
+├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
+└── user.tsconfig                                     # Auto-loaded TSconfig defaults
+
 Resources/
-├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell
-└── Public/JavaScript/easy-workspace-menu-element.js  # Lit element with list + publish
+├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (JSON config attr)
+└── Public/JavaScript/easy-workspace-menu-element.js  # Lit element with list + publish + OS clipboard
 ```
 
 The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`). The dropdown is a `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.

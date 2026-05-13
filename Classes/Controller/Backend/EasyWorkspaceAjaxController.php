@@ -8,21 +8,17 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
+use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 
-/**
- * Endpoints behind the Easy Workspace toolbar dropdown:
- *  - GET  /ajax/webcon-easy-workspace/items         (list, ?mode=changed|all)
- *  - POST /ajax/webcon-easy-workspace/publish       (publish selected items)
- *  - GET  /ajax/webcon-easy-workspace/preview-link  (shareable preview URL for page)
- */
 final readonly class EasyWorkspaceAjaxController
 {
     public function __construct(
         private PendingItemsService $pendingItemsService,
         private PublishSelectedService $publishService,
         private PreviewUriBuilder $previewUriBuilder,
+        private ConfigurationProvider $configurationProvider,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -30,20 +26,28 @@ final readonly class EasyWorkspaceAjaxController
         $query = $request->getQueryParams();
         $newsUid = (int)($query['newsUid'] ?? 0);
         $pageUid = (int)($query['pageUid'] ?? 0);
-        $mode = ((string)($query['mode'] ?? PendingItemsService::MODE_CHANGED)) === PendingItemsService::MODE_ALL
-            ? PendingItemsService::MODE_ALL
+        $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
+
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+        }
+
+        $defaultMode = $config['defaultMode'];
+        $requestedMode = (string)($query['mode'] ?? $defaultMode);
+        $mode = $config['enableFilter']
+            ? ($requestedMode === PendingItemsService::MODE_ALL ? PendingItemsService::MODE_ALL : PendingItemsService::MODE_CHANGED)
             : PendingItemsService::MODE_CHANGED;
 
         if ($newsUid > 0) {
             return new JsonResponse([
                 'context' => 'news',
-                ...$this->pendingItemsService->forNews($newsUid, $mode),
+                ...$this->pendingItemsService->forNews($newsUid, $mode, $config),
             ]);
         }
         if ($pageUid > 0) {
             return new JsonResponse([
                 'context' => 'page',
-                ...$this->pendingItemsService->forPage($pageUid, $mode),
+                ...$this->pendingItemsService->forPage($pageUid, $mode, $config),
             ]);
         }
         return new JsonResponse([
@@ -83,6 +87,10 @@ final readonly class EasyWorkspaceAjaxController
         $pageUid = (int)($request->getQueryParams()['pageUid'] ?? 0);
         if ($pageUid <= 0) {
             return new JsonResponse(['error' => 'Missing pageUid.'], 400);
+        }
+        $config = $this->configurationProvider->get($pageUid);
+        if (!$config['enablePreviewLink']) {
+            return new JsonResponse(['error' => 'Preview link is disabled by TSconfig.'], 403);
         }
         try {
             $url = $this->previewUriBuilder->buildUriForPage($pageUid);

@@ -44,41 +44,47 @@ final readonly class PendingItemsService
     ) {}
 
     /**
+     * @param array<string, mixed> $config Normalized config from ConfigurationProvider.
      * @return array{workspaceId: int, pageUid: int, items: list<array<string, mixed>>, hasNews: bool, mode: string}
      */
-    public function forPage(int $pageUid, string $mode = self::MODE_CHANGED): array
+    public function forPage(int $pageUid, string $mode = self::MODE_CHANGED, array $config = []): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0 || $pageUid <= 0) {
             return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
         }
 
+        $maxItems = (int)($config['maxItems'] ?? 200);
         $items = [];
 
-        $pageItem = $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true);
+        $pageItem = $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true, config: $config);
         if ($pageItem !== null) {
             $items[] = $pageItem->toArray();
         }
 
         if ($mode === self::MODE_ALL) {
             foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, 'sorting') as $row) {
-                $item = $this->buildItem('tt_content', $row, isPrimary: false);
+                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
                 if ($item !== null) {
                     $items[] = $item->toArray();
+                    if (count($items) >= $maxItems) break;
                 }
             }
         } else {
-            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId) as $item) {
+            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId, $config) as $item) {
                 $items[] = $item->toArray();
+                if (count($items) >= $maxItems) break;
             }
         }
 
         $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
-        if ($hasNews) {
-            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode) as $bundle) {
+        if ($hasNews && count($items) < $maxItems) {
+            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode, $config) as $bundle) {
+                if (count($items) >= $maxItems) break;
                 $items[] = $bundle['news']->toArray();
                 foreach ($bundle['contentElements'] as $ceItem) {
                     $items[] = $ceItem->toArray();
+                    if (count($items) >= $maxItems) break 2;
                 }
             }
         }
@@ -93,31 +99,35 @@ final readonly class PendingItemsService
     }
 
     /**
+     * @param array<string, mixed> $config
      * @return array{workspaceId: int, newsUid: int, items: list<array<string, mixed>>, mode: string}
      */
-    public function forNews(int $newsUid, string $mode = self::MODE_CHANGED): array
+    public function forNews(int $newsUid, string $mode = self::MODE_CHANGED, array $config = []): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
             return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'items' => [], 'mode' => $mode];
         }
 
+        $maxItems = (int)($config['maxItems'] ?? 200);
         $items = [];
-        $newsItem = $this->resolveRecordItem('tx_news_domain_model_news', $newsUid, $workspaceId, isPrimary: true);
+        $newsItem = $this->resolveRecordItem('tx_news_domain_model_news', $newsUid, $workspaceId, isPrimary: true, config: $config);
         if ($newsItem !== null) {
             $items[] = $newsItem->toArray();
         }
 
         if ($mode === self::MODE_ALL) {
             foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, 'sorting') as $row) {
-                $item = $this->buildItem('tt_content', $row, isPrimary: false);
+                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
                 if ($item !== null) {
                     $items[] = $item->toArray();
+                    if (count($items) >= $maxItems) break;
                 }
             }
         } else {
-            foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $newsUid, $workspaceId) as $item) {
+            foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, $config) as $item) {
                 $items[] = $item->toArray();
+                if (count($items) >= $maxItems) break;
             }
         }
 
@@ -166,9 +176,10 @@ final readonly class PendingItemsService
     }
 
     /**
+     * @param array<string, mixed> $config
      * @return list<PendingItem>
      */
-    private function resolveChangedRelated(string $table, string $field, int $parentUid, int $workspaceId): array
+    private function resolveChangedRelated(string $table, string $field, int $parentUid, int $workspaceId, array $config = []): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
@@ -186,7 +197,7 @@ final readonly class PendingItemsService
 
         $items = [];
         while ($row = $result->fetchAssociative()) {
-            $item = $this->buildItem($table, $row, isPrimary: false);
+            $item = $this->buildItem($table, $row, isPrimary: false, config: $config);
             if ($item !== null) {
                 $items[] = $item;
             }
@@ -195,9 +206,10 @@ final readonly class PendingItemsService
     }
 
     /**
+     * @param array<string, mixed> $config
      * @return list<array{news: PendingItem, contentElements: list<PendingItem>}>
      */
-    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode): array
+    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode, array $config = []): array
     {
         if ($mode === self::MODE_ALL) {
             $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, 'datetime DESC, uid');
@@ -221,7 +233,7 @@ final readonly class PendingItemsService
 
         $bundles = [];
         foreach ($newsRows as $newsRow) {
-            $newsItem = $this->buildItem('tx_news_domain_model_news', $newsRow, isPrimary: true);
+            $newsItem = $this->buildItem('tx_news_domain_model_news', $newsRow, isPrimary: true, config: $config);
             if ($newsItem === null) {
                 continue;
             }
@@ -229,13 +241,13 @@ final readonly class PendingItemsService
             $childItems = [];
             if ($mode === self::MODE_ALL) {
                 foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, 'sorting') as $ceRow) {
-                    $ceItem = $this->buildItem('tt_content', $ceRow, isPrimary: false);
+                    $ceItem = $this->buildItem('tt_content', $ceRow, isPrimary: false, config: $config);
                     if ($ceItem !== null) {
                         $childItems[] = $ceItem;
                     }
                 }
             } else {
-                foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $liveUid, $workspaceId) as $ceItem) {
+                foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, $config) as $ceItem) {
                     $childItems[] = $ceItem;
                 }
             }
@@ -244,7 +256,10 @@ final readonly class PendingItemsService
         return $bundles;
     }
 
-    private function resolveRecordItem(string $table, int $liveUid, int $workspaceId, bool $isPrimary): ?PendingItem
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function resolveRecordItem(string $table, int $liveUid, int $workspaceId, bool $isPrimary, array $config = []): ?PendingItem
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()
@@ -266,16 +281,22 @@ final readonly class PendingItemsService
         if (!is_array($row)) {
             return null;
         }
-        return $this->buildItem($table, $row, $isPrimary);
+        return $this->buildItem($table, $row, $isPrimary, $config);
     }
 
     /**
      * @param array<string, mixed> $row
+     * @param array<string, mixed> $config
      */
-    private function buildItem(string $table, array $row, bool $isPrimary): ?PendingItem
+    private function buildItem(string $table, array $row, bool $isPrimary, array $config = []): ?PendingItem
     {
         $rawUid = (int)($row['uid'] ?? 0);
         if ($rawUid <= 0) {
+            return null;
+        }
+
+        $isHidden = (bool)($row['hidden'] ?? false);
+        if ($isHidden && isset($config['showHidden']) && !$config['showHidden']) {
             return null;
         }
 
@@ -304,6 +325,8 @@ final readonly class PendingItemsService
             };
         }
 
+        $enableThumbnails = !isset($config['enableThumbnails']) || (bool)$config['enableThumbnails'];
+
         return new PendingItem(
             table: $table,
             liveUid: $liveUid,
@@ -311,10 +334,10 @@ final readonly class PendingItemsService
             title: $title,
             kindLabel: $kindLabel,
             badge: $badge,
-            thumbnailUrl: $this->resolveThumbnailUrl($table, $workspaceUid),
+            thumbnailUrl: $enableThumbnails ? $this->resolveThumbnailUrl($table, $workspaceUid) : null,
             isPrimary: $isPrimary,
             isChanged: $isChanged,
-            isHidden: (bool)($row['hidden'] ?? false),
+            isHidden: $isHidden,
             typeLabel: $this->resolveTypeLabel($table, $row),
         );
     }

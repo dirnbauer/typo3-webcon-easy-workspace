@@ -17,7 +17,6 @@
 import { LitElement, html, nothing } from 'lit';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
-import { copyToClipboard } from '@typo3/backend/copy-to-clipboard.js';
 
 const ENDPOINTS = {
   items: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_items || '',
@@ -25,8 +24,21 @@ const ENDPOINTS = {
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
 };
 
+// Fallback defaults — overridden by the TSconfig-driven JSON the
+// toolbar item attaches via the `config` attribute on this element.
+const DEFAULT_CONFIG = Object.freeze({
+  enabled: true,
+  enablePreviewLink: true,
+  enableFilter: true,
+  defaultMode: 'changed',
+  showHidden: true,
+  enableThumbnails: true,
+  maxItems: 200,
+});
+
 class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
+    config: { type: String, reflect: false },
     state: { state: true },
     items: { state: true },
     selection: { state: true },
@@ -49,17 +61,34 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.context = null;
     this.contextLabel = '';
     this.publishing = false;
-    this.mode = 'changed';
     this.copyingPreview = false;
+    this._config = { ...DEFAULT_CONFIG };
+    this.mode = this._config.defaultMode;
   }
 
   connectedCallback() {
     super.connectedCallback();
+    this._config = this._readConfig();
+    this.mode = this._config.defaultMode;
     this._refresh();
     const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item');
     if (dropdownHost) {
       dropdownHost.addEventListener('shown.bs.dropdown', () => this._refresh());
+    }
+  }
+
+  _readConfig() {
+    const raw = this.getAttribute('config') || '';
+    if (raw === '') {
+      return { ...DEFAULT_CONFIG };
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_CONFIG, ...parsed };
+    } catch (e) {
+      console.warn('[easy-workspace] Could not parse TSconfig payload, falling back to defaults.', e);
+      return { ...DEFAULT_CONFIG };
     }
   }
 
@@ -78,7 +107,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             <h3 class="wew-menu__title">Workspace publish</h3>
             <p class="wew-menu__subtitle">${this.contextLabel || 'Loading…'}</p>
           </div>
-          ${pageUid > 0
+          ${pageUid > 0 && this._config.enablePreviewLink
             ? html`<button
                 type="button"
                 class="btn btn-sm btn-default wew-menu__copy"
@@ -112,6 +141,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _renderFilter() {
+    if (!this._config.enableFilter) {
+      return nothing;
+    }
     if (this.state === 'loading' || this.state === 'no-context' || this.state === 'error') {
       return nothing;
     }
@@ -207,9 +239,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
               <span class="wew-list__table">${item.typeLabel || this._friendlyTable(item.table)}</span>
             </span>
           </span>
-          ${item.thumbnailUrl
-            ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
-            : html`<span class="wew-list__thumb wew-list__thumb--placeholder" aria-hidden="true">·</span>`}
+          ${this._config.enableThumbnails
+            ? (item.thumbnailUrl
+                ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
+                : html`<span class="wew-list__thumb wew-list__thumb--placeholder" aria-hidden="true">·</span>`)
+            : nothing}
         </label>
       </li>
     `;
@@ -398,13 +432,37 @@ class WebconEasyWorkspaceMenu extends LitElement {
         Notification.error('Preview link', data?.error || 'No URL returned.');
         return;
       }
-      // Routes the copy through TYPO3's helper so the standard
-      // "Copied" notification appears in the editor's language.
-      copyToClipboard(data.url);
+      await this._writeToOsClipboard(data.url);
+      Notification.success('Preview link copied', data.url, 4);
     } catch (error) {
       Notification.error('Preview link', error?.message || 'Unexpected error.');
     } finally {
       this.copyingPreview = false;
+    }
+  }
+
+  /**
+   * Write the given text to the operating-system clipboard using
+   * the browser's native API. Falls back to a hidden textarea +
+   * document.execCommand('copy') if the modern API is unavailable
+   * (e.g. on plain HTTP setups).
+   */
+  async _writeToOsClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+    } finally {
+      document.body.removeChild(textarea);
     }
   }
 }
