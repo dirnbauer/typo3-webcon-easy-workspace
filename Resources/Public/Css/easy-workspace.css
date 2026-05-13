@@ -449,6 +449,16 @@ webcon-easy-workspace-menu {
     font-size: 12px;
     padding: .35rem .75rem;
 }
+/* Bootstrap sets pointer-events:none on disabled buttons, which
+   also suppresses the cursor change. Re-enable pointer-events here
+   (the disabled attribute still blocks clicks at the browser level)
+   and show the not-allowed cursor so it's clear there's nothing to
+   publish. Scoped to this button only. */
+.wew-menu__publish:disabled,
+.wew-menu__publish[disabled] {
+    pointer-events: auto;
+    cursor: not-allowed;
+}
 
 /* ---- Mobile / narrow viewport ---- */
 
