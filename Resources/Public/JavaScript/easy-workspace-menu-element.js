@@ -252,44 +252,54 @@ class WebconEasyWorkspaceMenu extends LitElement {
    *   - a short snippet of the body markup near uid hits
    */
   _logIframeDiagnostics(iframes, liveUid, workspaceUid) {
-    const group = typeof console.groupCollapsed === 'function' ? 'groupCollapsed' : 'group';
-    console[group](`[easy-workspace] Could not locate uid ${liveUid} / ws #${workspaceUid} — iframe diagnostics`);
+    // Render as console.warn (yellow background, can't be missed) and
+    // attach a single payload object — the user can right-click → Copy
+    // object to send back. Stays at the top of the console alongside
+    // the existing visual-editor / cowriter warnings.
+    const payload = [];
     for (const [i, iframe] of iframes.entries()) {
       const doc = iframe.contentDocument;
       if (!doc?.body) continue;
       const veWrappers = Array.from(doc.querySelectorAll('ve-content-element'));
-      const veUids = veWrappers.map((el) => ({
-        uid: el.getAttribute('uid'),
-        table: el.getAttribute('table'),
-        id: el.getAttribute('id'),
-      }));
-      const cElements = Array.from(doc.querySelectorAll('[id^="c"]'))
+      const dataUidElements = Array.from(doc.querySelectorAll('[data-uid]'));
+      const cElements = Array.from(doc.querySelectorAll('[id]'))
         .map((el) => el.id)
-        .filter((id) => /^c\d+$/.test(id));
-      const dataUidElements = Array.from(doc.querySelectorAll('[data-uid]'))
-        .slice(0, 30)
-        .map((el) => ({
+        .filter((id) => /^c\d+$/.test(id) || /tt_content/.test(id));
+      const haystack = doc.body.innerHTML;
+      const textHits = {};
+      for (const uid of [liveUid, workspaceUid].filter((u, idx, arr) => u && arr.indexOf(u) === idx)) {
+        const re = new RegExp(`["'\\s=>](c${uid}|tt_content:${uid}|uid="${uid}")["'\\s<]`, 'g');
+        textHits[`uid_${uid}`] = haystack.match(re)?.slice(0, 5) || null;
+      }
+      payload.push({
+        iframe: i,
+        id: iframe.id || '(none)',
+        src: iframe.src?.slice(0, 120),
+        bodyLength: haystack.length,
+        veContentElementCount: veWrappers.length,
+        veContentElements: veWrappers.slice(0, 20).map((el) => ({
+          uid: el.getAttribute('uid'),
+          table: el.getAttribute('table'),
+          id: el.getAttribute('id'),
+          CType: el.getAttribute('CType'),
+        })),
+        idCElementCount: cElements.length,
+        idCElements: cElements.slice(0, 30),
+        dataUidElementCount: dataUidElements.length,
+        dataUidElements: dataUidElements.slice(0, 20).map((el) => ({
           tag: el.tagName.toLowerCase(),
           'data-uid': el.getAttribute('data-uid'),
           'data-table': el.getAttribute('data-table'),
           'data-content-uid': el.getAttribute('data-content-uid'),
           id: el.id || null,
-        }));
-      console.log(`iframe[${i}] id=${iframe.id || '(none)'}, src=${iframe.src?.slice(0, 80)}…`);
-      console.log('  <ve-content-element> wrappers:', veUids);
-      console.log('  inner #cN elements:', cElements);
-      console.log('  [data-uid] elements (first 30):', dataUidElements);
-
-      // Bonus: try a global text search for the uids — maybe they
-      // appear in a different attribute we haven't accounted for.
-      const haystack = doc.body.innerHTML;
-      for (const uid of [liveUid, workspaceUid].filter((u, i, a) => u && a.indexOf(u) === i)) {
-        const re = new RegExp(`["'\\s=>](c${uid}|tt_content:${uid}|uid="${uid}")["'\\s<]`, 'g');
-        const hits = haystack.match(re);
-        console.log(`  text matches near uid ${uid}:`, hits ? hits.slice(0, 5) : 'none');
-      }
+        })),
+        textHits,
+      });
     }
-    console.groupEnd();
+    console.warn(
+      `[easy-workspace] eye couldn't locate uid ${liveUid} / ws #${workspaceUid}. Iframe diagnostics:`,
+      payload,
+    );
   }
 
   /**
