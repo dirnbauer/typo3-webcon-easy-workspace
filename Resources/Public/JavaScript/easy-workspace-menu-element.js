@@ -181,10 +181,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 : 'No preview iframe present. Install friendsoftypo3/visual-editor or use Web → View.');
           Notification.info('Show in preview', hint, 5);
         } else {
+          // Dump diagnostics so the next iteration of the locator can
+          // be tuned to whatever wrapper this site actually emits.
+          this._logIframeDiagnostics(accessible, liveUid, workspaceUid);
           Notification.warning(
             'Show in preview',
-            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${liveUid}${workspaceUid !== liveUid ? ` (workspace #${workspaceUid})` : ''}.`,
-            6,
+            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${liveUid}${workspaceUid !== liveUid ? ` (workspace #${workspaceUid})` : ''}. See the browser console for what was actually in the preview iframe.`,
+            8,
           );
         }
       }
@@ -236,6 +239,57 @@ class WebconEasyWorkspaceMenu extends LitElement {
       }
     } catch { /* element may already be detached */ }
     this._iframeHighlight = null;
+  }
+
+  /**
+   * Print a diagnostic snapshot of each accessible preview iframe to
+   * the browser console so the user can copy it back to us. Only
+   * fires when the announce-mode locator missed (i.e. click on the
+   * eye produced no match). Output includes:
+   *   - iframe id/src
+   *   - all <ve-content-element> uids found in the document
+   *   - all elements with id="cN", data-uid, data-content-uid, …
+   *   - a short snippet of the body markup near uid hits
+   */
+  _logIframeDiagnostics(iframes, liveUid, workspaceUid) {
+    const group = typeof console.groupCollapsed === 'function' ? 'groupCollapsed' : 'group';
+    console[group](`[easy-workspace] Could not locate uid ${liveUid} / ws #${workspaceUid} — iframe diagnostics`);
+    for (const [i, iframe] of iframes.entries()) {
+      const doc = iframe.contentDocument;
+      if (!doc?.body) continue;
+      const veWrappers = Array.from(doc.querySelectorAll('ve-content-element'));
+      const veUids = veWrappers.map((el) => ({
+        uid: el.getAttribute('uid'),
+        table: el.getAttribute('table'),
+        id: el.getAttribute('id'),
+      }));
+      const cElements = Array.from(doc.querySelectorAll('[id^="c"]'))
+        .map((el) => el.id)
+        .filter((id) => /^c\d+$/.test(id));
+      const dataUidElements = Array.from(doc.querySelectorAll('[data-uid]'))
+        .slice(0, 30)
+        .map((el) => ({
+          tag: el.tagName.toLowerCase(),
+          'data-uid': el.getAttribute('data-uid'),
+          'data-table': el.getAttribute('data-table'),
+          'data-content-uid': el.getAttribute('data-content-uid'),
+          id: el.id || null,
+        }));
+      console.log(`iframe[${i}] id=${iframe.id || '(none)'}, src=${iframe.src?.slice(0, 80)}…`);
+      console.log('  <ve-content-element> wrappers:', veUids);
+      console.log('  inner #cN elements:', cElements);
+      console.log('  [data-uid] elements (first 30):', dataUidElements);
+
+      // Bonus: try a global text search for the uids — maybe they
+      // appear in a different attribute we haven't accounted for.
+      const haystack = doc.body.innerHTML;
+      for (const uid of [liveUid, workspaceUid].filter((u, i, a) => u && a.indexOf(u) === i)) {
+        const re = new RegExp(`["'\\s=>](c${uid}|tt_content:${uid}|uid="${uid}")["'\\s<]`, 'g');
+        const hits = haystack.match(re);
+        console.log(`  text matches near uid ${uid}:`, hits ? hits.slice(0, 5) : 'none');
+      }
+    }
+    console.groupEnd();
   }
 
   /**
