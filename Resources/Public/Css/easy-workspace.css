@@ -28,10 +28,10 @@ webcon-easy-workspace-menu {
 
 .wew-menu__head {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr;
     align-items: center;
-    gap: .55rem;
-    padding: .6rem .75rem;
+    gap: .65rem;
+    padding: .75rem .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
@@ -78,18 +78,8 @@ webcon-easy-workspace-menu {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.wew-menu__copy {
-    display: inline-flex;
-    align-items: center;
-    gap: .3rem;
-    padding: .2rem .55rem;
-    font-size: 11px;
-    line-height: 1.4;
-    border-radius: 999px;
-}
-.wew-menu__copy-label {
-    font-weight: 500;
-}
+/* (legacy .wew-menu__copy / .wew-menu__copy-label rules removed —
+   the Preview link button now lives in the footer as .wew-menu__preview) */
 
 /* ---- Filter chips ---- */
 
@@ -327,13 +317,24 @@ webcon-easy-workspace-menu {
 .wew-list__check-spacer { display: inline-block; width: 16px; height: 16px; }
 
 /* Visual selection tint — when a row's checkbox is checked, give the
-   whole row a faint primary-color background so the editor instantly
-   sees what's queued for the next "Publish to live" click. */
+   whole row a primary-color wash so the editor instantly sees what's
+   queued for the next "Publish to live" click. Tuned for WCAG 2.2 AA
+   contrast against both the light and dark backend body colors:
+   primary @ 15-18 % keeps row text readable while the tint reads as
+   "selected". Primary rows (page / news) get a slightly stronger
+   wash to keep the hierarchy. */
 .wew-list__row:has(.wew-list__check:checked) {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 9%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 15%, transparent);
 }
 .wew-list__row--primary:has(.wew-list__check:checked) {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 22%, transparent);
+}
+/* The 4-px left accent stripe on changed rows already encodes
+   "modified". When also checked, brighten it to the full primary
+   for a clear focus indicator (also helps users with reduced
+   color sensitivity who rely on saturation). */
+.wew-list__row--changed:has(.wew-list__check:checked)::before {
+    background: var(--typo3-link-color, var(--bs-primary));
 }
 
 .wew-list__title {
@@ -418,42 +419,76 @@ webcon-easy-workspace-menu {
 
 /* ---- Footer ---- */
 
+/* ---- Footer ---- */
 .wew-menu__foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: .5rem;
-    padding: .5rem .75rem;
+    gap: .65rem;
+    padding: .55rem .75rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+    flex-wrap: wrap;
 }
-.wew-menu__counters {
+
+/* Left group: preview link + select-all / none */
+.wew-menu__tools {
     display: flex;
     align-items: center;
     gap: .35rem;
     flex-wrap: wrap;
-    font-size: 11px;
+    min-width: 0;
+}
+.wew-menu__preview {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .25rem .6rem;
+    font-size: 11.5px;
+    line-height: 1.4;
+    border-radius: 999px;
+}
+.wew-menu__preview-label { font-weight: 500; }
+.wew-menu__select-group {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    font-size: 11.5px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
-.wew-menu__counters .btn-link {
-    padding: 0;
-    font-size: 11px;
+.wew-menu__select-group .btn-link {
+    padding: .15rem .35rem;
+    font-size: 11.5px;
     text-decoration: none;
+    border-radius: 4px;
+}
+.wew-menu__select-group .btn-link:hover {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 10%, transparent);
+}
+.wew-menu__select-sep { color: var(--typo3-text-color-secondary, var(--bs-secondary-color)); opacity: .6; }
+
+/* Right group: counter + publish */
+.wew-menu__publish-group {
+    display: inline-flex;
+    align-items: center;
+    gap: .65rem;
 }
 .wew-menu__count {
-    margin-left: .25rem;
+    font-size: 11.5px;
     font-weight: 500;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    white-space: nowrap;
 }
 .wew-menu__publish {
-    min-width: 130px;
+    min-width: 140px;
     font-size: 12px;
-    padding: .35rem .75rem;
+    padding: .4rem .85rem;
+    font-weight: 600;
 }
 /* Bootstrap sets pointer-events:none on disabled buttons, which
    also suppresses the cursor change. Re-enable pointer-events here
    (the disabled attribute still blocks clicks at the browser level)
-   and show the not-allowed cursor so it's clear there's nothing to
-   publish. Scoped to this button only. */
+   and show the not-allowed cursor. */
 .wew-menu__publish:disabled,
 .wew-menu__publish[disabled] {
     pointer-events: auto;
@@ -467,24 +502,17 @@ webcon-easy-workspace-menu {
         width: calc(100vw - 16px);
     }
     .wew-menu__head {
-        grid-template-columns: auto 1fr;
         gap: .55rem;
         padding: .55rem .65rem;
     }
     .wew-menu__icon { width: 28px; height: 28px; }
-    .wew-menu__copy {
-        grid-column: 1 / -1;
-        justify-self: end;
-        margin-top: .25rem;
-    }
-    .wew-menu__copy-label { display: none; }
     .wew-menu__title { font-size: 13px; }
     .wew-menu__subtitle { font-size: 10.5px; }
 
     .wew-menu__filter { padding: .35rem .65rem .15rem; }
 
     .wew-list__label {
-        grid-template-columns: auto 1fr 36px;
+        grid-template-columns: auto 1fr auto auto;
         gap: .45rem;
         padding: .45rem .65rem .45rem .8rem;
     }
@@ -493,12 +521,18 @@ webcon-easy-workspace-menu {
     .wew-list__meta { font-size: 10px; }
     .wew-list__meta .badge { padding: .05rem .3rem; }
 
+    /* Footer: stack tools row above publish row on narrow screens. */
     .wew-menu__foot {
         padding: .45rem .65rem;
-        flex-wrap: wrap;
     }
+    .wew-menu__tools,
+    .wew-menu__publish-group {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+    .wew-menu__preview-label { display: none; }
     .wew-menu__publish {
         min-width: 0;
-        flex: 1 1 100%;
+        flex: 1 1 auto;
     }
 }

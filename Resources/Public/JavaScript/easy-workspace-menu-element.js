@@ -409,7 +409,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   render() {
-    const { pageUid } = this._detectContext();
     return html`
       <div class="wew-menu">
         <header class="wew-menu__head">
@@ -430,20 +429,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
             </h3>
             <p class="wew-menu__subtitle">${this.contextLabel || 'Loading…'}</p>
           </div>
-          ${pageUid > 0 && this._config.enablePreviewLink
-            ? html`<button
-                type="button"
-                class="btn btn-sm btn-default wew-menu__copy"
-                title="Copy a shareable preview link for this page"
-                @click=${() => this._copyPreviewLink(pageUid)}
-                ?disabled=${this.copyingPreview}
-              >
-                ${this.copyingPreview
-                  ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
-                  : this._linkIcon()}
-                <span class="wew-menu__copy-label">Preview link</span>
-              </button>`
-            : nothing}
         </header>
         ${this._renderFilter()}
         ${this._renderBody()}
@@ -698,36 +683,57 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (this.state !== 'loaded') {
       return nothing;
     }
+    const { pageUid } = this._detectContext();
+    const showPreview = this._config.enablePreviewLink && pageUid > 0;
     const changeable = this.items.filter((i) => i.isChanged);
     const selectedCount = this.selection.size;
     return html`
       <footer class="wew-menu__foot">
-        <div class="wew-menu__counters">
-          <button
-            type="button"
-            class="btn btn-link btn-sm wew-menu__select-all"
-            ?disabled=${changeable.length === 0}
-            @click=${() => this._selectAll(true)}
-          >Select all</button>
-          <span class="text-muted">·</span>
-          <button
-            type="button"
-            class="btn btn-link btn-sm"
-            ?disabled=${selectedCount === 0}
-            @click=${() => this._selectAll(false)}
-          >None</button>
-          <span class="wew-menu__count">${selectedCount} of ${changeable.length} selected</span>
+        <div class="wew-menu__tools">
+          ${showPreview
+            ? html`<button
+                type="button"
+                class="btn btn-sm btn-default wew-menu__preview"
+                title="Copy a shareable preview link for this page"
+                aria-label="Copy preview link"
+                @click=${() => this._copyPreviewLink(pageUid)}
+                ?disabled=${this.copyingPreview}
+              >
+                ${this.copyingPreview
+                  ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
+                  : this._linkIcon()}
+                <span class="wew-menu__preview-label">Preview link</span>
+              </button>`
+            : nothing}
+          <div class="wew-menu__select-group">
+            <button
+              type="button"
+              class="btn btn-link btn-sm wew-menu__select-all"
+              ?disabled=${changeable.length === 0}
+              @click=${() => this._selectAll(true)}
+            >Select all</button>
+            <span class="wew-menu__select-sep" aria-hidden="true">·</span>
+            <button
+              type="button"
+              class="btn btn-link btn-sm wew-menu__select-none"
+              ?disabled=${selectedCount === 0}
+              @click=${() => this._selectAll(false)}
+            >None</button>
+          </div>
         </div>
-        <button
-          type="button"
-          class="btn btn-primary wew-menu__publish"
-          ?disabled=${selectedCount === 0 || this.publishing}
-          @click=${() => this._publish()}
-        >
-          ${this.publishing
-            ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner> Publishing…`
-            : html`Publish to live${selectedCount > 0 ? html` (${selectedCount})` : nothing}`}
-        </button>
+        <div class="wew-menu__publish-group">
+          <span class="wew-menu__count" aria-live="polite">${selectedCount} of ${changeable.length} selected</span>
+          <button
+            type="button"
+            class="btn btn-primary wew-menu__publish"
+            ?disabled=${selectedCount === 0 || this.publishing}
+            @click=${() => this._publish()}
+          >
+            ${this.publishing
+              ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner> Publishing…`
+              : html`Publish to live${selectedCount > 0 ? html` (${selectedCount})` : nothing}`}
+          </button>
+        </div>
       </footer>
     `;
   }
