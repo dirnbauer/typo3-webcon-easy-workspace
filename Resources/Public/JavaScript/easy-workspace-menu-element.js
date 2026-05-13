@@ -98,7 +98,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._config = this._readConfig();
-    this.mode = this._config.defaultMode;
+    // Mode resolution: user's last choice in this browser >
+    // TSconfig defaultMode > hardcoded 'changed' fallback.
+    this.mode = this._readPersistedMode() ?? this._config.defaultMode;
     this._refresh();
 
     // Re-fetch whenever the editor's selected page changes. v14
@@ -448,6 +450,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
+  /**
+   * WAI-ARIA "Tabs with Automatic Activation" pattern.
+   * https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+   *
+   *  - role=tablist around the buttons
+   *  - role=tab on each button + aria-selected + aria-controls
+   *  - role=tabpanel on the list area + aria-labelledby
+   *  - Roving tabindex: active tab tabindex=0, others tabindex=-1
+   *  - Arrow Left/Right + Home/End move focus AND activate
+   *    ("automatic activation" is the friendlier UX for filter tabs)
+   */
   _renderFilter() {
     if (!this._config.enableFilter) {
       return nothing;
@@ -456,26 +469,75 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return nothing;
     }
     return html`
-      <div class="wew-menu__filter" role="tablist" aria-label="Filter items">
+      <div
+        class="wew-menu__filter"
+        role="tablist"
+        aria-label="Filter pending records"
+        @keydown=${(e) => this._handleTabKeydown(e)}
+      >
         <button
           type="button"
+          id="wew-tab-changed"
           class="wew-menu__chip ${this.mode === 'changed' ? 'wew-menu__chip--active' : ''}"
           role="tab"
-          aria-selected=${this.mode === 'changed'}
+          aria-selected=${this.mode === 'changed' ? 'true' : 'false'}
+          aria-controls="wew-tabpanel"
+          tabindex=${this.mode === 'changed' ? '0' : '-1'}
           @click=${() => this._setMode('changed')}
         >To publish</button>
         <button
           type="button"
+          id="wew-tab-all"
           class="wew-menu__chip ${this.mode === 'all' ? 'wew-menu__chip--active' : ''}"
           role="tab"
-          aria-selected=${this.mode === 'all'}
+          aria-selected=${this.mode === 'all' ? 'true' : 'false'}
+          aria-controls="wew-tabpanel"
+          tabindex=${this.mode === 'all' ? '0' : '-1'}
           @click=${() => this._setMode('all')}
         >All on page</button>
       </div>
     `;
   }
 
+  _handleTabKeydown(event) {
+    const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const tabs = Array.from(this.querySelectorAll('.wew-menu__filter [role="tab"]'));
+    if (tabs.length === 0) return;
+    const currentIdx = tabs.indexOf(document.activeElement);
+    let nextIdx;
+    switch (event.key) {
+      case 'ArrowLeft':  nextIdx = currentIdx <= 0 ? tabs.length - 1 : currentIdx - 1; break;
+      case 'ArrowRight': nextIdx = currentIdx >= tabs.length - 1 ? 0 : currentIdx + 1; break;
+      case 'Home':       nextIdx = 0; break;
+      case 'End':        nextIdx = tabs.length - 1; break;
+      default:           return;
+    }
+    const next = tabs[nextIdx];
+    next.focus();
+    next.click(); // automatic activation
+  }
+
   _renderBody() {
+    // The panel changes contents based on the active tab; that's
+    // the WAI-ARIA "single tabpanel reflecting selection" pattern
+    // referenced by ARIA APG when the panel content is filtered
+    // rather than swapped wholesale.
+    return html`
+      <div
+        id="wew-tabpanel"
+        role=${this._config.enableFilter ? 'tabpanel' : nothing}
+        aria-labelledby=${this._config.enableFilter
+          ? (this.mode === 'all' ? 'wew-tab-all' : 'wew-tab-changed')
+          : nothing}
+      >
+        ${this._renderBodyInner()}
+      </div>
+    `;
+  }
+
+  _renderBodyInner() {
     if (this.state === 'loading') {
       return html`
         <div class="wew-menu__loading">
@@ -776,7 +838,26 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return;
     }
     this.mode = mode;
+    this._writePersistedMode(mode);
     this._refresh();
+  }
+
+  // localStorage key kept short to avoid colliding with other modules.
+  static _MODE_STORAGE_KEY = 'wew:filter-mode';
+
+  _readPersistedMode() {
+    try {
+      const value = window.localStorage?.getItem(WebconEasyWorkspaceMenu._MODE_STORAGE_KEY);
+      return value === 'all' || value === 'changed' ? value : null;
+    } catch {
+      return null; // private mode / disabled storage
+    }
+  }
+
+  _writePersistedMode(mode) {
+    try {
+      window.localStorage?.setItem(WebconEasyWorkspaceMenu._MODE_STORAGE_KEY, mode);
+    } catch { /* ignore */ }
   }
 
   async _refresh() {

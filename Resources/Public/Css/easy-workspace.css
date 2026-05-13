@@ -81,33 +81,43 @@ webcon-easy-workspace-menu {
 /* (legacy .wew-menu__copy / .wew-menu__copy-label rules removed —
    the Preview link button now lives in the footer as .wew-menu__preview) */
 
-/* ---- Filter chips ---- */
+/* ---- Filter tabs (WAI-ARIA tabs pattern) ---- */
 
 .wew-menu__filter {
     display: flex;
-    gap: .25rem;
-    padding: .45rem .75rem .25rem;
+    gap: 0;
+    padding: 0 .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
 }
 .wew-menu__chip {
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border: 0;
     background: transparent;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    padding: .15rem .55rem;
-    border-radius: 999px;
-    font-size: 11px;
+    padding: .55rem .85rem .5rem;
+    margin-bottom: -1px; /* overlap the container's bottom border */
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
     font-weight: 500;
+    line-height: 1.3;
     cursor: pointer;
-    transition: all .12s ease;
+    transition: color .12s ease, border-color .12s ease;
+    /* No rounded background — this is a tab, not a pill. */
 }
 .wew-menu__chip:hover {
     color: var(--typo3-component-color, var(--bs-body-color));
-    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, var(--typo3-component-border-color, var(--bs-border-color)));
 }
 .wew-menu__chip--active {
-    background: var(--typo3-link-color, var(--bs-primary));
-    color: #fff;
-    border-color: var(--typo3-link-color, var(--bs-primary));
+    color: var(--typo3-link-color, var(--bs-primary));
+    border-bottom-color: var(--typo3-link-color, var(--bs-primary));
+    font-weight: 600;
+}
+.wew-menu__chip:focus-visible {
+    /* WCAG 2.2 SC 2.4.11 — focus indicator visible against both light
+       and dark backgrounds. Inset outline so it sits on the tab and
+       doesn't get clipped by overflow:hidden parents. */
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: -2px;
+    border-radius: 2px;
 }
 
 /* ---- States ---- */
