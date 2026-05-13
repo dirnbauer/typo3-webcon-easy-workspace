@@ -326,6 +326,48 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
+   * After a successful discard the workspace version is gone — the live
+   * record is unchanged, but the editor's preview iframe is still
+   * showing the now-deleted workspace render. Reload it so the live
+   * content reappears.
+   *
+   * Scoped to FE-preview frames only:
+   *  - Visual Editor:  iframe#visual-editor-iframe
+   *  - cms-viewpage:   any iframe whose src carries the editMode flag
+   *                    (visual-editor sets it; the View module's
+   *                    plain-preview iframe doesn't, so we still catch
+   *                    it via the visual-editor frame id)
+   *
+   * The outer BE module shell (#typo3-contentIframe) is intentionally
+   * left alone so dropdown state, scroll position and any pending BE
+   * form input survive the discard.
+   *
+   * @returns {number} count of preview iframes that were reloaded
+   */
+  _reloadPreviewIframes() {
+    let reloaded = 0;
+    for (const iframe of this._collectIframes()) {
+      const src = iframe.src || '';
+      const isPreview = iframe.id === 'visual-editor-iframe'
+        || /[?&]editMode=/.test(src);
+      if (!isPreview) continue;
+      try {
+        // Preferred: same-origin reload preserves the existing URL
+        // (including editMode + any anchor/scroll state).
+        iframe.contentWindow.location.reload();
+      } catch {
+        // Cross-origin or detached document — re-assigning the same
+        // src forces the iframe to refetch. eslint disabled intentionally:
+        // the assignment is the side-effect we want.
+        // eslint-disable-next-line no-self-assign
+        iframe.src = iframe.src;
+      }
+      reloaded++;
+    }
+    return reloaded;
+  }
+
+  /**
    * Iterate every reachable iframe and return the first one whose
    * contentDocument contains a content element for the given item.
    * We prefer the visual-editor <ve-content-element> wrapper because
@@ -799,7 +841,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
           const result = await response.resolve();
           if (result?.success) {
             Notification.success('Discarded', `Workspace version of “${item.title}” discarded.`, 4);
+            // Refresh our own list, then reload the editor's preview
+            // iframe so the live record (no longer overlaid by the
+            // discarded workspace version) is rendered.
             await this._refresh();
+            this._reloadPreviewIframes();
           } else {
             const errors = Array.isArray(result?.errors) && result.errors.length
               ? result.errors.join(' / ')
