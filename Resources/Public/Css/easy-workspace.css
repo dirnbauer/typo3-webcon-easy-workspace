@@ -696,3 +696,119 @@ webcon-easy-workspace-menu {
         min-width: 0;
     }
 }
+
+/* ---- Latest workspace changes accordion (lazy-loaded feed) ---- */
+/* Sits below the publish footer as a peripheral "what's happening
+   elsewhere" view. Native <details> handles the disclosure and
+   keyboard / ARIA wiring — these styles only theme it.            */
+.wew-menu__latest {
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+}
+.wew-menu__latest-summary {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .55rem .85rem;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+/* Hide the default disclosure triangle in webkit so we can render
+   our own caret that flips on [open]. */
+.wew-menu__latest-summary::-webkit-details-marker { display: none; }
+.wew-menu__latest-summary::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 5px solid currentColor;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform .15s ease;
+    flex-shrink: 0;
+}
+.wew-menu__latest[open] > .wew-menu__latest-summary::before {
+    transform: rotate(90deg);
+}
+.wew-menu__latest-summary:hover {
+    color: var(--typo3-component-color, var(--bs-body-color));
+}
+.wew-menu__latest-summary:focus-visible {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: -2px;
+    border-radius: 2px;
+}
+.wew-menu__latest-summary-label {
+    flex: 1 1 auto;
+}
+.wew-menu__latest-body {
+    max-height: 18rem;
+    overflow-y: auto;
+    padding: 0 .5rem .5rem;
+}
+.wew-menu__latest-hint {
+    margin: 0;
+    padding: .5rem .85rem;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* Compact rows for the accordion — one-line entries with title and
+   meta. Distinct from the main publish list to signal "this is just
+   a preview, not actionable here". */
+.wew-list--compact {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.wew-list__item--compact {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .35rem;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-list__item--compact:last-child { border-bottom: 0; }
+.wew-list__compact-link {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: .25rem .4rem;
+    border-radius: 4px;
+    color: inherit;
+    text-decoration: none;
+}
+.wew-list__compact-link:hover {
+    background: var(--typo3-component-hover-bg, var(--bs-tertiary-bg));
+}
+.wew-list__compact-link:focus-visible {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: -2px;
+}
+.wew-list__compact-link--inert {
+    cursor: default;
+}
+.wew-list__compact-link--inert:hover {
+    background: transparent;
+}
+.wew-list__compact-link .wew-list__title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--typo3-component-color, var(--bs-body-color));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wew-list__compact-link .wew-list__meta {
+    font-size: 11px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-list__item--compact .badge {
+    flex-shrink: 0;
+}

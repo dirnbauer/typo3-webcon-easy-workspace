@@ -21,4 +21,8 @@ return [
         'path' => '/webcon-easy-workspace/discard',
         'target' => EasyWorkspaceAjaxController::class . '::discardAction',
     ],
+    'webcon_easy_workspace_latest' => [
+        'path' => '/webcon-easy-workspace/latest',
+        'target' => EasyWorkspaceAjaxController::class . '::latestAction',
+    ],
 ];

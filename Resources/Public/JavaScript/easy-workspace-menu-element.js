@@ -25,6 +25,7 @@ const ENDPOINTS = {
   publish: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_publish || '',
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
+  latest: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_latest || '',
 };
 
 // Fallback defaults — overridden by the TSconfig-driven JSON the
@@ -75,6 +76,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
     workspaceTitle: { state: true },
     mode: { state: true },
     copyingPreview: { state: true },
+    // Latest-changes accordion (cross-page feed). Idle until the
+    // editor first opens it — then transitions to loading → loaded.
+    latestState: { state: true },
+    latestItems: { state: true },
   };
 
   createRenderRoot() {
@@ -91,6 +96,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.workspaceTitle = '';
     this.publishing = false;
     this.copyingPreview = false;
+    this.latestState = 'idle';
+    this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
   }
@@ -541,6 +548,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this._renderFilter()}
         ${this._renderBody()}
         ${this._renderFooter()}
+        ${this._renderLatestAccordion()}
       </div>
     `;
   }
@@ -869,6 +877,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             // discarded workspace version) is rendered.
             await this._refresh();
             this._reloadPreviewIframes();
+            this._invalidateLatest();
           } else {
             const errors = Array.isArray(result?.errors) && result.errors.length
               ? result.errors.join(' / ')
@@ -1004,6 +1013,142 @@ class WebconEasyWorkspaceMenu extends LitElement {
       case 'tx_news_domain_model_news':   return 'News';
       case 'tt_address':                  return 'Address';
       default:                            return table;
+    }
+  }
+
+  /**
+   * Renders the lazy-loaded "Latest workspace changes" accordion.
+   *
+   * Uses the native <details>/<summary> disclosure widget so the
+   * toggle, keyboard handling and ARIA semantics come for free.
+   * Body content is built per state — `idle` shows just the hint
+   * "Open to load…", `loading` a spinner, etc. The actual fetch is
+   * deferred to the first `toggle` event with `details.open === true`.
+   *
+   * Rendered after the footer so the primary publish action stays
+   * the visual center of gravity — the accordion is a peripheral
+   * "what's going on elsewhere" view, deliberately deprioritized.
+   */
+  _renderLatestAccordion() {
+    if (!ENDPOINTS.latest) return nothing;
+    if (this.state === 'loading') return nothing;
+    return html`
+      <details
+        class="wew-menu__latest"
+        @toggle=${(e) => this._onLatestToggle(e)}
+      >
+        <summary class="wew-menu__latest-summary">
+          <span class="wew-menu__latest-summary-label">Latest workspace changes</span>
+          ${this.latestState === 'loaded' && this.latestItems.length > 0
+            ? html`<span class="wew-menu__chip-count" aria-label="${this.latestItems.length} record${this.latestItems.length === 1 ? '' : 's'}">${this.latestItems.length}</span>`
+            : nothing}
+        </summary>
+        <div class="wew-menu__latest-body">
+          ${this._renderLatestBody()}
+        </div>
+      </details>
+    `;
+  }
+
+  _renderLatestBody() {
+    if (this.latestState === 'idle') {
+      // The native disclosure widget keeps this hidden until the
+      // editor expands the accordion, so the placeholder is just a
+      // belt-and-braces "in case CSS doesn't" affordance — won't
+      // normally be seen.
+      return html`<p class="wew-menu__latest-hint">Open to load.</p>`;
+    }
+    if (this.latestState === 'loading') {
+      return html`
+        <div class="wew-menu__loading">
+          <typo3-backend-spinner size="default"></typo3-backend-spinner>
+          <span>Loading latest changes…</span>
+        </div>
+      `;
+    }
+    if (this.latestState === 'error') {
+      return html`<div class="alert alert-danger wew-menu__alert">Could not load latest changes.</div>`;
+    }
+    if (this.latestState === 'empty') {
+      return html`<p class="wew-menu__latest-hint">No pending changes in this workspace yet.</p>`;
+    }
+    return html`
+      <ul class="wew-list wew-list--compact">
+        ${this.latestItems.map((item) => this._renderLatestItem(item))}
+      </ul>
+    `;
+  }
+
+  /**
+   * Compact row for the accordion. Deliberately stripped down vs.
+   * _renderItem(): no selection checkbox, no publish/discard action
+   * — those operations are scoped to the current page in this UI.
+   * Click navigates to the record's edit form so the editor can
+   * jump from the feed straight into the form.
+   */
+  _renderLatestItem(item) {
+    const editHref = item.editUrl || null;
+    const tableLabel = item.tableLabel || item.table;
+    const kindBadge = item.kindLabel
+      ? html`<span class="badge badge-${item.badge || 'info'}">${item.kindLabel}</span>`
+      : nothing;
+    return html`
+      <li class="wew-list__item wew-list__item--compact">
+        ${editHref
+          ? html`<a class="wew-list__compact-link" href=${editHref}>
+              <span class="wew-list__title">${item.title || '[No title]'}</span>
+              <span class="wew-list__meta">${tableLabel} · #${item.workspaceUid}</span>
+            </a>`
+          : html`<div class="wew-list__compact-link wew-list__compact-link--inert">
+              <span class="wew-list__title">${item.title || '[No title]'}</span>
+              <span class="wew-list__meta">${tableLabel} · #${item.workspaceUid}</span>
+            </div>`}
+        ${kindBadge}
+      </li>
+    `;
+  }
+
+  _onLatestToggle(event) {
+    if (!event.target.open) return;
+    // Lazy: fetch only the first time the editor expands the panel
+    // (or after explicit reset on a context change — see _refresh).
+    if (this.latestState !== 'idle' && this.latestState !== 'error') return;
+    this._loadLatestChanges();
+  }
+
+  /**
+   * Resets the accordion to its idle state so the next time the
+   * editor expands it, the latest list is re-fetched. Called after
+   * publish/discard since those mutations change which records are
+   * still pending in the workspace.
+   *
+   * The accordion's `open` state is preserved by the DOM, so when
+   * we reset to 'idle' while it's still expanded, the `toggle`
+   * event won't fire — we have to invoke the loader directly.
+   */
+  _invalidateLatest() {
+    const wasOpen = this.querySelector('.wew-menu__latest')?.open === true;
+    this.latestState = 'idle';
+    this.latestItems = [];
+    if (wasOpen) {
+      this._loadLatestChanges();
+    }
+  }
+
+  async _loadLatestChanges() {
+    if (!ENDPOINTS.latest) {
+      this.latestState = 'error';
+      return;
+    }
+    this.latestState = 'loading';
+    try {
+      const response = await new AjaxRequest(ENDPOINTS.latest).get();
+      const data = await response.resolve();
+      this.latestItems = Array.isArray(data.items) ? data.items : [];
+      this.latestState = this.latestItems.length === 0 ? 'empty' : 'loaded';
+    } catch (error) {
+      console.error('[easy-workspace] latest-changes request failed', error);
+      this.latestState = 'error';
     }
   }
 
@@ -1166,6 +1311,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           `${result.published} record(s) updated.`,
         );
         await this._refresh();
+        this._invalidateLatest();
       } else {
         const errors = Array.isArray(result?.errors) && result.errors.length
           ? result.errors.join(' / ')

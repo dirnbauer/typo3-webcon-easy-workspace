@@ -340,6 +340,24 @@ final readonly class PendingItemsService
      * @param array<string, mixed> $row
      * @param array<string, mixed> $config
      */
+    /**
+     * Public adapter for LatestChangesService — same logic as the
+     * internal buildItem(), but always builds with isPrimary=false
+     * since the latest-changes feed doesn't have a "primary record"
+     * concept (each row stands on its own across pages).
+     *
+     * Kept as a thin wrapper rather than promoting buildItem itself
+     * so the page/news flows can keep the isPrimary flag exclusive
+     * to their internal use.
+     *
+     * @param array<string, mixed> $row    Raw workspace-version row.
+     * @param array<string, mixed> $config Normalized ConfigurationProvider output.
+     */
+    public function buildItemFromRow(string $table, array $row, array $config = []): ?PendingItem
+    {
+        return $this->buildItem($table, $row, isPrimary: false, config: $config);
+    }
+
     private function buildItem(string $table, array $row, bool $isPrimary, array $config = []): ?PendingItem
     {
         $rawUid = (int)($row['uid'] ?? 0);

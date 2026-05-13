@@ -9,6 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Service\LatestChangesService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 
@@ -31,6 +32,7 @@ final readonly class EasyWorkspaceAjaxController
         private PublishSelectedService $publishService,
         private PreviewUriBuilder $previewUriBuilder,
         private ConfigurationProvider $configurationProvider,
+        private LatestChangesService $latestChangesService,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -68,6 +70,34 @@ final readonly class EasyWorkspaceAjaxController
             'workspaceId' => 0,
             'mode' => $mode,
         ]);
+    }
+
+    /**
+     * Cross-page "latest workspace changes" feed.
+     *
+     * Powers the lazy-loaded accordion at the bottom of the toolbar
+     * dropdown — only invoked when the editor expands it, so the
+     * common case (dropdown opened, accordion stays closed) costs
+     * zero database round-trips.
+     *
+     * No page/news context is needed — the result is always scoped
+     * to the editor's current workspace.
+     */
+    public function latestAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $config = $this->configurationProvider->get(null);
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+        }
+
+        $query = $request->getQueryParams();
+        $requestedLimit = (int)($query['limit'] ?? LatestChangesService::DEFAULT_LIMIT);
+        // Clamp to a sane range. 1 keeps degenerate ?limit=0 calls
+        // from returning the entire workspace, 50 caps the response
+        // size for the dropdown UI.
+        $limit = max(1, min(50, $requestedLimit));
+
+        return new JsonResponse($this->latestChangesService->list($limit, $config));
     }
 
     public function publishAction(ServerRequestInterface $request): ResponseInterface
