@@ -721,9 +721,26 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (this.state === 'error') {
       return html`<div class="alert alert-danger wew-menu__alert">Could not load pending changes.</div>`;
     }
+    // Client-side filter: "To publish" hides records without a
+    // workspace version, "All on page" shows everything. The server
+    // already returned the full record set so we don't refetch.
+    const visible = this.mode === 'changed'
+      ? this.items.filter((i) => i.isChanged)
+      : this.items;
+    if (visible.length === 0) {
+      const message = this.mode === 'all'
+        ? 'This page is empty (no records yet).'
+        : 'Nothing pending on this page.';
+      return html`
+        <div class="wew-menu__empty">
+          <span class="wew-menu__empty-icon" aria-hidden="true">✓</span>
+          <p>${message}</p>
+        </div>
+      `;
+    }
     return html`
       <ul class="wew-list">
-        ${this.items.map((item) => this._renderItem(item))}
+        ${visible.map((item) => this._renderItem(item))}
       </ul>
     `;
   }
@@ -1053,7 +1070,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return;
     }
 
-    const query = pageUid ? { pageUid, mode: this.mode } : { newsUid, mode: this.mode };
+    // Always fetch the full set of records on the page. The mode tab
+    // (changed vs. all) is applied client-side in _renderList — that
+    // way the count badges on both tabs stay stable as the editor
+    // switches between filters, instead of mutating each time we
+    // re-query the server with a narrower scope.
+    const query = pageUid ? { pageUid, mode: 'all' } : { newsUid, mode: 'all' };
     try {
       const response = await new AjaxRequest(ENDPOINTS.items).withQueryArguments(query).get();
       const data = await response.resolve();
