@@ -150,15 +150,21 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _highlightInIframe(item, { announce = false } = {}) {
     this._clearIframeHighlight();
-    const uid = item?.liveUid;
-    if (!uid) return;
+    const liveUid = item?.liveUid;
+    const workspaceUid = item?.workspaceUid;
+    if (!liveUid && !workspaceUid) return;
 
     // Prefer visual-editor's own <ve-content-element uid="X"> wrapper
     // if present — dispatching mouseenter on it triggers the dashed
     // border + the floating action-bar (Text & Images, edit / hide /
     // delete) the editor expects. Fall back to a custom outline on
     // the rendered <div id="cX"> if visual-editor isn't active.
-    const located = this._locateInAnyIframe(uid);
+    //
+    // Visual-editor's wrapper uses TYPO3's "versioned uid" — which is
+    // the workspace-version uid for MODIFIED records and the live
+    // uid for unchanged ones — so we have to look up by BOTH uids
+    // and let the first hit win.
+    const located = this._locateInAnyIframe(item);
     if (!located) {
       if (announce) {
         const allIframes = this._collectIframes();
@@ -175,7 +181,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         } else {
           Notification.warning(
             'Show in preview',
-            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${uid}.`,
+            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${liveUid}${workspaceUid !== liveUid ? ` (workspace #${workspaceUid})` : ''}.`,
             6,
           );
         }
@@ -255,15 +261,30 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   /**
    * Iterate every reachable iframe and return the first one whose
-   * contentDocument contains a content element matching `uid`. We
-   * prefer the visual-editor <ve-content-element> wrapper because
-   * dispatching mouseenter on it triggers the editor's native
-   * dashed border + floating action-bar. Only if no wrapper is
-   * present do we fall back to the rendered <div id="cX">.
+   * contentDocument contains a content element for the given item.
+   * We prefer the visual-editor <ve-content-element> wrapper because
+   * dispatching mouseenter on it triggers the editor's native dashed
+   * border + floating action-bar. Only if no wrapper is present do
+   * we fall back to the rendered <div id="cX">.
+   *
+   * Probes BOTH the live uid and the workspace-version uid since the
+   * visual-editor wrapper uses "versioned uid" (live for unchanged,
+   * workspace for modified records).
    *
    * @returns {{ iframe: HTMLIFrameElement, doc: Document, el: HTMLElement, isVeWrapper: boolean }|null}
    */
-  _locateInAnyIframe(uid) {
+  _locateInAnyIframe(item) {
+    const uids = [item?.liveUid, item?.workspaceUid]
+      .map((n) => parseInt(n, 10))
+      .filter((n) => n > 0)
+      .filter((n, i, arr) => arr.indexOf(n) === i); // unique
+    if (uids.length === 0) return null;
+
+    const veSelector = uids.flatMap((u) => [
+      `ve-content-element[uid="${u}"][table="tt_content"]`,
+      `ve-content-element[id="tt_content:${u}"]`,
+    ]).join(', ');
+
     for (const iframe of this._collectIframes()) {
       let doc;
       try {
@@ -271,15 +292,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
       } catch { continue; }
       if (!doc) continue;
 
-      // First-choice: visual-editor's wrapper.
-      const veEl = doc.querySelector(
-        `ve-content-element[uid="${uid}"][table="tt_content"], ve-content-element[id="tt_content:${uid}"]`,
-      );
+      // First-choice: visual-editor's wrapper (any matching uid).
+      const veEl = doc.querySelector(veSelector);
       if (veEl) return { iframe, doc, el: veEl, isVeWrapper: true };
 
-      // Fallback for cms-viewpage / plain frontend rendering.
-      const el = this._findContentElement(doc, uid);
-      if (el) return { iframe, doc, el, isVeWrapper: false };
+      // Fallback for cms-viewpage / plain frontend rendering — try
+      // every uid against every known inner-element selector.
+      for (const u of uids) {
+        const el = this._findContentElement(doc, u);
+        if (el) return { iframe, doc, el, isVeWrapper: false };
+      }
     }
     return null;
   }
