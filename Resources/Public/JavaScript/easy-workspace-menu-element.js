@@ -433,8 +433,51 @@ class WebconEasyWorkspaceMenu extends LitElement {
           </div>
         </header>
         ${this._renderFilter()}
+        ${this._renderSelectionBar()}
         ${this._renderBody()}
         ${this._renderFooter()}
+      </div>
+    `;
+  }
+
+  /**
+   * Tri-state master-checkbox selection bar — the proper pattern for
+   * "select all" in a multi-item list (GitHub PRs, Gmail, JIRA all
+   * use this). One control, three states:
+   *
+   *   unchecked      → click selects all changeable rows
+   *   indeterminate  → click selects all changeable rows
+   *   checked        → click deselects all
+   *
+   * Replaces the "Select all · None" link pair which mixed two
+   * mutually exclusive commands into parallel affordances and gave
+   * editors no visual cue about the current selection state.
+   */
+  _renderSelectionBar() {
+    if (this.state !== 'loaded') return nothing;
+    const changeable = this.items.filter((i) => i.isChanged);
+    if (changeable.length === 0) return nothing;
+    const selectedCount = this.selection.size;
+    const allChecked = selectedCount === changeable.length;
+    const someChecked = selectedCount > 0 && selectedCount < changeable.length;
+    const label = allChecked
+      ? 'All selected — click to deselect'
+      : (someChecked ? 'Some selected — click to select all' : 'Select all');
+    return html`
+      <div class="wew-menu__selectbar">
+        <label class="wew-menu__selectbar-label">
+          <input
+            type="checkbox"
+            class="wew-menu__selectbar-check"
+            .checked=${allChecked}
+            .indeterminate=${someChecked}
+            aria-checked=${allChecked ? 'true' : (someChecked ? 'mixed' : 'false')}
+            aria-label=${allChecked ? 'Deselect all changes' : 'Select all changes'}
+            @change=${() => this._selectAll(!allChecked)}
+          />
+          <span class="wew-menu__selectbar-text">${label}</span>
+        </label>
+        <span class="wew-menu__selectbar-count" aria-hidden="true">${selectedCount} / ${changeable.length}</span>
       </div>
     `;
   }
@@ -767,21 +810,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 <span class="wew-menu__preview-label">Preview link</span>
               </button>`
             : nothing}
-          <div class="wew-menu__select-group">
-            <button
-              type="button"
-              class="btn btn-link btn-sm wew-menu__select-all"
-              ?disabled=${changeable.length === 0}
-              @click=${() => this._selectAll(true)}
-            >Select all</button>
-            <span class="wew-menu__select-sep" aria-hidden="true">·</span>
-            <button
-              type="button"
-              class="btn btn-link btn-sm wew-menu__select-none"
-              ?disabled=${selectedCount === 0}
-              @click=${() => this._selectAll(false)}
-            >None</button>
-          </div>
         </div>
         <div class="wew-menu__publish-group">
           <span class="wew-menu__count" aria-live="polite">${selectedCount} of ${changeable.length} selected</span>
