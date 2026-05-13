@@ -327,25 +327,49 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Collect every iframe reachable from this document and its top.
-   * Deduped by element identity so iframes living in both contexts
-   * (when the toolbar is nested) aren't counted twice.
+   * Collect every iframe reachable from this document and its top,
+   * including iframes nested *inside* other iframes' contentDocument.
+   *
+   * TYPO3 v14's Web → Edit (Visual Editor) module renders TWO frames:
+   *
+   *   window.top                          ← BE shell, where this toolbar lives
+   *     iframe#typo3-contentIframe        ← module's content frame
+   *       iframe#visual-editor-iframe     ← visual-editor's FE preview
+   *
+   * The content elements we need to highlight live in the *inner*
+   * (visual-editor) iframe. A single-level querySelectorAll('iframe')
+   * only finds #typo3-contentIframe — so we have to walk the tree.
+   *
+   * Skip cross-origin frames silently (their contentDocument access
+   * would throw); also cap the recursion depth so a malformed page
+   * with circular frame references can't infinite-loop.
+   *
+   * Deduped by element identity so iframes living in both root
+   * contexts aren't counted twice.
    *
    * @returns {HTMLIFrameElement[]}
    */
-  _collectIframes() {
+  _collectIframes(maxDepth = 4) {
     const seen = new Set();
     const out = [];
     const roots = [document];
     try { if (window.top?.document && window.top.document !== document) roots.push(window.top.document); } catch { /* cross-origin */ }
-    for (const root of roots) {
-      for (const iframe of root.querySelectorAll('iframe')) {
-        if (!seen.has(iframe)) {
-          seen.add(iframe);
-          out.push(iframe);
-        }
+    const walk = (root, depth) => {
+      if (!root || depth > maxDepth) return;
+      let frames;
+      try { frames = root.querySelectorAll('iframe'); } catch { return; }
+      for (const iframe of frames) {
+        if (seen.has(iframe)) continue;
+        seen.add(iframe);
+        out.push(iframe);
+        // Recurse into same-origin contentDocument. Wrapped in try
+        // because cross-origin access throws synchronously.
+        let inner;
+        try { inner = iframe.contentDocument; } catch { inner = null; }
+        if (inner) walk(inner, depth + 1);
       }
-    }
+    };
+    for (const root of roots) walk(root, 0);
     return out;
   }
 
