@@ -151,6 +151,9 @@ webcon-easy-workspace-menu {
     position: relative;
 }
 .wew-list__row:last-child { border-bottom: 0; }
+.wew-list__row[data-table="tt_content"]:hover {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 7%, transparent);
+}
 .wew-list__row--primary {
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent);
 }

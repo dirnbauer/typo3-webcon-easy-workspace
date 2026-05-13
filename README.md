@@ -80,6 +80,11 @@ options.webcon_easy_workspace {
 
     # Hard cap on rows returned per request.
     maxItems = 200
+
+    # Hovering a tt_content row in the dropdown scrolls the
+    # corresponding content element into view inside the Visual
+    # Editor iframe (#visual-editor-iframe) and outlines it.
+    enableHoverHighlight = 1
 }
 ```
 
@@ -90,6 +95,15 @@ The values are read server-side by `Webconsulting\WebconEasyWorkspace\Configurat
 ### Preview link & OS clipboard
 
 The "Preview link" button calls `\TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder::buildUriForPage($pageUid)` (TYPO3 v14's public API) and copies the resulting URL straight to the **operating-system clipboard** via `navigator.clipboard.writeText()` (with a hidden-textarea + `document.execCommand('copy')` fallback for non-secure contexts). It does **not** use TYPO3's record clipboard.
+
+### Hover-to-locate (Visual Editor bridge)
+
+When the dropdown is shown alongside the Visual Editor iframe (`#visual-editor-iframe`), hovering any **content-element** row reaches into the iframe via `iframe.contentDocument`, locates the rendered CE by its standard TYPO3 id (`#c{uid}`, with `[data-uid][data-table=tt_content]` and `[data-typo3-record-uid]` as fallbacks for non-default templates), and:
+
+- **Scrolls the element into view** in the iframe via `scrollIntoView({ behavior: 'smooth', block: 'center' })` — great for long pages where the CE is well below the visible viewport.
+- Applies an inline outline + soft glow so the editor can immediately see *which* CE the dropdown row refers to.
+
+Both are reverted on `mouseleave` and again on element disconnect. The bridge is enabled by default and can be switched off via `options.webcon_easy_workspace.enableHoverHighlight = 0`.
 
 ## Architecture
 

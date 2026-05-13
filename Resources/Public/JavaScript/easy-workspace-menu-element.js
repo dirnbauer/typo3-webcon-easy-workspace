@@ -34,7 +34,22 @@ const DEFAULT_CONFIG = Object.freeze({
   showHidden: true,
   enableThumbnails: true,
   maxItems: 200,
+  enableHoverHighlight: true,
 });
+
+// Inline highlight styles applied to the iframe element. Hard-coded
+// colors because the iframe document has its own CSS scope and v14
+// backend custom properties don't propagate there.
+const IFRAME_HIGHLIGHT_STYLE = {
+  outline: '3px solid #4a90e2',
+  outlineOffset: '2px',
+  boxShadow: '0 0 0 6px rgba(74, 144, 226, 0.22)',
+  transition: 'outline 0.15s ease, box-shadow 0.15s ease',
+  scrollMarginTop: '40px',
+  scrollMarginBottom: '40px',
+  // Faint background tint while hovered so the entire CE area is obvious.
+  backgroundColor: '',
+};
 
 class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
@@ -98,6 +113,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._clearIframeHighlight();
     if (this._navListener) {
       try {
         window.top?.document.removeEventListener('typo3:module-state-storage:update:web', this._navListener);
@@ -105,6 +121,87 @@ class WebconEasyWorkspaceMenu extends LitElement {
       } catch { /* noop */ }
       document.removeEventListener('typo3:module-state-storage:update:web', this._navListener);
     }
+  }
+
+  /**
+   * Reach into the Visual Editor iframe (#visual-editor-iframe),
+   * locate the rendered content element for the given record by its
+   * standard TYPO3 frontend id ("c{uid}"), scroll it into view if it
+   * is off-screen and apply an inline outline.
+   *
+   * Cross-frame access is safe here because the Visual Editor renders
+   * the same-origin frontend page; if the iframe is missing or the
+   * element cannot be found, we silently noop.
+   */
+  _highlightInIframe(item) {
+    this._clearIframeHighlight();
+    const uid = item?.liveUid;
+    if (!uid) return;
+    const iframe = this._findVisualEditorIframe();
+    if (!iframe) return;
+    let doc;
+    try {
+      doc = iframe.contentDocument || iframe.contentWindow?.document;
+    } catch {
+      return; // Cross-origin / detached
+    }
+    if (!doc) return;
+    const el = this._findContentElement(doc, uid);
+    if (!el) return;
+
+    // Remember inline styles so we can restore them cleanly.
+    const previous = {};
+    for (const key of Object.keys(IFRAME_HIGHLIGHT_STYLE)) {
+      previous[key] = el.style[key];
+    }
+    Object.assign(el.style, IFRAME_HIGHLIGHT_STYLE);
+
+    // Centre the CE in the iframe viewport — smooth scroll, no jump.
+    try {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    } catch {
+      el.scrollIntoView();
+    }
+
+    this._iframeHighlight = { el, previous };
+  }
+
+  _clearIframeHighlight() {
+    const current = this._iframeHighlight;
+    if (!current) return;
+    try {
+      for (const [key, value] of Object.entries(current.previous)) {
+        current.el.style[key] = value ?? '';
+      }
+    } catch { /* element may already be detached */ }
+    this._iframeHighlight = null;
+  }
+
+  /**
+   * @returns {HTMLIFrameElement|null}
+   */
+  _findVisualEditorIframe() {
+    // Primary selector used by friendsoftypo3/visual-editor.
+    let iframe = window.top?.document?.querySelector('iframe#visual-editor-iframe')
+      || document.querySelector('iframe#visual-editor-iframe');
+    if (iframe) return iframe;
+    // Fallback: any iframe inside the page module's frame container.
+    iframe = window.top?.document?.querySelector('iframe[name*="pagepreview"], iframe[id*="pagepreview"], iframe[id*="preview"]');
+    return iframe || null;
+  }
+
+  /**
+   * @param {Document} doc
+   * @param {number} uid
+   * @returns {HTMLElement|null}
+   */
+  _findContentElement(doc, uid) {
+    // TYPO3 frontend convention used by EXT:fluid_styled_content and
+    // most third-party content elements: id="c{uid}".
+    return doc.getElementById('c' + uid)
+      // Conservative fallbacks for non-default templates:
+      || doc.querySelector('[data-uid="' + uid + '"][data-table="tt_content"]')
+      || doc.querySelector('[data-typo3-record-uid="' + uid + '"]');
   }
 
   _readConfig() {
@@ -244,8 +341,14 @@ class WebconEasyWorkspaceMenu extends LitElement {
       item.isHidden ? 'wew-list__row--hidden' : '',
     ].filter(Boolean).join(' ');
 
+    const hoverable = this._config.enableHoverHighlight && item.table === 'tt_content';
     return html`
-      <li class=${stateClasses} data-table=${item.table}>
+      <li
+        class=${stateClasses}
+        data-table=${item.table}
+        @mouseenter=${hoverable ? () => this._highlightInIframe(item) : nothing}
+        @mouseleave=${hoverable ? () => this._clearIframeHighlight() : nothing}
+      >
         <label class="wew-list__label" for=${item.isChanged ? id : nothing}>
           <span class="wew-list__check-cell">
             ${item.isChanged
