@@ -247,12 +247,23 @@ webcon-easy-workspace-menu {
     justify-content: center;
     width: 18px;
 }
-.wew-list__check { margin: 0; flex-shrink: 0; }
+.wew-list__check {
+    margin: 0;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--typo3-link-color, var(--bs-primary));
+    cursor: pointer;
+}
 .wew-list__check-spacer { display: inline-block; width: 14px; height: 14px; }
 
 .wew-list__title {
     display: flex;
     flex-direction: column;
+    /* CRITICAL for ellipsis: grid items default to min-width:auto which
+       grows them to fit the longest child. Setting min-width:0 lets
+       the 1fr column actually constrain width so .wew-list__title-text
+       overflows and truncates. */
     min-width: 0;
 }
 .wew-list__title-text {
@@ -271,10 +282,16 @@ webcon-easy-workspace-menu {
     margin-top: .1rem;
     font-size: 10.5px;
     overflow: hidden;
+    /* Allow flex children with min-width:0 to shrink + ellipsis. */
+    min-width: 0;
+}
+.wew-list__meta .badge {
+    flex-shrink: 0;
 }
 .wew-list__sep {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     opacity: .6;
+    flex-shrink: 0;
 }
 .wew-list__meta .badge {
     font-size: 10px;
@@ -297,6 +314,9 @@ webcon-easy-workspace-menu {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* Let this label shrink first when row is tight, badges stay full. */
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .wew-list__thumb {
