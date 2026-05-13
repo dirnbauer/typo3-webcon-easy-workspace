@@ -92,6 +92,11 @@ webcon-easy-workspace-menu {
 .wew-menu__chip {
     border: 0;
     background: transparent;
+    /* TYPO3 v14 styleguide tokens — `--typo3-text-color-*` come from
+       cms-backend/Resources/Public/Css/backend.css and adapt to
+       light/dark via light-dark(). Inactive tab uses the secondary
+       text color, active tab gets the base text color (same as body
+       copy) so it reads as "I'm here" without a competing blue. */
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     padding: .55rem .85rem .5rem;
     margin-bottom: -1px; /* overlap the container's bottom border */
@@ -104,41 +109,103 @@ webcon-easy-workspace-menu {
     /* No rounded background — this is a tab, not a pill. */
 }
 .wew-menu__chip:hover {
-    color: var(--typo3-component-color, var(--bs-body-color));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-menu__chip--active {
-    color: var(--typo3-link-color, var(--bs-primary));
-    border-bottom-color: var(--typo3-link-color, var(--bs-primary));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+    /* Underline accent uses TYPO3's primary state bg — that's the
+       brand color (orange in default TYPO3), not Bootstrap blue. */
+    border-bottom-color: var(--typo3-state-primary-bg, var(--bs-primary));
     font-weight: 600;
 }
 .wew-menu__chip:focus-visible {
     /* WCAG 2.2 SC 2.4.11 — focus indicator visible against both light
        and dark backgrounds. Inset outline so it sits on the tab and
        doesn't get clipped by overflow:hidden parents. */
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
     outline-offset: -2px;
     border-radius: 2px;
 }
-/* Count badge sitting next to each tab label. Subtle pill against the
-   tab text — the active tab inherits the link color so the badge
-   visually attaches. */
+/* Count badge sitting next to each tab label. Uses TYPO3 state tokens
+   — `default` for inactive, `primary` (brand) for the active tab so
+   the badge visually attaches to the underline accent. */
 .wew-menu__chip-count {
     display: inline-block;
     min-width: 1.5em;
     padding: 0 .4em;
     margin-left: .35em;
     border-radius: 999px;
-    background: var(--typo3-component-bg, var(--bs-tertiary-bg));
-    color: inherit;
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, inherit);
+    border: 1px solid var(--typo3-state-default-border-color, transparent);
     font-size: 11px;
     font-weight: 600;
-    line-height: 1.45;
+    line-height: 1.4;
     text-align: center;
     vertical-align: baseline;
 }
 .wew-menu__chip--active .wew-menu__chip-count {
-    background: var(--typo3-link-color, var(--bs-primary));
-    color: var(--typo3-component-bg, var(--bs-body-bg));
+    background: var(--typo3-state-primary-bg, var(--bs-primary));
+    color: var(--typo3-state-primary-color, var(--bs-body-bg));
+    border-color: var(--typo3-state-primary-border-color, transparent);
+}
+
+/* ---- Status pills (MODIFIED, NEW, MOVED, …) ----
+   Built on TYPO3 v14's `--typo3-state-{name}-*` design tokens
+   (cms-backend/Resources/Public/Css/backend.css). Each token triple
+   (bg + color + border-color) is theme-aware via light-dark(), so
+   the pill picks the right shade in both light and dark backends
+   without us hard-coding hex values.
+
+   Mapping (matches PendingItemsService::buildItem severity output):
+     Modified           → info
+     New                → success
+     Will be deleted    → danger
+     Moved              → warning
+     Live / Hidden      → secondary
+*/
+.wew-state-pill {
+    display: inline-block;
+    padding: .1em .55em;
+    border-radius: 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    vertical-align: baseline;
+}
+.wew-state-pill--info {
+    background: var(--typo3-state-info-bg);
+    color: var(--typo3-state-info-color);
+    border-color: var(--typo3-state-info-border-color);
+}
+.wew-state-pill--success {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+    border-color: var(--typo3-state-success-border-color);
+}
+.wew-state-pill--warning {
+    background: var(--typo3-state-warning-bg);
+    color: var(--typo3-state-warning-color);
+    border-color: var(--typo3-state-warning-border-color);
+}
+.wew-state-pill--danger {
+    background: var(--typo3-state-danger-bg);
+    color: var(--typo3-state-danger-color);
+    border-color: var(--typo3-state-danger-border-color);
+}
+.wew-state-pill--secondary {
+    background: var(--typo3-state-secondary-bg, var(--typo3-state-default-bg));
+    color: var(--typo3-state-secondary-color, var(--typo3-state-default-color));
+    border-color: var(--typo3-state-secondary-border-color, var(--typo3-state-default-border-color));
+}
+.wew-state-pill--notice {
+    background: var(--typo3-state-notice-bg);
+    color: var(--typo3-state-notice-color);
+    border-color: var(--typo3-state-notice-border-color);
 }
 
 /* ---- Selection bar (master checkbox) ---- */

@@ -843,9 +843,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
           <span class="wew-list__title">
             <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
             <span class="wew-list__meta">
-              <span class="badge badge-${item.badge || 'info'}">${item.kindLabel}</span>
+              <span class="wew-state-pill wew-state-pill--${item.badge || 'info'}">${item.kindLabel}</span>
               ${item.isHidden && this._config.enableHiddenBadge
-                ? html`<span class="badge badge-dark wew-list__hidden-badge" title="Record is hidden (won't show on the live site)">Hidden</span>`
+                ? html`<span class="wew-state-pill wew-state-pill--secondary wew-list__hidden-badge" title="Record is hidden (won't show on the live site)">Hidden</span>`
                 : nothing}
               ${this._config.enableTypeLabels
                 ? html`<span class="wew-list__table">
@@ -1149,7 +1149,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const editHref = item.editUrl || null;
     const tableLabel = item.tableLabel || item.table;
     const kindBadge = item.kindLabel
-      ? html`<span class="badge badge-${item.badge || 'info'}">${item.kindLabel}</span>`
+      ? html`<span class="wew-state-pill wew-state-pill--${item.badge || 'info'}">${item.kindLabel}</span>`
       : nothing;
     return html`
       <li class="wew-list__item wew-list__item--compact">
