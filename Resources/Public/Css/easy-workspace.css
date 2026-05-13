@@ -315,12 +315,26 @@ webcon-easy-workspace-menu {
 .wew-list__check {
     margin: 0;
     flex-shrink: 0;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     accent-color: var(--typo3-link-color, var(--bs-primary));
     cursor: pointer;
+    /* Force the checkbox to render even when the surrounding theme
+       hides default form controls. */
+    appearance: auto;
+    -webkit-appearance: auto;
 }
-.wew-list__check-spacer { display: inline-block; width: 14px; height: 14px; }
+.wew-list__check-spacer { display: inline-block; width: 16px; height: 16px; }
+
+/* Visual selection tint — when a row's checkbox is checked, give the
+   whole row a faint primary-color background so the editor instantly
+   sees what's queued for the next "Publish to live" click. */
+.wew-list__row:has(.wew-list__check:checked) {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 9%, transparent);
+}
+.wew-list__row--primary:has(.wew-list__check:checked) {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+}
 
 .wew-list__title {
     display: flex;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
+use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
@@ -40,6 +41,7 @@ final readonly class PendingItemsService
         private TcaSchemaFactory $tcaSchemaFactory,
         private ResourceFactory $resourceFactory,
         private LanguageServiceFactory $languageServiceFactory,
+        private BackendUriBuilder $backendUriBuilder,
         private Context $context,
     ) {}
 
@@ -184,11 +186,21 @@ final readonly class PendingItemsService
     private function listAllRelatedRecords(string $table, string $field, int $parentUid, int $workspaceId, array $orderBy): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        // FrontendRestrictionContainer would filter hidden — we want to *include* hidden so the badge can be shown.
+        // FrontendRestrictionContainer would filter hidden — we want
+        // to *include* hidden so the badge can be shown.
+        //
+        // WorkspaceRestriction with $includeRowsForWorkspacePreview=false
+        // returns one row per conceptual record (live OR new-in-workspace)
+        // — never both — so the subsequent workspaceOL call cleanly
+        // overlays the workspace version onto live rows without
+        // producing duplicates. Setting the flag to true returns
+        // workspace versions as separate rows in addition to their
+        // live counterparts (see core docstring: "duplicates might be
+        // shown and the reduce logic needs to be added after").
         $queryBuilder->getRestrictions()
             ->removeAll()
             ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
-            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, true));
+            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, false));
 
         $queryBuilder
             ->select('*')
@@ -301,10 +313,11 @@ final readonly class PendingItemsService
     private function resolveRecordItem(string $table, int $liveUid, int $workspaceId, bool $isPrimary, array $config = []): ?PendingItem
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        // See listAllRelatedRecords for why $includeRowsForWorkspacePreview=false.
         $queryBuilder->getRestrictions()
             ->removeAll()
             ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
-            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, true));
+            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, false));
 
         $row = $queryBuilder
             ->select('*')
@@ -365,6 +378,9 @@ final readonly class PendingItemsService
         }
 
         $enableThumbnails = !isset($config['enableThumbnails']) || (bool)$config['enableThumbnails'];
+        // record_edit expects the *live* uid for existing records;
+        // FormEngine handles the workspace overlay on save automatically.
+        $editUrl = $this->buildEditUrl($table, $liveUid);
 
         return new PendingItem(
             table: $table,
@@ -379,7 +395,28 @@ final readonly class PendingItemsService
             isHidden: $isHidden,
             tableLabel: $this->resolveTableLabel($table),
             typeLabel: $this->resolveTypeLabel($table, $row),
+            editUrl: $editUrl,
         );
+    }
+
+    /**
+     * Build the standard TYPO3 FormEngine edit URL for a record. Used
+     * by the dropdown's eye-icon click to open the record in the
+     * familiar backend edit form (same form the page tree's
+     * context-menu "Edit" entry opens).
+     */
+    private function buildEditUrl(string $table, int $uid): ?string
+    {
+        if ($uid <= 0) {
+            return null;
+        }
+        try {
+            return (string)$this->backendUriBuilder->buildUriFromRoute('record_edit', [
+                'edit' => [$table => [$uid => 'edit']],
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

@@ -200,6 +200,32 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this._iframeHighlight = { el, previous };
   }
 
+  /**
+   * Open the standard TYPO3 FormEngine edit form for a record in a
+   * backend modal — same form the page tree's context-menu "Edit"
+   * opens. The URL is pre-built server-side via BackendUriBuilder
+   * (`record_edit` route) and shipped on each PendingItem.
+   *
+   * When the modal closes the dropdown reloads so any in-modal save
+   * is reflected in the change state (badge, checkbox).
+   */
+  _openEditModal(item) {
+    if (!item?.editUrl) {
+      Notification.info('Edit', 'No editor URL available for this record.', 4);
+      return;
+    }
+    const modal = Modal.advanced({
+      type: Modal.types.iframe,
+      title: `Edit: ${item.title}`,
+      content: item.editUrl,
+      size: Modal.sizes.large,
+      buttons: [
+        { text: 'Close', btnClass: 'btn-default', name: 'close', trigger: () => modal.hideModal() },
+      ],
+    });
+    modal.addEventListener('typo3-modal-hidden', () => this._refresh(), { once: true });
+  }
+
   _clearIframeHighlight() {
     const current = this._iframeHighlight;
     if (!current) return;
@@ -618,9 +644,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * actions-eye icon (currentColor).
    */
   _renderLocateButton(item) {
-    const tooltip = this._config.hasVisualEditor
-      ? 'Show in Visual Editor'
-      : (this._config.hasViewpage ? 'Show in page preview' : 'Show in preview');
+    const tooltip = item.editUrl
+      ? 'Hover to locate in preview · Click to edit'
+      : (this._config.hasVisualEditor ? 'Show in Visual Editor' : 'Show in preview');
     return html`
       <button
         type="button"
@@ -631,7 +657,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
         @blur=${() => this._clearIframeHighlight()}
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._highlightInIframe(item, { announce: true }); }}
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openEditModal(item); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
