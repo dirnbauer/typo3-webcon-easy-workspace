@@ -145,6 +145,24 @@ webcon-easy-workspace-menu {
     padding: .2rem 0;
     max-height: 50vh;
     overflow-y: auto;
+    /* Thin, subtle scrollbar — visible only when the list overflows. */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d)) 45%, transparent) transparent;
+    scrollbar-gutter: stable;
+}
+/* WebKit (Chrome / Safari / Edge) implementation of the same. */
+.wew-list::-webkit-scrollbar {
+    width: 6px;
+}
+.wew-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.wew-list::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d)) 40%, transparent);
+    border-radius: 3px;
+}
+.wew-list::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 55%, transparent);
 }
 .wew-list__row {
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
