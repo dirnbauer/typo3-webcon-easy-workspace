@@ -6,54 +6,96 @@
 # and applies to every backend user unless explicitly overridden
 # at user / group / page level.
 #
-# To override per group or user, set the same keys under
-# "TSconfig" on the be_users / be_groups record. To override per
-# page tree, mirror these options under Page TSconfig (the
-# extension reads both, with Page TSconfig winning when present).
+# Override precedence (highest wins):
+#   Page TSconfig at the current page
+#   User TSconfig on the user record
+#   User TSconfig on the user's group
+#   These defaults
+#
+# All boolean keys take 1 (on) or 0 (off). Defaults are ON so a
+# fresh install gives editors the full feature set; switch a key
+# to 0 when a role doesn't need it.
 # =============================================================
 
 options.webcon_easy_workspace {
-    # Master switch — set to 0 to hide the toolbar item entirely
-    # (e.g. while developing or in a workspace where it should not
-    # appear). Default: 1
+
+    # -- Master ---------------------------------------------------
+
+    # 0 hides the toolbar item entirely. The AJAX endpoints also
+    # respond with 403 so the feature is gone in any context. (1)
     enabled = 1
 
-    # Show the "Preview link" button in the dropdown header.
-    # Clicking it copies a workspace preview URL via TYPO3's
-    # \TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder. Default: 1
+    # -- Header ---------------------------------------------------
+
+    # Show the active workspace name (e.g. "Staging") as a chip
+    # next to "Workspace publish". (1)
+    enableWorkspaceChip = 1
+
+    # Show the "Preview link" button in the dropdown header. Clicking
+    # it copies a workspace preview URL — built by TYPO3's
+    # \TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder — to the OS
+    # clipboard. (1)
     enablePreviewLink = 1
 
+    # -- List filter ---------------------------------------------
+
     # Show the filter chip row ("To publish" / "All on page").
-    # When 0, the dropdown always shows only changed records.
-    # Default: 1
+    # When 0, the dropdown always shows changes only. (1)
     enableFilter = 1
 
     # Default filter mode when the dropdown opens.
-    # Allowed values: changed | all
-    # Default: changed
+    # Allowed: changed | all. (changed)
     defaultMode = changed
 
-    # Show the "Hidden" badge and the diagonal-stripe overlay on
-    # records that have hidden=1. When 0, hidden records are
-    # filtered out entirely on the server side. Default: 1
-    showHidden = 1
+    # -- List rendering ------------------------------------------
 
-    # Render the first-image thumbnail for each row. Default: 1
+    # Resolve and render the first-image thumbnail of each row
+    # (looked up from sys_file_reference on a small allow-list of
+    # fields: tt_content.image, tt_content.assets, tt_content.media,
+    # pages.media, tx_news.fal_media …). (1)
     enableThumbnails = 1
 
-    # Maximum rows fetched per request — hard cap so the dropdown
-    # never grows unbounded on huge pages. Default: 200
+    # Show the second meta line ("Page · Blog Post" /
+    # "Page Content · Text & Images"). Both labels come from the
+    # current backend language. (1)
+    enableTypeLabels = 1
+
+    # Show the "Hidden" badge next to the state badge on records
+    # whose hidden=1. The diagonal-stripe thumbnail overlay also
+    # depends on this flag. (1)
+    enableHiddenBadge = 1
+
+    # When 0, hidden records are filtered out *server-side* — they
+    # never reach the response payload. Combine with
+    # enableHiddenBadge to control how visible hidden state is. (1)
+    showHidden = 1
+
+    # Hard cap on rows fetched per request — never grow unbounded
+    # on huge pages. (200)
     maxItems = 200
 
-    # When the editor hovers a tt_content row in the dropdown, scroll
-    # the corresponding content element into view inside the Visual
-    # Editor iframe (#visual-editor-iframe) and outline it. Disable to
-    # turn the hover bridge off entirely. Default: 1
+    # -- Aggregation scope ---------------------------------------
+
+    # In addition to the page's own tt_content, also list every
+    # news record stored on the same page (tx_news_domain_model_news
+    # where pid = currentPage) and recursively include its linked
+    # tt_content via tx_news_related_news. Has no effect when
+    # EXT:news is not installed. (1)
+    enableNewsBundles = 1
+
+    # -- Per-row actions -----------------------------------------
+
+    # Show the eye icon on every tt_content row. Hovering / clicking
+    # the eye reaches into the Visual Editor iframe
+    # (#visual-editor-iframe), scrolls the rendered content element
+    # into view and outlines it. (1)
     enableHoverHighlight = 1
 
-    # Show a "revert" button on every changed row that flushes the
-    # workspace version (discards the staged change). Triggers a
-    # warning confirmation modal — the operation cannot be undone.
-    # Default: 1
+    # Show the curved-arrow discard button on every changed row.
+    # Clicking triggers a warning confirmation modal, then runs the
+    # v14-canonical DataHandler command
+    #   $cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];
+    # which removes the workspace version. The live record stays
+    # untouched. TYPO3 calls this operation "discard". (1)
     enableRevert = 1
 }

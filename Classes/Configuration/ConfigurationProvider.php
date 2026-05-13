@@ -18,13 +18,23 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 final readonly class ConfigurationProvider
 {
     private const DEFAULTS = [
+        // Master switch
         'enabled' => true,
+        // Header
+        'enableWorkspaceChip' => true,
         'enablePreviewLink' => true,
+        // List filter
         'enableFilter' => true,
         'defaultMode' => 'changed',
-        'showHidden' => true,
+        // List rendering
         'enableThumbnails' => true,
+        'enableTypeLabels' => true,
+        'enableHiddenBadge' => true,
+        'showHidden' => true,
         'maxItems' => 200,
+        // Aggregation scope
+        'enableNewsBundles' => true,
+        // Per-row actions
         'enableHoverHighlight' => true,
         'enableRevert' => true,
     ];
@@ -64,12 +74,16 @@ final readonly class ConfigurationProvider
         // Normalize types.
         return [
             'enabled' => $this->toBool($merged['enabled']),
+            'enableWorkspaceChip' => $this->toBool($merged['enableWorkspaceChip']),
             'enablePreviewLink' => $this->toBool($merged['enablePreviewLink']),
             'enableFilter' => $this->toBool($merged['enableFilter']),
             'defaultMode' => $this->normalizeMode((string)$merged['defaultMode']),
-            'showHidden' => $this->toBool($merged['showHidden']),
             'enableThumbnails' => $this->toBool($merged['enableThumbnails']),
+            'enableTypeLabels' => $this->toBool($merged['enableTypeLabels']),
+            'enableHiddenBadge' => $this->toBool($merged['enableHiddenBadge']),
+            'showHidden' => $this->toBool($merged['showHidden']),
             'maxItems' => max(1, (int)$merged['maxItems']),
+            'enableNewsBundles' => $this->toBool($merged['enableNewsBundles']),
             'enableHoverHighlight' => $this->toBool($merged['enableHoverHighlight']),
             'enableRevert' => $this->toBool($merged['enableRevert']),
         ];

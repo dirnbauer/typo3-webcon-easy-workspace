@@ -53,50 +53,29 @@ The toolbar item is automatically hidden while you are in the live workspace.
 
 ## Configuration (TSconfig)
 
-Every feature can be toggled via **User TSconfig** (and overridden per page via **Page TSconfig**). The extension ships a default `Configuration/user.tsconfig` that is **auto-loaded on activation** — you don't need to import it manually. To customize, copy any of these keys into your group/user TSconfig field or your project's `Configuration/user.tsconfig`.
+Every visible affordance is gated by a TSconfig flag — defaults ON, switch to `0` per **user / group / page** when a role doesn't need that feature. The extension ships [`Configuration/user.tsconfig`](Configuration/user.tsconfig), which TYPO3 v14 auto-loads from every active extension; no manual import.
 
-```typoscript
-options.webcon_easy_workspace {
-    # Master switch. 0 hides the toolbar item entirely.
-    enabled = 1
+| Group | Key | Default | Purpose |
+|---|---|---|---|
+| Master | `enabled` | `1` | Hides the toolbar item entirely when `0` (AJAX endpoints also respond `403`). |
+| Header | `enableWorkspaceChip` | `1` | Workspace-name chip next to the title ("Staging"). |
+| Header | `enablePreviewLink` | `1` | "Preview link" button (OS clipboard copy via `Workspaces\Preview\PreviewUriBuilder`). |
+| Filter | `enableFilter` | `1` | Filter chip row ("To publish" / "All on page"). |
+| Filter | `defaultMode` | `changed` | Initial mode: `changed` or `all`. |
+| Rendering | `enableThumbnails` | `1` | First-image thumbnail lookup + column. |
+| Rendering | `enableTypeLabels` | `1` | Second meta line ("Page · Blog Post"). |
+| Rendering | `enableHiddenBadge` | `1` | "Hidden" badge + diagonal-stripe thumbnail overlay. |
+| Rendering | `showHidden` | `1` | When `0`, hidden records are filtered out **server-side**. |
+| Rendering | `maxItems` | `200` | Hard cap on rows per request. |
+| Scope | `enableNewsBundles` | `1` | Also list news on the page + their linked content elements. |
+| Per-row | `enableHoverHighlight` | `1` | Eye icon → scroll + outline the CE in `#visual-editor-iframe`. |
+| Per-row | `enableRevert` | `1` | Discard button + DataHandler `flush` cmd (revert ↔ discard, same op). |
 
-    # Show the "Preview link" button in the header.
-    enablePreviewLink = 1
+**Override precedence** (highest wins): Page TSconfig → User TSconfig on user → User TSconfig on group → defaults.
 
-    # Show the filter chips ("To publish" / "All on page").
-    # When 0, the dropdown always shows changes only.
-    enableFilter = 1
+**Server-side enforcement.** Every boolean flag is read by `Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider` (via `BackendUserAuthentication::getTSConfig()` and `BackendUtility::getPagesTSconfig()` — public v14 APIs) and *also* checked in `EasyWorkspaceAjaxController`: e.g. when `showHidden = 0` the hidden rows never reach the response payload, and toggling `enableRevert = 0` returns `403` on the discard endpoint so DevTools can't bypass it.
 
-    # Initial filter mode. Allowed: changed | all
-    defaultMode = changed
-
-    # Show the "Hidden" badge + diagonal-stripe thumbnail overlay
-    # for records with hidden=1. When 0, hidden records are
-    # filtered out server-side.
-    showHidden = 1
-
-    # Resolve and render the first-image thumbnail of each row.
-    enableThumbnails = 1
-
-    # Hard cap on rows returned per request.
-    maxItems = 200
-
-    # Hovering a tt_content row in the dropdown scrolls the
-    # corresponding content element into view inside the Visual
-    # Editor iframe (#visual-editor-iframe) and outlines it.
-    enableHoverHighlight = 1
-
-    # Show a per-row "revert" button next to the eye icon (for every
-    # changed record). Clicking it opens a warning confirmation modal
-    # and flushes the workspace version — the live row stays untouched
-    # but the staged change is gone for good.
-    enableRevert = 1
-}
-```
-
-**Override precedence** (highest wins): Page TSconfig at the current page → User TSconfig on the user record → User TSconfig on the user's group → defaults shipped with the extension.
-
-The values are read server-side by `Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider` (which calls `BackendUserAuthentication::getTSConfig()` and `BackendUtility::getPagesTSconfig()` — both public TYPO3 v14 APIs) and then handed to the dropdown's Lit element as a JSON payload on its `config` attribute. The same flags are also enforced on the backend so that, for example, hidden records are filtered out of the AJAX response entirely when `showHidden = 0` — not just hidden in CSS.
+📘 **[Full configuration reference → `Documentation/Configuration.md`](Documentation/Configuration.md)** — every key with its server-side consequences, plus four ready-made profiles (junior editor, reviewer, performance setup, news-free site).
 
 ### Preview link & OS clipboard
 

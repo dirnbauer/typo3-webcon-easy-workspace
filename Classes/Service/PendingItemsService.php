@@ -79,7 +79,8 @@ final readonly class PendingItemsService
         }
 
         $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
-        if ($hasNews && count($items) < $maxItems) {
+        $enableNews = !isset($config['enableNewsBundles']) || (bool)$config['enableNewsBundles'];
+        if ($hasNews && $enableNews && count($items) < $maxItems) {
             foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode, $config) as $bundle) {
                 if (count($items) >= $maxItems) break;
                 $items[] = $bundle['news']->toArray();

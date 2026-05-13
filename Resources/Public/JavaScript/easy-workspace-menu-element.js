@@ -31,13 +31,18 @@ const ENDPOINTS = {
 // toolbar item attaches via the `config` attribute on this element.
 const DEFAULT_CONFIG = Object.freeze({
   enabled: true,
+  enableWorkspaceChip: true,
   enablePreviewLink: true,
   enableFilter: true,
   defaultMode: 'changed',
-  showHidden: true,
   enableThumbnails: true,
+  enableTypeLabels: true,
+  enableHiddenBadge: true,
+  showHidden: true,
   maxItems: 200,
+  enableNewsBundles: true,
   enableHoverHighlight: true,
+  enableRevert: true,
 });
 
 // Inline highlight styles applied to the iframe element. Hard-coded
@@ -318,7 +323,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           <div class="wew-menu__title-wrap">
             <h3 class="wew-menu__title">
               <span>Workspace publish</span>
-              ${this.workspaceTitle
+              ${this._config.enableWorkspaceChip && this.workspaceTitle
                 ? html`<span class="wew-menu__ws-chip" title="Active workspace">${this.workspaceTitle}</span>`
                 : nothing}
             </h3>
@@ -453,16 +458,18 @@ class WebconEasyWorkspaceMenu extends LitElement {
             <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
             <span class="wew-list__meta">
               <span class="badge badge-${item.badge || 'info'}">${item.kindLabel}</span>
-              ${item.isHidden
+              ${item.isHidden && this._config.enableHiddenBadge
                 ? html`<span class="badge badge-dark wew-list__hidden-badge" title="Record is hidden (won't show on the live site)">Hidden</span>`
                 : nothing}
-              <span class="wew-list__table">
-                ${item.tableLabel || this._friendlyTable(item.table)}${
-                  item.typeLabel && item.typeLabel !== item.tableLabel
-                    ? html` <span class="wew-list__sep">·</span> ${item.typeLabel}`
-                    : nothing
-                }
-              </span>
+              ${this._config.enableTypeLabels
+                ? html`<span class="wew-list__table">
+                    ${item.tableLabel || this._friendlyTable(item.table)}${
+                      item.typeLabel && item.typeLabel !== item.tableLabel
+                        ? html` <span class="wew-list__sep">·</span> ${item.typeLabel}`
+                        : nothing
+                    }
+                  </span>`
+                : nothing}
             </span>
           </span>
           ${hasActions
