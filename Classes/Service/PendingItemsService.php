@@ -59,7 +59,11 @@ final readonly class PendingItemsService
         $items = [];
 
         $pageItem = $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true, config: $config);
-        if ($pageItem !== null) {
+        // In "Changes only" mode hide the page record if it has no
+        // workspace edits (it would otherwise render as a "Live"
+        // row without a checkbox and confuse editors who expect the
+        // list to only contain publishable items).
+        if ($pageItem !== null && ($mode === self::MODE_ALL || $pageItem->isChanged)) {
             $items[] = $pageItem->toArray();
         }
 
@@ -116,7 +120,7 @@ final readonly class PendingItemsService
         $maxItems = (int)($config['maxItems'] ?? 200);
         $items = [];
         $newsItem = $this->resolveRecordItem('tx_news_domain_model_news', $newsUid, $workspaceId, isPrimary: true, config: $config);
-        if ($newsItem !== null) {
+        if ($newsItem !== null && ($mode === self::MODE_ALL || $newsItem->isChanged)) {
             $items[] = $newsItem->toArray();
         }
 
