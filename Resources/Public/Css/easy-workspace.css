@@ -1,0 +1,189 @@
+/*
+ * Easy Workspace toolbar dropdown.
+ * All visual tokens are sourced from TYPO3 v14 backend styleguide
+ * variables (--typo3-* / --bs-*) so the dropdown follows the
+ * editor's light / dark theme automatically.
+ */
+
+webcon-easy-workspace-menu {
+    display: block;
+    width: 420px;
+    max-width: 95vw;
+    font-size: 13px;
+    color: var(--typo3-component-color, var(--bs-body-color));
+}
+
+.wew-menu__head {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .85rem 1rem;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+}
+.wew-menu__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+    color: var(--typo3-link-color, var(--bs-primary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wew-menu__title-wrap { min-width: 0; }
+.wew-menu__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.wew-menu__subtitle {
+    margin: .15rem 0 0;
+    font-size: 12px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wew-menu__loading {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: 1.5rem 1rem;
+    justify-content: center;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-menu__alert {
+    margin: .75rem 1rem;
+    font-size: 13px;
+}
+.wew-menu__empty {
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-menu__empty-icon {
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--bs-success) 16%, transparent);
+    color: var(--bs-success);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wew-list {
+    list-style: none;
+    margin: 0;
+    padding: .25rem 0;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.wew-list__row { border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color)); }
+.wew-list__row:last-child { border-bottom: 0; }
+.wew-list__row--primary { background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent); }
+
+.wew-list__label {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: .65rem;
+    padding: .6rem 1rem;
+    cursor: pointer;
+    margin: 0;
+}
+.wew-list__check {
+    margin: 0;
+    flex-shrink: 0;
+}
+.wew-list__title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.wew-list__title-text {
+    font-weight: 500;
+    color: var(--typo3-component-color, var(--bs-body-color));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wew-list__meta {
+    display: flex;
+    gap: .45rem;
+    align-items: center;
+    margin-top: .1rem;
+    font-size: 11px;
+}
+.wew-list__meta .badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .1rem .35rem;
+    border-radius: 4px;
+}
+.wew-list__meta .badge-success { background: color-mix(in srgb, var(--bs-success) 18%, transparent); color: var(--bs-success); }
+.wew-list__meta .badge-info    { background: color-mix(in srgb, var(--bs-info)    18%, transparent); color: var(--bs-info); }
+.wew-list__meta .badge-warning { background: color-mix(in srgb, var(--bs-warning) 18%, transparent); color: var(--bs-warning); }
+.wew-list__meta .badge-danger  { background: color-mix(in srgb, var(--bs-danger)  18%, transparent); color: var(--bs-danger); }
+.wew-list__table { color: var(--typo3-text-color-secondary, var(--bs-secondary-color)); }
+
+.wew-list__thumb {
+    width: 48px;
+    height: 36px;
+    border-radius: 4px;
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .04));
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.wew-list__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.wew-list__thumb--placeholder {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    font-size: 18px;
+}
+
+.wew-menu__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .65rem 1rem;
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+}
+.wew-menu__counters {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-menu__counters .btn-link {
+    padding: 0;
+    font-size: 12px;
+    text-decoration: none;
+}
+.wew-menu__count {
+    margin-left: .35rem;
+    font-weight: 500;
+}
+.wew-menu__foot .btn-primary {
+    min-width: 140px;
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- Paper-plane "send to live" silhouette -->
+  <path d="M14 2 1.5 7.4l4.7 1 1 4.7L14 2Z"
+        fill="none" stroke="currentColor" stroke-width="1.4"
+        stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="m7.2 8.8 5-5"
+        fill="none" stroke="currentColor" stroke-width="1.4"
+        stroke-linecap="round" opacity=".55"/>
+  <!-- Small accent dot to hint at "ready to publish" -->
+  <circle cx="13.5" cy="13.5" r="1.6"
+          fill="var(--icon-color-accent, #ff8700)"/>
+</svg>

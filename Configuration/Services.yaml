@@ -1,0 +1,17 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Webconsulting\WebconEasyWorkspace\:
+    resource: '../Classes/*'
+
+  # The toolbar item must be public — the toolbar dispatcher resolves
+  # tagged services from the container at render time.
+  Webconsulting\WebconEasyWorkspace\Backend\ToolbarItem\EasyWorkspaceToolbarItem:
+    public: true
+
+  # AJAX endpoints invoked from the dropdown's Lit element.
+  Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceAjaxController:
+    public: true
