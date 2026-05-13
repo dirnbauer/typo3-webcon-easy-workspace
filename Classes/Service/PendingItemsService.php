@@ -63,7 +63,7 @@ final readonly class PendingItemsService
         }
 
         if ($mode === self::MODE_ALL) {
-            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, 'sorting') as $row) {
+            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
                 $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
                 if ($item !== null) {
                     $items[] = $item->toArray();
@@ -117,7 +117,7 @@ final readonly class PendingItemsService
         }
 
         if ($mode === self::MODE_ALL) {
-            foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, 'sorting') as $row) {
+            foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
                 $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
                 if ($item !== null) {
                     $items[] = $item->toArray();
@@ -139,17 +139,19 @@ final readonly class PendingItemsService
      * with workspace overlay applied. Returns the raw row arrays (each
      * row will contain _ORIG_uid when overlaid from a workspace version).
      *
+     * @param list<array{0: string, 1: string}> $orderBy List of [column, direction] tuples.
      * @return list<array<string, mixed>>
      */
-    private function listAllRecordsOnPage(string $table, int $pageUid, int $workspaceId, string $orderBy): array
+    private function listAllRecordsOnPage(string $table, int $pageUid, int $workspaceId, array $orderBy): array
     {
         return $this->listAllRelatedRecords($table, 'pid', $pageUid, $workspaceId, $orderBy);
     }
 
     /**
+     * @param list<array{0: string, 1: string}> $orderBy List of [column, direction] tuples.
      * @return list<array<string, mixed>>
      */
-    private function listAllRelatedRecords(string $table, string $field, int $parentUid, int $workspaceId, string $orderBy): array
+    private function listAllRelatedRecords(string $table, string $field, int $parentUid, int $workspaceId, array $orderBy): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         // FrontendRestrictionContainer would filter hidden — we want to *include* hidden so the badge can be shown.
@@ -158,13 +160,20 @@ final readonly class PendingItemsService
             ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
             ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, true));
 
-        $result = $queryBuilder
+        $queryBuilder
             ->select('*')
             ->from($table)
-            ->where($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)))
-            ->orderBy($orderBy, 'ASC')
-            ->executeQuery();
+            ->where($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)));
 
+        foreach ($orderBy as $i => [$column, $direction]) {
+            if ($i === 0) {
+                $queryBuilder->orderBy($column, $direction);
+            } else {
+                $queryBuilder->addOrderBy($column, $direction);
+            }
+        }
+
+        $result = $queryBuilder->executeQuery();
         $rows = [];
         while ($row = $result->fetchAssociative()) {
             BackendUtility::workspaceOL($table, $row, $workspaceId);
@@ -212,7 +221,7 @@ final readonly class PendingItemsService
     private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode, array $config = []): array
     {
         if ($mode === self::MODE_ALL) {
-            $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, 'datetime DESC, uid');
+            $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, [['datetime', 'DESC'], ['uid', 'ASC']]);
         } else {
             $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_news_domain_model_news');
             $queryBuilder->getRestrictions()->removeAll();
@@ -240,7 +249,7 @@ final readonly class PendingItemsService
             $liveUid = $newsItem->liveUid;
             $childItems = [];
             if ($mode === self::MODE_ALL) {
-                foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, 'sorting') as $ceRow) {
+                foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, [['sorting', 'ASC']]) as $ceRow) {
                     $ceItem = $this->buildItem('tt_content', $ceRow, isPrimary: false, config: $config);
                     if ($ceItem !== null) {
                         $childItems[] = $ceItem;
@@ -389,6 +398,10 @@ final readonly class PendingItemsService
      *   - pages        → doktype label
      *   - other tables → schema title
      *
+     * Uses BackendUtility::getLabelFromItemlist (the official v14 API)
+     * which already handles LLL translation, itemsProcFunc results and
+     * Page TSconfig overrides.
+     *
      * @param array<string, mixed> $row
      */
     private function resolveTypeLabel(string $table, array $row): string
@@ -398,17 +411,19 @@ final readonly class PendingItemsService
         }
         $schema = $this->tcaSchemaFactory->get($table);
         $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+
+        // No discriminator field — fall back to the schema's own title.
         if ($typeField === null || !isset($row[$typeField])) {
             $title = $schema->getRawConfiguration()['ctrl']['title'] ?? $table;
             return (string)$this->getLanguageService()->sL($title);
         }
+
         $value = (string)$row[$typeField];
-        $items = $schema->getRawConfiguration()['columns'][$typeField]['config']['items'] ?? [];
-        foreach ($items as $item) {
-            if ((string)($item['value'] ?? '') === $value) {
-                return (string)$this->getLanguageService()->sL((string)($item['label'] ?? $value));
-            }
+        $label = BackendUtility::getLabelFromItemlist($table, $typeField, $value);
+        if (is_string($label) && $label !== '') {
+            return (string)$this->getLanguageService()->sL($label);
         }
+        // Last resort — the raw value (still better than nothing).
         return $value;
     }
 

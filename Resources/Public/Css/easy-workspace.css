@@ -9,10 +9,18 @@
 
 webcon-easy-workspace-menu {
     display: block;
-    width: 420px;
+    width: min(540px, calc(100vw - 24px));
     max-width: 95vw;
     font-size: 13px;
     color: var(--typo3-component-color, var(--bs-body-color));
+}
+
+/* Bootstrap dropdown clamps width to its parent — force the dropdown
+   menu to grow to fit our element. */
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu) {
+    width: auto;
+    max-width: none;
+    min-width: 320px;
 }
 
 /* ---- Header ---- */
@@ -290,4 +298,47 @@ webcon-easy-workspace-menu {
     min-width: 130px;
     font-size: 12px;
     padding: .35rem .75rem;
+}
+
+/* ---- Mobile / narrow viewport ---- */
+
+@media (max-width: 600px) {
+    webcon-easy-workspace-menu {
+        width: calc(100vw - 16px);
+    }
+    .wew-menu__head {
+        grid-template-columns: auto 1fr;
+        gap: .55rem;
+        padding: .55rem .65rem;
+    }
+    .wew-menu__icon { width: 28px; height: 28px; }
+    .wew-menu__copy {
+        grid-column: 1 / -1;
+        justify-self: end;
+        margin-top: .25rem;
+    }
+    .wew-menu__copy-label { display: none; }
+    .wew-menu__title { font-size: 13px; }
+    .wew-menu__subtitle { font-size: 10.5px; }
+
+    .wew-menu__filter { padding: .35rem .65rem .15rem; }
+
+    .wew-list__label {
+        grid-template-columns: auto 1fr 36px;
+        gap: .45rem;
+        padding: .45rem .65rem .45rem .8rem;
+    }
+    .wew-list__thumb { width: 36px; height: 28px; }
+    .wew-list__title-text { font-size: 12.5px; }
+    .wew-list__meta { font-size: 10px; }
+    .wew-list__meta .badge { padding: .05rem .3rem; }
+
+    .wew-menu__foot {
+        padding: .45rem .65rem;
+        flex-wrap: wrap;
+    }
+    .wew-menu__publish {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
 }
