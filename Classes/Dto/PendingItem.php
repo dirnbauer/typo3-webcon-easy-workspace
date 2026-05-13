@@ -17,6 +17,7 @@ final readonly class PendingItem
         public bool $isPrimary,
         public bool $isChanged,
         public bool $isHidden,
+        public string $tableLabel,
         public string $typeLabel,
     ) {}
 
@@ -36,6 +37,7 @@ final readonly class PendingItem
             'isPrimary' => $this->isPrimary,
             'isChanged' => $this->isChanged,
             'isHidden' => $this->isHidden,
+            'tableLabel' => $this->tableLabel,
             'typeLabel' => $this->typeLabel,
         ];
     }

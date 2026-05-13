@@ -265,13 +265,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
               ${item.isHidden
                 ? html`<span class="badge badge-dark wew-list__hidden-badge" title="Record is hidden (won't show on the live site)">Hidden</span>`
                 : nothing}
-              <span class="wew-list__table">${item.typeLabel || this._friendlyTable(item.table)}</span>
+              <span class="wew-list__table">
+                ${item.tableLabel || this._friendlyTable(item.table)}${
+                  item.typeLabel && item.typeLabel !== item.tableLabel
+                    ? html` <span class="wew-list__sep">·</span> ${item.typeLabel}`
+                    : nothing
+                }
+              </span>
             </span>
           </span>
-          ${this._config.enableThumbnails
-            ? (item.thumbnailUrl
-                ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
-                : html`<span class="wew-list__thumb wew-list__thumb--placeholder" aria-hidden="true">·</span>`)
+          ${this._config.enableThumbnails && item.thumbnailUrl
+            ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
             : nothing}
         </label>
       </li>

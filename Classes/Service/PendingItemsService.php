@@ -347,8 +347,29 @@ final readonly class PendingItemsService
             isPrimary: $isPrimary,
             isChanged: $isChanged,
             isHidden: $isHidden,
+            tableLabel: $this->resolveTableLabel($table),
             typeLabel: $this->resolveTypeLabel($table, $row),
         );
+    }
+
+    /**
+     * Friendly localized name of the *table* (e.g. "Seite" / "Page",
+     * "Inhaltselement" / "Page Content", "News" / "Nachricht").
+     *
+     * TcaSchema::getTitle() takes an optional translator callable so we
+     * pass LanguageService::sL — the v14-idiomatic way to resolve the
+     * LLL: pointer behind ctrl.title to the editor's backend language.
+     */
+    private function resolveTableLabel(string $table): string
+    {
+        if (!$this->tcaSchemaFactory->has($table)) {
+            return $table;
+        }
+        $languageService = $this->getLanguageService();
+        $title = $this->tcaSchemaFactory->get($table)->getTitle(
+            static fn (string $key): string => (string)$languageService->sL($key),
+        );
+        return $title !== '' ? $title : $table;
     }
 
     /**

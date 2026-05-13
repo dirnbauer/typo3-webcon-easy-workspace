@@ -9,17 +9,18 @@
 
 webcon-easy-workspace-menu {
     display: block;
-    width: min(540px, calc(100vw - 24px));
+    width: min(380px, calc(100vw - 24px));
     max-width: 95vw;
     font-size: 13px;
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 
 /* Bootstrap dropdown clamps width to its parent — force the dropdown
-   menu to grow to fit our element. */
+   menu to grow to fit our element, but cap at the same width so it
+   stays right-anchored within the viewport. */
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu) {
     width: auto;
-    max-width: none;
+    max-width: min(380px, calc(100vw - 24px));
     min-width: 320px;
 }
 
@@ -29,8 +30,8 @@ webcon-easy-workspace-menu {
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: .65rem;
-    padding: .75rem 1rem;
+    gap: .55rem;
+    padding: .6rem .75rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
@@ -184,10 +185,12 @@ webcon-easy-workspace-menu {
 
 .wew-list__label {
     display: grid;
+    /* checkbox | title (flex) | optional thumbnail. The third column
+       collapses to 0 width when no <span.wew-list__thumb> is rendered. */
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: .55rem;
-    padding: .5rem .85rem .5rem 1rem;
+    padding: .45rem .75rem .45rem .9rem;
     cursor: pointer;
     margin: 0;
 }
@@ -212,14 +215,20 @@ webcon-easy-workspace-menu {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 12.5px;
+    line-height: 1.3;
 }
 .wew-list__meta {
     display: flex;
-    gap: .35rem;
+    gap: .3rem;
     align-items: center;
     margin-top: .1rem;
     font-size: 10.5px;
+    overflow: hidden;
+}
+.wew-list__sep {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    opacity: .6;
 }
 .wew-list__meta .badge {
     font-size: 10px;
@@ -245,8 +254,8 @@ webcon-easy-workspace-menu {
 }
 
 .wew-list__thumb {
-    width: 44px;
-    height: 32px;
+    width: 40px;
+    height: 30px;
     border-radius: 4px;
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .04));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
@@ -261,10 +270,6 @@ webcon-easy-workspace-menu {
     height: 100%;
     object-fit: cover;
 }
-.wew-list__thumb--placeholder {
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    font-size: 16px;
-}
 
 /* ---- Footer ---- */
 
@@ -272,8 +277,8 @@ webcon-easy-workspace-menu {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: .65rem;
-    padding: .55rem .85rem;
+    gap: .5rem;
+    padding: .5rem .75rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
