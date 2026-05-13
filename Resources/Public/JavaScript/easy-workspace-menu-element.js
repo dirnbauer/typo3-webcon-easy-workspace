@@ -616,6 +616,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (this.state === 'loading' || this.state === 'no-context' || this.state === 'error') {
       return nothing;
     }
+    // Counts shown next to each tab label. "To publish" only counts
+    // records that actually have a workspace version (isChanged), while
+    // "All on page" counts everything in scope — matches the panel
+    // contents under each mode.
+    const changedCount = this.items.filter((i) => i.isChanged).length;
+    const totalCount = this.items.length;
     return html`
       <div
         class="wew-menu__filter"
@@ -632,7 +638,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           aria-controls="wew-tabpanel"
           tabindex=${this.mode === 'changed' ? '0' : '-1'}
           @click=${() => this._setMode('changed')}
-        >To publish</button>
+        >To publish <span class="wew-menu__chip-count" aria-label="${changedCount} record${changedCount === 1 ? '' : 's'}">${changedCount}</span></button>
         <button
           type="button"
           id="wew-tab-all"
@@ -642,7 +648,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           aria-controls="wew-tabpanel"
           tabindex=${this.mode === 'all' ? '0' : '-1'}
           @click=${() => this._setMode('all')}
-        >All on page</button>
+        >All on page <span class="wew-menu__chip-count" aria-label="${totalCount} record${totalCount === 1 ? '' : 's'}">${totalCount}</span></button>
       </div>
     `;
   }

@@ -119,6 +119,27 @@ webcon-easy-workspace-menu {
     outline-offset: -2px;
     border-radius: 2px;
 }
+/* Count badge sitting next to each tab label. Subtle pill against the
+   tab text — the active tab inherits the link color so the badge
+   visually attaches. */
+.wew-menu__chip-count {
+    display: inline-block;
+    min-width: 1.5em;
+    padding: 0 .4em;
+    margin-left: .35em;
+    border-radius: 999px;
+    background: var(--typo3-component-bg, var(--bs-tertiary-bg));
+    color: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: center;
+    vertical-align: baseline;
+}
+.wew-menu__chip--active .wew-menu__chip-count {
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: var(--typo3-component-bg, var(--bs-body-bg));
+}
 
 /* ---- Selection bar (master checkbox) ---- */
 .wew-menu__selectbar {
