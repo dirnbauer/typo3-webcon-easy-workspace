@@ -63,6 +63,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     context: { state: true },
     publishing: { state: true },
     contextLabel: { state: true },
+    workspaceTitle: { state: true },
     mode: { state: true },
     copyingPreview: { state: true },
   };
@@ -78,6 +79,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.selection = new Set();
     this.context = null;
     this.contextLabel = '';
+    this.workspaceTitle = '';
     this.publishing = false;
     this.copyingPreview = false;
     this._config = { ...DEFAULT_CONFIG };
@@ -132,25 +134,45 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * standard TYPO3 frontend id ("c{uid}"), scroll it into view if it
    * is off-screen and apply an inline outline.
    *
-   * Cross-frame access is safe here because the Visual Editor renders
-   * the same-origin frontend page; if the iframe is missing or the
-   * element cannot be found, we silently noop.
+   * Tells the editor *why* the lookup failed (with a TYPO3
+   * Notification) instead of silently noop'ing — too easy to think
+   * the feature is broken when in reality the iframe just isn't on
+   * the page yet, or the CE uses a non-default wrapper element.
    */
-  _highlightInIframe(item) {
+  _highlightInIframe(item, { announce = false } = {}) {
     this._clearIframeHighlight();
     const uid = item?.liveUid;
     if (!uid) return;
     const iframe = this._findVisualEditorIframe();
-    if (!iframe) return;
+    if (!iframe) {
+      if (announce) {
+        Notification.info(
+          'Show in editor',
+          'Open the page in the Visual Editor to see the highlight.',
+          4,
+        );
+      }
+      return;
+    }
     let doc;
     try {
       doc = iframe.contentDocument || iframe.contentWindow?.document;
     } catch {
-      return; // Cross-origin / detached
+      if (announce) Notification.warning('Show in editor', 'Editor iframe is not accessible.');
+      return;
     }
     if (!doc) return;
     const el = this._findContentElement(doc, uid);
-    if (!el) return;
+    if (!el) {
+      if (announce) {
+        Notification.info(
+          'Show in editor',
+          `Could not find content element #${uid} in the rendered page. Some custom templates wrap CEs without the standard id="c${uid}" element.`,
+          5,
+        );
+      }
+      return;
+    }
 
     // Remember inline styles so we can restore them cleanly.
     const previous = {};
@@ -181,30 +203,89 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
+   * Search every reachable document context for the Visual Editor
+   * iframe. We can't always rely on `window.top` (the toolbar may be
+   * nested in a chrome frame), so try `document` first and also walk
+   * any same-origin parent windows.
+   *
    * @returns {HTMLIFrameElement|null}
    */
   _findVisualEditorIframe() {
-    // Primary selector used by friendsoftypo3/visual-editor.
-    let iframe = window.top?.document?.querySelector('iframe#visual-editor-iframe')
-      || document.querySelector('iframe#visual-editor-iframe');
-    if (iframe) return iframe;
-    // Fallback: any iframe inside the page module's frame container.
-    iframe = window.top?.document?.querySelector('iframe[name*="pagepreview"], iframe[id*="pagepreview"], iframe[id*="preview"]');
-    return iframe || null;
+    const tries = [
+      // Same document the toolbar runs in.
+      () => document.querySelector('iframe#visual-editor-iframe'),
+      () => document.querySelector('iframe[id*="visual-editor"]'),
+      // Top frame (Bootstrap modal might re-host elements).
+      () => window.top?.document?.querySelector('iframe#visual-editor-iframe'),
+      () => window.top?.document?.querySelector('iframe[id*="visual-editor"]'),
+      // Page module / preview module fallbacks.
+      () => window.top?.document?.querySelector('iframe[id*="page-preview"], iframe[id*="pagepreview"], iframe[name*="pagepreview"], iframe[name*="preview"]'),
+      // Final fallback: any iframe whose contentDocument we can read.
+      () => {
+        const roots = [document, window.top?.document].filter(Boolean);
+        for (const root of roots) {
+          for (const candidate of root.querySelectorAll('iframe')) {
+            try {
+              if (candidate.contentDocument?.body) return candidate;
+            } catch { /* cross-origin */ }
+          }
+        }
+        return null;
+      },
+    ];
+    for (const fn of tries) {
+      try {
+        const iframe = fn();
+        if (iframe) return iframe;
+      } catch { /* skip */ }
+    }
+    return null;
   }
 
   /**
+   * Find the rendered DOM node for a tt_content record. The standard
+   * TYPO3 convention is `<div id="c{uid}">` (fluid_styled_content),
+   * but Content Blocks and custom templates may wrap differently.
+   * Try many selectors before giving up.
+   *
    * @param {Document} doc
    * @param {number} uid
    * @returns {HTMLElement|null}
    */
   _findContentElement(doc, uid) {
-    // TYPO3 frontend convention used by EXT:fluid_styled_content and
-    // most third-party content elements: id="c{uid}".
-    return doc.getElementById('c' + uid)
-      // Conservative fallbacks for non-default templates:
-      || doc.querySelector('[data-uid="' + uid + '"][data-table="tt_content"]')
-      || doc.querySelector('[data-typo3-record-uid="' + uid + '"]');
+    const selectors = [
+      // Standard fluid_styled_content / fsc-default frame
+      '#c' + uid,
+      '[id="c' + uid + '"]',
+      // Content Blocks variants
+      '#cb-content-' + uid,
+      '#cb' + uid,
+      '#content-block-' + uid,
+      // Generic data-attributes used by various templates
+      '[data-uid="' + uid + '"][data-table="tt_content"]',
+      '[data-content-uid="' + uid + '"]',
+      '[data-tt-content-uid="' + uid + '"]',
+      '[data-record-uid="' + uid + '"]',
+      '[data-typo3-record-uid="' + uid + '"]',
+      // Visual Editor JSON payload on the wrapping element
+      '[data-veedit*="\\"uid\\":' + uid + ',\\"table\\":\\"tt_content\\""]',
+      '[data-veedit*="\\"uid\\":' + uid + '"][data-veedit*="tt_content"]',
+      // Some templates use the live uid as classname
+      '.tt-content-' + uid,
+      '.ce-' + uid,
+    ];
+
+    for (const sel of selectors) {
+      try {
+        const hit = doc.querySelector(sel);
+        if (hit) return hit;
+      } catch { /* invalid selector — ignore */ }
+    }
+
+    // Last resort: scan all elements for any attribute that contains
+    // both the uid AND the table name "tt_content" close together.
+    const probe = doc.querySelector(`[id^="c"][id$="${uid}"]`);
+    return probe || null;
   }
 
   _readConfig() {
@@ -227,13 +308,20 @@ class WebconEasyWorkspaceMenu extends LitElement {
       <div class="wew-menu">
         <header class="wew-menu__head">
           <div class="wew-menu__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path d="M3 12l18-9-4 9 4 9-18-9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-              <path d="M3 12l9-3 9 3" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".5"/>
+            <!-- TYPO3 core "module-workspaces" — currentColor + accent (orange). -->
+            <svg viewBox="0 0 64 64" width="22" height="22">
+              <path fill="currentColor" d="M36 20v20H16V20h20m2-4H14c-1.1 0-2 .9-2 2v24c0 1.1.9 2 2 2h24c1.1 0 2-.9 2-2V18c0-1.1-.9-2-2-2Z"/>
+              <path fill="var(--icon-color-accent, #ff8700)" d="M50 24H40v4h8v20H28v-4h-4v6c0 1.1.9 2 2 2h24c1.1 0 2-.9 2-2V26c0-1.1-.9-2-2-2Z"/>
+              <path fill="currentColor" opacity=".4" d="M40 18v6h8V14c0-1.1-.9-2-2-2H22c-1.1 0-2 .9-2 2v2h18c1.1 0 2 .9 2 2Z"/>
             </svg>
           </div>
           <div class="wew-menu__title-wrap">
-            <h3 class="wew-menu__title">Workspace publish</h3>
+            <h3 class="wew-menu__title">
+              <span>Workspace publish</span>
+              ${this.workspaceTitle
+                ? html`<span class="wew-menu__ws-chip" title="Active workspace">${this.workspaceTitle}</span>`
+                : nothing}
+            </h3>
             <p class="wew-menu__subtitle">${this.contextLabel || 'Loading…'}</p>
           </div>
           ${pageUid > 0 && this._config.enablePreviewLink
@@ -392,18 +480,19 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * The "revert" button — discard the workspace version of a single
+   * The "discard" button — discard the workspace version of a single
    * record after a warning confirmation modal. SVG inlined from TYPO3
-   * core's actions-undo icon (currentColor).
+   * core's actions-undo icon (currentColor). "Discard" is TYPO3's own
+   * term for the operation (the DataHandler command is `flush`).
    */
   _renderRevertButton(item) {
     return html`
       <button
         type="button"
-        class="wew-list__revert"
-        title="Revert this change"
-        aria-label="Revert this workspace change"
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._confirmAndRevert(item); }}
+        class="wew-list__discard"
+        title="Discard this change"
+        aria-label="Discard this workspace change"
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._confirmAndDiscard(item); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
@@ -420,23 +509,23 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * Confirmation modal uses SeverityEnum.warning + a btn-warning
    * confirm action so editors clearly see the operation is destructive.
    */
-  async _confirmAndRevert(item) {
+  async _confirmAndDiscard(item) {
     if (!ENDPOINTS.discard) return;
 
     const modal = Modal.confirm(
-      'Revert this change?',
+      'Discard this change?',
       `“${item.title}” (${item.tableLabel || item.table}) will lose its workspace edits. The live record stays untouched — but the staged change is gone for good. This cannot be undone.`,
       SeverityEnum.warning,
       [
         { text: 'Cancel', btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },
-        { text: 'Revert', btnClass: 'btn-warning', name: 'revert', active: true, trigger: () => modal.hideModal() },
+        { text: 'Discard', btnClass: 'btn-warning', name: 'discard', active: true, trigger: () => modal.hideModal() },
       ],
     );
 
     return new Promise((resolve) => {
       modal.addEventListener('button.clicked', async (event) => {
         const choice = event.target?.getAttribute('name');
-        if (choice !== 'revert') {
+        if (choice !== 'discard') {
           resolve(false);
           return;
         }
@@ -448,16 +537,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
             );
           const result = await response.resolve();
           if (result?.success) {
-            Notification.success('Reverted', `Workspace version of “${item.title}” discarded.`, 4);
+            Notification.success('Discarded', `Workspace version of “${item.title}” discarded.`, 4);
             await this._refresh();
           } else {
             const errors = Array.isArray(result?.errors) && result.errors.length
               ? result.errors.join(' / ')
               : (result?.error || 'Unknown error.');
-            Notification.error('Could not revert', errors);
+            Notification.error('Could not discard', errors);
           }
         } catch (error) {
-          Notification.error('Revert failed', error?.message || 'Unexpected error.');
+          Notification.error('Discard failed', error?.message || 'Unexpected error.');
         } finally {
           resolve(true);
         }
@@ -482,7 +571,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
         @blur=${() => this._clearIframeHighlight()}
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._highlightInIframe(item); }}
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._highlightInIframe(item, { announce: true }); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
@@ -592,6 +681,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const data = await response.resolve();
       this.context = data.context;
       this.items = Array.isArray(data.items) ? data.items : [];
+      this.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
       this.contextLabel = this._buildContextLabel(data);
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));

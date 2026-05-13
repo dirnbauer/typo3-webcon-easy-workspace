@@ -111,9 +111,9 @@ Every **content-element** row in the dropdown has an **eye icon** (TYPO3's `acti
 
 Both effects are reverted on `mouseleave` / `blur` and again on element disconnect. Clicking the eye triggers the same scroll-and-highlight as hovering, useful on touch devices. The eye is shown only for `tt_content` rows; the affordance can be switched off via `options.webcon_easy_workspace.enableHoverHighlight = 0`.
 
-### Revert (discard) a single change
+### Discard a single change
 
-Next to the eye, every **changed** row also has a curved-arrow **revert** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to `/ajax/webcon-easy-workspace/discard`, which runs `DataHandler` with the v14-canonical command:
+Next to the eye, every **changed** row also has a curved-arrow **discard** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). *Discard* is TYPO3's own term for this operation — the underlying DataHandler command is `flush`, which removes the workspace version. Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to `/ajax/webcon-easy-workspace/discard`, which runs `DataHandler` with the v14-canonical command:
 
 ```php
 $cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];

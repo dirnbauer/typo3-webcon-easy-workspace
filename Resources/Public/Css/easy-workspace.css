@@ -52,6 +52,23 @@ webcon-easy-workspace-menu {
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+}
+.wew-menu__ws-chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .1rem .45rem;
+    border-radius: 999px;
+    color: var(--icon-color-accent, #ff8700);
+    background: color-mix(in srgb, var(--icon-color-accent, #ff8700) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--icon-color-accent, #ff8700) 32%, transparent);
 }
 .wew-menu__subtitle {
     margin: .15rem 0 0;
@@ -223,7 +240,7 @@ webcon-easy-workspace-menu {
 }
 
 .wew-list__locate,
-.wew-list__revert {
+.wew-list__discard {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -238,7 +255,7 @@ webcon-easy-workspace-menu {
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
 .wew-list__locate svg,
-.wew-list__revert svg { display: block; }
+.wew-list__discard svg { display: block; }
 
 .wew-list__locate:hover,
 .wew-list__locate:focus-visible {
@@ -249,10 +266,11 @@ webcon-easy-workspace-menu {
     transform: scale(1.05);
 }
 
-/* Revert intentionally uses the warning hue so it reads as
-   destructive even before the user clicks it. */
-.wew-list__revert:hover,
-.wew-list__revert:focus-visible {
+/* Discard intentionally uses the warning hue so it reads as
+   destructive even before the user clicks it. "Discard" is TYPO3's
+   term — same DataHandler operation as Revert. */
+.wew-list__discard:hover,
+.wew-list__discard:focus-visible {
     background: color-mix(in srgb, var(--bs-warning, #e8a33d) 18%, transparent);
     color: var(--bs-warning, #e8a33d);
     border-color: color-mix(in srgb, var(--bs-warning, #e8a33d) 45%, transparent);

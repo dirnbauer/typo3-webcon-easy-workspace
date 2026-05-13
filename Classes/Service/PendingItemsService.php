@@ -45,13 +45,14 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config Normalized config from ConfigurationProvider.
-     * @return array{workspaceId: int, pageUid: int, items: list<array<string, mixed>>, hasNews: bool, mode: string}
+     * @return array{workspaceId: int, workspaceTitle: string, pageUid: int, items: list<array<string, mixed>>, hasNews: bool, mode: string}
      */
     public function forPage(int $pageUid, string $mode = self::MODE_CHANGED, array $config = []): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $pageUid <= 0) {
-            return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
+            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
         }
 
         $maxItems = (int)($config['maxItems'] ?? 200);
@@ -91,6 +92,7 @@ final readonly class PendingItemsService
 
         return [
             'workspaceId' => $workspaceId,
+            'workspaceTitle' => $workspaceTitle,
             'pageUid' => $pageUid,
             'items' => $items,
             'hasNews' => $hasNews,
@@ -100,13 +102,14 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, newsUid: int, items: list<array<string, mixed>>, mode: string}
+     * @return array{workspaceId: int, workspaceTitle: string, newsUid: int, items: list<array<string, mixed>>, mode: string}
      */
     public function forNews(int $newsUid, string $mode = self::MODE_CHANGED, array $config = []): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
-            return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'items' => [], 'mode' => $mode];
+            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'newsUid' => $newsUid, 'items' => [], 'mode' => $mode];
         }
 
         $maxItems = (int)($config['maxItems'] ?? 200);
@@ -131,7 +134,29 @@ final readonly class PendingItemsService
             }
         }
 
-        return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'items' => $items, 'mode' => $mode];
+        return [
+            'workspaceId' => $workspaceId,
+            'workspaceTitle' => $workspaceTitle,
+            'newsUid' => $newsUid,
+            'items' => $items,
+            'mode' => $mode,
+        ];
+    }
+
+    /**
+     * Reads the title field from sys_workspace; falls back to a
+     * generic label for the live workspace or unknown ids.
+     */
+    private function resolveWorkspaceTitle(int $workspaceId): string
+    {
+        if ($workspaceId <= 0) {
+            return 'Live';
+        }
+        $row = BackendUtility::getRecord('sys_workspace', $workspaceId);
+        if (is_array($row) && !empty($row['title'])) {
+            return (string)$row['title'];
+        }
+        return 'Workspace #' . $workspaceId;
     }
 
     /**
