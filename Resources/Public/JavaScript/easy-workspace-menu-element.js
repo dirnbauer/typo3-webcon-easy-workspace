@@ -152,37 +152,36 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this._clearIframeHighlight();
     const uid = item?.liveUid;
     if (!uid) return;
-    const iframe = this._findVisualEditorIframe();
-    if (!iframe) {
+
+    // Scan EVERY reachable iframe for the element. Picking "the
+    // visual-editor iframe" and looking only there is fragile when
+    // there are nested or hidden iframes; locating by content is
+    // both correct and tolerant of wrappers we don't know about.
+    const located = this._locateInAnyIframe(uid);
+    if (!located) {
       if (announce) {
-        const hint = this._config.hasVisualEditor
-          ? 'Open the page in the Visual Editor module to see the highlight.'
-          : (this._config.hasViewpage
-              ? 'Open the page in the Web → View module so the preview iframe is present.'
-              : 'No page preview iframe found in this view. Install friendsoftypo3/visual-editor or use Web → View to enable inline locating.');
-        Notification.info('Show in preview', hint, 5);
+        const allIframes = this._collectIframes();
+        const accessible = allIframes.filter((f) => {
+          try { return !!f.contentDocument?.body; } catch { return false; }
+        });
+        if (accessible.length === 0) {
+          const hint = this._config.hasVisualEditor
+            ? 'No preview iframe present. Open the page in Web → Edit (Visual Editor).'
+            : (this._config.hasViewpage
+                ? 'No preview iframe present. Open the page in Web → View.'
+                : 'No preview iframe present. Install friendsoftypo3/visual-editor or use Web → View.');
+          Notification.info('Show in preview', hint, 5);
+        } else {
+          Notification.warning(
+            'Show in preview',
+            `Searched ${accessible.length} preview iframe(s) but did not find #c${uid}. The content element might be wrapped without an id="c${uid}" attribute.`,
+            6,
+          );
+        }
       }
       return;
     }
-    let doc;
-    try {
-      doc = iframe.contentDocument || iframe.contentWindow?.document;
-    } catch {
-      if (announce) Notification.warning('Show in editor', 'Editor iframe is not accessible.');
-      return;
-    }
-    if (!doc) return;
-    const el = this._findContentElement(doc, uid);
-    if (!el) {
-      if (announce) {
-        Notification.info(
-          'Show in editor',
-          `Could not find content element #${uid} in the rendered page. Some custom templates wrap CEs without the standard id="c${uid}" element.`,
-          5,
-        );
-      }
-      return;
-    }
+    const { el } = located;
 
     // Remember inline styles so we can restore them cleanly.
     const previous = {};
@@ -210,6 +209,50 @@ class WebconEasyWorkspaceMenu extends LitElement {
       }
     } catch { /* element may already be detached */ }
     this._iframeHighlight = null;
+  }
+
+  /**
+   * Collect every iframe reachable from this document and its top.
+   * Deduped by element identity so iframes living in both contexts
+   * (when the toolbar is nested) aren't counted twice.
+   *
+   * @returns {HTMLIFrameElement[]}
+   */
+  _collectIframes() {
+    const seen = new Set();
+    const out = [];
+    const roots = [document];
+    try { if (window.top?.document && window.top.document !== document) roots.push(window.top.document); } catch { /* cross-origin */ }
+    for (const root of roots) {
+      for (const iframe of root.querySelectorAll('iframe')) {
+        if (!seen.has(iframe)) {
+          seen.add(iframe);
+          out.push(iframe);
+        }
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Iterate every reachable iframe and return the first one whose
+   * contentDocument contains a content element matching `uid`.
+   * Replaces "find the right iframe by selector, then search inside"
+   * with "find the iframe that actually has the content".
+   *
+   * @returns {{ iframe: HTMLIFrameElement, doc: Document, el: HTMLElement }|null}
+   */
+  _locateInAnyIframe(uid) {
+    for (const iframe of this._collectIframes()) {
+      let doc;
+      try {
+        doc = iframe.contentDocument || iframe.contentWindow?.document;
+      } catch { continue; }
+      if (!doc) continue;
+      const el = this._findContentElement(doc, uid);
+      if (el) return { iframe, doc, el };
+    }
+    return null;
   }
 
   /**
