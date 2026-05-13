@@ -180,6 +180,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
         const accessible = allIframes.filter((f) => {
           try { return !!f.contentDocument?.body; } catch { return false; }
         });
+        // Visual-editor's PersistenceMiddleware throws an
+        // ImmediateResponseException with its NotLoggedIn.html
+        // template whenever the FE iframe load arrives without a BE
+        // session (default TYPO3 BE cookie path is /typo3/, so it
+        // doesn't reach /?editMode=1). The iframe is "accessible" in
+        // the same-origin sense, but it never contains any content
+        // elements to highlight. Detect that gate and surface a
+        // dedicated message rather than the generic "searched N
+        // iframes" diagnostic — editors otherwise think the eye is
+        // broken when the real problem is BE↔FE session bridging.
+        const gated = accessible.filter((f) => this._isPreviewGate(f.contentDocument));
         if (accessible.length === 0) {
           const hint = this._config.hasVisualEditor
             ? 'No preview iframe present. Open the page in Web → Edit (Visual Editor).'
@@ -187,6 +198,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 ? 'No preview iframe present. Open the page in Web → View.'
                 : 'No preview iframe present. Install friendsoftypo3/visual-editor or use Web → View.');
           Notification.info('Show in preview', hint, 5);
+        } else if (gated.length === accessible.length) {
+          Notification.info(
+            'Show in preview',
+            'The Visual Editor preview is waiting for a frontend login (the BE cookie doesn’t reach the FE domain). Click “Go to login” inside the editor panel, sign in, then reload — or use Web → Layout where this works without the extra login.',
+            10,
+          );
         } else {
           // Dump diagnostics so the next iteration of the locator can
           // be tuned to whatever wrapper this site actually emits.
@@ -330,6 +347,24 @@ class WebconEasyWorkspaceMenu extends LitElement {
       }
     }
     return out;
+  }
+
+  /**
+   * Detects friendsoftypo3/visual-editor's NotLoggedIn.html gate
+   * page. That template is served whenever its PersistenceMiddleware
+   * rejects an editMode FE request for missing BE auth — the iframe
+   * is "accessible" in the same-origin sense but contains zero
+   * content elements, so the locator would otherwise mis-report a
+   * generic "didn't find your element" warning.
+   *
+   * Signal: <title>Backend login required</title>. Robust against
+   * locale (the title is set in the template head, not via
+   * Fluid/translation), and identical across all visual-editor v1.x
+   * releases that ship the template.
+   */
+  _isPreviewGate(doc) {
+    if (!doc) return false;
+    return doc.title === 'Backend login required';
   }
 
   /**
