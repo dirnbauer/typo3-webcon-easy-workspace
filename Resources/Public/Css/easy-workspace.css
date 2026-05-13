@@ -3,6 +3,8 @@
  * All visual tokens are sourced from TYPO3 v14 backend styleguide
  * variables (--typo3-* / --bs-*) so the dropdown follows the
  * editor's light / dark theme automatically.
+ *
+ * Compact layout: 420px wide, scrolling list, dense rows.
  */
 
 webcon-easy-workspace-menu {
@@ -13,23 +15,27 @@ webcon-easy-workspace-menu {
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 
+/* ---- Header ---- */
+
 .wew-menu__head {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: .75rem;
-    padding: .85rem 1rem;
+    gap: .65rem;
+    padding: .75rem 1rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 .wew-menu__icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
     color: var(--typo3-link-color, var(--bs-primary));
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 .wew-menu__title-wrap { min-width: 0; }
 .wew-menu__title {
@@ -40,12 +46,55 @@ webcon-easy-workspace-menu {
 }
 .wew-menu__subtitle {
     margin: .15rem 0 0;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.wew-menu__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .55rem;
+    font-size: 11px;
+    line-height: 1.4;
+    border-radius: 999px;
+}
+.wew-menu__copy-label {
+    font-weight: 500;
+}
+
+/* ---- Filter chips ---- */
+
+.wew-menu__filter {
+    display: flex;
+    gap: .25rem;
+    padding: .45rem .75rem .25rem;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-menu__chip {
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+.wew-menu__chip:hover {
+    color: var(--typo3-component-color, var(--bs-body-color));
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, var(--typo3-component-border-color, var(--bs-border-color)));
+}
+.wew-menu__chip--active {
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: #fff;
+    border-color: var(--typo3-link-color, var(--bs-primary));
+}
+
+/* ---- States ---- */
 
 .wew-menu__loading {
     display: flex;
@@ -57,7 +106,7 @@ webcon-easy-workspace-menu {
 }
 .wew-menu__alert {
     margin: .75rem 1rem;
-    font-size: 13px;
+    font-size: 12px;
 }
 .wew-menu__empty {
     padding: 2rem 1rem;
@@ -79,30 +128,71 @@ webcon-easy-workspace-menu {
     justify-content: center;
 }
 
+/* ---- Item list ---- */
+
 .wew-list {
     list-style: none;
     margin: 0;
-    padding: .25rem 0;
+    padding: .2rem 0;
     max-height: 50vh;
     overflow-y: auto;
 }
-.wew-list__row { border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color)); }
+.wew-list__row {
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    position: relative;
+}
 .wew-list__row:last-child { border-bottom: 0; }
-.wew-list__row--primary { background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent); }
+.wew-list__row--primary {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent);
+}
+/* Changed rows get a left accent stripe — no greyed out fallback for the rest. */
+.wew-list__row--changed::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--bs-info);
+}
+.wew-list__row--changed[data-table="pages"]::before,
+.wew-list__row--changed[data-table="tx_news_domain_model_news"]::before {
+    background: var(--typo3-link-color, var(--bs-primary));
+}
+/* Hidden state: a subtle diagonal-stripe overlay on the thumbnail only. */
+.wew-list__row--hidden .wew-list__thumb {
+    position: relative;
+}
+.wew-list__row--hidden .wew-list__thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(45deg,
+        transparent 0 4px,
+        color-mix(in srgb, var(--bs-secondary-color, #6c757d) 25%, transparent) 4px 6px);
+    pointer-events: none;
+}
 
 .wew-list__label {
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: .65rem;
-    padding: .6rem 1rem;
+    gap: .55rem;
+    padding: .5rem .85rem .5rem 1rem;
     cursor: pointer;
     margin: 0;
 }
-.wew-list__check {
-    margin: 0;
-    flex-shrink: 0;
+.wew-list__row--unchanged .wew-list__label { cursor: default; }
+.wew-list__check-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
 }
+.wew-list__check { margin: 0; flex-shrink: 0; }
+.wew-list__check-spacer { display: inline-block; width: 14px; height: 14px; }
+
 .wew-list__title {
     display: flex;
     flex-direction: column;
@@ -114,13 +204,14 @@ webcon-easy-workspace-menu {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 13px;
 }
 .wew-list__meta {
     display: flex;
-    gap: .45rem;
+    gap: .35rem;
     align-items: center;
     margin-top: .1rem;
-    font-size: 11px;
+    font-size: 10.5px;
 }
 .wew-list__meta .badge {
     font-size: 10px;
@@ -128,17 +219,26 @@ webcon-easy-workspace-menu {
     text-transform: uppercase;
     letter-spacing: .04em;
     padding: .1rem .35rem;
-    border-radius: 4px;
+    border-radius: 3px;
+    line-height: 1.3;
 }
-.wew-list__meta .badge-success { background: color-mix(in srgb, var(--bs-success) 18%, transparent); color: var(--bs-success); }
-.wew-list__meta .badge-info    { background: color-mix(in srgb, var(--bs-info)    18%, transparent); color: var(--bs-info); }
-.wew-list__meta .badge-warning { background: color-mix(in srgb, var(--bs-warning) 18%, transparent); color: var(--bs-warning); }
-.wew-list__meta .badge-danger  { background: color-mix(in srgb, var(--bs-danger)  18%, transparent); color: var(--bs-danger); }
-.wew-list__table { color: var(--typo3-text-color-secondary, var(--bs-secondary-color)); }
+.wew-list__meta .badge-success    { background: color-mix(in srgb, var(--bs-success)         18%, transparent); color: var(--bs-success); }
+.wew-list__meta .badge-info       { background: color-mix(in srgb, var(--bs-info)            18%, transparent); color: var(--bs-info); }
+.wew-list__meta .badge-warning    { background: color-mix(in srgb, var(--bs-warning)         18%, transparent); color: var(--bs-warning); }
+.wew-list__meta .badge-danger     { background: color-mix(in srgb, var(--bs-danger)          18%, transparent); color: var(--bs-danger); }
+.wew-list__meta .badge-secondary  { background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 14%, transparent); color: var(--bs-secondary-color, #6c757d); }
+.wew-list__meta .badge-dark       { background: color-mix(in srgb, var(--bs-body-color)      14%, transparent); color: var(--typo3-component-color, var(--bs-body-color)); }
+.wew-list__hidden-badge { letter-spacing: .03em; }
+.wew-list__table {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .wew-list__thumb {
-    width: 48px;
-    height: 36px;
+    width: 44px;
+    height: 32px;
     border-radius: 4px;
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .04));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
@@ -155,15 +255,17 @@ webcon-easy-workspace-menu {
 }
 .wew-list__thumb--placeholder {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    font-size: 18px;
+    font-size: 16px;
 }
+
+/* ---- Footer ---- */
 
 .wew-menu__foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: .75rem;
-    padding: .65rem 1rem;
+    gap: .65rem;
+    padding: .55rem .85rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
@@ -172,18 +274,20 @@ webcon-easy-workspace-menu {
     align-items: center;
     gap: .35rem;
     flex-wrap: wrap;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
 .wew-menu__counters .btn-link {
     padding: 0;
-    font-size: 12px;
+    font-size: 11px;
     text-decoration: none;
 }
 .wew-menu__count {
-    margin-left: .35rem;
+    margin-left: .25rem;
     font-weight: 500;
 }
-.wew-menu__foot .btn-primary {
-    min-width: 140px;
+.wew-menu__publish {
+    min-width: 130px;
+    font-size: 12px;
+    padding: .35rem .75rem;
 }

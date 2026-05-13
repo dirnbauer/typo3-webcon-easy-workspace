@@ -8,56 +8,76 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
+use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
+use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 
 /**
- * Collects the list of records that have pending workspace changes
- * tied to a single page context (and any news on that page).
+ * Collects records visible in the toolbar dropdown for a given page or
+ * news context.
  *
- * Goal: small, focused payload for the toolbar dropdown — page record,
- * its content elements, optionally news records pinned on the page, and
- * for news records also their linked tt_content via tx_news_related_news.
+ * Two modes:
+ *  - 'changed' (default): only records with a workspace version
+ *  - 'all'              : every record on the page (live + workspace)
+ *                         so editors can see context, with isChanged
+ *                         flagged on each item.
  */
 final readonly class PendingItemsService
 {
+    public const MODE_CHANGED = 'changed';
+    public const MODE_ALL = 'all';
+
     public function __construct(
         private ConnectionPool $connectionPool,
         private TcaSchemaFactory $tcaSchemaFactory,
         private ResourceFactory $resourceFactory,
+        private LanguageServiceFactory $languageServiceFactory,
         private Context $context,
     ) {}
 
     /**
-     * @return array{workspaceId: int, pageUid: int, items: list<array<string, mixed>>, hasNews: bool}
+     * @return array{workspaceId: int, pageUid: int, items: list<array<string, mixed>>, hasNews: bool, mode: string}
      */
-    public function forPage(int $pageUid): array
+    public function forPage(int $pageUid, string $mode = self::MODE_CHANGED): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
-        $items = [];
-
         if ($workspaceId <= 0 || $pageUid <= 0) {
-            return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false];
+            return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
         }
 
-        $pageItem = $this->resolvePageItem($pageUid, $workspaceId);
+        $items = [];
+
+        $pageItem = $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true);
         if ($pageItem !== null) {
             $items[] = $pageItem->toArray();
         }
 
-        foreach ($this->resolveContentItems('tt_content', 'pid', $pageUid, $workspaceId) as $item) {
-            $items[] = $item->toArray();
+        if ($mode === self::MODE_ALL) {
+            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, 'sorting') as $row) {
+                $item = $this->buildItem('tt_content', $row, isPrimary: false);
+                if ($item !== null) {
+                    $items[] = $item->toArray();
+                }
+            }
+        } else {
+            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId) as $item) {
+                $items[] = $item->toArray();
+            }
         }
 
         $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
         if ($hasNews) {
-            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId) as $newsItem) {
-                $items[] = $newsItem['news']->toArray();
-                foreach ($newsItem['contentElements'] as $ceItem) {
+            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode) as $bundle) {
+                $items[] = $bundle['news']->toArray();
+                foreach ($bundle['contentElements'] as $ceItem) {
                     $items[] = $ceItem->toArray();
                 }
             }
@@ -68,17 +88,18 @@ final readonly class PendingItemsService
             'pageUid' => $pageUid,
             'items' => $items,
             'hasNews' => $hasNews,
+            'mode' => $mode,
         ];
     }
 
     /**
-     * @return array{workspaceId: int, newsUid: int, items: list<array<string, mixed>>}
+     * @return array{workspaceId: int, newsUid: int, items: list<array<string, mixed>>, mode: string}
      */
-    public function forNews(int $newsUid): array
+    public function forNews(int $newsUid, string $mode = self::MODE_CHANGED): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
-            return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'items' => []];
+            return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'items' => [], 'mode' => $mode];
         }
 
         $items = [];
@@ -86,35 +107,77 @@ final readonly class PendingItemsService
         if ($newsItem !== null) {
             $items[] = $newsItem->toArray();
         }
-        foreach ($this->resolveContentItems('tt_content', 'tx_news_related_news', $newsUid, $workspaceId) as $ceItem) {
-            $items[] = $ceItem->toArray();
+
+        if ($mode === self::MODE_ALL) {
+            foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, 'sorting') as $row) {
+                $item = $this->buildItem('tt_content', $row, isPrimary: false);
+                if ($item !== null) {
+                    $items[] = $item->toArray();
+                }
+            }
+        } else {
+            foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $newsUid, $workspaceId) as $item) {
+                $items[] = $item->toArray();
+            }
         }
 
-        return [
-            'workspaceId' => $workspaceId,
-            'newsUid' => $newsUid,
-            'items' => $items,
-        ];
+        return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'items' => $items, 'mode' => $mode];
     }
 
-    private function resolvePageItem(int $pageUid, int $workspaceId): ?PendingItem
+    /**
+     * Get a sorted list of all records of $table belonging to $parentUid,
+     * with workspace overlay applied. Returns the raw row arrays (each
+     * row will contain _ORIG_uid when overlaid from a workspace version).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function listAllRecordsOnPage(string $table, int $pageUid, int $workspaceId, string $orderBy): array
     {
-        return $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true);
+        return $this->listAllRelatedRecords($table, 'pid', $pageUid, $workspaceId, $orderBy);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function listAllRelatedRecords(string $table, string $field, int $parentUid, int $workspaceId, string $orderBy): array
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        // FrontendRestrictionContainer would filter hidden — we want to *include* hidden so the badge can be shown.
+        $queryBuilder->getRestrictions()
+            ->removeAll()
+            ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
+            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, true));
+
+        $result = $queryBuilder
+            ->select('*')
+            ->from($table)
+            ->where($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)))
+            ->orderBy($orderBy, 'ASC')
+            ->executeQuery();
+
+        $rows = [];
+        while ($row = $result->fetchAssociative()) {
+            BackendUtility::workspaceOL($table, $row, $workspaceId);
+            if (is_array($row)) {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
     }
 
     /**
      * @return list<PendingItem>
      */
-    private function resolveContentItems(string $table, string $relationField, int $parentUid, int $workspaceId): array
+    private function resolveChangedRelated(string $table, string $field, int $parentUid, int $workspaceId): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
 
         $result = $queryBuilder
-            ->select('uid', 't3ver_oid', 't3ver_wsid', 't3ver_state', 'sorting')
+            ->select('*')
             ->from($table)
             ->where(
-                $queryBuilder->expr()->eq($relationField, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
             )
@@ -134,29 +197,48 @@ final readonly class PendingItemsService
     /**
      * @return list<array{news: PendingItem, contentElements: list<PendingItem>}>
      */
-    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId): array
+    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode): array
     {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_news_domain_model_news');
-        $queryBuilder->getRestrictions()->removeAll();
-
-        $result = $queryBuilder
-            ->select('uid', 't3ver_oid', 't3ver_wsid', 't3ver_state')
-            ->from('tx_news_domain_model_news')
-            ->where(
-                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            )
-            ->executeQuery();
+        if ($mode === self::MODE_ALL) {
+            $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, 'datetime DESC, uid');
+        } else {
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_news_domain_model_news');
+            $queryBuilder->getRestrictions()->removeAll();
+            $result = $queryBuilder
+                ->select('*')
+                ->from('tx_news_domain_model_news')
+                ->where(
+                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
+                    $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+                    $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+                )
+                ->executeQuery();
+            $newsRows = [];
+            while ($row = $result->fetchAssociative()) {
+                $newsRows[] = $row;
+            }
+        }
 
         $bundles = [];
-        while ($row = $result->fetchAssociative()) {
-            $newsItem = $this->buildItem('tx_news_domain_model_news', $row, isPrimary: true);
+        foreach ($newsRows as $newsRow) {
+            $newsItem = $this->buildItem('tx_news_domain_model_news', $newsRow, isPrimary: true);
             if ($newsItem === null) {
                 continue;
             }
             $liveUid = $newsItem->liveUid;
-            $childItems = $this->resolveContentItems('tt_content', 'tx_news_related_news', $liveUid, $workspaceId);
+            $childItems = [];
+            if ($mode === self::MODE_ALL) {
+                foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, 'sorting') as $ceRow) {
+                    $ceItem = $this->buildItem('tt_content', $ceRow, isPrimary: false);
+                    if ($ceItem !== null) {
+                        $childItems[] = $ceItem;
+                    }
+                }
+            } else {
+                foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $liveUid, $workspaceId) as $ceItem) {
+                    $childItems[] = $ceItem;
+                }
+            }
             $bundles[] = ['news' => $newsItem, 'contentElements' => $childItems];
         }
         return $bundles;
@@ -165,35 +247,24 @@ final readonly class PendingItemsService
     private function resolveRecordItem(string $table, int $liveUid, int $workspaceId, bool $isPrimary): ?PendingItem
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder->getRestrictions()
+            ->removeAll()
+            ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
+            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, true));
+
         $row = $queryBuilder
-            ->select('uid', 't3ver_oid', 't3ver_wsid', 't3ver_state')
+            ->select('*')
             ->from($table)
-            ->where(
-                $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            )
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
 
         if (!is_array($row)) {
-            // Could still be a "new in workspace" record
-            $newQuery = $this->connectionPool->getQueryBuilderForTable($table);
-            $newQuery->getRestrictions()->removeAll();
-            $row = $newQuery
-                ->select('uid', 't3ver_oid', 't3ver_wsid', 't3ver_state')
-                ->from($table)
-                ->where(
-                    $newQuery->expr()->eq('uid', $newQuery->createNamedParameter($liveUid, Connection::PARAM_INT)),
-                    $newQuery->expr()->eq('t3ver_wsid', $newQuery->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                    $newQuery->expr()->eq('t3ver_state', $newQuery->createNamedParameter(VersionState::NEW_PLACEHOLDER->value, Connection::PARAM_INT)),
-                )
-                ->executeQuery()
-                ->fetchAssociative();
-            if (!is_array($row)) {
-                return null;
-            }
+            return null;
+        }
+        BackendUtility::workspaceOL($table, $row, $workspaceId);
+        if (!is_array($row)) {
+            return null;
         }
         return $this->buildItem($table, $row, $isPrimary);
     }
@@ -203,39 +274,35 @@ final readonly class PendingItemsService
      */
     private function buildItem(string $table, array $row, bool $isPrimary): ?PendingItem
     {
-        $workspaceUid = (int)($row['uid'] ?? 0);
-        if ($workspaceUid <= 0) {
-            return null;
-        }
-        $liveUid = (int)($row['t3ver_oid'] ?? 0) ?: $workspaceUid;
-
-        // Re-fetch the full workspace row for title resolution + image lookup.
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $fullRow = $queryBuilder
-            ->select('*')
-            ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($workspaceUid, Connection::PARAM_INT)))
-            ->executeQuery()
-            ->fetchAssociative();
-        if (!is_array($fullRow)) {
+        $rawUid = (int)($row['uid'] ?? 0);
+        if ($rawUid <= 0) {
             return null;
         }
 
-        $title = (string)BackendUtility::getRecordTitle($table, $fullRow);
-        if ($title === '') {
-            $title = $table . ' #' . $workspaceUid;
+        $isChanged = isset($row['_ORIG_uid']) || (int)($row['t3ver_wsid'] ?? 0) > 0;
+        // After workspaceOL the row's uid is the *live* uid; _ORIG_uid is the workspace version uid.
+        if ($isChanged) {
+            $workspaceUid = (int)($row['_ORIG_uid'] ?? $row['uid']);
+            $liveUid = (int)($row['t3ver_oid'] ?? 0) ?: (int)$row['uid'];
+        } else {
+            $workspaceUid = $rawUid;
+            $liveUid = $rawUid;
         }
+
+        $title = $this->resolveTitle($table, $row);
 
         $state = VersionState::tryFrom((int)($row['t3ver_state'] ?? 0)) ?? VersionState::DEFAULT_STATE;
-        [$kindLabel, $badge] = match ($state) {
-            VersionState::NEW_PLACEHOLDER => ['New', 'success'],
-            VersionState::DELETE_PLACEHOLDER => ['Will be deleted', 'danger'],
-            VersionState::MOVE_POINTER => ['Moved', 'warning'],
-            default => ['Modified', 'info'],
-        };
-
-        $thumbnailUrl = $this->resolveThumbnailUrl($table, $workspaceUid);
+        if (!$isChanged) {
+            $kindLabel = 'Live';
+            $badge = 'secondary';
+        } else {
+            [$kindLabel, $badge] = match ($state) {
+                VersionState::NEW_PLACEHOLDER => ['New', 'success'],
+                VersionState::DELETE_PLACEHOLDER => ['Will be deleted', 'danger'],
+                VersionState::MOVE_POINTER => ['Moved', 'warning'],
+                default => ['Modified', 'info'],
+            };
+        }
 
         return new PendingItem(
             table: $table,
@@ -244,15 +311,84 @@ final readonly class PendingItemsService
             title: $title,
             kindLabel: $kindLabel,
             badge: $badge,
-            thumbnailUrl: $thumbnailUrl,
+            thumbnailUrl: $this->resolveThumbnailUrl($table, $workspaceUid),
             isPrimary: $isPrimary,
+            isChanged: $isChanged,
+            isHidden: (bool)($row['hidden'] ?? false),
+            typeLabel: $this->resolveTypeLabel($table, $row),
         );
     }
 
     /**
-     * Returns the public URL of the first image referenced by the record,
-     * or null if no image is attached.
+     * Resolve a display title for the record:
+     *   1. TCA label (BackendUtility::getRecordTitle, respects label_alt)
+     *   2. For tt_content: first ~80 plain-text chars of bodytext
+     *   3. Type label + uid ("Text & media · #42")
+     *
+     * @param array<string, mixed> $row
      */
+    private function resolveTitle(string $table, array $row): string
+    {
+        $title = trim((string)BackendUtility::getRecordTitle($table, $row));
+        if ($title !== '' && !str_starts_with($title, '[no title]')) {
+            return $title;
+        }
+        if ($table === 'tt_content' && isset($row['bodytext'])) {
+            $fallback = $this->extractTextSnippet((string)$row['bodytext']);
+            if ($fallback !== '') {
+                return $fallback;
+            }
+        }
+        $typeLabel = $this->resolveTypeLabel($table, $row);
+        if ($typeLabel !== '') {
+            return $typeLabel . ' · #' . (int)$row['uid'];
+        }
+        return $table . ' #' . (int)$row['uid'];
+    }
+
+    private function extractTextSnippet(string $raw): string
+    {
+        $stripped = trim(strip_tags($raw));
+        if ($stripped === '') {
+            return '';
+        }
+        // Collapse whitespace and clip to 80 chars.
+        $clean = (string)preg_replace('/\s+/u', ' ', $stripped);
+        if (mb_strlen($clean) <= 80) {
+            return $clean;
+        }
+        return mb_substr($clean, 0, 80) . '…';
+    }
+
+    /**
+     * Resolve a friendly type label for the record.
+     *   - tt_content   → CType label resolved from TCA items
+     *   - pages        → doktype label
+     *   - other tables → schema title
+     *
+     * @param array<string, mixed> $row
+     */
+    private function resolveTypeLabel(string $table, array $row): string
+    {
+        if (!$this->tcaSchemaFactory->has($table)) {
+            return $table;
+        }
+        $schema = $this->tcaSchemaFactory->get($table);
+        $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+        if ($typeField === null || !isset($row[$typeField])) {
+            $title = $schema->getRawConfiguration()['ctrl']['title'] ?? $table;
+            return (string)$this->getLanguageService()->sL($title);
+        }
+        $value = (string)$row[$typeField];
+        $items = $schema->getRawConfiguration()['columns'][$typeField]['config']['items'] ?? [];
+        foreach ($items as $item) {
+            if ((string)($item['value'] ?? '') === $value) {
+                return (string)$this->getLanguageService()->sL((string)($item['label'] ?? $value));
+            }
+        }
+        return $value;
+    }
+
     private function resolveThumbnailUrl(string $table, int $workspaceUid): ?string
     {
         $fieldNamesPerTable = [
@@ -260,11 +396,9 @@ final readonly class PendingItemsService
             'tx_news_domain_model_news' => ['fal_media', 'fal_related_files'],
             'pages' => ['media'],
         ];
-
         if (!isset($fieldNamesPerTable[$table])) {
             return null;
         }
-
         foreach ($fieldNamesPerTable[$table] as $fieldname) {
             $referenceUid = $this->findFirstReferenceUid($table, $workspaceUid, $fieldname);
             if ($referenceUid <= 0) {
@@ -310,5 +444,16 @@ final readonly class PendingItemsService
         } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
             return null;
         }
+    }
+
+    private function getLanguageService(): LanguageService
+    {
+        if (isset($GLOBALS['LANG']) && $GLOBALS['LANG'] instanceof LanguageService) {
+            return $GLOBALS['LANG'];
+        }
+        $lang = is_string($GLOBALS['BE_USER']->user['lang'] ?? null) && $GLOBALS['BE_USER']->user['lang'] !== ''
+            ? (string)$GLOBALS['BE_USER']->user['lang']
+            : 'default';
+        return $this->languageServiceFactory->create($lang);
     }
 }

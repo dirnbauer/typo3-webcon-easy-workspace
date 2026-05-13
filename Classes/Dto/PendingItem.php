@@ -15,6 +15,9 @@ final readonly class PendingItem
         public string $badge,
         public ?string $thumbnailUrl,
         public bool $isPrimary,
+        public bool $isChanged,
+        public bool $isHidden,
+        public string $typeLabel,
     ) {}
 
     /**
@@ -31,6 +34,9 @@ final readonly class PendingItem
             'badge' => $this->badge,
             'thumbnailUrl' => $this->thumbnailUrl,
             'isPrimary' => $this->isPrimary,
+            'isChanged' => $this->isChanged,
+            'isHidden' => $this->isHidden,
+            'typeLabel' => $this->typeLabel,
         ];
     }
 }

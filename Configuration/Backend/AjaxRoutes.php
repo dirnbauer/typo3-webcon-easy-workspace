@@ -13,4 +13,8 @@ return [
         'path' => '/webcon-easy-workspace/publish',
         'target' => EasyWorkspaceAjaxController::class . '::publishAction',
     ],
+    'webcon_easy_workspace_preview_link' => [
+        'path' => '/webcon-easy-workspace/preview-link',
+        'target' => EasyWorkspaceAjaxController::class . '::previewLinkAction',
+    ],
 ];
