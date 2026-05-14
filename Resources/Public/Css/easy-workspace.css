@@ -276,6 +276,11 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     appearance: auto;
     -webkit-appearance: auto;
+    /* macOS / Safari render the native checkbox focus ring as
+       rounded "( )" brackets flanking the control — they're not a
+       CSS outline, they're the platform focus style. Suppress
+       them and provide our own flat ring instead. */
+    outline: none;
 }
 .wew-menu__selectbar-text {
     font-weight: 500;
@@ -290,12 +295,13 @@ webcon-easy-workspace-menu {
     background: var(--typo3-component-bg, var(--bs-body-bg));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
 }
-/* Focus indicator lives on the native checkbox itself — keeps the
-   focus ring tight to the actual interactive control instead of
-   tracing a rounded "()" around the whole label. */
+/* Focus indicator: box-shadow ring instead of `outline`, because
+   on macOS Chrome the OS draws its own rounded-bracket focus ring
+   over any CSS outline applied to a native checkbox. box-shadow
+   sits on the box layout — the platform doesn't replace it. */
 .wew-menu__selectbar-check:focus-visible {
-    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
-    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--typo3-state-primary-bg, var(--bs-primary));
+    border-radius: 2px;
 }
 
 /* ---- States ---- */
