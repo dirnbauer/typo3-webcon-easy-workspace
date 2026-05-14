@@ -666,25 +666,33 @@ webcon-easy-workspace-menu {
 .wew-list__discard svg { width: 14px; height: 14px; display: block; }
 
 /* Locate button hosts a stack of two SVGs (eye + pencil) sharing
-   the same 14x14 hit-area. We swap their opacity on hover/focus to
-   morph the icon, signaling the two-step affordance:
+   the same absolute-centered slot. We swap their opacity on
+   hover/focus to morph the icon, signaling the two-step affordance:
      - resting state: eye → "I'll show you where this is"
      - hovered state: pencil → "the next click edits it"
-   Pointer events are off on the icons themselves so the parent
-   button keeps a single click target. */
+   Each variant sets its own width/height so the eye reads a touch
+   larger than the pencil — editors flagged the pencil as too
+   dominant on hover. Pointer events are off on the icons themselves
+   so the parent button keeps a single click target. */
 .wew-list__locate-icon {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 14px;
-    height: 14px;
     transform: translate(-50%, -50%);
     display: block;
     pointer-events: none;
     transition: opacity .12s ease;
 }
-.wew-list__locate-icon--eye { opacity: 1; }
-.wew-list__locate-icon--pencil { opacity: 0; }
+.wew-list__locate-icon--eye {
+    width: 16px;
+    height: 16px;
+    opacity: 1;
+}
+.wew-list__locate-icon--pencil {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+}
 .wew-list__locate:hover .wew-list__locate-icon--eye,
 .wew-list__locate:focus-visible .wew-list__locate-icon--eye { opacity: 0; }
 .wew-list__locate:hover .wew-list__locate-icon--pencil,
