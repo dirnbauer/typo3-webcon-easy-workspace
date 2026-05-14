@@ -1288,21 +1288,90 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Open the record's edit form in a right-side sheet modal.
-   * Mirrors the "Open in form editor" pivot inside the diff modal —
-   * same TYPO3 core record_edit URL, same sheet position, same
-   * additional CSS class so the styling stays consistent across
-   * entry points into the form.
+   * Open the record's edit form using TYPO3 v14's
+   * ContextualRecordEditController — the lightweight FormEngine
+   * variant designed for sheet-position modals (slim "Save / Close"
+   * chrome, no breadcrumb or doc-header toolbar). This is the same
+   * dialog the Page Layout module's "Edit page properties" button
+   * opens. We replicate the wiring from core's
+   * <typo3-backend-contextual-record-edit-trigger> element:
+   *
+   *   - size: expand, position: sheet, hideHeader: true
+   *   - listen for the iframe's `typo3:editform:saved`,
+   *     `typo3:editform:closed`, `typo3:editform:navigate`
+   *     postMessages
+   *   - on close-from-outside, request the form to confirm-and-close
+   *     via `typo3:editform:requestclose` (handles "you have
+   *     unsaved changes" prompts)
+   *
+   * Falls back to the regular record_edit URL (full chrome) if the
+   * contextual URL is missing — older TYPO3 versions that don't
+   * define the route still get an editable form.
    */
   _openEditModal(item) {
-    if (!item.editUrl) return;
-    Modal.advanced({
-      title: `Edit — ${item.title || '[No title]'}`,
+    const url = item.contextualEditUrl || item.editUrl;
+    if (!url) return;
+    const isContextual = Boolean(item.contextualEditUrl);
+    const modal = Modal.advanced({
+      title: isContextual ? '' : `Edit — ${item.title || '[No title]'}`,
       type: ModalTypes.iframe,
-      content: item.editUrl,
-      size: ModalSizes.large,
+      content: url,
+      size: isContextual ? ModalSizes.expand : ModalSizes.large,
       position: ModalPositions.sheet,
+      hideHeader: isContextual,
       additionalCssClasses: ['wew-edit-modal-shell'],
+    });
+    if (isContextual) {
+      this._wireContextualEditModal(modal, item);
+    }
+  }
+
+  /**
+   * Plumb the postMessage protocol the ContextualRecordEditController
+   * uses to signal save / close back to the parent window. Mirrors
+   * `setupMessageHandling` from core's contextual-record-edit-trigger,
+   * with one extension-specific behaviour: on a successful save the
+   * workspace dropdown refreshes so the row reflects the new field
+   * values + any preview iframes reload.
+   */
+  _wireContextualEditModal(modal, item) {
+    const topWindow = window.top || window;
+    let savedTitle = '';
+    let saved = false;
+    let closedExplicitly = false;
+    const onMessage = (event) => {
+      if (event.origin !== window.location.origin) return;
+      const action = event.data?.actionName;
+      if (action === 'typo3:editform:saved') {
+        saved = true;
+        savedTitle = event.data.recordTitle ?? '';
+      } else if (action === 'typo3:editform:closed' || action === 'typo3:editform:navigate') {
+        closedExplicitly = true;
+        modal.hideModal();
+      }
+    };
+    topWindow.addEventListener('message', onMessage);
+    modal.addEventListener('typo3-modal-hide', (event) => {
+      if (closedExplicitly) return;
+      // Ask the iframe to handle its own close — gives FormEngine
+      // a chance to prompt the editor if there are unsaved changes.
+      event.preventDefault();
+      modal.querySelector('iframe')?.contentWindow?.postMessage(
+        { actionName: 'typo3:editform:requestclose' },
+        window.location.origin,
+      );
+    });
+    modal.addEventListener('typo3-modal-hidden', async () => {
+      topWindow.removeEventListener('message', onMessage);
+      if (!saved) return;
+      await this._refresh();
+      this._reloadPreviewIframes();
+      this._invalidateLatest();
+      Notification.success(
+        'Record saved',
+        savedTitle ? `"${savedTitle}" was updated.` : 'Record was updated.',
+        4,
+      );
     });
   }
 

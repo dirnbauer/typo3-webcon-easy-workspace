@@ -438,6 +438,11 @@ final readonly class PendingItemsService
         // record_edit expects the *live* uid for existing records;
         // FormEngine handles the workspace overlay on save automatically.
         $editUrl = $this->buildEditUrl($table, $liveUid);
+        // The v14 contextual variant of the same route — slim Save/Close
+        // chrome that fits the sheet-position modal we open from the
+        // dropdown's pencil. The JS prefers this URL when available
+        // and falls back to $editUrl on older TYPO3 versions.
+        $contextualEditUrl = $this->buildContextualEditUrl($table, $liveUid);
 
         // Attach the field-level diff so each row in the dropdown can
         // expand to show *what* changed. Only computed for actual
@@ -471,6 +476,7 @@ final readonly class PendingItemsService
             tableLabel: $this->resolveTableLabel($table),
             typeLabel: $this->resolveTypeLabel($table, $row),
             editUrl: $editUrl,
+            contextualEditUrl: $contextualEditUrl,
             diff: $diff,
             colPos: $colPos,
             colPosLabel: $colPosLabel,
@@ -517,6 +523,34 @@ final readonly class PendingItemsService
         }
         try {
             return (string)$this->backendUriBuilder->buildUriFromRoute('record_edit', [
+                'edit' => [$table => [$uid => 'edit']],
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * TYPO3 v14 introduced `record_edit_contextual` — a lightweight
+     * variant of EditDocumentController that renders the same
+     * FormEngine but with a minimal "Save / Close" chrome, designed
+     * to be opened inside a sheet-position modal. We prefer that
+     * over the full record_edit when the pencil is clicked from the
+     * workspace dropdown: the contextual form fits the slim
+     * right-side panel and posts back save/close signals via
+     * window.postMessage so the dropdown can refresh after a save.
+     *
+     * Returns null on older TYPO3 versions that don't have the
+     * route registered — the JS falls back to the regular editUrl
+     * in that case.
+     */
+    private function buildContextualEditUrl(string $table, int $uid): ?string
+    {
+        if ($uid <= 0) {
+            return null;
+        }
+        try {
+            return (string)$this->backendUriBuilder->buildUriFromRoute('record_edit_contextual', [
                 'edit' => [$table => [$uid => 'edit']],
             ]);
         } catch (\Throwable) {
