@@ -598,12 +598,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
           </div>
           <div class="wew-menu__title-wrap">
             <h3 class="wew-menu__title">
-              <span>Workspace publish</span>
+              <span>Workspace</span>
               ${this._config.enableWorkspaceChip && this.workspaceTitle
                 ? html`<span class="wew-menu__ws-chip" title="Active workspace">${this.workspaceTitle}</span>`
                 : nothing}
             </h3>
-            <p class="wew-menu__subtitle">${this.contextLabel || 'Loading…'}</p>
           </div>
           ${this._renderPreviewButton()}
         </header>

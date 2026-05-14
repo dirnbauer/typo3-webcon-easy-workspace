@@ -32,14 +32,16 @@ webcon-easy-workspace-menu {
        rendered, so the title-wrap fills the row).               */
     grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: .65rem;
-    padding: .75rem .85rem;
+    gap: .55rem;
+    /* Slimmer header now that the subtitle is gone — just enough
+       padding to seat the icon + title comfortably. */
+    padding: .45rem .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 .wew-menu__icon {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
     color: var(--typo3-link-color, var(--bs-primary));
@@ -47,6 +49,10 @@ webcon-easy-workspace-menu {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+.wew-menu__icon svg {
+    width: 18px;
+    height: 18px;
 }
 .wew-menu__title-wrap { min-width: 0; }
 .wew-menu__title {
