@@ -603,6 +603,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             </h3>
             <p class="wew-menu__subtitle">${this.contextLabel || 'Loading…'}</p>
           </div>
+          ${this._renderPreviewButton()}
         </header>
         ${this._renderFilter()}
         ${this._renderBody()}
@@ -860,8 +861,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
           </span>
           ${hasActions
             ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
-                ${locatable ? this._renderLocateButton(item) : nothing}
                 ${revertable ? this._renderRevertButton(item) : nothing}
+                ${locatable ? this._renderLocateButton(item) : nothing}
               </span>`
             : nothing}
           ${this._config.enableThumbnails && item.thumbnailUrl
@@ -996,12 +997,44 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * the same order, keeping Publish at the bottom-right (thumb-zone
    * on touch).
    */
+  /**
+   * Top-right preview-link affordance. Promoted from a tiny
+   * icon-only button in the footer to a labeled icon+text button in
+   * the header — editors kept missing it tucked away next to the
+   * publish action, and the preview link is the first thing many
+   * want for a quick shareable URL.
+   *
+   * Only renders when:
+   *   - the feature is enabled in TSconfig (enablePreviewLink)
+   *   - a page context is detected (preview is page-scoped)
+   *   - we're past the "loading" state (otherwise the button would
+   *     race the AJAX response and confuse editors mid-load)
+   */
+  _renderPreviewButton() {
+    if (!this._config.enablePreviewLink) return nothing;
+    if (this.state !== 'loaded' && this.state !== 'empty') return nothing;
+    const { pageUid } = this._detectContext();
+    if (pageUid <= 0) return nothing;
+    return html`
+      <button
+        type="button"
+        class="wew-menu__preview"
+        title="Copy a shareable preview link for this page"
+        @click=${() => this._copyPreviewLink(pageUid)}
+        ?disabled=${this.copyingPreview}
+      >
+        ${this.copyingPreview
+          ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
+          : this._linkIcon()}
+        <span class="wew-menu__preview-label">${this.copyingPreview ? 'Copying…' : 'Preview link'}</span>
+      </button>
+    `;
+  }
+
   _renderFooter() {
     if (this.state !== 'loaded') {
       return nothing;
     }
-    const { pageUid } = this._detectContext();
-    const showPreview = this._config.enablePreviewLink && pageUid > 0;
     const changeable = this.items.filter((i) => i.isChanged);
     const total = changeable.length;
     const selectedCount = this.selection.size;
@@ -1012,23 +1045,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
       : (someChecked ? 'Select all' : 'Select all');
     return html`
       <footer class="wew-menu__foot">
-        <div class="wew-menu__foot-preview">
-          ${showPreview
-            ? html`<button
-                type="button"
-                class="wew-menu__preview-icon"
-                title="Copy a shareable preview link for this page"
-                aria-label="Copy preview link"
-                @click=${() => this._copyPreviewLink(pageUid)}
-                ?disabled=${this.copyingPreview}
-              >
-                ${this.copyingPreview
-                  ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
-                  : this._linkIcon()}
-              </button>`
-            : nothing}
-        </div>
-
         <div class="wew-menu__foot-selection">
           ${total > 0 ? html`
             <label class="wew-menu__selectall">
