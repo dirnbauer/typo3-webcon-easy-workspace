@@ -1624,17 +1624,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const url = `${ENDPOINTS.diff}&table=${encodeURIComponent(item.table)}&workspaceUid=${encodeURIComponent(item.workspaceUid)}`;
     const recordTitle = item.title || '[No title]';
     const modal = Modal.advanced({
-      title: `Changes — ${recordTitle}`,
+      title: `History — ${recordTitle}`,
       type: ModalTypes.ajax,
       content: url,
       size: ModalSizes.large,
       additionalCssClasses: ['wew-diff-modal-shell'],
       // ajaxCallback fires once the Fluid-rendered HTML is in the
       // modal body. Wire interactive bits that the template can't
-      // express declaratively: tab switching, rollback buttons,
-      // and the "Open in form editor" pivot.
+      // express declaratively: rollback buttons and the "Open in
+      // form editor" pivot.
       ajaxCallback: (m) => {
-        this._wireDiffModalTabs(m);
         this._wireRollbackButtons(m, item);
         const editBtn = m.querySelector('.wew-diff-modal__edit');
         if (editBtn) {
@@ -1670,34 +1669,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Wire the tab buttons inside the diff modal. Pure client-side
-   * disclosure — no ajax round-trip — both tab panels arrive in
-   * the initial Fluid render so switching is instant.
-   */
-  _wireDiffModalTabs(modal) {
-    const tabs = modal.querySelectorAll('.wew-diff-modal__tab');
-    const panels = modal.querySelectorAll('.wew-diff-modal__panel');
-    tabs.forEach((tab) => {
-      tab.addEventListener('click', (e) => {
-        e.preventDefault();
-        const targetKey = tab.dataset.wewTab;
-        tabs.forEach((t) => {
-          const active = t === tab;
-          t.classList.toggle('wew-diff-modal__tab--active', active);
-          t.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        panels.forEach((p) => {
-          const active = p.dataset.wewPanel === targetKey;
-          p.classList.toggle('wew-diff-modal__panel--active', active);
-          p.hidden = !active;
-        });
-      });
-    });
-  }
-
-  /**
    * Wire the per-entry "Revert to before" and per-field "↻" buttons
-   * inside the History tab. Two modes — both hit the same endpoint:
+   * inside the History panel. Two modes — both hit the same endpoint:
    *
    *  - linear: rollback this sys_history entry + every later edit.
    *            Click on the row's "Revert to before" button.

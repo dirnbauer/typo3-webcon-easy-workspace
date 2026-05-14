@@ -1363,30 +1363,10 @@ webcon-easy-workspace-menu {
     margin: 0 .25rem;
     opacity: .55;
 }
-.wew-diff-modal__placeholder {
-    margin: 0 0 1rem 0;
-    padding: .55rem .75rem;
-    border-radius: 4px;
-    font-size: 12px;
-}
-.wew-diff-modal__placeholder--added {
-    background: var(--typo3-state-success-bg);
-    color: var(--typo3-state-success-color);
-    border: 1px solid var(--typo3-state-success-border-color);
-}
-.wew-diff-modal__placeholder--removed {
-    background: var(--typo3-state-danger-bg);
-    color: var(--typo3-state-danger-color);
-    border: 1px solid var(--typo3-state-danger-border-color);
-}
-.wew-diff-modal__list {
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: minmax(7rem, max-content) 1fr;
-    column-gap: 1.25rem;
-    row-gap: .85rem;
-    align-items: start;
+.wew-diff-modal__history-count {
+    font-size: inherit;
+    color: inherit;
+    opacity: .85;
 }
 .wew-diff-modal__field-label {
     margin: 0;
@@ -1433,63 +1413,9 @@ webcon-easy-workspace-menu {
     text-align: right;
 }
 
-/* ---- Modal tabs (Diff | History) ---- */
-.wew-diff-modal__tabs {
-    display: flex;
-    gap: 0;
-    margin-top: .75rem;
-    margin-bottom: -.65rem; /* visually anchor to the head's bottom border */
-    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-}
-.wew-diff-modal__tab {
-    background: transparent;
-    border: 0;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    padding: .45rem .9rem .5rem;
-    margin-bottom: -1px;
-    border-bottom: 2px solid transparent;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.3;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: .35rem;
-    transition: color .12s ease, border-color .12s ease;
-}
-.wew-diff-modal__tab:hover {
-    color: var(--typo3-text-color-base, var(--bs-body-color));
-}
-.wew-diff-modal__tab--active {
-    color: var(--typo3-text-color-base, var(--bs-body-color));
-    border-bottom-color: var(--typo3-state-primary-bg, var(--bs-primary));
-}
-.wew-diff-modal__tab:focus-visible {
-    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
-    outline-offset: -2px;
-    border-radius: 2px;
-}
-.wew-diff-modal__tab-count {
-    display: inline-block;
-    min-width: 1.4em;
-    padding: 0 .35em;
-    border-radius: 999px;
-    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
-    color: var(--typo3-state-default-color, inherit);
-    font-size: 10.5px;
-    font-weight: 600;
-    line-height: 1.4;
-    text-align: center;
-}
-.wew-diff-modal__tab--active .wew-diff-modal__tab-count {
-    background: var(--typo3-state-primary-bg, var(--bs-primary));
-    color: var(--typo3-state-primary-color, var(--bs-body-bg));
-}
+/* ---- History panel ---- */
 .wew-diff-modal__panel {
     padding-top: 1rem;
-}
-.wew-diff-modal__panel--active {
-    display: block;
 }
 
 /* ---- History timeline ---- */

@@ -27,7 +27,7 @@
         rollbackEnabled — bool — toggles the rollback affordances
 </f:comment>
 
-<div class="wew-diff-modal" data-wew-diff-modal>
+<div class="wew-diff-modal wew-diff-modal--single" data-wew-diff-modal>
     <header class="wew-diff-modal__head">
         <h2 class="wew-diff-modal__title">{title}</h2>
         <p class="wew-diff-modal__meta">
@@ -36,73 +36,19 @@
                 <span class="wew-diff-modal__sep">·</span>
                 live #{liveUid}
             </f:if>
+            <f:if condition="{timeline -> f:count()} > 0">
+                <span class="wew-diff-modal__sep">·</span>
+                <span class="wew-diff-modal__history-count">{timeline -> f:count()} edit<f:if condition="{timeline -> f:count()} != 1">s</f:if> in this workspace</span>
+            </f:if>
         </p>
-        <nav class="wew-diff-modal__tabs" role="tablist" aria-label="Record changes view">
-            <button
-                type="button"
-                role="tab"
-                class="wew-diff-modal__tab wew-diff-modal__tab--active"
-                aria-selected="true"
-                aria-controls="wew-diff-panel-summary"
-                data-wew-tab="summary"
-            >Diff</button>
-            <button
-                type="button"
-                role="tab"
-                class="wew-diff-modal__tab"
-                aria-selected="false"
-                aria-controls="wew-diff-panel-history"
-                data-wew-tab="history"
-            >History
-                <f:if condition="{timeline -> f:count()} > 0">
-                    <span class="wew-diff-modal__tab-count">{timeline -> f:count()}</span>
-                </f:if>
-            </button>
-        </nav>
     </header>
 
     <section
-        id="wew-diff-panel-summary"
-        class="wew-diff-modal__panel wew-diff-modal__panel--active"
-        role="tabpanel"
-        data-wew-panel="summary"
-    >
-        <f:if condition="{kind} == 'added'">
-            <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--added">
-                This record was newly created in the workspace. The fields below show what will be published to live.
-            </p>
-        </f:if>
-        <f:if condition="{kind} == 'removed'">
-            <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--removed">
-                This record will be deleted on publish. The fields below show the live values that will be removed.
-            </p>
-        </f:if>
-
-        <f:if condition="{diffs -> f:count()} > 0">
-            <f:then>
-                <dl class="wew-diff-modal__list">
-                    <f:for each="{diffs}" as="diff">
-                        <dt class="wew-diff-modal__field-label">{diff.label}</dt>
-                        <dd class="wew-diff-modal__field-value">
-                            <f:format.raw>{diff.html}</f:format.raw>
-                        </dd>
-                    </f:for>
-                </dl>
-            </f:then>
-            <f:else>
-                <p class="wew-diff-modal__empty">
-                    <em>No field-level differences resolved for this record.</em>
-                </p>
-            </f:else>
-        </f:if>
-    </section>
-
-    <section
         id="wew-diff-panel-history"
-        class="wew-diff-modal__panel"
-        role="tabpanel"
+        class="wew-diff-modal__panel wew-diff-modal__panel--active"
+        role="region"
+        aria-label="Workspace edit history"
         data-wew-panel="history"
-        hidden
     >
         <f:if condition="{timeline -> f:count()} > 0">
             <f:then>
