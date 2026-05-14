@@ -216,6 +216,18 @@ webcon-easy-workspace-menu {
     border-color: var(--typo3-state-notice-border-color);
 }
 
+/* In-row variant — same color tokens but lighter typographic
+   weight: state-pills inside the publish list need to read as
+   metadata, not as headings. The modal still uses the bold +
+   uppercase base style for primary emphasis. */
+.wew-state-pill--inline {
+    padding: 0 .35em;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
 /* ---- Selection bar (master checkbox) ---- */
 .wew-menu__selectbar {
     display: flex;
@@ -235,14 +247,9 @@ webcon-easy-workspace-menu {
     margin: 0;
     cursor: pointer;
     user-select: none;
-    /* Whole label is the click target — bigger hit area than the
-       16-px checkbox alone (WCAG 2.5.8 target size considerations). */
-    padding: .15rem .2rem;
-    border-radius: 4px;
-    transition: background-color .12s ease;
+    transition: color .12s ease;
 }
 .wew-menu__selectbar-label:hover {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 10%, transparent);
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 .wew-menu__selectbar-check {
@@ -267,8 +274,11 @@ webcon-easy-workspace-menu {
     background: var(--typo3-component-bg, var(--bs-body-bg));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
 }
-.wew-menu__selectbar-label:focus-within {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+/* Focus indicator lives on the native checkbox itself — keeps the
+   focus ring tight to the actual interactive control instead of
+   tracing a rounded "()" around the whole label. */
+.wew-menu__selectbar-check:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
     outline-offset: 2px;
 }
 
@@ -430,17 +440,18 @@ webcon-easy-workspace-menu {
     display: inline-flex;
     align-items: center;
     gap: .25rem;
-    margin: 0 .75rem .35rem 2.4rem;   /* aligned with the row title column */
-    padding: .1rem .45rem;
+    align-self: flex-start;
+    margin-top: .1rem;
+    padding: .05rem .4rem;
     background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
     color: var(--typo3-state-default-color, inherit);
     border: 1px solid var(--typo3-state-default-border-color, var(--bs-border-color));
     border-radius: 3px;
-    font-size: 10.5px;
-    font-weight: 600;
+    font-size: 10px;
+    font-weight: 500;
     line-height: 1.4;
-    text-transform: uppercase;
-    letter-spacing: .04em;
+    letter-spacing: 0;
+    text-transform: none;
     cursor: pointer;
     transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
@@ -458,24 +469,58 @@ webcon-easy-workspace-menu {
     line-height: 1;
 }
 
+/* Visually hidden — the checkbox stays in the DOM and reachable
+   via Tab so screen-reader users still have a semantic toggle,
+   but the dropdown's first column gets reclaimed for content.
+   Same trick TYPO3 backend uses for .visually-hidden / .sr-only. */
+.wew-list__check.visually-hidden,
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
 .wew-list__label {
-    display: grid;
-    /* checkbox | title (flex) | optional eye-button | optional thumbnail.
-       Trailing columns whose elements aren't rendered collapse to 0 px
-       width via grid auto-flow, so rows reflow naturally. */
-    grid-template-columns: auto 1fr auto auto;
-    align-items: center;
-    gap: .55rem;
-    padding: .45rem .75rem .45rem .9rem;
+    display: flex;
+    align-items: stretch;
+    padding: .35rem .65rem .35rem .85rem;
     cursor: pointer;
     margin: 0;
+}
+.wew-list__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+.wew-list__head {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    min-width: 0;
+}
+.wew-list__sub {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    min-width: 0;
+    font-size: 10.5px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
 
 .wew-list__actions {
     display: inline-flex;
     align-items: center;
-    gap: .2rem;
+    gap: .1rem;
     flex-shrink: 0;
+    margin-left: auto;  /* push to the right of the title row */
 }
 
 .wew-list__locate,
@@ -483,8 +528,8 @@ webcon-easy-workspace-menu {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     border: 1px solid transparent;
     background: transparent;
@@ -493,6 +538,8 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
+.wew-list__locate svg,
+.wew-list__discard svg { width: 14px; height: 14px; }
 .wew-list__locate svg,
 .wew-list__discard svg { display: block; }
 
@@ -558,16 +605,12 @@ webcon-easy-workspace-menu {
     background: var(--typo3-link-color, var(--bs-primary));
 }
 
-.wew-list__title {
-    display: flex;
-    flex-direction: column;
-    /* CRITICAL for ellipsis: grid items default to min-width:auto which
-       grows them to fit the longest child. Setting min-width:0 lets
-       the 1fr column actually constrain width so .wew-list__title-text
-       overflows and truncates. */
-    min-width: 0;
-}
 .wew-list__title-text {
+    /* CRITICAL for ellipsis: flex children default to min-width:auto
+       which grows them to fit the longest child. Setting min-width:0
+       (via the parent .wew-list__head) lets this span truncate. */
+    flex: 1 1 auto;
+    min-width: 0;
     font-weight: 500;
     color: var(--typo3-component-color, var(--bs-body-color));
     overflow: hidden;
@@ -575,16 +618,6 @@ webcon-easy-workspace-menu {
     white-space: nowrap;
     font-size: 12.5px;
     line-height: 1.3;
-}
-.wew-list__meta {
-    display: flex;
-    gap: .3rem;
-    align-items: center;
-    margin-top: .1rem;
-    font-size: 10.5px;
-    overflow: hidden;
-    /* Allow flex children with min-width:0 to shrink + ellipsis. */
-    min-width: 0;
 }
 .wew-list__meta .badge {
     flex-shrink: 0;

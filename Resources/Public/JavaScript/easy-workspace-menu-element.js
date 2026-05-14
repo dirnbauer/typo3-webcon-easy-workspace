@@ -254,18 +254,28 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   _clearIframeHighlight() {
     const current = this._iframeHighlight;
-    if (!current) return;
-    try {
-      if (current.isVeWrapper) {
-        // Tell visual-editor's <ve-content-element> the mouse has left.
-        current.el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
-      } else if (current.previous) {
-        for (const [key, value] of Object.entries(current.previous)) {
-          current.el.style[key] = value ?? '';
+    if (current) {
+      try {
+        if (current.isVeWrapper) {
+          // Tell visual-editor's <ve-content-element> the mouse has left.
+          current.el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        } else if (current.previous) {
+          for (const [key, value] of Object.entries(current.previous)) {
+            current.el.style[key] = value ?? '';
+          }
         }
-      }
-    } catch { /* element may already be detached */ }
-    this._iframeHighlight = null;
+      } catch { /* element may already be detached */ }
+      this._iframeHighlight = null;
+    }
+    // Remove any discard-preview tags we injected into iframes
+    // (see _previewDiscard). Iterate all reachable iframes so a
+    // stale tag doesn't survive in a frame we no longer track.
+    for (const iframe of this._collectIframes()) {
+      let doc;
+      try { doc = iframe.contentDocument; } catch { doc = null; }
+      if (!doc) continue;
+      doc.querySelectorAll('.wew-discard-tag').forEach((el) => el.remove());
+    }
   }
 
   /**
@@ -899,26 +909,43 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // affordance to nowhere.
     const diff = Array.isArray(item.diff) ? item.diff : [];
     const hasDiff = diff.length > 0;
+    // Compact 3-row layout per item:
+    //  Row 1: title (full width)  +  actions on right (discard, eye)
+    //  Row 2: status pill          +  table label · type label
+    //  Row 3: "N changes" trigger  (opens diff modal)
+    //
+    // The checkbox is visually hidden (.visually-hidden CSS) but kept
+    // in the DOM and focusable, so screen-reader users still get a
+    // semantic toggle. The whole <label> is the click target — toggles
+    // the checkbox — and CSS via :has(:checked) tints the row + left
+    // stripe so the selected state is obvious without occupying the
+    // first column.
     return html`
       <li class=${stateClasses} data-table=${item.table}>
         <label class="wew-list__label" for=${item.isChanged ? id : nothing}>
-          <span class="wew-list__check-cell">
-            ${item.isChanged
-              ? html`<input
-                  type="checkbox"
-                  id=${id}
-                  class="form-check-input wew-list__check"
-                  .checked=${checked}
-                  @change=${(e) => this._toggle(item, e.target.checked)}
-                />`
-              : html`<span class="wew-list__check-spacer" aria-hidden="true"></span>`}
-          </span>
-          <span class="wew-list__title">
-            <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
-            <span class="wew-list__meta">
-              <span class="wew-state-pill wew-state-pill--${item.badge || 'info'}">${item.kindLabel}</span>
+          ${item.isChanged
+            ? html`<input
+                type="checkbox"
+                id=${id}
+                class="form-check-input wew-list__check visually-hidden"
+                .checked=${checked}
+                @change=${(e) => this._toggle(item, e.target.checked)}
+              />`
+            : nothing}
+          <span class="wew-list__body">
+            <span class="wew-list__head">
+              <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
+              ${hasActions
+                ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
+                    ${revertable ? this._renderRevertButton(item) : nothing}
+                    ${locatable ? this._renderLocateButton(item) : nothing}
+                  </span>`
+                : nothing}
+            </span>
+            <span class="wew-list__sub">
+              <span class="wew-state-pill wew-state-pill--${item.badge || 'info'} wew-state-pill--inline">${item.kindLabel}</span>
               ${item.isHidden && this._config.enableHiddenBadge
-                ? html`<span class="wew-state-pill wew-state-pill--secondary wew-list__hidden-badge" title="Record is hidden (won't show on the live site)">Hidden</span>`
+                ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title="Record is hidden (won't show on the live site)">Hidden</span>`
                 : nothing}
               ${this._config.enableTypeLabels
                 ? html`<span class="wew-list__table">
@@ -930,28 +957,19 @@ class WebconEasyWorkspaceMenu extends LitElement {
                   </span>`
                 : nothing}
             </span>
+            ${hasDiff && ENDPOINTS.diff
+              ? html`<button
+                  type="button"
+                  class="wew-list__diff-trigger"
+                  title="View what changed in this record (opens a dialog)"
+                  @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
+                >
+                  <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
+                  <span class="wew-list__diff-trigger-label">${diff.length === 1 ? '1 change' : `${diff.length} changes`}</span>
+                </button>`
+              : nothing}
           </span>
-          ${hasActions
-            ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
-                ${revertable ? this._renderRevertButton(item) : nothing}
-                ${locatable ? this._renderLocateButton(item) : nothing}
-              </span>`
-            : nothing}
-          ${this._config.enableThumbnails && item.thumbnailUrl
-            ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
-            : nothing}
         </label>
-        ${hasDiff && ENDPOINTS.diff
-          ? html`<button
-              type="button"
-              class="wew-list__diff-trigger"
-              title="View what changed in this record (opens a dialog)"
-              @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
-            >
-              <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-              <span class="wew-list__diff-trigger-label">${diff.length === 1 ? '1 change' : `${diff.length} changes`}</span>
-            </button>`
-          : nothing}
       </li>
     `;
   }
@@ -963,13 +981,21 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * term for the operation (the DataHandler command is `flush`).
    */
   _renderRevertButton(item) {
+    // Hover preview: same scroll-into-view + outline as the eye
+    // button, plus a "Decline the changes" tag overlaid on the
+    // outlined element so editors can see *what* they're about to
+    // discard before they click. mouseleave removes both.
     return html`
       <button
         type="button"
         class="wew-list__discard"
         title="Discard this change"
         aria-label="Discard this workspace change"
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._confirmAndDiscard(item); }}
+        @mouseenter=${() => this._previewDiscard(item)}
+        @mouseleave=${() => this._clearIframeHighlight()}
+        @focus=${() => this._previewDiscard(item)}
+        @blur=${() => this._clearIframeHighlight()}
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._clearIframeHighlight(); this._confirmAndDiscard(item); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
@@ -979,6 +1005,56 @@ class WebconEasyWorkspaceMenu extends LitElement {
         </svg>
       </button>
     `;
+  }
+
+  /**
+   * Hover/focus the discard button → preview what'd be discarded.
+   * Same scroll + outline as the eye locator, plus injects a small
+   * floating tag into the iframe document anchored to the outlined
+   * element. mouseleave clears both via _clearIframeHighlight().
+   *
+   * Reuses the existing highlight infrastructure so we don't have a
+   * second source of truth for "outlined element" — that one
+   * already deals with workspace-vs-live uid resolution.
+   */
+  _previewDiscard(item) {
+    const located = this._locateInAnyIframe(item);
+    if (!located) return;
+    this._highlightInIframe(item, { announce: false });
+    // Add a "Decline the changes" tag inside the iframe document,
+    // anchored to the located element. Lives in the iframe so the
+    // BE dropdown's z-index doesn't fight it — and clears on
+    // _clearIframeHighlight() since we tag it with a class the
+    // cleanup routine looks for.
+    try {
+      const doc = located.doc;
+      const existing = doc.querySelector('.wew-discard-tag');
+      if (existing) existing.remove();
+      const tag = doc.createElement('div');
+      tag.className = 'wew-discard-tag';
+      tag.textContent = 'Decline the changes';
+      Object.assign(tag.style, {
+        position: 'absolute',
+        zIndex: '999999',
+        padding: '3px 8px',
+        fontSize: '11px',
+        fontWeight: '600',
+        background: '#dc3545',
+        color: '#fff',
+        borderRadius: '3px',
+        boxShadow: '0 2px 6px rgba(0,0,0,.25)',
+        pointerEvents: 'none',
+        whiteSpace: 'nowrap',
+      });
+      const rect = located.el.getBoundingClientRect();
+      const scrollY = doc.defaultView?.scrollY ?? 0;
+      const scrollX = doc.defaultView?.scrollX ?? 0;
+      tag.style.top = `${rect.top + scrollY - 26}px`;
+      tag.style.left = `${rect.left + scrollX}px`;
+      doc.body.appendChild(tag);
+    } catch {
+      /* DOM access guarded — cross-origin iframes throw silently. */
+    }
   }
 
   /**
@@ -1389,13 +1465,41 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (!ENDPOINTS.diff) return;
     const url = `${ENDPOINTS.diff}&table=${encodeURIComponent(item.table)}&workspaceUid=${encodeURIComponent(item.workspaceUid)}`;
     const recordTitle = item.title || '[No title]';
-    Modal.advanced({
+    const modal = Modal.advanced({
       title: `Changes — ${recordTitle}`,
       type: ModalTypes.ajax,
       content: url,
       size: ModalSizes.large,
       additionalCssClasses: ['wew-diff-modal-shell'],
+      // ajaxCallback fires once the Fluid-rendered HTML is in the
+      // modal body. Wire the "Open in form editor" button so it
+      // closes the diff dialog and reopens the record inside an
+      // iframe modal (TYPO3's standard pattern for in-place form
+      // editing) instead of navigating away.
+      ajaxCallback: (m) => {
+        const editBtn = m.querySelector('.wew-diff-modal__edit');
+        if (!editBtn) return;
+        editBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const editUrl = editBtn.getAttribute('data-edit-url');
+          if (!editUrl) return;
+          m.hideModal();
+          // Defer just enough that the close transition starts
+          // before the new modal mounts — otherwise core's modal
+          // manager occasionally races the two open/close.
+          setTimeout(() => {
+            Modal.advanced({
+              title: `Edit — ${recordTitle}`,
+              type: ModalTypes.iframe,
+              content: editUrl,
+              size: ModalSizes.full,
+              additionalCssClasses: ['wew-edit-modal-shell'],
+            });
+          }, 60);
+        });
+      },
     });
+    return modal;
   }
 
   _key(item) {

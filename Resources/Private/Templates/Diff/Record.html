@@ -62,9 +62,13 @@
 
     <f:if condition="{editUrl}">
         <footer class="wew-diff-modal__foot">
-            <a class="btn btn-default" href="{editUrl}">
+            <button
+                type="button"
+                class="btn btn-default wew-diff-modal__edit"
+                data-edit-url="{editUrl}"
+            >
                 Open in form editor
-            </a>
+            </button>
         </footer>
     </f:if>
 </div>
