@@ -1756,9 +1756,45 @@ class WebconEasyWorkspaceMenu extends LitElement {
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
+      this._updateToolbarBadge();
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
       this.state = 'error';
+      this._updateToolbarBadge();
+    }
+  }
+
+  /**
+   * Sync the small "N pending" badge on the toolbar trigger icon
+   * with the current changed-count. The badge lives in the
+   * toolbar's <span class="toolbar-item-icon"> (rendered by
+   * EasyWorkspaceItem.html), NOT in the dropdown body — so editors
+   * see the count without having to open the dropdown.
+   *
+   * Walks up to the toolbar-item host since the dropdown panel is a
+   * sibling of the trigger button under that root. Falls back
+   * silently if the host isn't around (older shells, headless
+   * tests).
+   */
+  _updateToolbarBadge() {
+    const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
+      || this.closest('.toolbar-item')
+      || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
+    const badge = host?.querySelector('.wew-toolbar-badge');
+    if (!badge) return;
+    const changedCount = this.state === 'loaded'
+      ? this.items.filter((i) => i.isChanged).length
+      : 0;
+    if (changedCount > 0) {
+      badge.textContent = String(changedCount);
+      badge.hidden = false;
+      badge.setAttribute('aria-hidden', 'false');
+      badge.setAttribute('aria-label', `${changedCount} pending change${changedCount === 1 ? '' : 's'} on this page`);
+    } else {
+      badge.textContent = '';
+      badge.hidden = true;
+      badge.setAttribute('aria-hidden', 'true');
+      badge.removeAttribute('aria-label');
     }
   }
 
