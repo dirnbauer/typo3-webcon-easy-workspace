@@ -1544,21 +1544,25 @@ webcon-easy-workspace-menu {
 }
 .wew-history__rollback-field {
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    /* Sized up from 20x20 so the per-field revert icon reads as a
+       real action button, not a decoration — at the smaller size
+       editors weren't recognizing the ↺ as something clickable. */
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     border: 1px solid transparent;
     background: transparent;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     cursor: pointer;
-    font-size: 13px;
+    font-size: 18px;
     line-height: 1;
-    transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
 .wew-history__rollback-field:hover,
 .wew-history__rollback-field:focus-visible {
-    background: var(--typo3-state-warning-bg, var(--bs-warning-bg-subtle));
-    border-color: var(--typo3-state-warning-border-color, var(--bs-warning-border-subtle));
-    color: var(--typo3-state-warning-color, var(--bs-warning-text));
+    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
+    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
     outline: none;
+    transform: scale(1.08);
 }
