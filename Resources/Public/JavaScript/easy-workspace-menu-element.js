@@ -1195,14 +1195,18 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   /**
    * The "eye" button — hover it to scroll the corresponding content
-   * element into view in the Visual Editor iframe (and outline it),
-   * click it to do the same. SVG inlined from TYPO3 core's
-   * actions-eye icon (currentColor).
+   * element into view in the Visual Editor iframe (and outline it).
+   * Clicking opens a modal that loads the *live* (pre-workspace)
+   * version of the page in an iframe with `ADMCMD_prev=LIVE`, anchored
+   * to `#c{liveUid}`. Nothing is saved — it's a read-only preview of
+   * what the element looked like before the workspace edit.
+   *
+   * SVG inlined from TYPO3 core's actions-eye icon (currentColor).
    */
   _renderLocateButton(item) {
     const tooltip = this._config.hasVisualEditor
-      ? 'Hover or click to focus this element in the Visual Editor'
-      : 'Hover or click to locate in preview';
+      ? 'Hover to locate · Click to view the live version (before changes)'
+      : 'Hover to locate · Click to view the live version';
     return html`
       <button
         type="button"
@@ -1213,7 +1217,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
         @blur=${() => this._clearIframeHighlight()}
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._highlightInIframe(item, { announce: true }); }}
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._clearIframeHighlight(); this._openLivePreview(item); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
@@ -1223,6 +1227,78 @@ class WebconEasyWorkspaceMenu extends LitElement {
         </svg>
       </button>
     `;
+  }
+
+  /**
+   * Open a modal showing the live (pre-workspace) rendering of the
+   * page that contains this content element. We re-use the existing
+   * `previewLink` endpoint to get a properly signed FE preview URL
+   * for the page, then layer two things on top:
+   *
+   *   - `ADMCMD_prev=LIVE` — tells the workspaces middleware to render
+   *     the page as workspace 0 (live) even though the BE user is in
+   *     a workspace. Authoritative way to bypass overlays without
+   *     mutating session state.
+   *   - `#c{liveUid}` — standard tt_content anchor so the iframe lands
+   *     on the element instead of the top of the page.
+   *
+   * Nothing in the workspace is touched. The modal is read-only by
+   * construction (an iframe of the public FE), so the editor can
+   * compare "before" against the Visual Editor's "after" side-by-side
+   * by leaving the modal open.
+   */
+  _openLivePreview(item) {
+    if (!ENDPOINTS.previewLink) {
+      Notification.info('Live version', 'Preview link is disabled in TSconfig — cannot load the live version.');
+      return;
+    }
+    const { pageUid } = this._detectContext();
+    if (pageUid <= 0) {
+      Notification.info('Live version', 'No page context detected.');
+      return;
+    }
+    const liveUid = Number(item.liveUid) || 0;
+    new AjaxRequest(ENDPOINTS.previewLink)
+      .withQueryArguments({ pageUid })
+      .get()
+      .then((response) => response.resolve())
+      .then((data) => {
+        if (!data?.url) {
+          Notification.error('Live version', data?.error || 'No preview URL returned.');
+          return;
+        }
+        const liveUrl = this._appendLiveAdmCmd(data.url, liveUid);
+        Modal.advanced({
+          title: `Live version — ${item.title || '[No title]'}`,
+          type: ModalTypes.iframe,
+          content: liveUrl,
+          size: ModalSizes.large,
+          additionalCssClasses: ['wew-live-preview-modal'],
+        });
+      })
+      .catch((error) => {
+        Notification.error('Live version', error?.message || 'Unexpected error loading the live preview.');
+      });
+  }
+
+  /**
+   * Append `ADMCMD_prev=LIVE` (and optional `#c{ceUid}` anchor) to a
+   * preview URL. Uses URL parsing so an existing query string is
+   * preserved rather than colliding with a naïve `?ADMCMD_prev=…`.
+   */
+  _appendLiveAdmCmd(url, ceUid) {
+    try {
+      const u = new URL(url, window.location.origin);
+      u.searchParams.set('ADMCMD_prev', 'LIVE');
+      if (ceUid > 0) {
+        u.hash = `c${ceUid}`;
+      }
+      return u.toString();
+    } catch {
+      const sep = url.includes('?') ? '&' : '?';
+      const base = `${url}${sep}ADMCMD_prev=LIVE`;
+      return ceUid > 0 ? `${base}#c${ceUid}` : base;
+    }
   }
 
   /**
