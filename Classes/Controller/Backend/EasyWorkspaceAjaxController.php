@@ -231,10 +231,25 @@ final readonly class EasyWorkspaceAjaxController
         $historyService->setLastHistoryEntryNumber($historyUid);
         $diff = $historyService->getDiff($historyService->getChangeLog());
 
+        // performRollback can throw for many reasons (DataHandler
+        // refused a cmdmap, permission denied, broken sys_history
+        // row, …). Surface the actual message to the editor by
+        // returning 200 with success:false — TYPO3's AjaxRequest
+        // throws on 4xx/5xx and swallows the body, so 500 here
+        // would produce the JS "Unexpected error" fallback.
         try {
+            if (empty($diff['insertsDeletes'] ?? null) && empty($diff['oldData'] ?? null)) {
+                return new JsonResponse([
+                    'success' => false,
+                    'error' => 'Nothing to roll back at this entry. The history entry may be older than the live baseline, or the diff is empty.',
+                ]);
+            }
             $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $GLOBALS['BE_USER'] ?? null);
         } catch (\Throwable $e) {
-            return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+            return new JsonResponse([
+                'success' => false,
+                'error' => sprintf('%s (%s:%d)', $e->getMessage(), basename($e->getFile()), $e->getLine()),
+            ]);
         }
 
         return new JsonResponse(['success' => true, 'mode' => $mode, 'field' => $field]);
