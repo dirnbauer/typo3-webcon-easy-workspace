@@ -17,7 +17,7 @@
 import { LitElement, html, nothing } from 'lit';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
-import Modal, { Sizes as ModalSizes, Types as ModalTypes } from '@typo3/backend/modal.js';
+import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPositions } from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 const ENDPOINTS = {
@@ -1509,12 +1509,19 @@ class WebconEasyWorkspaceMenu extends LitElement {
           // Defer just enough that the close transition starts
           // before the new modal mounts — otherwise core's modal
           // manager occasionally races the two open/close.
+          //
+          // Position 'sheet' docks the modal to the right edge of
+          // the viewport — same affordance TYPO3 v14 uses for its
+          // own in-place edit dialogs. Keeps the page tree + the
+          // workspace dropdown's surrounding context visible on the
+          // left, so editors don't lose their place.
           setTimeout(() => {
             Modal.advanced({
               title: `Edit — ${recordTitle}`,
               type: ModalTypes.iframe,
               content: editUrl,
-              size: ModalSizes.full,
+              size: ModalSizes.large,
+              position: ModalPositions.sheet,
               additionalCssClasses: ['wew-edit-modal-shell'],
             });
           }, 60);
