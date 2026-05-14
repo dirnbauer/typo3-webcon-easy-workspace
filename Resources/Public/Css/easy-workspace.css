@@ -11,6 +11,11 @@ webcon-easy-workspace-menu {
     display: block;
     width: min(380px, calc(100vw - 24px));
     max-width: 95vw;
+    /* No content inside should ever push past the panel width.
+       Without this clip, a single long unbreakable token in a
+       title (URLs, IDs, etc.) inflated the dropdown and the parent
+       .dropdown-menu showed a horizontal scrollbar. */
+    overflow-x: hidden;
     font-size: 13px;
     color: var(--typo3-component-color, var(--bs-body-color));
 }
@@ -22,6 +27,12 @@ webcon-easy-workspace-menu {
     width: auto;
     max-width: min(380px, calc(100vw - 24px));
     min-width: 320px;
+    overflow-x: hidden;
+}
+/* Defensive: same belt-and-braces clamp on the inner root. */
+.wew-menu {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* ---- Header ---- */
