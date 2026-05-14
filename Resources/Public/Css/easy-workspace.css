@@ -428,12 +428,33 @@ webcon-easy-workspace-menu {
 }
 
 /* ---- Content element rows (children of the primary above) ----
-   Slight left indent so the nesting against the page/news header
-   above is obvious. Applies only to tt_content rows that aren't
-   themselves the primary, so a tt_content-only context (no
-   parent record) still reads flat. */
-.wew-list__row[data-table="tt_content"]:not(.wew-list__row--primary) .wew-list__label {
-    padding-left: 1.6rem;
+   No indent — hierarchy is carried by a continuous left rail
+   (declared below) that runs from the colheader strip down
+   through every CE row, the same pattern TYPO3's main navigation
+   uses for sub-items. */
+.wew-list__row[data-table="tt_content"]:not(.wew-list__row--primary)::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: -1px;
+    width: 3px;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 35%, transparent);
+}
+/* Changed CE rows: the rail switches to the primary info color
+   so "modified" still reads at a glance — same color as the
+   short rounded stripe used on pages/news primary rows, just
+   stretched to the full height so it merges into the group rail
+   above and below. */
+.wew-list__row[data-table="tt_content"].wew-list__row--changed:not(.wew-list__row--primary)::before {
+    background: var(--bs-info);
+}
+/* Stop the rail cleanly at the end of the list — without this
+   the `bottom: -1px` bridge leaks 1 px past the last row into
+   the dropdown's footer divider. */
+.wew-list__row[data-table="tt_content"]:not(.wew-list__row--primary):last-child::before {
+    bottom: 0;
 }
 /* Changed rows get a left accent stripe — no greyed out fallback for the rest. */
 .wew-list__row--changed::before {
@@ -471,10 +492,7 @@ webcon-easy-workspace-menu {
    way they'd see them in Web → Layout. */
 .wew-list__colheader {
     list-style: none;
-    /* Left-padding matches the content-element indent below so the
-       uppercase strip reads as the section heading for the nested
-       rows it precedes, lined up with where each child row starts. */
-    padding: .35rem .85rem .15rem 1.6rem;
+    padding: .35rem .85rem .15rem;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -482,6 +500,23 @@ webcon-easy-workspace-menu {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .03));
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    position: relative;
+}
+/* Continuous left rail running from the colheader strip down
+   through every tt_content child below it — mirrors TYPO3 main
+   nav's sub-item indicator: a thin vertical line on the left
+   edge of the group that signals "these belong to the parent
+   record above". The rail bridges the 1-px row-bottom border
+   via `bottom: -1px` so the segments merge visually into one
+   continuous line. */
+.wew-list__colheader::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: -1px;
+    width: 3px;
+    background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 35%, transparent);
 }
 .wew-list__colheader-label {
     /* No extra styling — the <li> rules above carry the look.
