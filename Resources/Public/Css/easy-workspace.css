@@ -201,47 +201,42 @@ webcon-easy-workspace-menu {
     white-space: nowrap;
     vertical-align: baseline;
 }
-/* TYPO3's state-*-bg tokens are tuned for alerts on the page body
-   and evaluate to a very dark color in dark mode (~15 % lightness).
-   On the dropdown's tinted rows those backgrounds melt into the
-   surroundings — the pill text was readable but the pill stopped
-   reading as a badge.
-
-   Per-state override via light-dark(): light mode keeps the
-   existing TYPO3 tokens (already battle-tested), dark mode swaps
-   the bg for a saturated brand-color tint at ~25 % alpha and the
-   border for the same color at ~55 %. Text keeps the
-   token-driven foreground, so the contrast that was already
-   AA-clearing stays intact. */
+/* Use TYPO3's dedicated badge tokens — they're specifically tuned
+   for pill/badge components (not full-width alerts like the
+   state-* tokens) and are already mode-aware via light-dark(),
+   so the same declarations work in both light and dark backends
+   without an extension-side override. Falls back to the matching
+   state-* tokens on older TYPO3 versions that don't define the
+   badge variants yet. */
 .wew-state-pill--info {
-    background: light-dark(var(--typo3-state-info-bg), color-mix(in srgb, var(--bs-info, #2aa89c) 25%, transparent));
-    color: var(--typo3-state-info-color);
-    border-color: light-dark(var(--typo3-state-info-border-color), color-mix(in srgb, var(--bs-info, #2aa89c) 55%, transparent));
+    background: var(--typo3-badge-info-bg, var(--typo3-state-info-bg));
+    color: var(--typo3-badge-info-color, var(--typo3-state-info-color));
+    border-color: var(--typo3-badge-info-border-color, var(--typo3-state-info-border-color));
 }
 .wew-state-pill--success {
-    background: light-dark(var(--typo3-state-success-bg), color-mix(in srgb, var(--bs-success, #79a548) 25%, transparent));
-    color: var(--typo3-state-success-color);
-    border-color: light-dark(var(--typo3-state-success-border-color), color-mix(in srgb, var(--bs-success, #79a548) 55%, transparent));
+    background: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
+    color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
+    border-color: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
 }
 .wew-state-pill--warning {
-    background: light-dark(var(--typo3-state-warning-bg), color-mix(in srgb, var(--bs-warning, #e8a33d) 25%, transparent));
-    color: var(--typo3-state-warning-color);
-    border-color: light-dark(var(--typo3-state-warning-border-color), color-mix(in srgb, var(--bs-warning, #e8a33d) 55%, transparent));
+    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
+    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
+    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
 }
 .wew-state-pill--danger {
-    background: light-dark(var(--typo3-state-danger-bg), color-mix(in srgb, var(--bs-danger, #c83c3c) 25%, transparent));
-    color: var(--typo3-state-danger-color);
-    border-color: light-dark(var(--typo3-state-danger-border-color), color-mix(in srgb, var(--bs-danger, #c83c3c) 55%, transparent));
+    background: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
+    color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
+    border-color: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
 }
 .wew-state-pill--secondary {
-    background: light-dark(var(--typo3-state-secondary-bg, var(--typo3-state-default-bg)), color-mix(in srgb, var(--bs-secondary, #6c757d) 25%, transparent));
-    color: var(--typo3-state-secondary-color, var(--typo3-state-default-color));
-    border-color: light-dark(var(--typo3-state-secondary-border-color, var(--typo3-state-default-border-color)), color-mix(in srgb, var(--bs-secondary, #6c757d) 55%, transparent));
+    background: var(--typo3-badge-secondary-bg, var(--typo3-state-secondary-bg, var(--typo3-state-default-bg)));
+    color: var(--typo3-badge-secondary-color, var(--typo3-state-secondary-color, var(--typo3-state-default-color)));
+    border-color: var(--typo3-badge-secondary-border-color, var(--typo3-state-secondary-border-color, var(--typo3-state-default-border-color)));
 }
 .wew-state-pill--notice {
-    background: light-dark(var(--typo3-state-notice-bg), color-mix(in srgb, var(--bs-info, #2aa89c) 25%, transparent));
-    color: var(--typo3-state-notice-color);
-    border-color: light-dark(var(--typo3-state-notice-border-color), color-mix(in srgb, var(--bs-info, #2aa89c) 55%, transparent));
+    background: var(--typo3-badge-info-bg, var(--typo3-state-notice-bg));
+    color: var(--typo3-badge-info-color, var(--typo3-state-notice-color));
+    border-color: var(--typo3-badge-info-border-color, var(--typo3-state-notice-border-color));
 }
 
 /* In-row variant — same color tokens but lighter typographic
