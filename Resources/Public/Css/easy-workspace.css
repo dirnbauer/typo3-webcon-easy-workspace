@@ -727,28 +727,28 @@ webcon-easy-workspace-menu {
  */
 .wew-menu__foot {
     /* Two columns now that preview moved to the header:
-       selection (1fr) · action (auto). */
+       selection (1fr) · action (auto). Tighter vertical
+       rhythm — the action below is no longer a hero button. */
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: .65rem;
-    padding: .55rem .75rem;
+    gap: .5rem;
+    padding: .4rem .75rem .4rem .85rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 
 /* Quiet context footnote: identifies which page/news record the
-   publish list is scoped to. Used to live as the header subtitle
-   alongside the workspace title — moved down here so the header
-   reads cleanly (just "Workspace publish · STAGING · Preview") and
-   the scope identifier doesn't compete with the primary chrome. */
+   publish list is scoped to. Joined visually to the footer above
+   (no extra top-border / heavy padding) so the two read as one
+   integrated chrome block instead of two stacked bars. */
 .wew-menu__context {
-    padding: .3rem .85rem;
-    font-size: 10.5px;
+    padding: .15rem .85rem .4rem;
+    font-size: 10px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
-    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     text-align: right;
+    letter-spacing: .02em;
 }
 
 /* Preview link button — promoted to the header's top-right slot.
@@ -811,14 +811,13 @@ webcon-easy-workspace-menu {
 }
 
 /* Tier 2: selection state — master checkbox + adaptive label + N/M
-   counter. Centered in its flexible column. Muted secondary text
-   keeps it from competing with the primary action visually. */
+   counter. Sits flush-left now so it reads as "current state"
+   rather than competing with the publish action for centre stage. */
 .wew-menu__foot-selection {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: .55rem;
-    font-size: 11.5px;
+    gap: .45rem;
+    font-size: 11px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     min-width: 0;
     overflow: hidden;
@@ -826,56 +825,58 @@ webcon-easy-workspace-menu {
 .wew-menu__selectall {
     display: inline-flex;
     align-items: center;
-    gap: .35rem;
+    gap: .3rem;
     margin: 0;
-    padding: .15rem .35rem;
-    border-radius: 4px;
+    padding: 0;
     cursor: pointer;
     user-select: none;
-    transition: background-color .12s ease, color .12s ease;
+    transition: color .12s ease;
 }
 .wew-menu__selectall:hover {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 12%, transparent);
-    color: var(--typo3-component-color, var(--bs-body-color));
-}
-.wew-menu__selectall:focus-within {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
-    outline-offset: 2px;
+    color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-menu__selectall-check {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     margin: 0;
-    accent-color: var(--typo3-link-color, var(--bs-primary));
+    accent-color: var(--typo3-state-primary-bg, var(--bs-primary));
     cursor: pointer;
     appearance: auto;
     -webkit-appearance: auto;
+    outline: none;
+}
+.wew-menu__selectall-check:focus-visible {
+    box-shadow: 0 0 0 2px var(--typo3-state-primary-bg, var(--bs-primary));
+    border-radius: 2px;
 }
 .wew-menu__selectall-label {
     font-weight: 500;
-    color: var(--typo3-component-color, var(--bs-body-color));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-menu__count {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    opacity: .85;
 }
 .wew-menu__count strong {
-    color: var(--typo3-component-color, var(--bs-body-color));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
     font-weight: 600;
 }
 
-/* Tier 1: the primary action. Largest visual weight — solid primary
-   color, bold label, larger padding, generous min-width. */
+/* Tier 1: the primary action. Refined — no longer a hero button.
+   Tight padding, weight 600, smaller font, no min-width so it
+   only takes the room its label needs. The selection counter to
+   its left already carries the action context (4 of 4). */
 .wew-menu__publish {
-    min-width: 150px;
-    font-size: 12.5px;
-    font-weight: 700;
-    padding: .45rem 1rem;
-    letter-spacing: .01em;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: .3rem .75rem;
+    letter-spacing: 0;
+    border-radius: 4px;
+    line-height: 1.4;
 }
 .wew-menu__publish:focus-visible {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
     outline-offset: 2px;
 }
 /* Bootstrap sets pointer-events:none on disabled buttons, which also
