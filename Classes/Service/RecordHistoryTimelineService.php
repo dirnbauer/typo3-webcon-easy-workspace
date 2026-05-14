@@ -97,11 +97,16 @@ final readonly class RecordHistoryTimelineService
             }
             $newRecord = is_array($log['newRecord'] ?? null) ? $log['newRecord'] : [];
             $oldRecord = is_array($log['oldRecord'] ?? null) ? $log['oldRecord'] : [];
+            $action = $this->describeAction((int)($log['actiontype'] ?? 0), $languageService);
             $entries[] = [
                 'historyUid' => (int)$historyUid,
                 'tstamp' => (int)($log['tstamp'] ?? 0),
                 'tstampFormatted' => BackendUtility::datetime((int)($log['tstamp'] ?? 0)),
-                'action' => $this->describeAction((int)($log['actiontype'] ?? 0), $languageService),
+                'action' => $action,
+                // Lowercased copy for the CSS variant class
+                // (.wew-history__action--{key}). Keeping it in PHP
+                // dodges Fluid's lack of a string-lower ViewHelper.
+                'actionKey' => strtolower($action),
                 'user' => $this->resolveUser((int)($log['userid'] ?? 0)),
                 'diffs' => $this->buildFieldDiffs($table, $oldRecord, $newRecord),
             ];

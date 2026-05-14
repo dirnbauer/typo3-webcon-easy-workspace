@@ -110,7 +110,7 @@
                     <f:for each="{timeline}" as="entry" iteration="loop">
                         <li class="wew-history__entry">
                             <div class="wew-history__meta">
-                                <span class="wew-history__action wew-history__action--{entry.action -> f:case(case: 'lower') -> f:format.raw()}">{entry.action}</span>
+                                <span class="wew-history__action wew-history__action--{entry.actionKey}">{entry.action}</span>
                                 <span class="wew-history__when">{entry.tstampFormatted}</span>
                                 <span class="wew-history__who">{entry.user}</span>
                                 <f:if condition="{rollbackEnabled}">
