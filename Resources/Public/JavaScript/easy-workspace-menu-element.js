@@ -102,6 +102,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.previewJustCopied = false;
     this.latestState = 'idle';
     this.latestItems = [];
+    this._workspacePendingCount = 0;
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
   }
@@ -1753,6 +1754,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.items = Array.isArray(data.items) ? data.items : [];
       this.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
       this.contextLabel = this._buildContextLabel(data);
+      this._workspacePendingCount = Number.isFinite(data.workspacePendingCount)
+        ? data.workspacePendingCount
+        : 0;
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
@@ -1765,35 +1769,27 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Sync the small "N pending" badge on the toolbar trigger icon
-   * with the current changed-count. The badge lives in the
-   * toolbar's <span class="toolbar-item-icon"> (rendered by
-   * EasyWorkspaceItem.html), NOT in the dropdown body — so editors
-   * see the count without having to open the dropdown.
-   *
-   * Walks up to the toolbar-item host since the dropdown panel is a
-   * sibling of the trigger button under that root. Falls back
-   * silently if the host isn't around (older shells, headless
-   * tests).
+   * Sync the workspace-wide pending-count badge on the toolbar trigger
+   * with the latest server count. Mirrors core's System Information
+   * pattern: the badge is a sibling of `.toolbar-item-icon` under the
+   * toolbar item host, gets the standard `.toolbar-item-badge`,
+   * `.badge`, `.badge-pill` classes, and toggles the `.hidden` class
+   * (not the `hidden` attribute) to match the rest of the toolbar.
    */
   _updateToolbarBadge() {
     const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item')
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
-    const badge = host?.querySelector('.wew-toolbar-badge');
+    const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
-    const changedCount = this.state === 'loaded'
-      ? this.items.filter((i) => i.isChanged).length
-      : 0;
-    if (changedCount > 0) {
-      badge.textContent = String(changedCount);
-      badge.hidden = false;
-      badge.setAttribute('aria-hidden', 'false');
-      badge.setAttribute('aria-label', `${changedCount} pending change${changedCount === 1 ? '' : 's'} on this page`);
+    const count = this.state === 'error'
+      ? 0
+      : Math.max(0, Number(this._workspacePendingCount ?? 0));
+    badge.textContent = count > 0 ? String(count) : '';
+    badge.classList.toggle('hidden', count <= 0);
+    if (count > 0) {
+      badge.setAttribute('aria-label', `${count} pending workspace change${count === 1 ? '' : 's'}`);
     } else {
-      badge.textContent = '';
-      badge.hidden = true;
-      badge.setAttribute('aria-hidden', 'true');
       badge.removeAttribute('aria-label');
     }
   }

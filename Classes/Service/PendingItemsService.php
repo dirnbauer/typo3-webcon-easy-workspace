@@ -171,6 +171,46 @@ final readonly class PendingItemsService
      * Reads the title field from sys_workspace; falls back to a
      * generic label for the live workspace or unknown ids.
      */
+    /**
+     * Count pending workspace versions across the whole workspace —
+     * NOT scoped to a specific page. Used by the toolbar badge so
+     * editors see "there's stuff to publish" regardless of which
+     * page they have selected.
+     *
+     * Counts rows with `t3ver_wsid = current workspace AND deleted
+     * = 0` across the same set of tables LatestChangesService uses
+     * (pages, tt_content, tx_news_domain_model_news). Skips tables
+     * absent from the TCA schema (e.g. tx_news on installs without
+     * the extension).
+     */
+    public function countWorkspacePending(): int
+    {
+        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        if ($workspaceId <= 0) {
+            return 0;
+        }
+        $tables = ['pages', 'tt_content', 'tx_news_domain_model_news'];
+        $total = 0;
+        foreach ($tables as $table) {
+            if (!$this->tcaSchemaFactory->has($table)) {
+                continue;
+            }
+            $qb = $this->connectionPool->getQueryBuilderForTable($table);
+            $qb->getRestrictions()->removeAll();
+            $count = (int)$qb
+                ->count('uid')
+                ->from($table)
+                ->where(
+                    $qb->expr()->eq('t3ver_wsid', $qb->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+                    $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)),
+                )
+                ->executeQuery()
+                ->fetchOne();
+            $total += $count;
+        }
+        return $total;
+    }
+
     private function resolveWorkspaceTitle(int $workspaceId): string
     {
         if ($workspaceId <= 0) {

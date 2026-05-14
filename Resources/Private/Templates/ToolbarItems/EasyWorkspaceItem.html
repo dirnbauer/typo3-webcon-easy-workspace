@@ -4,14 +4,8 @@
 
 <span class="toolbar-item-icon" title="Workspace publish">
     <core:icon identifier="actions-workspace" alternativeMarkupIdentifier="inline"/>
-    <!--
-        Count badge mounted by the Lit dropdown element. It's hidden
-        until the dropdown loads and reports a changed-count > 0.
-        Kept in the toolbar trigger (not the dropdown body) so the
-        editor sees the count without having to open the dropdown.
-    -->
-    <span class="wew-toolbar-badge" hidden aria-hidden="true"></span>
 </span>
 <span class="toolbar-item-title">Workspace publish</span>
+<span class="toolbar-item-badge badge badge-pill badge-warning hidden" data-wew-workspace-badge></span>
 
 </html>

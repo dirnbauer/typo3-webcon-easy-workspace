@@ -7,36 +7,10 @@
  * Compact layout: 420px wide, scrolling list, dense rows.
  */
 
-/* ---- Toolbar trigger badge ----
-   Small pill rendered into the workspace icon by the Lit element
-   on every refresh — shows the changed-count for the current
-   page/news context so editors see "there's stuff to publish"
-   without opening the dropdown. Same visual language as core's
-   toolbar message-count badges (top-right red dot on the AI / chat
-   icons). */
-.webcon-easy-workspace-toolbar .toolbar-item-icon {
-    position: relative;
-}
-.wew-toolbar-badge {
-    position: absolute;
-    top: -2px;
-    right: -4px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: var(--typo3-state-danger-bg, #e74c3c);
-    color: var(--typo3-state-danger-color, #fff);
-    border: 2px solid var(--typo3-component-bg, var(--bs-body-bg));
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 12px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    box-sizing: content-box;
-    pointer-events: none;
-}
-.wew-toolbar-badge[hidden] { display: none; }
+/* The toolbar trigger badge uses core's `.toolbar-item-badge` /
+   `.badge` / `.badge-pill` styles (mirrors System Information's
+   message-count badge), so no extension-specific styling is needed
+   here — the markup lives in EasyWorkspaceItem.html. */
 
 webcon-easy-workspace-menu {
     display: block;
