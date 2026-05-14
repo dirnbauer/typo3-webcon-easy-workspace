@@ -17,8 +17,10 @@ use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LatestChangesService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
+use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
+use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
 
 final readonly class EasyWorkspaceAjaxController
 {
@@ -43,6 +45,8 @@ final readonly class EasyWorkspaceAjaxController
         private RecordDiffService $recordDiffService,
         private ViewFactoryInterface $viewFactory,
         private BackendUriBuilder $backendUriBuilder,
+        private RecordHistoryTimelineService $historyTimelineService,
+        private RecordHistoryRollback $recordHistoryRollback,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -162,13 +166,78 @@ final readonly class EasyWorkspaceAjaxController
             }
         }
 
+        // Per-record edit timeline from sys_history. Rendered as a
+        // second tab in the modal so editors can scrub through every
+        // workspace edit and roll back to any point. Empty list is
+        // fine — the template handles it.
+        $timeline = $this->historyTimelineService->build($table, $workspaceUid);
+
         $view = $this->viewFactory->create(new ViewFactoryData(
             templatePathAndFilename: 'EXT:webcon_easy_workspace/Resources/Private/Templates/Diff/Record.html',
             request: $request,
         ));
-        $view->assignMultiple($payload + ['editUrl' => $editUrl]);
+        $view->assignMultiple($payload + [
+            'editUrl' => $editUrl,
+            'timeline' => $timeline,
+            'rollbackEnabled' => true,
+        ]);
 
         return new HtmlResponse($view->render());
+    }
+
+    /**
+     * Rollback a sys_history entry. Two modes:
+     *
+     *  - `mode=linear`   — undo this entry and every later edit on
+     *                       this record (TYPO3 native "Rollback"
+     *                       semantics).
+     *  - `mode=field`    — undo just one field's change from this
+     *                       entry. Later edits on other fields stay.
+     *
+     * Both delegate to core's RecordHistoryRollback::performRollback,
+     * which composes a DataHandler cmdmap from the diff and runs it
+     * — meaning all the normal data-integrity, hooks, and workspace
+     * versioning kicks in. We don't bypass anything.
+     */
+    public function historyRollbackAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $config = $this->configurationProvider->get(null);
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+        }
+
+        $body = (array)($request->getParsedBody() ?? []);
+        $table = (string)($body['table'] ?? '');
+        $uid = (int)($body['uid'] ?? 0);
+        $historyUid = (int)($body['historyUid'] ?? 0);
+        $mode = (string)($body['mode'] ?? 'linear');
+        $field = (string)($body['field'] ?? '');
+
+        if (!in_array($table, self::ALLOWED_TABLES, true) || $uid <= 0 || $historyUid <= 0) {
+            return new JsonResponse(['success' => false, 'error' => 'Invalid arguments.'], 400);
+        }
+        if ($mode !== 'linear' && $mode !== 'field') {
+            return new JsonResponse(['success' => false, 'error' => 'Unknown rollback mode.'], 400);
+        }
+
+        // performRollback's first arg is a "rollbackFields" selector:
+        // either "ALL" or "table:uid:field" for a single field. The
+        // diff array is the {<sys_history.uid>: {oldRecord, newRecord, …}}
+        // structure RecordHistory::getDiff produces.
+        $rollbackSelector = $mode === 'field' && $field !== ''
+            ? sprintf('%s:%d:%s', $table, $uid, $field)
+            : sprintf('%s:%d', $table, $uid);
+        $historyService = new \TYPO3\CMS\Backend\History\RecordHistory(sprintf('%s:%d', $table, $uid));
+        $historyService->setLastHistoryEntryNumber($historyUid);
+        $diff = $historyService->getDiff($historyService->getChangeLog());
+
+        try {
+            $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $GLOBALS['BE_USER'] ?? null);
+        } catch (\Throwable $e) {
+            return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+
+        return new JsonResponse(['success' => true, 'mode' => $mode, 'field' => $field]);
     }
 
     public function publishAction(ServerRequestInterface $request): ResponseInterface

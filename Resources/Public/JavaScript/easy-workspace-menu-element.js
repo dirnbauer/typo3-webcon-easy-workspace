@@ -27,6 +27,7 @@ const ENDPOINTS = {
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
   latest: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_latest || '',
   diff: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_diff || '',
+  historyRollback: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '',
 };
 
 // Fallback defaults — overridden by the TSconfig-driven JSON the
@@ -1551,41 +1552,129 @@ class WebconEasyWorkspaceMenu extends LitElement {
       size: ModalSizes.large,
       additionalCssClasses: ['wew-diff-modal-shell'],
       // ajaxCallback fires once the Fluid-rendered HTML is in the
-      // modal body. Wire the "Open in form editor" button so it
-      // closes the diff dialog and reopens the record inside an
-      // iframe modal (TYPO3's standard pattern for in-place form
-      // editing) instead of navigating away.
+      // modal body. Wire interactive bits that the template can't
+      // express declaratively: tab switching, rollback buttons,
+      // and the "Open in form editor" pivot.
       ajaxCallback: (m) => {
+        this._wireDiffModalTabs(m);
+        this._wireRollbackButtons(m, item);
         const editBtn = m.querySelector('.wew-diff-modal__edit');
-        if (!editBtn) return;
-        editBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const editUrl = editBtn.getAttribute('data-edit-url');
-          if (!editUrl) return;
-          m.hideModal();
-          // Defer just enough that the close transition starts
-          // before the new modal mounts — otherwise core's modal
-          // manager occasionally races the two open/close.
-          //
-          // Position 'sheet' docks the modal to the right edge of
-          // the viewport — same affordance TYPO3 v14 uses for its
-          // own in-place edit dialogs. Keeps the page tree + the
-          // workspace dropdown's surrounding context visible on the
-          // left, so editors don't lose their place.
-          setTimeout(() => {
-            Modal.advanced({
-              title: `Edit — ${recordTitle}`,
-              type: ModalTypes.iframe,
-              content: editUrl,
-              size: ModalSizes.large,
-              position: ModalPositions.sheet,
-              additionalCssClasses: ['wew-edit-modal-shell'],
-            });
-          }, 60);
-        });
+        if (editBtn) {
+          editBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const editUrl = editBtn.getAttribute('data-edit-url');
+            if (!editUrl) return;
+            m.hideModal();
+            // Defer just enough that the close transition starts
+            // before the new modal mounts — otherwise core's modal
+            // manager occasionally races the two open/close.
+            //
+            // Position 'sheet' docks the modal to the right edge of
+            // the viewport — same affordance TYPO3 v14 uses for its
+            // own in-place edit dialogs. Keeps the page tree + the
+            // workspace dropdown's surrounding context visible on the
+            // left, so editors don't lose their place.
+            setTimeout(() => {
+              Modal.advanced({
+                title: `Edit — ${recordTitle}`,
+                type: ModalTypes.iframe,
+                content: editUrl,
+                size: ModalSizes.large,
+                position: ModalPositions.sheet,
+                additionalCssClasses: ['wew-edit-modal-shell'],
+              });
+            }, 60);
+          });
+        }
       },
     });
     return modal;
+  }
+
+  /**
+   * Wire the tab buttons inside the diff modal. Pure client-side
+   * disclosure — no ajax round-trip — both tab panels arrive in
+   * the initial Fluid render so switching is instant.
+   */
+  _wireDiffModalTabs(modal) {
+    const tabs = modal.querySelectorAll('.wew-diff-modal__tab');
+    const panels = modal.querySelectorAll('.wew-diff-modal__panel');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetKey = tab.dataset.wewTab;
+        tabs.forEach((t) => {
+          const active = t === tab;
+          t.classList.toggle('wew-diff-modal__tab--active', active);
+          t.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach((p) => {
+          const active = p.dataset.wewPanel === targetKey;
+          p.classList.toggle('wew-diff-modal__panel--active', active);
+          p.hidden = !active;
+        });
+      });
+    });
+  }
+
+  /**
+   * Wire the per-entry "Revert to before" and per-field "↻" buttons
+   * inside the History tab. Two modes — both hit the same endpoint:
+   *
+   *  - linear: rollback this sys_history entry + every later edit.
+   *            Click on the row's "Revert to before" button.
+   *  - field:  rollback only one field's change from this entry.
+   *            Click on the small ↻ next to a diff value.
+   *
+   * Closes the modal on success, refreshes the publish list, and
+   * reloads any visible preview iframe so the editor sees the
+   * rolled-back state immediately.
+   */
+  _wireRollbackButtons(modal, item) {
+    if (!ENDPOINTS.historyRollback) return;
+    const buttons = modal.querySelectorAll('[data-wew-rollback]');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const mode = btn.dataset.wewRollback;
+        const historyUid = parseInt(btn.dataset.historyUid, 10);
+        const field = btn.dataset.field || '';
+        if (!mode || historyUid <= 0) return;
+
+        const confirmMsg = mode === 'field'
+          ? `Revert this field’s change for “${item.title || item.workspaceUid}”? Later edits to other fields are kept.`
+          : `Revert this edit and every later edit on “${item.title || item.workspaceUid}”? This affects every field touched after this point.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        btn.disabled = true;
+        try {
+          const response = await new AjaxRequest(ENDPOINTS.historyRollback).post(
+            {
+              table: item.table,
+              uid: item.workspaceUid,
+              historyUid,
+              mode,
+              field,
+            },
+            { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
+          );
+          const result = await response.resolve();
+          if (result?.success) {
+            Notification.success('Reverted', mode === 'field' ? `Field “${field}” reverted.` : 'Edit reverted.', 4);
+            modal.hideModal();
+            await this._refresh();
+            this._reloadPreviewIframes();
+            this._invalidateLatest();
+          } else {
+            Notification.error('Could not revert', result?.error || 'Unknown error.');
+            btn.disabled = false;
+          }
+        } catch (error) {
+          Notification.error('Revert failed', error?.message || 'Unexpected error.');
+          btn.disabled = false;
+        }
+      });
+    });
   }
 
   _key(item) {

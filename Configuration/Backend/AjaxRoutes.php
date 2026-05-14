@@ -29,4 +29,8 @@ return [
         'path' => '/webcon-easy-workspace/diff',
         'target' => EasyWorkspaceAjaxController::class . '::diffAction',
     ],
+    'webcon_easy_workspace_history_rollback' => [
+        'path' => '/webcon-easy-workspace/history-rollback',
+        'target' => EasyWorkspaceAjaxController::class . '::historyRollbackAction',
+    ],
 ];

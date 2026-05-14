@@ -8,18 +8,26 @@
     (no <html>/<body>) since core's Modal injects it straight into
     .modal-body.
 
+    Two tabs:
+       - "Diff"     — current live → workspace tip summary. The
+                      pre-publish review view.
+       - "History"  — per-edit timeline from sys_history. Each
+                      entry has a per-field diff and rollback
+                      affordances (linear + per-field).
+
     Variables:
         title         — record title for the header
         tableLabel    — "Page Content", "News", "Page" …
         workspaceUid  — uid of the workspace version
         liveUid       — uid of the live counterpart (0 = new placeholder)
         kind          — changed | added | removed
-        diffs         — list of field diffs, each:
-                            label, before, after, html, kind
-        editUrl       — backend record_edit URL for the record (optional)
+        diffs         — list of field diffs for the Diff tab
+        timeline      — list of sys_history entries for the History tab
+        editUrl       — backend record_edit URL (optional)
+        rollbackEnabled — bool — toggles the rollback affordances
 </f:comment>
 
-<div class="wew-diff-modal">
+<div class="wew-diff-modal" data-wew-diff-modal>
     <header class="wew-diff-modal__head">
         <h2 class="wew-diff-modal__title">{title}</h2>
         <p class="wew-diff-modal__meta">
@@ -29,36 +37,124 @@
                 live #{liveUid}
             </f:if>
         </p>
+        <nav class="wew-diff-modal__tabs" role="tablist" aria-label="Record changes view">
+            <button
+                type="button"
+                role="tab"
+                class="wew-diff-modal__tab wew-diff-modal__tab--active"
+                aria-selected="true"
+                aria-controls="wew-diff-panel-summary"
+                data-wew-tab="summary"
+            >Diff</button>
+            <button
+                type="button"
+                role="tab"
+                class="wew-diff-modal__tab"
+                aria-selected="false"
+                aria-controls="wew-diff-panel-history"
+                data-wew-tab="history"
+            >History
+                <f:if condition="{timeline -> f:count()} > 0">
+                    <span class="wew-diff-modal__tab-count">{timeline -> f:count()}</span>
+                </f:if>
+            </button>
+        </nav>
     </header>
 
-    <f:if condition="{kind} == 'added'">
-        <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--added">
-            This record was newly created in the workspace. The fields below show what will be published to live.
-        </p>
-    </f:if>
-    <f:if condition="{kind} == 'removed'">
-        <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--removed">
-            This record will be deleted on publish. The fields below show the live values that will be removed.
-        </p>
-    </f:if>
-
-    <f:if condition="{diffs -> f:count()} > 0">
-        <f:then>
-            <dl class="wew-diff-modal__list">
-                <f:for each="{diffs}" as="diff">
-                    <dt class="wew-diff-modal__field-label">{diff.label}</dt>
-                    <dd class="wew-diff-modal__field-value">
-                        <f:format.raw>{diff.html}</f:format.raw>
-                    </dd>
-                </f:for>
-            </dl>
-        </f:then>
-        <f:else>
-            <p class="wew-diff-modal__empty">
-                <em>No field-level differences resolved for this record.</em>
+    <section
+        id="wew-diff-panel-summary"
+        class="wew-diff-modal__panel wew-diff-modal__panel--active"
+        role="tabpanel"
+        data-wew-panel="summary"
+    >
+        <f:if condition="{kind} == 'added'">
+            <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--added">
+                This record was newly created in the workspace. The fields below show what will be published to live.
             </p>
-        </f:else>
-    </f:if>
+        </f:if>
+        <f:if condition="{kind} == 'removed'">
+            <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--removed">
+                This record will be deleted on publish. The fields below show the live values that will be removed.
+            </p>
+        </f:if>
+
+        <f:if condition="{diffs -> f:count()} > 0">
+            <f:then>
+                <dl class="wew-diff-modal__list">
+                    <f:for each="{diffs}" as="diff">
+                        <dt class="wew-diff-modal__field-label">{diff.label}</dt>
+                        <dd class="wew-diff-modal__field-value">
+                            <f:format.raw>{diff.html}</f:format.raw>
+                        </dd>
+                    </f:for>
+                </dl>
+            </f:then>
+            <f:else>
+                <p class="wew-diff-modal__empty">
+                    <em>No field-level differences resolved for this record.</em>
+                </p>
+            </f:else>
+        </f:if>
+    </section>
+
+    <section
+        id="wew-diff-panel-history"
+        class="wew-diff-modal__panel"
+        role="tabpanel"
+        data-wew-panel="history"
+        hidden
+    >
+        <f:if condition="{timeline -> f:count()} > 0">
+            <f:then>
+                <ol class="wew-history">
+                    <f:for each="{timeline}" as="entry" iteration="loop">
+                        <li class="wew-history__entry">
+                            <div class="wew-history__meta">
+                                <span class="wew-history__action wew-history__action--{entry.action -> f:case(case: 'lower') -> f:format.raw()}">{entry.action}</span>
+                                <span class="wew-history__when">{entry.tstampFormatted}</span>
+                                <span class="wew-history__who">{entry.user}</span>
+                                <f:if condition="{rollbackEnabled}">
+                                    <button
+                                        type="button"
+                                        class="wew-history__rollback"
+                                        data-wew-rollback="linear"
+                                        data-history-uid="{entry.historyUid}"
+                                        title="Revert this edit and every later edit on this record"
+                                    >Revert to before</button>
+                                </f:if>
+                            </div>
+                            <f:if condition="{entry.diffs -> f:count()} > 0">
+                                <dl class="wew-history__diff">
+                                    <f:for each="{entry.diffs}" as="d">
+                                        <dt class="wew-diff-modal__field-label">{d.label}</dt>
+                                        <dd class="wew-diff-modal__field-value">
+                                            <f:format.raw>{d.html}</f:format.raw>
+                                            <f:if condition="{rollbackEnabled}">
+                                                <button
+                                                    type="button"
+                                                    class="wew-history__rollback-field"
+                                                    data-wew-rollback="field"
+                                                    data-history-uid="{entry.historyUid}"
+                                                    data-field="{d.field}"
+                                                    title="Revert only this field's change"
+                                                    aria-label="Revert {d.label}"
+                                                >&#x21bb;</button>
+                                            </f:if>
+                                        </dd>
+                                    </f:for>
+                                </dl>
+                            </f:if>
+                        </li>
+                    </f:for>
+                </ol>
+            </f:then>
+            <f:else>
+                <p class="wew-diff-modal__empty">
+                    <em>No workspace edit history recorded for this record yet.</em>
+                </p>
+            </f:else>
+        </f:if>
+    </section>
 
     <f:if condition="{editUrl}">
         <footer class="wew-diff-modal__foot">
