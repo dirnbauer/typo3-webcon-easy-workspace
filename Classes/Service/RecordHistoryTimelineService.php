@@ -108,7 +108,15 @@ final readonly class RecordHistoryTimelineService
                 // dodges Fluid's lack of a string-lower ViewHelper.
                 'actionKey' => strtolower($action),
                 'user' => $this->resolveUser((int)($log['userid'] ?? 0)),
-                'diffs' => $this->buildFieldDiffs($table, $oldRecord, $newRecord),
+                // historyUid duplicated into each diff so the inner
+                // <f:for as="d"> doesn't have to reach back into the
+                // enclosing entry scope — Fluid's ScopedVariableProvider
+                // does resolve outer locals in theory, but rendering
+                // `data-history-uid="{entry.historyUid}"` from the inner
+                // loop has been observed to emit "0" against the workspace
+                // tip records here. Stuffing it on the diff side dodges
+                // that lookup entirely.
+                'diffs' => $this->buildFieldDiffs($table, $oldRecord, $newRecord, (int)$historyUid),
             ];
         }
 
@@ -118,9 +126,9 @@ final readonly class RecordHistoryTimelineService
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new
-     * @return list<array{field: string, label: string, before: string, after: string, html: string}>
+     * @return list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
      */
-    private function buildFieldDiffs(string $table, array $old, array $new): array
+    private function buildFieldDiffs(string $table, array $old, array $new, int $historyUid): array
     {
         $fields = array_unique(array_merge(array_keys($old), array_keys($new)));
         $languageService = $this->getLanguageService();
@@ -141,6 +149,7 @@ final readonly class RecordHistoryTimelineService
                 'before' => $before,
                 'after' => $after,
                 'html' => $this->diffUtility->diff($before, $after, DiffGranularity::WORD),
+                'historyUid' => $historyUid,
             ];
         }
         return $out;
