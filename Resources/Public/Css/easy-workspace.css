@@ -393,6 +393,65 @@ webcon-easy-workspace-menu {
     pointer-events: none;
 }
 
+/* ---- Per-row diff disclosure (collapsible "N changes") ----
+   Native <details>/<summary> so keyboard, ARIA and the open/close
+   state come for free. Lives inside each .wew-list__row, below the
+   row's label, so editors can expand to see what changed without
+   leaving the publish list. */
+.wew-list__diff {
+    margin: 0 .75rem .35rem 2.4rem;  /* aligns with title column */
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px;
+    background: var(--typo3-surface-dim, transparent);
+    overflow: hidden;
+}
+.wew-list__diff[open] {
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+}
+.wew-list__diff-summary {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .55rem;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+.wew-list__diff-summary::-webkit-details-marker { display: none; }
+.wew-list__diff-caret {
+    width: 0;
+    height: 0;
+    border-left: 4px solid currentColor;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    transition: transform .12s ease;
+    flex-shrink: 0;
+}
+.wew-list__diff[open] > .wew-list__diff-summary > .wew-list__diff-caret {
+    transform: rotate(90deg);
+}
+.wew-list__diff-summary:hover {
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
+.wew-list__diff-summary:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
+    outline-offset: -2px;
+    border-radius: 2px;
+}
+.wew-list__diff-list {
+    list-style: none;
+    margin: 0;
+    padding: .25rem .55rem .5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+
 .wew-list__label {
     display: grid;
     /* checkbox | title (flex) | optional eye-button | optional thumbnail.

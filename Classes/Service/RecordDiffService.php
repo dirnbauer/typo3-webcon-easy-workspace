@@ -47,7 +47,12 @@ final readonly class RecordDiffService
     private const SKIP_FIELDS = [
         'uid', 'pid', 'tstamp', 'crdate', 'sorting',
         't3ver_wsid', 't3ver_oid', 't3ver_state', 't3ver_stage', 't3ver_count',
-        'l10n_diffsource', 'l10n_source', 'l10n_parent',
+        // Both spellings: l18n_diffsource is the v14 canonical name,
+        // l10n_diffsource is the legacy field name still present on
+        // some older schemas. Same JSON-blob field in either case —
+        // editors should never see it in a "what changed" view.
+        'l18n_diffsource', 'l10n_diffsource',
+        'l10n_state', 'l10n_source', 'l10n_parent',
         'tx_impexp_origuid',
     ];
 

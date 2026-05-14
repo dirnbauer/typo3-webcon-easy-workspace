@@ -43,6 +43,7 @@ final readonly class PendingItemsService
         private LanguageServiceFactory $languageServiceFactory,
         private BackendUriBuilder $backendUriBuilder,
         private Context $context,
+        private RecordDiffService $recordDiffService,
     ) {}
 
     /**
@@ -400,6 +401,11 @@ final readonly class PendingItemsService
         // FormEngine handles the workspace overlay on save automatically.
         $editUrl = $this->buildEditUrl($table, $liveUid);
 
+        // Attach the field-level diff so each row in the dropdown can
+        // expand to show *what* changed. Only computed for actual
+        // workspace versions; live rows have nothing to diff.
+        $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
+
         return new PendingItem(
             table: $table,
             liveUid: $liveUid,
@@ -414,6 +420,7 @@ final readonly class PendingItemsService
             tableLabel: $this->resolveTableLabel($table),
             typeLabel: $this->resolveTypeLabel($table, $row),
             editUrl: $editUrl,
+            diff: $diff,
         );
     }
 

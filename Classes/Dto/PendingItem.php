@@ -6,6 +6,12 @@ namespace Webconsulting\WebconEasyWorkspace\Dto;
 
 final readonly class PendingItem
 {
+    /**
+     * @param list<array{field: string, label: string, before: string, after: string, beforeFull: string, afterFull: string, type: string, kind: string}> $diff
+     *   Field-level diff between this record's live and workspace
+     *   versions. Empty for unchanged rows (isChanged=false) or when
+     *   the diff service couldn't compute one.
+     */
     public function __construct(
         public string $table,
         public int $liveUid,
@@ -20,6 +26,7 @@ final readonly class PendingItem
         public string $tableLabel,
         public string $typeLabel,
         public ?string $editUrl,
+        public array $diff = [],
     ) {}
 
     /**
@@ -41,6 +48,7 @@ final readonly class PendingItem
             'tableLabel' => $this->tableLabel,
             'typeLabel' => $this->typeLabel,
             'editUrl' => $this->editUrl,
+            'diff' => $this->diff,
         ];
     }
 }

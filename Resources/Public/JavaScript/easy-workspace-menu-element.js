@@ -608,7 +608,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this._renderFilter()}
         ${this._renderBody()}
         ${this._renderFooter()}
-        ${this._renderLatestAccordion()}
       </div>
     `;
   }
@@ -827,6 +826,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const locatable = this._config.enableHoverHighlight && item.table === 'tt_content';
     const revertable = this._config.enableRevert && item.isChanged;
     const hasActions = locatable || revertable;
+    // Diff data ships with every changed row via PendingItem::$diff.
+    // Empty for unchanged rows or rows the diff service couldn't
+    // resolve (broken FAL refs, etc.) — in which case we just skip
+    // the disclosure so the row reads cleanly without a "0 changes"
+    // affordance to nowhere.
+    const diff = Array.isArray(item.diff) ? item.diff : [];
+    const hasDiff = diff.length > 0;
     return html`
       <li class=${stateClasses} data-table=${item.table}>
         <label class="wew-list__label" for=${item.isChanged ? id : nothing}>
@@ -869,6 +875,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
             ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
             : nothing}
         </label>
+        ${hasDiff
+          ? html`<details class="wew-list__diff" @click=${(e) => e.stopPropagation()}>
+              <summary class="wew-list__diff-summary">
+                <span class="wew-list__diff-caret" aria-hidden="true"></span>
+                <span class="wew-list__diff-summary-label">${diff.length === 1 ? '1 change' : `${diff.length} changes`}</span>
+              </summary>
+              <ul class="wew-list__diff-list">
+                ${diff.map((d) => this._renderDiffEntry(d))}
+              </ul>
+            </details>`
+          : nothing}
       </li>
     `;
   }
