@@ -1198,19 +1198,29 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * The "eye" button — hover it to scroll the corresponding content
-   * element into view in the Visual Editor iframe (and outline it).
-   * Clicking opens a modal that loads the *live* (pre-workspace)
-   * version of the page in an iframe with `ADMCMD_prev=LIVE`, anchored
-   * to `#c{liveUid}`. Nothing is saved — it's a read-only preview of
-   * what the element looked like before the workspace edit.
+   * The "locate / edit" button — two-step affordance:
    *
-   * SVG inlined from TYPO3 core's actions-eye icon (currentColor).
+   *   step 1 (hover): scroll the Visual Editor iframe to this
+   *                   element and outline it. Icon shows the eye:
+   *                   "we're showing you where it is".
+   *   step 2 (click): open the record's edit form in a right-side
+   *                   sheet modal. Icon morphs to a pencil while
+   *                   hovered: "the next click edits".
+   *
+   * The eye→pencil swap is opacity-only with a stack of two SVGs
+   * sharing the same hit-area, so the icon transition is smooth
+   * and there's no layout jump.
+   *
+   * SVG paths are inlined from TYPO3 core's actions-view-page and
+   * actions-document-open icons (currentColor) so they automatically
+   * follow the button's hover color.
    */
   _renderLocateButton(item) {
+    const hasEditUrl = !!item.editUrl;
+    const editPart = hasEditUrl ? ' · Click to edit this element' : '';
     const tooltip = this._config.hasVisualEditor
-      ? 'Hover to locate · Click to view the live version (before changes)'
-      : 'Hover to locate · Click to view the live version';
+      ? `Hover to show this in the Visual Editor${editPart}`
+      : `Hover to locate in preview${editPart}`;
     return html`
       <button
         type="button"
@@ -1221,12 +1231,27 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
         @blur=${() => this._clearIframeHighlight()}
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._clearIframeHighlight(); this._openLivePreview(item); }}
+        @click=${(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._clearIframeHighlight();
+          if (hasEditUrl) {
+            this._openEditModal(item);
+          } else {
+            Notification.info('Edit', 'No edit form available for this record.');
+          }
+        }}
       >
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <svg class="wew-list__locate-icon wew-list__locate-icon--eye" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
           <path
             fill="currentColor"
             d="M8.07 3C4.112 3 1 5.286 1 8s2.97 5 7 5c3.889 0 7-2.286 7-4.93C15 5.285 11.889 3.142 8.212 3h-.141Zm-.025 1.127c.141 0 .423.141.423.282s-.14.282-.423.282c-.845 0-1.69.704-1.69 1.55 0 .14-.141.282-.423.282-.282 0-.423-.141-.423-.282.141-1.127 1.268-2.114 2.536-2.114ZM2 8.03c0-1.298 1.017-2.591 2.647-3.312-.296.432-.296 1.01-.296 1.587 0 2.02 1.63 3.606 3.703 3.606 2.074 0 3.704-1.587 3.704-3.606 0-.577-.148-1.01-.296-1.443C12.943 5.582 14 6.875 14 8.029c-.148 2.02-2.841 3.924-6 3.971-3.36-.047-6-1.95-6-3.97Z"
+          />
+        </svg>
+        <svg class="wew-list__locate-icon wew-list__locate-icon--pencil" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10ZM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5ZM12.793 5.5 10.5 3.207 3 10.707V11h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293L12.793 5.5Zm-9.761 5.175-.215.541.659.659.541-.215-.215-.215a.5.5 0 0 1-.137-.275.5.5 0 0 1-.275-.137l-.358-.358Z"
           />
         </svg>
       </button>
@@ -1234,75 +1259,22 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Open a modal showing the live (pre-workspace) rendering of the
-   * page that contains this content element. We re-use the existing
-   * `previewLink` endpoint to get a properly signed FE preview URL
-   * for the page, then layer two things on top:
-   *
-   *   - `ADMCMD_prev=LIVE` — tells the workspaces middleware to render
-   *     the page as workspace 0 (live) even though the BE user is in
-   *     a workspace. Authoritative way to bypass overlays without
-   *     mutating session state.
-   *   - `#c{liveUid}` — standard tt_content anchor so the iframe lands
-   *     on the element instead of the top of the page.
-   *
-   * Nothing in the workspace is touched. The modal is read-only by
-   * construction (an iframe of the public FE), so the editor can
-   * compare "before" against the Visual Editor's "after" side-by-side
-   * by leaving the modal open.
+   * Open the record's edit form in a right-side sheet modal.
+   * Mirrors the "Open in form editor" pivot inside the diff modal —
+   * same TYPO3 core record_edit URL, same sheet position, same
+   * additional CSS class so the styling stays consistent across
+   * entry points into the form.
    */
-  _openLivePreview(item) {
-    if (!ENDPOINTS.previewLink) {
-      Notification.info('Live version', 'Preview link is disabled in TSconfig — cannot load the live version.');
-      return;
-    }
-    const { pageUid } = this._detectContext();
-    if (pageUid <= 0) {
-      Notification.info('Live version', 'No page context detected.');
-      return;
-    }
-    const liveUid = Number(item.liveUid) || 0;
-    new AjaxRequest(ENDPOINTS.previewLink)
-      .withQueryArguments({ pageUid })
-      .get()
-      .then((response) => response.resolve())
-      .then((data) => {
-        if (!data?.url) {
-          Notification.error('Live version', data?.error || 'No preview URL returned.');
-          return;
-        }
-        const liveUrl = this._appendLiveAdmCmd(data.url, liveUid);
-        Modal.advanced({
-          title: `Live version — ${item.title || '[No title]'}`,
-          type: ModalTypes.iframe,
-          content: liveUrl,
-          size: ModalSizes.large,
-          additionalCssClasses: ['wew-live-preview-modal'],
-        });
-      })
-      .catch((error) => {
-        Notification.error('Live version', error?.message || 'Unexpected error loading the live preview.');
-      });
-  }
-
-  /**
-   * Append `ADMCMD_prev=LIVE` (and optional `#c{ceUid}` anchor) to a
-   * preview URL. Uses URL parsing so an existing query string is
-   * preserved rather than colliding with a naïve `?ADMCMD_prev=…`.
-   */
-  _appendLiveAdmCmd(url, ceUid) {
-    try {
-      const u = new URL(url, window.location.origin);
-      u.searchParams.set('ADMCMD_prev', 'LIVE');
-      if (ceUid > 0) {
-        u.hash = `c${ceUid}`;
-      }
-      return u.toString();
-    } catch {
-      const sep = url.includes('?') ? '&' : '?';
-      const base = `${url}${sep}ADMCMD_prev=LIVE`;
-      return ceUid > 0 ? `${base}#c${ceUid}` : base;
-    }
+  _openEditModal(item) {
+    if (!item.editUrl) return;
+    Modal.advanced({
+      title: `Edit — ${item.title || '[No title]'}`,
+      type: ModalTypes.iframe,
+      content: item.editUrl,
+      size: ModalSizes.large,
+      position: ModalPositions.sheet,
+      additionalCssClasses: ['wew-edit-modal-shell'],
+    });
   }
 
   /**

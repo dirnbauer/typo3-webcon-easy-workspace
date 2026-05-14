@@ -649,16 +649,45 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
-.wew-list__locate svg,
-.wew-list__discard svg { width: 14px; height: 14px; }
-.wew-list__locate svg,
-.wew-list__discard svg { display: block; }
+.wew-list__locate { position: relative; }
+.wew-list__discard svg { width: 14px; height: 14px; display: block; }
 
+/* Locate button hosts a stack of two SVGs (eye + pencil) sharing
+   the same 14x14 hit-area. We swap their opacity on hover/focus to
+   morph the icon, signaling the two-step affordance:
+     - resting state: eye → "I'll show you where this is"
+     - hovered state: pencil → "the next click edits it"
+   Pointer events are off on the icons themselves so the parent
+   button keeps a single click target. */
+.wew-list__locate-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    display: block;
+    pointer-events: none;
+    transition: opacity .12s ease;
+}
+.wew-list__locate-icon--eye { opacity: 1; }
+.wew-list__locate-icon--pencil { opacity: 0; }
+.wew-list__locate:hover .wew-list__locate-icon--eye,
+.wew-list__locate:focus-visible .wew-list__locate-icon--eye { opacity: 0; }
+.wew-list__locate:hover .wew-list__locate-icon--pencil,
+.wew-list__locate:focus-visible .wew-list__locate-icon--pencil { opacity: 1; }
+
+/* Hover/focus: switch to a FILLED primary button with a WHITE
+   icon — earlier the tinted background with primary-on-tint icon
+   washed out and editors reported low contrast. White on full
+   primary clears WCAG AA comfortably (≈ 4.7:1 against
+   TYPO3 default primary #006ec3) and reads as a clear "click me
+   to edit" affordance against the soft row tints around it. */
 .wew-list__locate:hover,
 .wew-list__locate:focus-visible {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
-    color: var(--typo3-link-color, var(--bs-primary));
-    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: var(--bs-white, #fff);
+    border-color: var(--typo3-link-color, var(--bs-primary));
     outline: none;
     transform: scale(1.05);
 }
