@@ -102,7 +102,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.previewJustCopied = false;
     this.latestState = 'idle';
     this.latestItems = [];
-    this._workspacePendingCount = 0;
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
   }
@@ -1830,9 +1829,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.items = Array.isArray(data.items) ? data.items : [];
       this.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
       this.contextLabel = this._buildContextLabel(data);
-      this._workspacePendingCount = Number.isFinite(data.workspacePendingCount)
-        ? data.workspacePendingCount
-        : 0;
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
@@ -1845,12 +1841,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Sync the workspace-wide pending-count badge on the toolbar trigger
-   * with the latest server count. Mirrors core's System Information
+   * Sync the pending-count badge on the toolbar trigger with the
+   * current page's changed-count. Mirrors core's System Information
    * pattern: the badge is a sibling of `.toolbar-item-icon` under the
    * toolbar item host, gets the standard `.toolbar-item-badge`,
    * `.badge`, `.badge-pill` classes, and toggles the `.hidden` class
    * (not the `hidden` attribute) to match the rest of the toolbar.
+   *
+   * Count source is the same number the dropdown's "To publish" tab
+   * shows — what's actually publishable from this page right now —
+   * which is what editors expect to see when they glance at the icon.
    */
   _updateToolbarBadge() {
     const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
@@ -1858,13 +1858,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
-    const count = this.state === 'error'
-      ? 0
-      : Math.max(0, Number(this._workspacePendingCount ?? 0));
+    const count = this.state === 'loaded'
+      ? this.items.filter((i) => i.isChanged).length
+      : 0;
     badge.textContent = count > 0 ? String(count) : '';
     badge.classList.toggle('hidden', count <= 0);
     if (count > 0) {
-      badge.setAttribute('aria-label', `${count} pending workspace change${count === 1 ? '' : 's'}`);
+      badge.setAttribute('aria-label', `${count} pending change${count === 1 ? '' : 's'} on this page`);
     } else {
       badge.removeAttribute('aria-label');
     }

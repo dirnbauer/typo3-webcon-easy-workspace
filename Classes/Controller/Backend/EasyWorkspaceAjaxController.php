@@ -66,23 +66,16 @@ final readonly class EasyWorkspaceAjaxController
             ? ($requestedMode === PendingItemsService::MODE_ALL ? PendingItemsService::MODE_ALL : PendingItemsService::MODE_CHANGED)
             : PendingItemsService::MODE_CHANGED;
 
-        // Workspace-wide pending count for the toolbar trigger badge.
-        // Independent of $pageUid / $newsUid — the badge should show
-        // the total across every page in the workspace.
-        $workspacePendingCount = $this->pendingItemsService->countWorkspacePending();
-
         if ($newsUid > 0) {
             return new JsonResponse([
                 'context' => 'news',
                 ...$this->pendingItemsService->forNews($newsUid, $mode, $config),
-                'workspacePendingCount' => $workspacePendingCount,
             ]);
         }
         if ($pageUid > 0) {
             return new JsonResponse([
                 'context' => 'page',
                 ...$this->pendingItemsService->forPage($pageUid, $mode, $config),
-                'workspacePendingCount' => $workspacePendingCount,
             ]);
         }
         return new JsonResponse([
@@ -90,7 +83,6 @@ final readonly class EasyWorkspaceAjaxController
             'items' => [],
             'workspaceId' => 0,
             'mode' => $mode,
-            'workspacePendingCount' => $workspacePendingCount,
         ]);
     }
 
