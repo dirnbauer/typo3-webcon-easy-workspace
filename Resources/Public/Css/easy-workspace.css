@@ -1539,8 +1539,14 @@ webcon-easy-workspace-menu {
 }
 .wew-history__diff .wew-diff-modal__field-value {
     display: flex;
-    align-items: flex-start;
-    gap: .4rem;
+    /* Center on the cross axis so the now-30px revert icon sits
+       on the same baseline as the diff text instead of riding the
+       top edge. The diff text itself flexes to fill, the revert
+       button is pushed to the right margin via margin-left: auto
+       below — gives the icon a consistent anchor at the far right
+       of every row rather than floating next to the last word. */
+    align-items: center;
+    gap: .6rem;
 }
 .wew-history__rollback-field {
     flex-shrink: 0;
@@ -1549,6 +1555,11 @@ webcon-easy-workspace-menu {
        editors weren't recognizing the ↺ as something clickable. */
     width: 30px;
     height: 30px;
+    /* Anchor at the right edge of the row regardless of how long
+       the diff content is, so the icon's position is consistent
+       across entries and the editor can scan straight down to
+       find the per-field revert. */
+    margin-left: auto;
     border-radius: 50%;
     border: 1px solid transparent;
     background: transparent;
@@ -1556,6 +1567,12 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     font-size: 18px;
     line-height: 1;
+    /* Flex centering so the ↺ glyph isn't tied to the font's
+       baseline-of-30px ascent — without this the arrow hung high
+       inside the round button. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
 .wew-history__rollback-field:hover,
