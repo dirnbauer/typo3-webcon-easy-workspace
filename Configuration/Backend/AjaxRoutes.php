@@ -25,4 +25,8 @@ return [
         'path' => '/webcon-easy-workspace/latest',
         'target' => EasyWorkspaceAjaxController::class . '::latestAction',
     ],
+    'webcon_easy_workspace_diff' => [
+        'path' => '/webcon-easy-workspace/diff',
+        'target' => EasyWorkspaceAjaxController::class . '::diffAction',
+    ],
 ];

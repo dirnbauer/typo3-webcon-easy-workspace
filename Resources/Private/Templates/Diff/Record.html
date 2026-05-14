@@ -1,0 +1,70 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+{namespace ws=Webconsulting\WebconEasyWorkspace\ViewHelpers}
+
+<f:comment>
+    Rendered into a TYPO3 backend Modal.advanced() overlay via the
+    /webcon-easy-workspace/diff AJAX endpoint. Output is plain HTML
+    (no <html>/<body>) since core's Modal injects it straight into
+    .modal-body.
+
+    Variables:
+        title         — record title for the header
+        tableLabel    — "Page Content", "News", "Page" …
+        workspaceUid  — uid of the workspace version
+        liveUid       — uid of the live counterpart (0 = new placeholder)
+        kind          — changed | added | removed
+        diffs         — list of field diffs, each:
+                            label, before, after, html, kind
+        editUrl       — backend record_edit URL for the record (optional)
+</f:comment>
+
+<div class="wew-diff-modal">
+    <header class="wew-diff-modal__head">
+        <h2 class="wew-diff-modal__title">{title}</h2>
+        <p class="wew-diff-modal__meta">
+            {tableLabel} · #{workspaceUid}
+            <f:if condition="{liveUid} > 0">
+                <span class="wew-diff-modal__sep">·</span>
+                live #{liveUid}
+            </f:if>
+        </p>
+    </header>
+
+    <f:if condition="{kind} == 'added'">
+        <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--added">
+            This record was newly created in the workspace. The fields below show what will be published to live.
+        </p>
+    </f:if>
+    <f:if condition="{kind} == 'removed'">
+        <p class="wew-diff-modal__placeholder wew-diff-modal__placeholder--removed">
+            This record will be deleted on publish. The fields below show the live values that will be removed.
+        </p>
+    </f:if>
+
+    <f:if condition="{diffs -> f:count()} > 0">
+        <f:then>
+            <dl class="wew-diff-modal__list">
+                <f:for each="{diffs}" as="diff">
+                    <dt class="wew-diff-modal__field-label">{diff.label}</dt>
+                    <dd class="wew-diff-modal__field-value">
+                        <f:format.raw>{diff.html}</f:format.raw>
+                    </dd>
+                </f:for>
+            </dl>
+        </f:then>
+        <f:else>
+            <p class="wew-diff-modal__empty">
+                <em>No field-level differences resolved for this record.</em>
+            </p>
+        </f:else>
+    </f:if>
+
+    <f:if condition="{editUrl}">
+        <footer class="wew-diff-modal__foot">
+            <a class="btn btn-default" href="{editUrl}">
+                Open in form editor
+            </a>
+        </footer>
+    </f:if>
+</div>

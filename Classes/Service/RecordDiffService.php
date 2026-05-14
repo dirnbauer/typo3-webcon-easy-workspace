@@ -8,6 +8,8 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
+use TYPO3\CMS\Core\Utility\DiffGranularity;
+use TYPO3\CMS\Core\Utility\DiffUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 
 /**
@@ -68,7 +70,81 @@ final readonly class RecordDiffService
     public function __construct(
         private TcaSchemaFactory $tcaSchemaFactory,
         private LanguageServiceFactory $languageServiceFactory,
+        private DiffUtility $diffUtility,
     ) {}
+
+    /**
+     * Same diff as ::diff() above, but each entry also carries a
+     * pre-rendered `html` string produced by TYPO3 core's
+     * DiffUtility — the same `<ins>`/`<del>` inline-diff format used
+     * in the standalone Workspaces module. Suitable for direct
+     * rendering inside a Fluid template via `<f:format.raw>`.
+     *
+     * Returns the metadata needed to title the diff dialog as well,
+     * so a single controller call can fully populate the overlay.
+     *
+     * @return array{title: string, tableLabel: string, table: string, workspaceUid: int, liveUid: int, kind: string, diffs: list<array{field: string, label: string, before: string, after: string, html: string, kind: string}>}
+     */
+    public function diffWithHtml(string $table, array $versionRow): array
+    {
+        $entries = $this->diff($table, $versionRow);
+        $kind = $entries[0]['kind'] ?? 'changed';
+
+        $diffs = [];
+        foreach ($entries as $entry) {
+            // DiffGranularity::WORD matches TYPO3's Workspaces module
+            // ("Show changes") — splits on word boundaries, ins/del
+            // are word-level rather than character noise. For very
+            // long bodies (200+ words) this can still be visually
+            // dense; falls within the modal's `large` size budget.
+            $diffs[] = $entry + [
+                'html' => $this->diffUtility->diff($entry['before'], $entry['after'], DiffGranularity::WORD),
+            ];
+        }
+
+        return [
+            'title' => $this->resolveTitle($table, $versionRow),
+            'tableLabel' => $this->resolveTableLabelHint($table),
+            'table' => $table,
+            'workspaceUid' => (int)($versionRow['uid'] ?? 0),
+            'liveUid' => (int)($versionRow['t3ver_oid'] ?? 0),
+            'kind' => $kind,
+            'diffs' => $diffs,
+        ];
+    }
+
+    /**
+     * Best-effort record title for the modal heading. Used only as
+     * presentation — the canonical title-field resolution lives in
+     * PendingItemsService::resolveTitle(); we duplicate a minimal
+     * version here so the diff service stays standalone.
+     */
+    private function resolveTitle(string $table, array $row): string
+    {
+        $candidates = [
+            $row['title'] ?? null,
+            $row['header'] ?? null,
+            $row['name'] ?? null,
+            $row['subject'] ?? null,
+        ];
+        foreach ($candidates as $candidate) {
+            $candidate = trim((string)$candidate);
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+        return '[No title]';
+    }
+
+    private function resolveTableLabelHint(string $table): string
+    {
+        return match ($table) {
+            'pages'                       => 'Page',
+            'tt_content'                  => 'Page Content',
+            'tx_news_domain_model_news'   => 'News',
+            default                       => $table,
+        };
+    }
 
     /**
      * Diff a single workspace-version row against its live record.

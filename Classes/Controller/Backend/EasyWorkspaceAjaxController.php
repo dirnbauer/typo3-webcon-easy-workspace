@@ -6,12 +6,19 @@ namespace Webconsulting\WebconEasyWorkspace\Controller\Backend;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Routing\RouterInterface;
+use TYPO3\CMS\Core\View\ViewFactoryData;
+use TYPO3\CMS\Core\View\ViewFactoryInterface;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LatestChangesService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
+use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 
 final readonly class EasyWorkspaceAjaxController
 {
@@ -33,6 +40,9 @@ final readonly class EasyWorkspaceAjaxController
         private PreviewUriBuilder $previewUriBuilder,
         private ConfigurationProvider $configurationProvider,
         private LatestChangesService $latestChangesService,
+        private RecordDiffService $recordDiffService,
+        private ViewFactoryInterface $viewFactory,
+        private BackendUriBuilder $backendUriBuilder,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -98,6 +108,67 @@ final readonly class EasyWorkspaceAjaxController
         $limit = max(1, min(50, $requestedLimit));
 
         return new JsonResponse($this->latestChangesService->list($limit, $config));
+    }
+
+    /**
+     * Renders the field-level diff for a single workspace record as
+     * a Fluid template and returns it as plain HTML. Consumed by
+     * the dropdown's per-row "N changes" pill, which opens it inside
+     * a TYPO3 backend Modal (Modal.advanced({type: 'ajax'})).
+     *
+     * Why a server-rendered HTML response and not JSON?
+     *  - We can leverage TYPO3 core's DiffUtility::diff() to emit
+     *    the same `<ins>`/`<del>` inline-diff format the standalone
+     *    Workspaces module uses. Editors already know how to read
+     *    that.
+     *  - Fluid keeps the markup declarative, sandboxes the template
+     *    file behind core's view factory, and avoids string
+     *    concatenation in PHP.
+     */
+    public function diffAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $query = $request->getQueryParams();
+        $config = $this->configurationProvider->get(null);
+        if (!$config['enabled']) {
+            return new HtmlResponse('<p class="alert alert-danger">Easy Workspace is disabled by TSconfig.</p>', 403);
+        }
+
+        $table = (string)($query['table'] ?? '');
+        $workspaceUid = (int)($query['workspaceUid'] ?? 0);
+        if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+            return new HtmlResponse('<p class="alert alert-danger">Invalid table or record id.</p>', 400);
+        }
+
+        $row = BackendUtility::getRecord($table, $workspaceUid);
+        if (!is_array($row)) {
+            return new HtmlResponse('<p class="alert alert-warning">Record not found or not accessible in this workspace.</p>', 404);
+        }
+
+        $payload = $this->recordDiffService->diffWithHtml($table, $row);
+        $editUrl = null;
+        $liveUid = $payload['liveUid'] ?: $workspaceUid;
+        if ($liveUid > 0) {
+            try {
+                $editUrl = (string)$this->backendUriBuilder->buildUriFromRoute(
+                    'record_edit',
+                    [
+                        'edit' => [$table => [$liveUid => 'edit']],
+                        'returnUrl' => (string)($request->getServerParams()['HTTP_REFERER'] ?? ''),
+                    ],
+                    RouterInterface::ABSOLUTE_URL,
+                );
+            } catch (\Throwable) {
+                $editUrl = null;
+            }
+        }
+
+        $view = $this->viewFactory->create(new ViewFactoryData(
+            templatePathAndFilename: 'EXT:webcon_easy_workspace/Resources/Private/Templates/Diff/Record.html',
+            request: $request,
+        ));
+        $view->assignMultiple($payload + ['editUrl' => $editUrl]);
+
+        return new HtmlResponse($view->render());
     }
 
     public function publishAction(ServerRequestInterface $request): ResponseInterface

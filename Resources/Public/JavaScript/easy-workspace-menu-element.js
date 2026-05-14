@@ -17,7 +17,7 @@
 import { LitElement, html, nothing } from 'lit';
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
-import Modal from '@typo3/backend/modal.js';
+import Modal, { Sizes as ModalSizes, Types as ModalTypes } from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 const ENDPOINTS = {
@@ -26,6 +26,7 @@ const ENDPOINTS = {
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
   latest: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_latest || '',
+  diff: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_diff || '',
 };
 
 // Fallback defaults — overridden by the TSconfig-driven JSON the
@@ -940,16 +941,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
             ? html`<span class="wew-list__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy"/></span>`
             : nothing}
         </label>
-        ${hasDiff
-          ? html`<details class="wew-list__diff" @click=${(e) => e.stopPropagation()}>
-              <summary class="wew-list__diff-summary">
-                <span class="wew-list__diff-caret" aria-hidden="true"></span>
-                <span class="wew-list__diff-summary-label">${diff.length === 1 ? '1 change' : `${diff.length} changes`}</span>
-              </summary>
-              <ul class="wew-list__diff-list">
-                ${diff.map((d) => this._renderDiffEntry(d))}
-              </ul>
-            </details>`
+        ${hasDiff && ENDPOINTS.diff
+          ? html`<button
+              type="button"
+              class="wew-list__diff-trigger"
+              title="View what changed in this record (opens a dialog)"
+              @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
+            >
+              <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
+              <span class="wew-list__diff-trigger-label">${diff.length === 1 ? '1 change' : `${diff.length} changes`}</span>
+            </button>`
           : nothing}
       </li>
     `;
@@ -1370,6 +1371,31 @@ class WebconEasyWorkspaceMenu extends LitElement {
       console.error('[easy-workspace] latest-changes request failed', error);
       this.latestState = 'error';
     }
+  }
+
+  /**
+   * Open a TYPO3 backend Modal with the field-level diff of the
+   * given record. Content is fetched via the
+   * /webcon-easy-workspace/diff AJAX endpoint, which renders a
+   * Fluid template using core's DiffUtility (`<ins>`/`<del>`) — the
+   * same inline-diff format the standalone Workspaces module uses,
+   * so editors who already know "Show changes" feel at home.
+   *
+   * Modal.advanced({type: ajax}) handles the loading spinner, the
+   * focus trap, ESC-to-close and the backdrop click — no
+   * accessibility wiring needed on our side.
+   */
+  _openDiffModal(item) {
+    if (!ENDPOINTS.diff) return;
+    const url = `${ENDPOINTS.diff}&table=${encodeURIComponent(item.table)}&workspaceUid=${encodeURIComponent(item.workspaceUid)}`;
+    const recordTitle = item.title || '[No title]';
+    Modal.advanced({
+      title: `Changes — ${recordTitle}`,
+      type: ModalTypes.ajax,
+      content: url,
+      size: ModalSizes.large,
+      additionalCssClasses: ['wew-diff-modal-shell'],
+    });
   }
 
   _key(item) {

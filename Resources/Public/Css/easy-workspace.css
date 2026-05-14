@@ -421,63 +421,41 @@ webcon-easy-workspace-menu {
        hook. */
 }
 
-/* ---- Per-row diff disclosure (collapsible "N changes") ----
-   Native <details>/<summary> so keyboard, ARIA and the open/close
-   state come for free. Lives inside each .wew-list__row, below the
-   row's label, so editors can expand to see what changed without
-   leaving the publish list. */
-.wew-list__diff {
-    margin: 0 .75rem .35rem 2.4rem;  /* aligns with title column */
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    border-radius: 4px;
-    background: var(--typo3-surface-dim, transparent);
-    overflow: hidden;
-}
-.wew-list__diff[open] {
-    background: var(--typo3-component-bg, var(--bs-body-bg));
-}
-.wew-list__diff-summary {
-    display: flex;
+/* ---- Per-row "N changes" trigger pill ----
+   Tiny inline button that opens a TYPO3 backend Modal with the
+   record's field-level diff (server-rendered Fluid template using
+   core's DiffUtility). Replaces the inline <details> accordion —
+   the modal has the vertical breathing room the dropdown lacked. */
+.wew-list__diff-trigger {
+    display: inline-flex;
     align-items: center;
-    gap: .35rem;
-    padding: .25rem .55rem;
+    gap: .25rem;
+    margin: 0 .75rem .35rem 2.4rem;   /* aligned with the row title column */
+    padding: .1rem .45rem;
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, inherit);
+    border: 1px solid var(--typo3-state-default-border-color, var(--bs-border-color));
+    border-radius: 3px;
     font-size: 10.5px;
     font-weight: 600;
+    line-height: 1.4;
     text-transform: uppercase;
     letter-spacing: .04em;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     cursor: pointer;
-    list-style: none;
-    user-select: none;
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
-.wew-list__diff-summary::-webkit-details-marker { display: none; }
-.wew-list__diff-caret {
-    width: 0;
-    height: 0;
-    border-left: 4px solid currentColor;
-    border-top: 3px solid transparent;
-    border-bottom: 3px solid transparent;
-    transition: transform .12s ease;
-    flex-shrink: 0;
-}
-.wew-list__diff[open] > .wew-list__diff-summary > .wew-list__diff-caret {
-    transform: rotate(90deg);
-}
-.wew-list__diff-summary:hover {
+.wew-list__diff-trigger:hover {
+    background: var(--typo3-state-default-hover-bg, var(--bs-secondary-bg));
     color: var(--typo3-text-color-base, var(--bs-body-color));
+    border-color: var(--typo3-state-default-hover-border-color, var(--bs-border-color));
 }
-.wew-list__diff-summary:focus-visible {
+.wew-list__diff-trigger:focus-visible {
     outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
-    outline-offset: -2px;
-    border-radius: 2px;
+    outline-offset: 2px;
 }
-.wew-list__diff-list {
-    list-style: none;
-    margin: 0;
-    padding: .25rem .55rem .5rem;
-    display: flex;
-    flex-direction: column;
-    gap: .3rem;
+.wew-list__diff-trigger-icon {
+    font-size: 12px;
+    line-height: 1;
 }
 
 .wew-list__label {
@@ -1103,4 +1081,104 @@ webcon-easy-workspace-menu {
     font-size: 11.5px;
     font-style: italic;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+
+/* ---- Diff modal content ----
+   Rendered inside core's TYPO3 backend Modal (Modal.advanced
+   {type: ajax}). The .wew-diff-modal-shell additional class on
+   the modal lets us scope `<ins>` / `<del>` styles to this dialog
+   only so they don't leak into other backend modals. */
+.wew-diff-modal {
+    font-size: 13px;
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
+.wew-diff-modal__head {
+    margin: 0 0 1rem 0;
+    padding: 0 0 .65rem 0;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-diff-modal__title {
+    margin: 0 0 .15rem 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+.wew-diff-modal__meta {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-diff-modal__sep {
+    display: inline-block;
+    margin: 0 .25rem;
+    opacity: .55;
+}
+.wew-diff-modal__placeholder {
+    margin: 0 0 1rem 0;
+    padding: .55rem .75rem;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.wew-diff-modal__placeholder--added {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+    border: 1px solid var(--typo3-state-success-border-color);
+}
+.wew-diff-modal__placeholder--removed {
+    background: var(--typo3-state-danger-bg);
+    color: var(--typo3-state-danger-color);
+    border: 1px solid var(--typo3-state-danger-border-color);
+}
+.wew-diff-modal__list {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: minmax(7rem, max-content) 1fr;
+    column-gap: 1.25rem;
+    row-gap: .85rem;
+    align-items: start;
+}
+.wew-diff-modal__field-label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    padding-top: .15rem;
+}
+.wew-diff-modal__field-value {
+    margin: 0;
+    line-height: 1.45;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+/* TYPO3 core's DiffUtility emits <ins>/<del> for word-level diffs;
+   tint them with the styleguide's success/danger state tokens so
+   the modal reads consistently in both light and dark backends. */
+.wew-diff-modal__field-value ins {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+    text-decoration: none;
+    padding: 0 .15rem;
+    border-radius: 2px;
+}
+.wew-diff-modal__field-value del {
+    background: var(--typo3-state-danger-bg);
+    color: var(--typo3-state-danger-color);
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in srgb, var(--typo3-state-danger-color, currentColor) 40%, transparent);
+    padding: 0 .15rem;
+    border-radius: 2px;
+}
+.wew-diff-modal__empty {
+    margin: 0;
+    font-size: 12px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-diff-modal__foot {
+    margin-top: 1.25rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    text-align: right;
 }
