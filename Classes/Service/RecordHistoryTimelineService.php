@@ -86,7 +86,7 @@ final readonly class RecordHistoryTimelineService
 
         $languageService = $this->getLanguageService();
         $entries = [];
-        foreach ($changeLog as $historyUid => $log) {
+        foreach ($changeLog as $log) {
             // Skip entries outside the current workspace context —
             // editors are reviewing "what will publish", live edits
             // aren't part of that decision. Action 1 = INSERT,
@@ -95,11 +95,23 @@ final readonly class RecordHistoryTimelineService
             if ($workspaceId > 0 && $entryWs !== $workspaceId) {
                 continue;
             }
+            // The sys_history primary key is the `uid` column on the
+            // log row, NOT the array key from getChangeLog() — core's
+            // RecordHistory::getHistoryData() runs usort() before
+            // returning, which destroys the uid-keyed indexing built
+            // up earlier and replaces it with sequential 0/1/2…
+            // positions. Reading the position would land us at
+            // historyUid=0 (and break the rollback endpoint that
+            // strict-validates historyUid > 0).
+            $historyUid = (int)($log['uid'] ?? 0);
+            if ($historyUid <= 0) {
+                continue;
+            }
             $newRecord = is_array($log['newRecord'] ?? null) ? $log['newRecord'] : [];
             $oldRecord = is_array($log['oldRecord'] ?? null) ? $log['oldRecord'] : [];
             $action = $this->describeAction((int)($log['actiontype'] ?? 0), $languageService);
             $entries[] = [
-                'historyUid' => (int)$historyUid,
+                'historyUid' => $historyUid,
                 'tstamp' => (int)($log['tstamp'] ?? 0),
                 'tstampFormatted' => BackendUtility::datetime((int)($log['tstamp'] ?? 0)),
                 'action' => $action,
@@ -110,13 +122,9 @@ final readonly class RecordHistoryTimelineService
                 'user' => $this->resolveUser((int)($log['userid'] ?? 0)),
                 // historyUid duplicated into each diff so the inner
                 // <f:for as="d"> doesn't have to reach back into the
-                // enclosing entry scope — Fluid's ScopedVariableProvider
-                // does resolve outer locals in theory, but rendering
-                // `data-history-uid="{entry.historyUid}"` from the inner
-                // loop has been observed to emit "0" against the workspace
-                // tip records here. Stuffing it on the diff side dodges
-                // that lookup entirely.
-                'diffs' => $this->buildFieldDiffs($table, $oldRecord, $newRecord, (int)$historyUid),
+                // enclosing entry scope and so the per-field rollback
+                // POST always lands at the real sys_history row.
+                'diffs' => $this->buildFieldDiffs($table, $oldRecord, $newRecord, $historyUid),
             ];
         }
 
