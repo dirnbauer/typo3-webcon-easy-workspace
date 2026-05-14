@@ -135,6 +135,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const toggle = dropdownHost.querySelector('.dropdown-toggle');
       toggle?.addEventListener('click', () => this._refresh());
     }
+
+    // Listen for the {type: 'wew-decline', table, uid} postMessage
+    // sent by visual-editor's <ve-content-element> action-bar
+    // "decline" button (added via patches/visual-editor-add-decline-
+    // workspace-changes-button.patch). The button lives in the FE
+    // iframe and doesn't have direct access to the BE token /
+    // ajaxUrls — it just signals intent; the discard runs here in
+    // the BE context with full session + the existing confirmation
+    // modal.
+    this._declineMessageListener = (event) => this._onDeclineMessage(event);
+    window.addEventListener('message', this._declineMessageListener);
   }
 
   disconnectedCallback() {
@@ -147,6 +158,52 @@ class WebconEasyWorkspaceMenu extends LitElement {
       } catch { /* noop */ }
       document.removeEventListener('typo3:module-state-storage:update:web', this._navListener);
     }
+    if (this._declineMessageListener) {
+      window.removeEventListener('message', this._declineMessageListener);
+      this._declineMessageListener = null;
+    }
+  }
+
+  /**
+   * Handle a `wew-decline` postMessage from the visual-editor FE
+   * iframe (the patched <ve-content-element> action-bar button).
+   * Validates the payload, then synthesizes an item descriptor that
+   * matches what _confirmAndDiscard expects from the dropdown list.
+   *
+   * The discard endpoint takes (table, workspaceUid). When the
+   * editor clicks the FE-side button we only know the rendered uid
+   * — which IS the workspace uid because visual-editor uses the
+   * versioned uid via getVersionedUid() on tt_content nodes. The
+   * backend accepts this and resolves the live record via DataHandler.
+   */
+  _onDeclineMessage(event) {
+    // Origin check: only accept messages from our own origin. The
+    // FE iframe lives on the same host (BE cookie path is /) so
+    // event.origin matches window.origin.
+    if (event.origin !== window.location.origin) return;
+    const data = event.data;
+    if (!data || data.type !== 'wew-decline') return;
+    const table = String(data.table || '');
+    const uid = parseInt(data.uid, 10);
+    if (!table || uid <= 0) return;
+    // Find the matching item in our currently-loaded list so the
+    // confirmation modal can show its title. Falls back to a
+    // synthetic descriptor if the page-scoped list doesn't include
+    // this record (rare — would require the editor decline-clicking
+    // a CE that isn't in the publish list, e.g. on a different page
+    // than the one selected in the page tree).
+    const known = this.items.find(
+      (i) => i.table === table && (i.workspaceUid === uid || i.liveUid === uid),
+    );
+    const item = known || {
+      table,
+      workspaceUid: uid,
+      liveUid: uid,
+      title: `${table} #${uid}`,
+      tableLabel: this._friendlyTable(table),
+      isChanged: true,
+    };
+    this._confirmAndDiscard(item);
   }
 
   /**
