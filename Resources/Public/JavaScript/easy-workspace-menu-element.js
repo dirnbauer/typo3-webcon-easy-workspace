@@ -1029,15 +1029,19 @@ class WebconEasyWorkspaceMenu extends LitElement {
                   </span>`
                 : nothing}
             </span>
-            ${hasDiff && ENDPOINTS.diff
+            ${item.isChanged && ENDPOINTS.diff
               ? html`<button
                   type="button"
                   class="wew-list__diff-trigger"
-                  title="View what changed in this record (opens a dialog)"
+                  title=${hasDiff ? 'View what changed in this record (opens a dialog)' : 'No field-level differences right now — opens the history of this record'}
                   @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
                 >
                   <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-                  <span class="wew-list__diff-trigger-label">${diff.length === 1 ? '1 change' : `${diff.length} changes`}</span>
+                  <span class="wew-list__diff-trigger-label">${
+                    diff.length === 0
+                      ? 'View history'
+                      : (diff.length === 1 ? '1 change' : `${diff.length} changes`)
+                  }</span>
                 </button>`
               : nothing}
           </span>
