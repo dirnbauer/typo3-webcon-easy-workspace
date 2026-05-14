@@ -206,7 +206,10 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
         }
 
-        $body = (array)($request->getParsedBody() ?? []);
+        // JS posts Content-Type: application/json — PSR-7's
+        // getParsedBody only auto-parses application/x-www-form-urlencoded,
+        // so we need the decodeBody helper to read the JSON body.
+        $body = $this->decodeBody($request);
         $table = (string)($body['table'] ?? '');
         $uid = (int)($body['uid'] ?? 0);
         $historyUid = (int)($body['historyUid'] ?? 0);
