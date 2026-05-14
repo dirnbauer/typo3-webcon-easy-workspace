@@ -58,6 +58,7 @@ final readonly class LatestChangesService
         private ConnectionPool $connectionPool,
         private TcaSchemaFactory $tcaSchemaFactory,
         private PendingItemsService $pendingItemsService,
+        private RecordDiffService $recordDiffService,
         private Context $context,
     ) {}
 
@@ -97,9 +98,17 @@ final readonly class LatestChangesService
         $items = [];
         foreach ($rows as $entry) {
             $item = $this->pendingItemsService->buildItemFromRow($entry['table'], $entry['row'], $config);
-            if ($item instanceof PendingItem) {
-                $items[] = $item->toArray();
+            if (!$item instanceof PendingItem) {
+                continue;
             }
+            $payload = $item->toArray();
+            // Attach the per-record field diff so the dropdown can
+            // render "what changed" inline without a follow-up
+            // round-trip. The cost is one extra BackendUtility::getRecord
+            // per item (live counterpart) — bounded by $limit, max 50.
+            $payload['diff'] = $this->recordDiffService->diff($entry['table'], $entry['row']);
+            $payload['tstamp'] = $entry['tstamp'];
+            $items[] = $payload;
         }
 
         return ['workspaceId' => $workspaceId, 'items' => $items];

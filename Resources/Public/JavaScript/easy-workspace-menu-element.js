@@ -1132,18 +1132,23 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return html`<p class="wew-menu__latest-hint">No pending changes in this workspace yet.</p>`;
     }
     return html`
-      <ul class="wew-list wew-list--compact">
+      <ul class="wew-changelog">
         ${this.latestItems.map((item) => this._renderLatestItem(item))}
       </ul>
     `;
   }
 
   /**
-   * Compact row for the accordion. Deliberately stripped down vs.
-   * _renderItem(): no selection checkbox, no publish/discard action
-   * — those operations are scoped to the current page in this UI.
-   * Click navigates to the record's edit form so the editor can
-   * jump from the feed straight into the form.
+   * One card per record in the "Latest workspace changes" accordion.
+   * Header row mirrors the publish list (icon · title · meta · pill);
+   * the body lists every field that differs between the live record
+   * and its workspace version, with old → new value chips so editors
+   * can see *what* changed without leaving the dropdown.
+   *
+   * For "New" or "Will be deleted" placeholders the diff payload
+   * still lists field values (added or removed respectively); the
+   * `kind` field on each diff entry switches the rendering between
+   * those three cases.
    */
   _renderLatestItem(item) {
     const editHref = item.editUrl || null;
@@ -1151,18 +1156,65 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const kindBadge = item.kindLabel
       ? html`<span class="wew-state-pill wew-state-pill--${item.badge || 'info'}">${item.kindLabel}</span>`
       : nothing;
+    const diff = Array.isArray(item.diff) ? item.diff : [];
+
+    const headerInner = html`
+      <div class="wew-changelog__heading">
+        <span class="wew-changelog__title">${item.title || '[No title]'}</span>
+        <span class="wew-changelog__meta">${tableLabel} · #${item.workspaceUid}</span>
+      </div>
+      ${kindBadge}
+    `;
+    const header = editHref
+      ? html`<a class="wew-changelog__header wew-changelog__header--link" href=${editHref}>${headerInner}</a>`
+      : html`<div class="wew-changelog__header">${headerInner}</div>`;
+
     return html`
-      <li class="wew-list__item wew-list__item--compact">
-        ${editHref
-          ? html`<a class="wew-list__compact-link" href=${editHref}>
-              <span class="wew-list__title">${item.title || '[No title]'}</span>
-              <span class="wew-list__meta">${tableLabel} · #${item.workspaceUid}</span>
-            </a>`
-          : html`<div class="wew-list__compact-link wew-list__compact-link--inert">
-              <span class="wew-list__title">${item.title || '[No title]'}</span>
-              <span class="wew-list__meta">${tableLabel} · #${item.workspaceUid}</span>
-            </div>`}
-        ${kindBadge}
+      <li class="wew-changelog__item">
+        ${header}
+        ${diff.length > 0
+          ? html`<ul class="wew-changelog__fields">
+              ${diff.map((d) => this._renderDiffEntry(d))}
+            </ul>`
+          : html`<p class="wew-changelog__nodiff">No field-level differences resolved for this record.</p>`}
+      </li>
+    `;
+  }
+
+  /**
+   * Renders one row of the per-record diff list.
+   *
+   *  - kind === 'changed': before → after (both chips)
+   *  - kind === 'added'  : just the after chip, marked "new"
+   *  - kind === 'removed': just the before chip, marked "removed"
+   *
+   * Empty before/after values render as a faint "empty" placeholder
+   * rather than nothing — otherwise an edit that *cleared* a field
+   * would render as a baffling single chip with no arrow target.
+   */
+  _renderDiffEntry(d) {
+    const kind = d.kind || 'changed';
+    const beforeChip = (val) => html`<span
+      class="wew-changelog__chip wew-changelog__chip--before"
+      title=${d.beforeFull || val || ''}
+    >${val ? val : html`<em class="wew-changelog__chip-empty">empty</em>`}</span>`;
+    const afterChip = (val) => html`<span
+      class="wew-changelog__chip wew-changelog__chip--after"
+      title=${d.afterFull || val || ''}
+    >${val ? val : html`<em class="wew-changelog__chip-empty">empty</em>`}</span>`;
+
+    let body;
+    if (kind === 'added') {
+      body = html`<span class="wew-changelog__kind">Added</span>${afterChip(d.after)}`;
+    } else if (kind === 'removed') {
+      body = html`<span class="wew-changelog__kind">Removed</span>${beforeChip(d.before)}`;
+    } else {
+      body = html`${beforeChip(d.before)}<span class="wew-changelog__arrow" aria-hidden="true">→</span>${afterChip(d.after)}`;
+    }
+    return html`
+      <li class="wew-changelog__field wew-changelog__field--${kind}">
+        <span class="wew-changelog__label">${d.label}</span>
+        <span class="wew-changelog__values">${body}</span>
       </li>
     `;
   }
