@@ -375,37 +375,65 @@ webcon-easy-workspace-menu {
     position: relative;
 }
 .wew-list__row:last-child { border-bottom: 0; }
-/* No row-level highlight any more — the eye icon is the affordance. */
+/* ---- Primary row (page or news) ----
+   The "parent" record of the dropdown — the page (or news article)
+   that owns the content elements listed beneath it. Treated as a
+   card-header so editors instantly read the hierarchy:
+   "this PAGE has the following CONTENT ELEMENTS below". The
+   styling intentionally mirrors the colheader (uppercase strip
+   under it) to anchor the group visually.
+
+   Distinguished from the content-element rows by:
+     - stronger background tint (vs. bare row bg below)
+     - larger, bolder title with prominent leading icon
+     - clear bottom separator in the primary color
+     - a small uppercase "Page" / "News" eyebrow above the title
+*/
 .wew-list__row--primary {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 8%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 12%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+}
+.wew-list__row--primary .wew-list__label {
+    padding-top: .65rem;
+    padding-bottom: .65rem;
 }
 /* Sit above the standard left accent stripe on the primary row */
 .wew-list__row--primary.wew-list__row--changed::before {
     width: 4px;
 }
 .wew-list__row--primary .wew-list__title-text {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 13.5px;
 }
-/* Small leading icon on the primary row's title so it's instantly
-   distinguishable from the content-element rows beneath it. */
+/* Larger leading icon on the primary row's title so it reads as
+   a record-class glyph, not a tiny decoration. */
 .wew-list__row--primary[data-table="pages"] .wew-list__title-text::before,
 .wew-list__row--primary[data-table="tx_news_domain_model_news"] .wew-list__title-text::before {
     content: "";
     display: inline-block;
-    width: 14px;
-    height: 14px;
-    margin-right: .35rem;
-    vertical-align: -2px;
-    background: currentColor;
+    width: 18px;
+    height: 18px;
+    margin-right: .5rem;
+    vertical-align: -4px;
+    background: var(--typo3-link-color, var(--bs-primary));
     -webkit-mask: var(--wew-primary-icon) center / contain no-repeat;
             mask: var(--wew-primary-icon) center / contain no-repeat;
-    opacity: .75;
+    opacity: .9;
 }
 .wew-list__row--primary[data-table="pages"] {
     --wew-primary-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M3 1.5A.5.5 0 0 1 3.5 1h6a.5.5 0 0 1 .354.146l3 3A.5.5 0 0 1 13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V1.5Zm6.5 1.207V4.5h1.793L9.5 2.707Z"/></svg>');
 }
 .wew-list__row--primary[data-table="tx_news_domain_model_news"] {
     --wew-primary-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M1.5 2h11A1.5 1.5 0 0 1 14 3.5V13h1v1H1V3.5A1.5 1.5 0 0 1 2.5 2H1.5Zm1 1.5V13h10V3.5h-10Zm1.5 2h7v1H4v-1Zm0 2.5h7v1H4v-1Zm0 2.5h5v1H4v-1Z"/></svg>');
+}
+
+/* ---- Content element rows (children of the primary above) ----
+   Slight left indent so the nesting against the page/news header
+   above is obvious. Applies only to tt_content rows that aren't
+   themselves the primary, so a tt_content-only context (no
+   parent record) still reads flat. */
+.wew-list__row[data-table="tt_content"]:not(.wew-list__row--primary) .wew-list__label {
+    padding-left: 1.6rem;
 }
 /* Changed rows get a left accent stripe — no greyed out fallback for the rest. */
 .wew-list__row--changed::before {
@@ -443,7 +471,10 @@ webcon-easy-workspace-menu {
    way they'd see them in Web → Layout. */
 .wew-list__colheader {
     list-style: none;
-    padding: .35rem .85rem .15rem;
+    /* Left-padding matches the content-element indent below so the
+       uppercase strip reads as the section heading for the nested
+       rows it precedes, lined up with where each child row starts. */
+    padding: .35rem .85rem .15rem 1.6rem;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -696,14 +727,17 @@ webcon-easy-workspace-menu {
 
 /* ---- Dim unselected rows once something is selected ----
    When nothing's selected the list reads normally. The moment the
-   editor picks the first row, the unselected ones drop to .65
+   editor picks the first row, the unselected ones drop to .58
    opacity — selection becomes obvious by contrast instead of
    relying solely on the soft tint, and the publish button's
-   counter visibly matches "the bright rows above". */
-.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(:has(.wew-list__check:checked)) {
+   counter visibly matches "the bright rows above".
+   The primary row (page / news) is excluded from this dim: it's
+   the parent context for everything below, so it always stays
+   prominent regardless of what's queued for publish. */
+.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(.wew-list__row--primary):not(:has(.wew-list__check:checked)) {
     opacity: .58;
 }
-.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(:has(.wew-list__check:checked)):hover {
+.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(.wew-list__row--primary):not(:has(.wew-list__check:checked)):hover {
     opacity: .85;
 }
 
