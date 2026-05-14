@@ -988,7 +988,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 class="form-check-input wew-list__check visually-hidden"
                 .checked=${checked}
                 @change=${(e) => this._toggle(item, e.target.checked)}
-              />`
+              />
+              <span class="wew-list__mark" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
+                  <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M3 8.5l3 3 7-7"/>
+                </svg>
+              </span>`
             : nothing}
           <span class="wew-list__body">
             <span class="wew-list__head">

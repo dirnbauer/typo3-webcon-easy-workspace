@@ -633,14 +633,14 @@ webcon-easy-workspace-menu {
    whole row a primary-color wash so the editor instantly sees what's
    queued for the next "Publish to live" click. Tuned for WCAG 2.2 AA
    contrast against both the light and dark backend body colors:
-   primary @ 15-18 % keeps row text readable while the tint reads as
+   primary @ 18-25 % keeps row text readable while the tint reads as
    "selected". Primary rows (page / news) get a slightly stronger
    wash to keep the hierarchy. */
 .wew-list__row:has(.wew-list__check:checked) {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 15%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 18%, transparent);
 }
 .wew-list__row--primary:has(.wew-list__check:checked) {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 22%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 25%, transparent);
 }
 /* The 4-px left accent stripe on changed rows already encodes
    "modified". When also checked, brighten it to the full primary
@@ -648,6 +648,63 @@ webcon-easy-workspace-menu {
    color sensitivity who rely on saturation). */
 .wew-list__row--changed:has(.wew-list__check:checked)::before {
     background: var(--typo3-link-color, var(--bs-primary));
+}
+
+/* ---- Selection mark ("dot/check" on the row's left edge) ----
+   Replaces the visible checkbox we removed earlier. Renders as a
+   small empty ring when the row is unselected and fills with the
+   primary color + a white checkmark when selected. Gives editors
+   the at-a-glance "this is queued" cue that the soft row tint
+   alone wasn't carrying. Only emitted on changed rows (others
+   can't be toggled). */
+.wew-list__mark {
+    flex-shrink: 0;
+    align-self: flex-start;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    margin-right: .55rem;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--bs-secondary-color, #6c757d) 55%, transparent);
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bs-white, #fff);
+    transition: background-color .12s ease, border-color .12s ease, transform .12s ease;
+}
+.wew-list__mark svg {
+    opacity: 0;
+    transform: scale(.5);
+    transition: opacity .12s ease, transform .12s ease;
+}
+.wew-list__label:hover .wew-list__mark {
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, transparent);
+}
+.wew-list__row:has(.wew-list__check:checked) .wew-list__mark {
+    background: var(--typo3-link-color, var(--bs-primary));
+    border-color: var(--typo3-link-color, var(--bs-primary));
+}
+.wew-list__row:has(.wew-list__check:checked) .wew-list__mark svg {
+    opacity: 1;
+    transform: scale(1);
+}
+.wew-list__check:focus-visible + .wew-list__mark {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: 2px;
+}
+
+/* ---- Dim unselected rows once something is selected ----
+   When nothing's selected the list reads normally. The moment the
+   editor picks the first row, the unselected ones drop to .65
+   opacity — selection becomes obvious by contrast instead of
+   relying solely on the soft tint, and the publish button's
+   counter visibly matches "the bright rows above". */
+.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(:has(.wew-list__check:checked)) {
+    opacity: .58;
+}
+.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(:has(.wew-list__check:checked)):hover {
+    opacity: .85;
 }
 
 .wew-list__title-text {
