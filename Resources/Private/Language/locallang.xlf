@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.0">
+  <file source-language="en" datatype="plaintext" original="EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf" date="2026-05-14" product-name="webcon_easy_workspace">
+    <header/>
+    <body>
+      <trans-unit id="discardTag.title">
+        <source>Decline the changes</source>
+      </trans-unit>
+      <trans-unit id="discardTag.subtitle">
+        <source>Back to the last published version</source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

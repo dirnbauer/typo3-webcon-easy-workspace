@@ -10,6 +10,8 @@ use TYPO3\CMS\Backend\Toolbar\RequestAwareToolbarItemInterface;
 use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
 use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
@@ -31,6 +33,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly PageRenderer $pageRenderer,
         private readonly Context $context,
         private readonly ConfigurationProvider $configurationProvider,
+        private readonly LanguageServiceFactory $languageServiceFactory,
     ) {}
 
     public function setRequest(ServerRequestInterface $request): void
@@ -74,9 +77,18 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // capabilities so the Lit element can adapt its messaging
         // (eye icon tooltip, "no iframe" notification) to what's
         // actually installed instead of always saying "Visual Editor".
+        // Translated UI strings the JS reads through `this._config.labels`.
+        // Keeping them server-rendered keeps the JS bundle locale-free
+        // and lets editors switch backend language without rebuilds.
+        $beUser = $GLOBALS['BE_USER'] ?? null;
+        $languageService = $this->languageServiceFactory->createFromUserPreferences($beUser);
         $payload = $this->configurationProvider->get() + [
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
+            'labels' => [
+                'discardTagTitle' => $this->translate($languageService, 'discardTag.title'),
+                'discardTagSubtitle' => $this->translate($languageService, 'discardTag.subtitle'),
+            ],
         ];
         $view->assign('configJson', json_encode($payload, JSON_THROW_ON_ERROR));
         return $view->render('ToolbarItems/EasyWorkspaceDropDown');
@@ -95,5 +107,18 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function getIndex(): int
     {
         return 45;
+    }
+
+    /**
+     * Resolve a key from EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf
+     * for the BE user's preferred language. Falls back to the English
+     * source string if no target exists. Bare `sL()` returns the
+     * source for missing keys, so we don't need a separate guard.
+     */
+    private function translate(LanguageService $languageService, string $key): string
+    {
+        return (string)$languageService->sL(
+            'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:' . $key,
+        );
     }
 }

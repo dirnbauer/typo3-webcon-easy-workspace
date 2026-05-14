@@ -1030,28 +1030,50 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const doc = located.doc;
       const existing = doc.querySelector('.wew-discard-tag');
       if (existing) existing.remove();
+      // Two-line label, server-translated. Title carries the action
+      // verb ("Decline the changes" / "Änderungen verwerfen"),
+      // subtitle adds the consequence in plain language ("Back to
+      // the last published version" / "Zurück zur zuletzt
+      // veröffentlichten Version") — same idea as a snackbar's
+      // primary + secondary line.
+      const labels = this._config.labels || {};
+      const title = labels.discardTagTitle || 'Decline the changes';
+      const subtitle = labels.discardTagSubtitle || 'Back to the last published version';
       const tag = doc.createElement('div');
       tag.className = 'wew-discard-tag';
-      tag.textContent = 'Decline the changes';
       Object.assign(tag.style, {
         position: 'absolute',
         zIndex: '999999',
-        padding: '3px 8px',
+        padding: '4px 9px 5px',
         fontSize: '11px',
-        fontWeight: '600',
+        lineHeight: '1.25',
         background: '#dc3545',
         color: '#fff',
         borderRadius: '3px',
         boxShadow: '0 2px 6px rgba(0,0,0,.25)',
         pointerEvents: 'none',
         whiteSpace: 'nowrap',
+        fontFamily: 'inherit',
       });
+      const titleEl = doc.createElement('div');
+      titleEl.textContent = title;
+      titleEl.style.fontWeight = '600';
+      const subtitleEl = doc.createElement('div');
+      subtitleEl.textContent = subtitle;
+      subtitleEl.style.fontWeight = '400';
+      subtitleEl.style.opacity = '.92';
+      subtitleEl.style.fontSize = '10.5px';
+      tag.appendChild(titleEl);
+      tag.appendChild(subtitleEl);
       const rect = located.el.getBoundingClientRect();
       const scrollY = doc.defaultView?.scrollY ?? 0;
       const scrollX = doc.defaultView?.scrollX ?? 0;
-      tag.style.top = `${rect.top + scrollY - 26}px`;
-      tag.style.left = `${rect.left + scrollX}px`;
+      // Two-line tag is taller; offset above the element so it
+      // doesn't cover the first line of content.
       doc.body.appendChild(tag);
+      const tagHeight = tag.getBoundingClientRect().height || 36;
+      tag.style.top = `${rect.top + scrollY - tagHeight - 6}px`;
+      tag.style.left = `${rect.left + scrollX}px`;
     } catch {
       /* DOM access guarded — cross-origin iframes throw silently. */
     }
