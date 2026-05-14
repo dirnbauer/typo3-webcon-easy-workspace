@@ -12,6 +12,10 @@ final readonly class PendingItem
      *   versions. Empty for unchanged rows (isChanged=false) or when
      *   the diff service couldn't compute one.
      */
+    /**
+     * @param int|null    $colPos      Column position from the page's BackendLayout. tt_content rows only; null for pages/news/etc. Used by the frontend to group rows by page column ("Hero area", "Content area", …).
+     * @param string|null $colPosLabel Human-readable column name resolved via BackendLayout/usedColumns. Falls back to "Column N" when no layout is configured. Null when colPos is null.
+     */
     public function __construct(
         public string $table,
         public int $liveUid,
@@ -27,6 +31,8 @@ final readonly class PendingItem
         public string $typeLabel,
         public ?string $editUrl,
         public array $diff = [],
+        public ?int $colPos = null,
+        public ?string $colPosLabel = null,
     ) {}
 
     /**
@@ -49,6 +55,8 @@ final readonly class PendingItem
             'typeLabel' => $this->typeLabel,
             'editUrl' => $this->editUrl,
             'diff' => $this->diff,
+            'colPos' => $this->colPos,
+            'colPosLabel' => $this->colPosLabel,
         ];
     }
 }

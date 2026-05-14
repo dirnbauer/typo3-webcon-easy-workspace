@@ -806,9 +806,35 @@ class WebconEasyWorkspaceMenu extends LitElement {
         </div>
       `;
     }
+    // Walk the visible list and emit a column header before each
+    // run of tt_content rows that belong to a different colPos.
+    // Server sorted by colPos ASC + sorting ASC, so each colPos
+    // appears in a contiguous block — a single previousColPos
+    // tracker is enough; no grouping into intermediate arrays.
+    let previousColPos = null;
+    const rendered = [];
+    for (const item of visible) {
+      const itemColPos = item.table === 'tt_content' && Number.isInteger(item.colPos)
+        ? item.colPos
+        : null;
+      if (itemColPos !== null && itemColPos !== previousColPos) {
+        rendered.push(html`
+          <li class="wew-list__colheader" role="presentation">
+            <span class="wew-list__colheader-label">${item.colPosLabel || `Column ${itemColPos}`}</span>
+          </li>
+        `);
+        previousColPos = itemColPos;
+      }
+      if (itemColPos === null) {
+        // Non-tt_content rows (pages / news) reset the tracker so a
+        // tt_content block that follows still emits its header.
+        previousColPos = null;
+      }
+      rendered.push(this._renderItem(item));
+    }
     return html`
       <ul class="wew-list">
-        ${visible.map((item) => this._renderItem(item))}
+        ${rendered}
       </ul>
     `;
   }

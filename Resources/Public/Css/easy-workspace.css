@@ -393,6 +393,28 @@ webcon-easy-workspace-menu {
     pointer-events: none;
 }
 
+/* ---- Column group header ("Hero area", "Content area", …) ----
+   Subtle separator emitted by _renderBodyInner whenever consecutive
+   tt_content rows belong to a different colPos. Matches the page's
+   BackendLayout column order so editors see workspace changes the
+   way they'd see them in Web → Layout. */
+.wew-list__colheader {
+    list-style: none;
+    padding: .35rem .85rem .15rem;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .03));
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-list__colheader-label {
+    /* No extra styling — the <li> rules above carry the look.
+       Wrapper kept so future variants (icon, count, etc.) have a
+       hook. */
+}
+
 /* ---- Per-row diff disclosure (collapsible "N changes") ----
    Native <details>/<summary> so keyboard, ARIA and the open/close
    state come for free. Lives inside each .wew-list__row, below the

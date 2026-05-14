@@ -6,6 +6,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Backend\View\BackendLayoutView;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -44,6 +45,7 @@ final readonly class PendingItemsService
         private BackendUriBuilder $backendUriBuilder,
         private Context $context,
         private RecordDiffService $recordDiffService,
+        private BackendLayoutView $backendLayoutView,
     ) {}
 
     /**
@@ -70,16 +72,30 @@ final readonly class PendingItemsService
             $items[] = $pageItem->toArray();
         }
 
+        // Resolve column labels (e.g. "Hero area", "Content area")
+        // from the page's BackendLayout so each tt_content row in the
+        // dropdown carries the colPos name that the page tree shows
+        // in Web → Layout. Empty array if no layout selected — items
+        // then just show the numeric colPos ("Column 0", "Column 3"
+        // etc.) on the frontend.
+        $columnLabels = $this->resolveColumnLabels($pageUid);
+
+        // Order tt_content rows the way editors read them in the
+        // Layout module: colPos ASC first (hero / main / sidebar /
+        // footer in their backend-layout order), then sorting ASC
+        // inside each column.
+        $contentOrder = [['colPos', 'ASC'], ['sorting', 'ASC']];
+
         if ($mode === self::MODE_ALL) {
-            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
-                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
+            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder) as $row) {
+                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
                 if ($item !== null) {
                     $items[] = $item->toArray();
                     if (count($items) >= $maxItems) break;
                 }
             }
         } else {
-            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId, $config) as $item) {
+            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId, $config, $contentOrder, $columnLabels) as $item) {
                 $items[] = $item->toArray();
                 if (count($items) >= $maxItems) break;
             }
@@ -231,25 +247,44 @@ final readonly class PendingItemsService
      * @param array<string, mixed> $config
      * @return list<PendingItem>
      */
-    private function resolveChangedRelated(string $table, string $field, int $parentUid, int $workspaceId, array $config = []): array
-    {
+    /**
+     * @param array<string, mixed>             $config
+     * @param list<array{0: string, 1: string}> $orderBy       Defaults to [['sorting','ASC']] to match the original behaviour for non-tt_content tables.
+     * @param array<int, string>               $columnLabels  colPos → name map. Only relevant for tt_content; ignored for other tables.
+     * @return list<PendingItem>
+     */
+    private function resolveChangedRelated(
+        string $table,
+        string $field,
+        int $parentUid,
+        int $workspaceId,
+        array $config = [],
+        array $orderBy = [['sorting', 'ASC']],
+        array $columnLabels = [],
+    ): array {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
 
-        $result = $queryBuilder
+        $queryBuilder
             ->select('*')
             ->from($table)
             ->where(
                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            )
-            ->orderBy('sorting', 'ASC')
-            ->executeQuery();
+            );
+        foreach ($orderBy as $i => [$column, $direction]) {
+            if ($i === 0) {
+                $queryBuilder->orderBy($column, $direction);
+            } else {
+                $queryBuilder->addOrderBy($column, $direction);
+            }
+        }
 
+        $result = $queryBuilder->executeQuery();
         $items = [];
         while ($row = $result->fetchAssociative()) {
-            $item = $this->buildItem($table, $row, isPrimary: false, config: $config);
+            $item = $this->buildItem($table, $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
             if ($item !== null) {
                 $items[] = $item;
             }
@@ -359,7 +394,10 @@ final readonly class PendingItemsService
         return $this->buildItem($table, $row, isPrimary: false, config: $config);
     }
 
-    private function buildItem(string $table, array $row, bool $isPrimary, array $config = []): ?PendingItem
+    /**
+     * @param array<int, string> $columnLabels colPos → name map; only consulted for tt_content rows. Empty falls back to the numeric colPos.
+     */
+    private function buildItem(string $table, array $row, bool $isPrimary, array $config = [], array $columnLabels = []): ?PendingItem
     {
         $rawUid = (int)($row['uid'] ?? 0);
         if ($rawUid <= 0) {
@@ -406,6 +444,19 @@ final readonly class PendingItemsService
         // workspace versions; live rows have nothing to diff.
         $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
 
+        // Resolve colPos info for tt_content rows so the frontend
+        // can group items by page column with proper labels (e.g.
+        // "Hero area" / "Content area"). Null for other tables.
+        $colPos = null;
+        $colPosLabel = null;
+        if ($table === 'tt_content' && array_key_exists('colPos', $row)) {
+            $colPos = (int)$row['colPos'];
+            $colPosLabel = $columnLabels[$colPos] ?? null;
+            if ($colPosLabel === null || $colPosLabel === '') {
+                $colPosLabel = sprintf('Column %d', $colPos);
+            }
+        }
+
         return new PendingItem(
             table: $table,
             liveUid: $liveUid,
@@ -421,7 +472,36 @@ final readonly class PendingItemsService
             typeLabel: $this->resolveTypeLabel($table, $row),
             editUrl: $editUrl,
             diff: $diff,
+            colPos: $colPos,
+            colPosLabel: $colPosLabel,
         );
+    }
+
+    /**
+     * Resolve the BackendLayout column names for $pageUid as a
+     * `colPos => name` map. Returns empty array when no layout is
+     * configured — callers then fall back to numeric "Column N".
+     *
+     * @return array<int, string>
+     */
+    private function resolveColumnLabels(int $pageUid): array
+    {
+        try {
+            $structure = $this->backendLayoutView->getSelectedBackendLayout($pageUid);
+        } catch (\Throwable) {
+            return [];
+        }
+        $columns = $structure['usedColumns'] ?? [];
+        if (!is_array($columns)) {
+            return [];
+        }
+        $languageService = $this->getLanguageService();
+        $out = [];
+        foreach ($columns as $colPos => $rawLabel) {
+            $resolved = $languageService->sL((string)$rawLabel);
+            $out[(int)$colPos] = $resolved !== '' ? $resolved : (string)$rawLabel;
+        }
+        return $out;
     }
 
     /**
