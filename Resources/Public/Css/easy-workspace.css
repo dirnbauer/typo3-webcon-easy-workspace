@@ -528,22 +528,26 @@ webcon-easy-workspace-menu {
    Tiny inline button that opens a TYPO3 backend Modal with the
    record's field-level diff (server-rendered Fluid template using
    core's DiffUtility). Replaces the inline <details> accordion —
-   the modal has the vertical breathing room the dropdown lacked. */
+   the modal has the vertical breathing room the dropdown lacked.
+
+   Contrast: text in the full body color (not the secondary-text
+   grey we previously used) on a slightly tinted row background
+   clears WCAG 2.2 AA. Border is solid, full opacity icon. */
 .wew-list__diff-trigger {
     display: inline-flex;
     align-items: center;
-    gap: .3rem;
+    gap: .35rem;
     align-self: flex-start;
     /* Sit flush against the body's left edge, matching the title
        column. The slight top margin (created by the row-gap on
        .wew-list__body) gives it air. */
     margin: 0;
-    padding: .1rem .55rem .1rem .4rem;
-    background: transparent;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    border: 1px dashed var(--typo3-component-border-color, var(--bs-border-color));
+    padding: .15rem .6rem .15rem .45rem;
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    color: var(--typo3-component-color, var(--bs-body-color));
+    border: 1px solid color-mix(in srgb, var(--typo3-component-color, var(--bs-body-color)) 35%, transparent);
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 500;
     line-height: 1.45;
     letter-spacing: 0;
@@ -552,10 +556,12 @@ webcon-easy-workspace-menu {
     transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
 .wew-list__diff-trigger:hover {
-    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
-    color: var(--typo3-text-color-base, var(--bs-body-color));
-    border-style: solid;
-    border-color: var(--typo3-state-default-border-color, var(--bs-border-color));
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: var(--bs-white, #fff);
+    border-color: var(--typo3-link-color, var(--bs-primary));
+}
+.wew-list__diff-trigger:hover .wew-list__diff-trigger-icon {
+    opacity: 1;
 }
 .wew-list__diff-trigger:focus-visible {
     outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
@@ -564,7 +570,7 @@ webcon-easy-workspace-menu {
 .wew-list__diff-trigger-icon {
     font-size: 11px;
     line-height: 1;
-    opacity: .7;
+    opacity: .9;
 }
 
 /* Visually hidden — the checkbox stays in the DOM and reachable
@@ -695,13 +701,23 @@ webcon-easy-workspace-menu {
 /* Discard intentionally uses the warning hue so it reads as
    destructive even before the user clicks it. "Discard" is TYPO3's
    term — same DataHandler operation as Revert. */
-.wew-list__discard:hover,
-.wew-list__discard:focus-visible {
-    background: color-mix(in srgb, var(--bs-warning, #e8a33d) 18%, transparent);
-    color: var(--bs-warning, #e8a33d);
-    border-color: color-mix(in srgb, var(--bs-warning, #e8a33d) 45%, transparent);
+.wew-list__discard:hover:not(:disabled),
+.wew-list__discard:focus-visible:not(:disabled) {
+    background: var(--bs-warning, #e8a33d);
+    color: var(--bs-white, #fff);
+    border-color: var(--bs-warning, #e8a33d);
     outline: none;
     transform: scale(1.05);
+}
+/* Disabled state: enableRevert is off in TSconfig. Render the
+   icon at reduced opacity with not-allowed cursor and no hover
+   reaction so the editor reads it as "control is here, just
+   inactive in this environment". */
+.wew-list__discard--disabled,
+.wew-list__discard:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d));
 }
 .wew-list__row--unchanged .wew-list__label { cursor: default; }
 .wew-list__check-cell {

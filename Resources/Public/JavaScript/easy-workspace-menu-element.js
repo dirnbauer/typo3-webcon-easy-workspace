@@ -958,8 +958,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
     ].filter(Boolean).join(' ');
 
     const locatable = this._config.enableHoverHighlight && item.table === 'tt_content';
-    const revertable = this._config.enableRevert && item.isChanged;
-    const hasActions = locatable || revertable;
+    // Render the discard icon on every changed row so the action
+    // affordance never silently disappears between items. When the
+    // admin has turned off rollback in TSconfig (enableRevert=false)
+    // we render the icon in a disabled-greyed state instead of
+    // hiding it — the visual placeholder tells the editor "yes, this
+    // is where the discard control lives, your environment just has
+    // it switched off" rather than leaving them hunting for a missing
+    // button.
+    const canRevert = this._config.enableRevert && item.isChanged;
+    const showRevertButton = item.isChanged;
+    const hasActions = locatable || showRevertButton;
     // Diff data ships with every changed row via PendingItem::$diff.
     // Empty for unchanged rows or rows the diff service couldn't
     // resolve (broken FAL refs, etc.) — in which case we just skip
@@ -1000,7 +1009,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
               <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
               ${hasActions
                 ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
-                    ${revertable ? this._renderRevertButton(item) : nothing}
+                    ${showRevertButton ? this._renderRevertButton(item, canRevert) : nothing}
                     ${locatable ? this._renderLocateButton(item) : nothing}
                   </span>`
                 : nothing}
@@ -1042,23 +1051,39 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * record after a warning confirmation modal. SVG inlined from TYPO3
    * core's actions-undo icon (currentColor). "Discard" is TYPO3's own
    * term for the operation (the DataHandler command is `flush`).
+   *
+   * When `canRevert` is false (admin has turned off enableRevert in
+   * TSconfig) the same button renders in a disabled-greyed state
+   * instead of being omitted from the row. Keeps the action column
+   * visually consistent across editors with different TSconfig and
+   * tells the user "the control lives here, your env has it off"
+   * instead of leaving an unexplained gap.
    */
-  _renderRevertButton(item) {
-    // Hover preview: same scroll-into-view + outline as the eye
-    // button, plus a "Decline the changes" tag overlaid on the
-    // outlined element so editors can see *what* they're about to
-    // discard before they click. mouseleave removes both.
+  _renderRevertButton(item, canRevert = true) {
+    const title = canRevert
+      ? 'Discard this change'
+      : 'Discard is disabled by configuration (enableRevert = 0)';
+    const ariaLabel = canRevert
+      ? 'Discard this workspace change'
+      : 'Discard disabled by configuration';
+    const cls = `wew-list__discard${canRevert ? '' : ' wew-list__discard--disabled'}`;
+    // Hover preview wiring is only meaningful when the button is
+    // active — bind nothing when the button is disabled so we don't
+    // light up the iframe outline on a click that can't happen.
     return html`
       <button
         type="button"
-        class="wew-list__discard"
-        title="Discard this change"
-        aria-label="Discard this workspace change"
-        @mouseenter=${() => this._previewDiscard(item)}
-        @mouseleave=${() => this._clearIframeHighlight()}
-        @focus=${() => this._previewDiscard(item)}
-        @blur=${() => this._clearIframeHighlight()}
-        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._clearIframeHighlight(); this._confirmAndDiscard(item); }}
+        class=${cls}
+        title=${title}
+        aria-label=${ariaLabel}
+        ?disabled=${!canRevert}
+        @mouseenter=${canRevert ? () => this._previewDiscard(item) : null}
+        @mouseleave=${canRevert ? () => this._clearIframeHighlight() : null}
+        @focus=${canRevert ? () => this._previewDiscard(item) : null}
+        @blur=${canRevert ? () => this._clearIframeHighlight() : null}
+        @click=${canRevert
+          ? (e) => { e.preventDefault(); e.stopPropagation(); this._clearIframeHighlight(); this._confirmAndDiscard(item); }
+          : (e) => { e.preventDefault(); e.stopPropagation(); }}
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
