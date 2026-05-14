@@ -1708,48 +1708,62 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _wireRollbackButtons(modal, item) {
     if (!ENDPOINTS.historyRollback) return;
-    const buttons = modal.querySelectorAll('[data-wew-rollback]');
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const mode = btn.dataset.wewRollback;
-        const historyUid = parseInt(btn.dataset.historyUid, 10);
-        const field = btn.dataset.field || '';
-        if (!mode || historyUid <= 0) return;
+    // Event delegation on the modal host — robust against the
+    // buttons not yet being in the DOM at the moment ajaxCallback
+    // fires (we hit a "click does nothing" report on the field
+    // rollback button that was traced to a binding race) and against
+    // any future re-renders inside the modal body. Stops at the
+    // first match, so the linear and per-field buttons never both
+    // fire from one click.
+    modal.addEventListener('click', async (e) => {
+      const btn = e.target instanceof Element ? e.target.closest('[data-wew-rollback]') : null;
+      if (!btn || !modal.contains(btn)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const mode = btn.dataset.wewRollback;
+      const historyUid = parseInt(btn.dataset.historyUid || '0', 10);
+      const field = btn.dataset.field || '';
+      if ((mode !== 'linear' && mode !== 'field') || !Number.isFinite(historyUid) || historyUid <= 0) {
+        Notification.error('Revert failed', `Missing data on the revert button (mode=${mode || '∅'}, historyUid=${btn.dataset.historyUid || '∅'}).`);
+        return;
+      }
+      if (mode === 'field' && field === '') {
+        Notification.error('Revert failed', 'No field name on the revert button.');
+        return;
+      }
 
-        const confirmMsg = mode === 'field'
-          ? `Revert this field’s change for “${item.title || item.workspaceUid}”? Later edits to other fields are kept.`
-          : `Revert this edit and every later edit on “${item.title || item.workspaceUid}”? This affects every field touched after this point.`;
-        if (!window.confirm(confirmMsg)) return;
+      const confirmMsg = mode === 'field'
+        ? `Revert this field’s change for “${item.title || item.workspaceUid}”? Later edits to other fields are kept.`
+        : `Revert this edit and every later edit on “${item.title || item.workspaceUid}”? This affects every field touched after this point.`;
+      if (!window.confirm(confirmMsg)) return;
 
-        btn.disabled = true;
-        try {
-          const response = await new AjaxRequest(ENDPOINTS.historyRollback).post(
-            {
-              table: item.table,
-              uid: item.workspaceUid,
-              historyUid,
-              mode,
-              field,
-            },
-            { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
-          );
-          const result = await response.resolve();
-          if (result?.success) {
-            Notification.success('Reverted', mode === 'field' ? `Field “${field}” reverted.` : 'Edit reverted.', 4);
-            modal.hideModal();
-            await this._refresh();
-            this._reloadPreviewIframes();
-            this._invalidateLatest();
-          } else {
-            Notification.error('Could not revert', result?.error || 'Unknown error.');
-            btn.disabled = false;
-          }
-        } catch (error) {
-          Notification.error('Revert failed', error?.message || 'Unexpected error.');
+      btn.disabled = true;
+      try {
+        const response = await new AjaxRequest(ENDPOINTS.historyRollback).post(
+          {
+            table: item.table,
+            uid: item.workspaceUid,
+            historyUid,
+            mode,
+            field,
+          },
+          { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
+        );
+        const result = await response.resolve();
+        if (result?.success) {
+          Notification.success('Reverted', mode === 'field' ? `Field “${field}” reverted.` : 'Edit reverted.', 4);
+          modal.hideModal();
+          await this._refresh();
+          this._reloadPreviewIframes();
+          this._invalidateLatest();
+        } else {
+          Notification.error('Could not revert', result?.error || 'Unknown error.');
           btn.disabled = false;
         }
-      });
+      } catch (error) {
+        Notification.error('Revert failed', error?.message || 'Unexpected error.');
+        btn.disabled = false;
+      }
     });
   }
 
