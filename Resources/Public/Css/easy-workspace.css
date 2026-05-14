@@ -729,6 +729,21 @@ webcon-easy-workspace-menu {
     opacity: .55;
     cursor: progress;
 }
+
+/* Transient post-copy state — the JS flips this on for 2 s after a
+   successful clipboard write so the editor has unambiguous visual
+   confirmation that "Copy" did its job. Uses TYPO3's success-state
+   tokens so the green works in both light and dark themes. */
+.wew-menu__preview--copied {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+    border-color: var(--typo3-state-success-border-color);
+}
+.wew-menu__preview--copied:hover {
+    background: var(--typo3-state-success-hover-bg, var(--typo3-state-success-bg));
+    color: var(--typo3-state-success-color);
+    border-color: var(--typo3-state-success-hover-border-color, var(--typo3-state-success-border-color));
+}
 .wew-menu__preview svg {
     flex-shrink: 0;
 }

@@ -76,6 +76,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     workspaceTitle: { state: true },
     mode: { state: true },
     copyingPreview: { state: true },
+    previewJustCopied: { state: true },
     // Latest-changes accordion (cross-page feed). Idle until the
     // editor first opens it — then transitions to loading → loaded.
     latestState: { state: true },
@@ -96,6 +97,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.workspaceTitle = '';
     this.publishing = false;
     this.copyingPreview = false;
+    this.previewJustCopied = false;
     this.latestState = 'idle';
     this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
@@ -655,6 +657,43 @@ class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
+  /**
+   * "Copy to clipboard" glyph: two overlapping documents. Replaces
+   * the old chain-link icon since editors kept reading the button
+   * as "open this link" rather than "copy the URL". The
+   * two-rectangle motif is the conventional copy affordance
+   * (Office, GitHub, browser DevTools all use it).
+   */
+  _copyIcon() {
+    return html`
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <rect x="3" y="3" width="8" height="9" rx="1.2"
+              fill="none" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M5.5 5h.7M5.5 7h3M5.5 9h3"
+              stroke="currentColor" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+        <rect x="6" y="6" width="7" height="8" rx="1.2"
+              fill="var(--typo3-state-default-bg, currentColor)"
+              stroke="currentColor" stroke-width="1.3"/>
+      </svg>
+    `;
+  }
+
+  /**
+   * Checkmark glyph for the transient "Copied" state right after
+   * a successful clipboard write. Uses --typo3-state-success-color
+   * so it reads as positive confirmation against the button's
+   * default surface.
+   */
+  _checkIcon() {
+    return html`
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path d="M3.5 8.5l2.7 2.7L12.5 4.8"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+  }
+
   _linkIcon() {
     return html`
       <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
@@ -1059,18 +1098,29 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (this.state !== 'loaded' && this.state !== 'empty') return nothing;
     const { pageUid } = this._detectContext();
     if (pageUid <= 0) return nothing;
+    // Three visual states:
+    //  - idle      : copy icon + "Preview" label
+    //  - loading   : spinner + "Copying…"  (AJAX in flight)
+    //  - just-copied: check icon + "Copied" in success color (2 s
+    //    after the clipboard write succeeds — gives editors
+    //    immediate confirmation that the click did the copy and
+    //    they can now paste the URL elsewhere).
+    const justCopied = this.previewJustCopied && !this.copyingPreview;
+    const stateClass = justCopied ? 'wew-menu__preview wew-menu__preview--copied' : 'wew-menu__preview';
     return html`
       <button
         type="button"
-        class="wew-menu__preview"
-        title="Copy a shareable preview link for this page"
+        class=${stateClass}
+        title="Copy a shareable preview URL of this page to the clipboard"
         @click=${() => this._copyPreviewLink(pageUid)}
         ?disabled=${this.copyingPreview}
       >
         ${this.copyingPreview
           ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
-          : this._linkIcon()}
-        <span class="wew-menu__preview-label">${this.copyingPreview ? 'Copying…' : 'Preview'}</span>
+          : justCopied
+            ? this._checkIcon()
+            : this._copyIcon()}
+        <span class="wew-menu__preview-label">${this.copyingPreview ? 'Copying…' : justCopied ? 'Copied' : 'Preview'}</span>
       </button>
     `;
   }
@@ -1531,6 +1581,18 @@ class WebconEasyWorkspaceMenu extends LitElement {
       }
       await this._writeToOsClipboard(data.url);
       Notification.success('Preview link copied', data.url, 4);
+      // Transient in-button confirmation: swap to a green
+      // checkmark + "Copied" for 2 s. Auto-reset on a timer rather
+      // than a re-render trigger so the editor can read the
+      // success state even if other interactions cause a render.
+      this.previewJustCopied = true;
+      if (this._previewCopiedResetTimer) {
+        clearTimeout(this._previewCopiedResetTimer);
+      }
+      this._previewCopiedResetTimer = setTimeout(() => {
+        this.previewJustCopied = false;
+        this._previewCopiedResetTimer = null;
+      }, 2000);
     } catch (error) {
       Notification.error('Preview link', error?.message || 'Unexpected error.');
     } finally {
