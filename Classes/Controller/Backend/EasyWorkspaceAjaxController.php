@@ -224,20 +224,20 @@ final readonly class EasyWorkspaceAjaxController
         // either "ALL" or "table:uid:field" for a single field. The
         // diff array is the {<sys_history.uid>: {oldRecord, newRecord, …}}
         // structure RecordHistory::getDiff produces.
-        $rollbackSelector = $mode === 'field' && $field !== ''
-            ? sprintf('%s:%d:%s', $table, $uid, $field)
-            : sprintf('%s:%d', $table, $uid);
-        $historyService = new \TYPO3\CMS\Backend\History\RecordHistory(sprintf('%s:%d', $table, $uid));
-        $historyService->setLastHistoryEntryNumber($historyUid);
-        $diff = $historyService->getDiff($historyService->getChangeLog());
-
-        // performRollback can throw for many reasons (DataHandler
-        // refused a cmdmap, permission denied, broken sys_history
-        // row, …). Surface the actual message to the editor by
-        // returning 200 with success:false — TYPO3's AjaxRequest
-        // throws on 4xx/5xx and swallows the body, so 500 here
-        // would produce the JS "Unexpected error" fallback.
+        //
+        // Everything that touches sys_history / DataHandler goes in
+        // the try block: getChangeLog reads the sys_history table,
+        // getDiff materializes the cmdmap, performRollback runs it.
+        // Any of them can throw — and a 500 escape would just be
+        // surfaced as a generic "Unexpected error" because TYPO3's
+        // AjaxRequest swallows 5xx response bodies.
         try {
+            $rollbackSelector = $mode === 'field' && $field !== ''
+                ? sprintf('%s:%d:%s', $table, $uid, $field)
+                : sprintf('%s:%d', $table, $uid);
+            $historyService = new \TYPO3\CMS\Backend\History\RecordHistory(sprintf('%s:%d', $table, $uid));
+            $historyService->setLastHistoryEntryNumber($historyUid);
+            $diff = $historyService->getDiff($historyService->getChangeLog());
             if (empty($diff['insertsDeletes'] ?? null) && empty($diff['oldData'] ?? null)) {
                 return new JsonResponse([
                     'success' => false,
