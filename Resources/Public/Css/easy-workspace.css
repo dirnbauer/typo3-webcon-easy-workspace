@@ -658,6 +658,20 @@ webcon-easy-workspace-menu {
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 
+/* Quiet context footnote: identifies which page/news record the
+   publish list is scoped to. Used to live as the header subtitle
+   alongside the workspace title — moved down here so the header
+   reads cleanly (just "Workspace publish · STAGING · Preview") and
+   the scope identifier doesn't compete with the primary chrome. */
+.wew-menu__context {
+    padding: .3rem .85rem;
+    font-size: 10.5px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    text-align: right;
+}
+
 /* Preview link button — promoted to the header's top-right slot.
    Icon + text, real button affordance so editors can scan and
    click it confidently rather than hunt for a tiny icon. */

@@ -608,6 +608,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this._renderFilter()}
         ${this._renderBody()}
         ${this._renderFooter()}
+        ${this._renderContextFootnote()}
       </div>
     `;
   }
@@ -1384,17 +1385,36 @@ class WebconEasyWorkspaceMenu extends LitElement {
   _buildContextLabel(data) {
     const changedCount = (data.items || []).filter((i) => i.isChanged).length;
     const totalCount = (data.items || []).length;
-    if (data.context === 'news' && data.newsUid) {
-      return this.mode === 'all'
-        ? `News #${data.newsUid} · ${totalCount} record(s), ${changedCount} pending`
-        : `News #${data.newsUid} · ${changedCount} pending`;
+    // Header subtitle: just the counts. The page/news identifier
+    // moved to a small footnote at the bottom of the dropdown so it
+    // doesn't compete with the workspace name + preview button up
+    // top.
+    if (this.mode === 'all') {
+      return `${totalCount} record${totalCount === 1 ? '' : 's'}, ${changedCount} pending`;
     }
-    if (data.context === 'page' && data.pageUid) {
-      return this.mode === 'all'
-        ? `Page #${data.pageUid} · ${totalCount} record(s), ${changedCount} pending`
-        : `Page #${data.pageUid} · ${changedCount} pending`;
+    return `${changedCount} pending`;
+  }
+
+  /**
+   * Tiny "context" footnote rendered at the very bottom of the
+   * dropdown (under Deselect all / Publish): identifies which page
+   * or news record the publish list is scoped to. Lives in its own
+   * row so the primary controls have a clear visual hierarchy
+   * (header / list / footer-actions / context-footnote).
+   */
+  _renderContextFootnote() {
+    if (this.state === 'loading' || this.state === 'no-context' || this.state === 'error') {
+      return nothing;
     }
-    return 'Current workspace';
+    const { pageUid, newsUid } = this._detectContext();
+    let label = null;
+    if (newsUid > 0) {
+      label = `News #${newsUid}`;
+    } else if (pageUid > 0) {
+      label = `Page #${pageUid}`;
+    }
+    if (!label) return nothing;
+    return html`<div class="wew-menu__context" role="note">${label}</div>`;
   }
 
   _detectContext() {
