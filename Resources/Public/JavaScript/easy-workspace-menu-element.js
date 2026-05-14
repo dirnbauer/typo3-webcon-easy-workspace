@@ -657,7 +657,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   _linkIcon() {
     return html`
-      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
         <path d="M6.5 9.5a2.5 2.5 0 0 0 3.54 0l2-2a2.5 2.5 0 0 0-3.54-3.54l-.66.66"
               fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         <path d="M9.5 6.5a2.5 2.5 0 0 0-3.54 0l-2 2a2.5 2.5 0 0 0 3.54 3.54l.66-.66"
@@ -1026,7 +1026,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this.copyingPreview
           ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
           : this._linkIcon()}
-        <span class="wew-menu__preview-label">${this.copyingPreview ? 'Copying…' : 'Preview link'}</span>
+        <span class="wew-menu__preview-label">${this.copyingPreview ? 'Copying…' : 'Preview'}</span>
       </button>
     `;
   }
