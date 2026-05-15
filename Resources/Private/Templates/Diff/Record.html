@@ -74,7 +74,7 @@
                                     <f:for each="{entry.diffs}" as="d">
                                         <dt class="wew-diff-modal__field-label">{d.label}</dt>
                                         <dd class="wew-diff-modal__field-value">
-                                            <f:format.raw>{d.html}</f:format.raw>
+                                            <span class="wew-history__diff-html"><f:format.raw>{d.html}</f:format.raw></span>
                                             <f:if condition="{rollbackEnabled}">
                                                 <button
                                                     type="button"
