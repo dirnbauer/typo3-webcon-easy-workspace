@@ -104,6 +104,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
+    this.visualEditorState = null;
+    this._observedVisualEditorButton = null;
   }
 
   connectedCallback() {
@@ -131,10 +133,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item');
     if (dropdownHost) {
-      dropdownHost.addEventListener('shown.bs.dropdown', () => this._refresh());
+      dropdownHost.addEventListener('shown.bs.dropdown', () => {
+        this._syncVisualEditorStateFromSaveButton();
+        this._refresh();
+      });
       // Belt + braces: also refresh on a direct click on the toggle.
       const toggle = dropdownHost.querySelector('.dropdown-toggle');
-      toggle?.addEventListener('click', () => this._refresh());
+      toggle?.addEventListener('click', () => {
+        this._syncVisualEditorStateFromSaveButton();
+        this._refresh();
+      });
     }
 
     // Listen for the {type: 'wew-decline', table, uid} postMessage
@@ -147,6 +155,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // modal.
     this._declineMessageListener = (event) => this._onDeclineMessage(event);
     window.addEventListener('message', this._declineMessageListener);
+
+    this._visualEditorMessageListener = (event) => this._onVisualEditorMessage(event);
+    window.addEventListener('message', this._visualEditorMessageListener);
+    this._syncVisualEditorStateFromSaveButton();
   }
 
   disconnectedCallback() {
@@ -163,6 +175,123 @@ class WebconEasyWorkspaceMenu extends LitElement {
       window.removeEventListener('message', this._declineMessageListener);
       this._declineMessageListener = null;
     }
+    if (this._visualEditorMessageListener) {
+      window.removeEventListener('message', this._visualEditorMessageListener);
+      this._visualEditorMessageListener = null;
+    }
+    this._visualEditorButtonObserver?.disconnect();
+    this._visualEditorButtonObserver = null;
+    this._observedVisualEditorButton = null;
+  }
+
+  /**
+   * Mirror the count source used by friendsoftypo3/visual-editor's
+   * <ve-backend-save-button>. Its frontend iframe sends
+   * {command: 've_updateEditorState', detail: {count, invalidCount}}
+   * whenever the DataHandler store changes, and {command:
+   * 've_saveEnded'} after a successful save.
+   */
+  _onVisualEditorMessage(event) {
+    const command = event.data?.command;
+    if (command === 've_updateEditorState') {
+      this._setVisualEditorState(event.data.detail);
+      return;
+    }
+    if (command === 've_saveEnded') {
+      this._setVisualEditorState({ count: 0, invalidCount: 0 });
+      this._refresh();
+    }
+  }
+
+  _setVisualEditorState(detail) {
+    const count = Number(detail?.count);
+    const invalidCount = Number(detail?.invalidCount ?? 0);
+    if (!Number.isFinite(count) || !Number.isFinite(invalidCount)) {
+      return;
+    }
+    this.visualEditorState = {
+      count: Math.max(0, count),
+      invalidCount: Math.max(0, invalidCount),
+    };
+    this._updateToolbarBadge();
+  }
+
+  _syncVisualEditorStateFromSaveButton() {
+    const button = this._findVisualEditorSaveButton();
+    if (!button) {
+      if (!this._hasVisualEditorFrame()) {
+        this._clearVisualEditorState();
+      }
+      return false;
+    }
+    this._setVisualEditorState({
+      count: button.count,
+      invalidCount: button.invalidCount,
+    });
+    this._observeVisualEditorSaveButton(button);
+    return true;
+  }
+
+  _clearVisualEditorState() {
+    this._visualEditorButtonObserver?.disconnect();
+    this._visualEditorButtonObserver = null;
+    this._observedVisualEditorButton = null;
+    if (this.visualEditorState === null) {
+      return;
+    }
+    this.visualEditorState = null;
+    this._updateToolbarBadge();
+  }
+
+  _observeVisualEditorSaveButton(button) {
+    if (this._observedVisualEditorButton === button) {
+      return;
+    }
+    this._visualEditorButtonObserver?.disconnect();
+    this._observedVisualEditorButton = button;
+    this._visualEditorButtonObserver = new MutationObserver(() => {
+      this._setVisualEditorState({
+        count: button.count,
+        invalidCount: button.invalidCount,
+      });
+    });
+    this._visualEditorButtonObserver.observe(button, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  _findVisualEditorSaveButton() {
+    const roots = [document];
+    try {
+      if (window.top?.document && window.top.document !== document) {
+        roots.push(window.top.document);
+      }
+    } catch { /* cross-origin */ }
+    for (const iframe of this._collectIframes()) {
+      try {
+        if (iframe.contentDocument) {
+          roots.push(iframe.contentDocument);
+        }
+      } catch { /* cross-origin */ }
+    }
+    for (const root of roots) {
+      try {
+        const button = root.querySelector('ve-backend-save-button');
+        if (button) {
+          return button;
+        }
+      } catch { /* detached or inaccessible document */ }
+    }
+    return null;
+  }
+
+  _hasVisualEditorFrame() {
+    return this._collectIframes().some((iframe) => {
+      const id = iframe.id || '';
+      return id === 'visual-editor-iframe' || id.includes('visual-editor');
+    });
   }
 
   /**
@@ -1894,6 +2023,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
+      this._syncVisualEditorStateFromSaveButton();
       this._updateToolbarBadge();
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
@@ -1903,16 +2033,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Sync the pending-count badge on the toolbar trigger with the
-   * current page's changed-count. Mirrors core's System Information
+   * Sync the toolbar trigger badge. If Visual Editor is active, use
+   * the exact unsaved-change count from <ve-backend-save-button>.
+   * Otherwise fall back to the current page's publishable changed
+   * records. Mirrors core's System Information
    * pattern: the badge is a sibling of `.toolbar-item-icon` under the
    * toolbar item host, gets the standard `.toolbar-item-badge`,
    * `.badge`, `.badge-pill` classes, and toggles the `.hidden` class
    * (not the `hidden` attribute) to match the rest of the toolbar.
    *
-   * Count source is the same number the dropdown's "To publish" tab
-   * shows — what's actually publishable from this page right now —
-   * which is what editors expect to see when they glance at the icon.
+   * Visual Editor state wins because editors compare this badge with
+   * the "N changes save" button while editing inline.
    */
   _updateToolbarBadge() {
     const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
@@ -1920,13 +2051,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
-    const count = this.state === 'loaded'
-      ? this.items.filter((i) => i.isChanged).length
-      : 0;
+    const usesVisualEditorState = this.visualEditorState !== null;
+    const count = usesVisualEditorState
+      ? this.visualEditorState.count
+      : (this.state === 'loaded' ? this.items.filter((i) => i.isChanged).length : 0);
     badge.textContent = count > 0 ? String(count) : '';
     badge.classList.toggle('hidden', count <= 0);
     if (count > 0) {
-      badge.setAttribute('aria-label', `${count} pending change${count === 1 ? '' : 's'} on this page`);
+      const label = usesVisualEditorState
+        ? `${count} unsaved visual editor change${count === 1 ? '' : 's'}`
+        : `${count} pending change${count === 1 ? '' : 's'} on this page`;
+      badge.setAttribute('aria-label', label);
     } else {
       badge.removeAttribute('aria-label');
     }

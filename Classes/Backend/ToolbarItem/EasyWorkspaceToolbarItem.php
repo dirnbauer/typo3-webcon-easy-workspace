@@ -50,11 +50,14 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         if (!$this->configurationProvider->get()['enabled']) {
             return false;
         }
+        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        if ($workspaceId <= 0) {
+            return false;
+        }
         if ($backendUser->isAdmin()) {
             return true;
         }
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
-        return $workspaceId > 0;
+        return true;
     }
 
     public function getItem(): string
