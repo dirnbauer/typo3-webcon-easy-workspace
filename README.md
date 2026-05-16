@@ -154,6 +154,12 @@ Build/
 
 The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`). The dropdown is a `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.
 
+### Template boundary
+
+This extension owns backend toolbar, modal, and iframe-helper templates only. It does not render frontend page content areas and should not use Visual Editor page ViewHelpers such as `f:render.contentArea` or `f:mark.contentArea`.
+
+The Visual Editor integration is intentionally limited to detecting the preview iframe and highlighting already-rendered `tt_content` elements. Bootstrap 5.3, shadcn/ui, and other frontend design-system templates belong in the consuming sitepackage, not in this backend workspace toolbar extension.
+
 ## Quality checks
 
 ```bash
