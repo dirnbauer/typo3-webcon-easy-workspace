@@ -14,6 +14,18 @@ use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 
 final readonly class EasyWorkspaceAjaxController
 {
+    /**
+     * Tables the dropdown is allowed to operate on. Anything else is
+     * silently rejected — protects against a crafted request passing
+     * an arbitrary $TCA table (e.g. be_users, sys_log) through to
+     * DataHandler. The UI itself only ever produces these three.
+     */
+    private const ALLOWED_TABLES = [
+        'pages',
+        'tt_content',
+        'tx_news_domain_model_news',
+    ];
+
     public function __construct(
         private PendingItemsService $pendingItemsService,
         private PublishSelectedService $publishService,
@@ -60,6 +72,14 @@ final readonly class EasyWorkspaceAjaxController
 
     public function publishAction(ServerRequestInterface $request): ResponseInterface
     {
+        // Mirror the gating the other endpoints do — without this the
+        // toolbar item could be hidden by TSconfig (enabled = 0) but
+        // the publish endpoint would still happily accept POSTs.
+        $config = $this->configurationProvider->get();
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+        }
+
         $payload = $this->decodeBody($request);
         $rawSelections = $payload['selections'] ?? [];
         if (!is_array($rawSelections)) {
@@ -73,7 +93,9 @@ final readonly class EasyWorkspaceAjaxController
             }
             $table = (string)($entry['table'] ?? '');
             $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
-            if ($table === '' || $workspaceUid <= 0) {
+            // Allow-list — keeps arbitrary TCA tables (be_users,
+            // sys_log, …) out of the DataHandler cmdmap.
+            if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
                 continue;
             }
             $selections[] = ['table' => $table, 'workspaceUid' => $workspaceUid];
@@ -87,8 +109,8 @@ final readonly class EasyWorkspaceAjaxController
         $payload = $this->decodeBody($request);
         $table = (string)($payload['table'] ?? '');
         $workspaceUid = (int)($payload['workspaceUid'] ?? 0);
-        if ($table === '' || $workspaceUid <= 0) {
-            return new JsonResponse(['error' => 'Missing table / workspaceUid.'], 400);
+        if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+            return new JsonResponse(['error' => 'Missing or unsupported table / workspaceUid.'], 400);
         }
         $config = $this->configurationProvider->get();
         if (!$config['enabled']) {
@@ -112,8 +134,10 @@ final readonly class EasyWorkspaceAjaxController
         }
         try {
             $url = $this->previewUriBuilder->buildUriForPage($pageUid);
-        } catch (\Throwable $e) {
-            return new JsonResponse(['error' => $e->getMessage()], 500);
+        } catch (\Throwable) {
+            // Generic message to the client; the underlying exception
+            // is already logged by Core's error handler.
+            return new JsonResponse(['error' => 'Could not build a preview link for this page.'], 500);
         }
         return new JsonResponse(['url' => $url]);
     }

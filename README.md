@@ -16,7 +16,8 @@ Each row shows a **checkbox** (checked by default), the record **title**, a stat
 - TYPO3 14.3 LTS
 - PHP 8.3+
 - `typo3/cms-workspaces`
-- *Optional:* `georgringer/news` (enables news + linked content-element bundles)
+- *Optional:* `georgringer/news` — enables news + linked content-element bundles
+- *Optional:* `friendsoftypo3/visual-editor` — enables the per-row eye icon to scroll & outline a content element inside the rendered page. **The dropdown works without it** — the eye gracefully falls back to `typo3/cms-viewpage`'s preview iframe (`#tx_viewpage_iframe`), and if no iframe is reachable at all the eye click shows a TYPO3 Notification telling the editor which module to open.
 
 ## Installation
 
@@ -81,12 +82,16 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 
 The "Preview link" button calls `\TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder::buildUriForPage($pageUid)` (TYPO3 v14's public API) and copies the resulting URL straight to the **operating-system clipboard** via `navigator.clipboard.writeText()` (with a hidden-textarea + `document.execCommand('copy')` fallback for non-secure contexts). It does **not** use TYPO3's record clipboard.
 
-### Eye-icon: locate CE in Visual Editor
+### Eye-icon: locate CE in the rendered preview
 
-Every **content-element** row in the dropdown has an **eye icon** (TYPO3's `actions-eye`) next to the title. Hovering or focusing the eye reaches into the Visual Editor iframe (`#visual-editor-iframe` — same-origin) via `iframe.contentDocument`, locates the rendered content element by its standard TYPO3 id (`#c{uid}`, with `[data-uid][data-table=tt_content]` and `[data-typo3-record-uid]` as fallbacks), and:
+Every **content-element** row in the dropdown has an **eye icon** (TYPO3's `actions-eye`) next to the title. Hovering or focusing the eye reaches into the rendered page iframe via `iframe.contentDocument`, locates the rendered content element by its standard TYPO3 id (`#c{uid}`, with `[data-uid][data-table=tt_content]` and `[data-typo3-record-uid]` as fallbacks), and:
 
 - **Scrolls the element into view** in the iframe via `scrollIntoView({ behavior: 'smooth', block: 'center' })` — great for long pages where the CE is well below the visible viewport.
 - Applies an inline outline + soft glow so the editor can immediately see *which* CE the dropdown row refers to.
+
+**Iframe lookup order** (first hit wins): `#visual-editor-iframe` (friendsoftypo3/visual-editor) → `#tx_viewpage_iframe` (typo3/cms-viewpage) → any iframe with a name/id matching `*page-preview*` / `*pagepreview*` / `*preview*` → any same-origin iframe with a readable `contentDocument`.
+
+**Adaptive labeling.** The tooltip reads *"Show in Visual Editor"*, *"Show in page preview"*, or *"Show in preview"* depending on which extensions are detected on the server side (`ExtensionManagementUtility::isLoaded('visual_editor')` / `'viewpage'`). The notification shown when no iframe can be located also adapts and points the editor to the right module.
 
 Both effects are reverted on `mouseleave` / `blur` and again on element disconnect. Clicking the eye triggers the same scroll-and-highlight as hovering, useful on touch devices. The eye is shown only for `tt_content` rows; the affordance can be switched off via `options.webcon_easy_workspace.enableHoverHighlight = 0`.
 

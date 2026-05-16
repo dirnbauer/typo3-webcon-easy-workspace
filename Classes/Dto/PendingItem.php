@@ -19,6 +19,7 @@ final readonly class PendingItem
         public bool $isHidden,
         public string $tableLabel,
         public string $typeLabel,
+        public ?string $editUrl,
     ) {}
 
     /**
@@ -39,6 +40,7 @@ final readonly class PendingItem
             'isHidden' => $this->isHidden,
             'tableLabel' => $this->tableLabel,
             'typeLabel' => $this->typeLabel,
+            'editUrl' => $this->editUrl,
         ];
     }
 }

@@ -28,10 +28,10 @@ webcon-easy-workspace-menu {
 
 .wew-menu__head {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr;
     align-items: center;
-    gap: .55rem;
-    padding: .6rem .75rem;
+    gap: .65rem;
+    padding: .75rem .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
@@ -78,46 +78,123 @@ webcon-easy-workspace-menu {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.wew-menu__copy {
-    display: inline-flex;
-    align-items: center;
-    gap: .3rem;
-    padding: .2rem .55rem;
-    font-size: 11px;
-    line-height: 1.4;
-    border-radius: 999px;
-}
-.wew-menu__copy-label {
-    font-weight: 500;
-}
+/* (legacy .wew-menu__copy / .wew-menu__copy-label rules removed —
+   the Preview link button now lives in the footer as .wew-menu__preview) */
 
-/* ---- Filter chips ---- */
+/* ---- Filter tabs (WAI-ARIA tabs pattern) ---- */
 
 .wew-menu__filter {
     display: flex;
-    gap: .25rem;
-    padding: .45rem .75rem .25rem;
+    gap: 0;
+    padding: 0 .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
 }
 .wew-menu__chip {
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border: 0;
     background: transparent;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    padding: .15rem .55rem;
-    border-radius: 999px;
-    font-size: 11px;
+    padding: .55rem .85rem .5rem;
+    margin-bottom: -1px; /* overlap the container's bottom border */
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
     font-weight: 500;
+    line-height: 1.3;
     cursor: pointer;
-    transition: all .12s ease;
+    transition: color .12s ease, border-color .12s ease;
+    /* No rounded background — this is a tab, not a pill. */
 }
 .wew-menu__chip:hover {
     color: var(--typo3-component-color, var(--bs-body-color));
-    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, var(--typo3-component-border-color, var(--bs-border-color)));
 }
 .wew-menu__chip--active {
+    color: var(--typo3-link-color, var(--bs-primary));
+    border-bottom-color: var(--typo3-link-color, var(--bs-primary));
+    font-weight: 600;
+}
+.wew-menu__chip:focus-visible {
+    /* WCAG 2.2 SC 2.4.11 — focus indicator visible against both light
+       and dark backgrounds. Inset outline so it sits on the tab and
+       doesn't get clipped by overflow:hidden parents. */
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: -2px;
+    border-radius: 2px;
+}
+/* Count badge sitting next to each tab label. Subtle pill against the
+   tab text — the active tab inherits the link color so the badge
+   visually attaches. */
+.wew-menu__chip-count {
+    display: inline-block;
+    min-width: 1.5em;
+    padding: 0 .4em;
+    margin-left: .35em;
+    border-radius: 999px;
+    background: var(--typo3-component-bg, var(--bs-tertiary-bg));
+    color: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: center;
+    vertical-align: baseline;
+}
+.wew-menu__chip--active .wew-menu__chip-count {
     background: var(--typo3-link-color, var(--bs-primary));
-    color: #fff;
-    border-color: var(--typo3-link-color, var(--bs-primary));
+    color: var(--typo3-component-bg, var(--bs-body-bg));
+}
+
+/* ---- Selection bar (master checkbox) ---- */
+.wew-menu__selectbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .35rem .85rem .35rem 1rem;
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    font-size: 11.5px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-menu__selectbar-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    /* Whole label is the click target — bigger hit area than the
+       16-px checkbox alone (WCAG 2.5.8 target size considerations). */
+    padding: .15rem .2rem;
+    border-radius: 4px;
+    transition: background-color .12s ease;
+}
+.wew-menu__selectbar-label:hover {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 10%, transparent);
+    color: var(--typo3-component-color, var(--bs-body-color));
+}
+.wew-menu__selectbar-check {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--typo3-link-color, var(--bs-primary));
+    cursor: pointer;
+    appearance: auto;
+    -webkit-appearance: auto;
+}
+.wew-menu__selectbar-text {
+    font-weight: 500;
+    color: var(--typo3-component-color, var(--bs-body-color));
+}
+.wew-menu__selectbar-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    padding: .05rem .4rem;
+    border-radius: 999px;
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-menu__selectbar-label:focus-within {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: 2px;
 }
 
 /* ---- States ---- */
@@ -188,7 +265,35 @@ webcon-easy-workspace-menu {
 .wew-list__row:last-child { border-bottom: 0; }
 /* No row-level highlight any more — the eye icon is the affordance. */
 .wew-list__row--primary {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 8%, transparent);
+}
+/* Sit above the standard left accent stripe on the primary row */
+.wew-list__row--primary.wew-list__row--changed::before {
+    width: 4px;
+}
+.wew-list__row--primary .wew-list__title-text {
+    font-weight: 600;
+}
+/* Small leading icon on the primary row's title so it's instantly
+   distinguishable from the content-element rows beneath it. */
+.wew-list__row--primary[data-table="pages"] .wew-list__title-text::before,
+.wew-list__row--primary[data-table="tx_news_domain_model_news"] .wew-list__title-text::before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: .35rem;
+    vertical-align: -2px;
+    background: currentColor;
+    -webkit-mask: var(--wew-primary-icon) center / contain no-repeat;
+            mask: var(--wew-primary-icon) center / contain no-repeat;
+    opacity: .75;
+}
+.wew-list__row--primary[data-table="pages"] {
+    --wew-primary-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M3 1.5A.5.5 0 0 1 3.5 1h6a.5.5 0 0 1 .354.146l3 3A.5.5 0 0 1 13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V1.5Zm6.5 1.207V4.5h1.793L9.5 2.707Z"/></svg>');
+}
+.wew-list__row--primary[data-table="tx_news_domain_model_news"] {
+    --wew-primary-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M1.5 2h11A1.5 1.5 0 0 1 14 3.5V13h1v1H1V3.5A1.5 1.5 0 0 1 2.5 2H1.5Zm1 1.5V13h10V3.5h-10Zm1.5 2h7v1H4v-1Zm0 2.5h7v1H4v-1Zm0 2.5h5v1H4v-1Z"/></svg>');
 }
 /* Changed rows get a left accent stripe — no greyed out fallback for the rest. */
 .wew-list__row--changed::before {
@@ -287,12 +392,37 @@ webcon-easy-workspace-menu {
 .wew-list__check {
     margin: 0;
     flex-shrink: 0;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     accent-color: var(--typo3-link-color, var(--bs-primary));
     cursor: pointer;
+    /* Force the checkbox to render even when the surrounding theme
+       hides default form controls. */
+    appearance: auto;
+    -webkit-appearance: auto;
 }
-.wew-list__check-spacer { display: inline-block; width: 14px; height: 14px; }
+.wew-list__check-spacer { display: inline-block; width: 16px; height: 16px; }
+
+/* Visual selection tint — when a row's checkbox is checked, give the
+   whole row a primary-color wash so the editor instantly sees what's
+   queued for the next "Publish to live" click. Tuned for WCAG 2.2 AA
+   contrast against both the light and dark backend body colors:
+   primary @ 15-18 % keeps row text readable while the tint reads as
+   "selected". Primary rows (page / news) get a slightly stronger
+   wash to keep the hierarchy. */
+.wew-list__row:has(.wew-list__check:checked) {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 15%, transparent);
+}
+.wew-list__row--primary:has(.wew-list__check:checked) {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 22%, transparent);
+}
+/* The 4-px left accent stripe on changed rows already encodes
+   "modified". When also checked, brighten it to the full primary
+   for a clear focus indicator (also helps users with reduced
+   color sensitivity who rely on saturation). */
+.wew-list__row--changed:has(.wew-list__check:checked)::before {
+    background: var(--typo3-link-color, var(--bs-primary));
+}
 
 .wew-list__title {
     display: flex;
@@ -376,36 +506,148 @@ webcon-easy-workspace-menu {
 
 /* ---- Footer ---- */
 
+/* ---- Footer (3-zone hierarchy) ----
+ *
+ *   ┌─────────────────────────────────────────────────────────┐
+ *   │ [🔗]   ☐ Select all · 2 of 4   [Publish to live (2)]   │
+ *   │  tier3        tier2                  tier1             │
+ *   └─────────────────────────────────────────────────────────┘
+ *
+ * grid columns: preview (auto) · selection (1fr) · action (auto).
+ * The selection group centres in its 1fr column. All three colors
+ * come from TYPO3 styleguide tokens so light + dark + custom themes
+ * adapt automatically without media queries.
+ */
 .wew-menu__foot {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    padding: .5rem .75rem;
+    gap: .65rem;
+    padding: .55rem .75rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
-.wew-menu__counters {
+
+/* Tier 3: preview link, icon-only, ghost button. Smallest visual
+   weight — present but never competes with the primary action. */
+.wew-menu__foot-preview {
     display: flex;
     align-items: center;
-    gap: .35rem;
-    flex-wrap: wrap;
-    font-size: 11px;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    min-width: 28px;
 }
-.wew-menu__counters .btn-link {
+.wew-menu__preview-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    font-size: 11px;
-    text-decoration: none;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
+}
+.wew-menu__preview-icon:hover,
+.wew-menu__preview-icon:focus-visible {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+    color: var(--typo3-link-color, var(--bs-primary));
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    outline: none;
+    transform: scale(1.05);
+}
+.wew-menu__preview-icon:focus-visible {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: 2px;
+}
+.wew-menu__preview-icon:disabled { opacity: .55; cursor: progress; }
+
+/* Tier 2: selection state — master checkbox + adaptive label + N/M
+   counter. Centered in its flexible column. Muted secondary text
+   keeps it from competing with the primary action visually. */
+.wew-menu__foot-selection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    font-size: 11.5px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    min-width: 0;
+    overflow: hidden;
+}
+.wew-menu__selectall {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    margin: 0;
+    padding: .15rem .35rem;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color .12s ease, color .12s ease;
+}
+.wew-menu__selectall:hover {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 12%, transparent);
+    color: var(--typo3-component-color, var(--bs-body-color));
+}
+.wew-menu__selectall:focus-within {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: 2px;
+}
+.wew-menu__selectall-check {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--typo3-link-color, var(--bs-primary));
+    cursor: pointer;
+    appearance: auto;
+    -webkit-appearance: auto;
+}
+.wew-menu__selectall-label {
+    font-weight: 500;
+    color: var(--typo3-component-color, var(--bs-body-color));
 }
 .wew-menu__count {
-    margin-left: .25rem;
-    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
+.wew-menu__count strong {
+    color: var(--typo3-component-color, var(--bs-body-color));
+    font-weight: 600;
+}
+
+/* Tier 1: the primary action. Largest visual weight — solid primary
+   color, bold label, larger padding, generous min-width. */
 .wew-menu__publish {
-    min-width: 130px;
-    font-size: 12px;
-    padding: .35rem .75rem;
+    min-width: 150px;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: .45rem 1rem;
+    letter-spacing: .01em;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+}
+.wew-menu__publish:focus-visible {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: 2px;
+}
+/* Bootstrap sets pointer-events:none on disabled buttons, which also
+   suppresses the cursor. Re-enable so the not-allowed cursor shows
+   when there's nothing to publish; disabled attribute still blocks
+   clicks at the browser level. */
+.wew-menu__publish:disabled,
+.wew-menu__publish[disabled] {
+    pointer-events: auto;
+    cursor: not-allowed;
+}
+/* Bootstrap sets pointer-events:none on disabled buttons, which
+   also suppresses the cursor change. Re-enable pointer-events here
+   (the disabled attribute still blocks clicks at the browser level)
+   and show the not-allowed cursor. */
+.wew-menu__publish:disabled,
+.wew-menu__publish[disabled] {
+    pointer-events: auto;
+    cursor: not-allowed;
 }
 
 /* ---- Mobile / narrow viewport ---- */
@@ -415,24 +657,17 @@ webcon-easy-workspace-menu {
         width: calc(100vw - 16px);
     }
     .wew-menu__head {
-        grid-template-columns: auto 1fr;
         gap: .55rem;
         padding: .55rem .65rem;
     }
     .wew-menu__icon { width: 28px; height: 28px; }
-    .wew-menu__copy {
-        grid-column: 1 / -1;
-        justify-self: end;
-        margin-top: .25rem;
-    }
-    .wew-menu__copy-label { display: none; }
     .wew-menu__title { font-size: 13px; }
     .wew-menu__subtitle { font-size: 10.5px; }
 
     .wew-menu__filter { padding: .35rem .65rem .15rem; }
 
     .wew-list__label {
-        grid-template-columns: auto 1fr 36px;
+        grid-template-columns: auto 1fr auto auto;
         gap: .45rem;
         padding: .45rem .65rem .45rem .8rem;
     }
@@ -441,12 +676,23 @@ webcon-easy-workspace-menu {
     .wew-list__meta { font-size: 10px; }
     .wew-list__meta .badge { padding: .05rem .3rem; }
 
+    /* Footer: stack the three tiers onto separate rows below 600 px.
+       Selection row sits in the middle; Publish at the bottom-right
+       (thumb zone on touch). Preview stays on top-left. */
     .wew-menu__foot {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "preview"
+            "selection"
+            "action";
+        gap: .35rem;
         padding: .45rem .65rem;
-        flex-wrap: wrap;
     }
+    .wew-menu__foot-preview    { grid-area: preview;    justify-self: start; }
+    .wew-menu__foot-selection  { grid-area: selection;  justify-content: flex-start; }
+    .wew-menu__foot-action     { grid-area: action;     justify-self: stretch; }
     .wew-menu__publish {
+        width: 100%;
         min-width: 0;
-        flex: 1 1 100%;
     }
 }

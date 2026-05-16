@@ -43,6 +43,10 @@ const DEFAULT_CONFIG = Object.freeze({
   enableNewsBundles: true,
   enableHoverHighlight: true,
   enableRevert: true,
+  // Runtime-detected environment (NOT user-configurable). Set by
+  // EasyWorkspaceToolbarItem::getDropDown() via ExtensionManagementUtility::isLoaded.
+  hasVisualEditor: false,
+  hasViewpage: false,
 });
 
 // Inline highlight styles applied to the iframe element. Hard-coded
@@ -94,7 +98,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._config = this._readConfig();
-    this.mode = this._config.defaultMode;
+    // Mode resolution: user's last choice in this browser >
+    // TSconfig defaultMode > hardcoded 'changed' fallback.
+    this.mode = this._readPersistedMode() ?? this._config.defaultMode;
     this._refresh();
 
     // Re-fetch whenever the editor's selected page changes. v14
@@ -146,65 +152,266 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _highlightInIframe(item, { announce = false } = {}) {
     this._clearIframeHighlight();
-    const uid = item?.liveUid;
-    if (!uid) return;
-    const iframe = this._findVisualEditorIframe();
-    if (!iframe) {
+    const liveUid = item?.liveUid;
+    const workspaceUid = item?.workspaceUid;
+    if (!liveUid && !workspaceUid) return;
+
+    // Prefer visual-editor's own <ve-content-element uid="X"> wrapper
+    // if present — dispatching mouseenter on it triggers the dashed
+    // border + the floating action-bar (Text & Images, edit / hide /
+    // delete) the editor expects. Fall back to a custom outline on
+    // the rendered <div id="cX"> if visual-editor isn't active.
+    //
+    // Visual-editor's wrapper uses TYPO3's "versioned uid" — which is
+    // the workspace-version uid for MODIFIED records and the live
+    // uid for unchanged ones — so we have to look up by BOTH uids
+    // and let the first hit win.
+    const located = this._locateInAnyIframe(item);
+    if (!located) {
       if (announce) {
-        Notification.info(
-          'Show in editor',
-          'Open the page in the Visual Editor to see the highlight.',
-          4,
-        );
+        const allIframes = this._collectIframes();
+        const accessible = allIframes.filter((f) => {
+          try { return !!f.contentDocument?.body; } catch { return false; }
+        });
+        if (accessible.length === 0) {
+          const hint = this._config.hasVisualEditor
+            ? 'No preview iframe present. Open the page in Web → Edit (Visual Editor).'
+            : (this._config.hasViewpage
+                ? 'No preview iframe present. Open the page in Web → View.'
+                : 'No preview iframe present. Install friendsoftypo3/visual-editor or use Web → View.');
+          Notification.info('Show in preview', hint, 5);
+        } else {
+          // Dump diagnostics so the next iteration of the locator can
+          // be tuned to whatever wrapper this site actually emits.
+          this._logIframeDiagnostics(accessible, liveUid, workspaceUid);
+          Notification.warning(
+            'Show in preview',
+            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${liveUid}${workspaceUid !== liveUid ? ` (workspace #${workspaceUid})` : ''}. See the browser console for what was actually in the preview iframe.`,
+            8,
+          );
+        }
       }
       return;
     }
-    let doc;
-    try {
-      doc = iframe.contentDocument || iframe.contentWindow?.document;
-    } catch {
-      if (announce) Notification.warning('Show in editor', 'Editor iframe is not accessible.');
-      return;
-    }
-    if (!doc) return;
-    const el = this._findContentElement(doc, uid);
-    if (!el) {
-      if (announce) {
-        Notification.info(
-          'Show in editor',
-          `Could not find content element #${uid} in the rendered page. Some custom templates wrap CEs without the standard id="c${uid}" element.`,
-          5,
-        );
-      }
-      return;
-    }
+    const { el, isVeWrapper } = located;
 
-    // Remember inline styles so we can restore them cleanly.
-    const previous = {};
-    for (const key of Object.keys(IFRAME_HIGHLIGHT_STYLE)) {
-      previous[key] = el.style[key];
-    }
-    Object.assign(el.style, IFRAME_HIGHLIGHT_STYLE);
-
-    // Centre the CE in the iframe viewport — smooth scroll, no jump.
+    // Centre the element in the iframe viewport — smooth scroll, no jump.
     try {
       el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     } catch {
       el.scrollIntoView();
     }
 
-    this._iframeHighlight = { el, previous };
+    if (isVeWrapper) {
+      // Visual-editor path: dispatch the same native events its own
+      // <ve-content-element> listens to. This shows the dashed border
+      // and the floating action-bar (Text & Images, edit, hide, delete)
+      // exactly as if the editor moved their mouse onto the element.
+      try {
+        el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      } catch { /* event constructor failed - ignore */ }
+      this._iframeHighlight = { el, isVeWrapper: true };
+      return;
+    }
+
+    // Fallback: cms-viewpage / plain frontend — no <ve-content-element>
+    // to lean on, so paint our own outline + glow and revert on leave.
+    const previous = {};
+    for (const key of Object.keys(IFRAME_HIGHLIGHT_STYLE)) {
+      previous[key] = el.style[key];
+    }
+    Object.assign(el.style, IFRAME_HIGHLIGHT_STYLE);
+    this._iframeHighlight = { el, isVeWrapper: false, previous };
   }
 
   _clearIframeHighlight() {
     const current = this._iframeHighlight;
     if (!current) return;
     try {
-      for (const [key, value] of Object.entries(current.previous)) {
-        current.el.style[key] = value ?? '';
+      if (current.isVeWrapper) {
+        // Tell visual-editor's <ve-content-element> the mouse has left.
+        current.el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      } else if (current.previous) {
+        for (const [key, value] of Object.entries(current.previous)) {
+          current.el.style[key] = value ?? '';
+        }
       }
     } catch { /* element may already be detached */ }
     this._iframeHighlight = null;
+  }
+
+  /**
+   * Print a diagnostic snapshot of each accessible preview iframe to
+   * the browser console so the user can copy it back to us. Only
+   * fires when the announce-mode locator missed (i.e. click on the
+   * eye produced no match). Output includes:
+   *   - iframe id/src
+   *   - all <ve-content-element> uids found in the document
+   *   - all elements with id="cN", data-uid, data-content-uid, …
+   *   - a short snippet of the body markup near uid hits
+   */
+  _logIframeDiagnostics(iframes, liveUid, workspaceUid) {
+    // Render as console.warn (yellow background, can't be missed) and
+    // attach a single payload object — the user can right-click → Copy
+    // object to send back. Stays at the top of the console alongside
+    // the existing visual-editor / cowriter warnings.
+    const payload = [];
+    for (const [i, iframe] of iframes.entries()) {
+      const doc = iframe.contentDocument;
+      if (!doc?.body) continue;
+      const veWrappers = Array.from(doc.querySelectorAll('ve-content-element'));
+      const dataUidElements = Array.from(doc.querySelectorAll('[data-uid]'));
+      const cElements = Array.from(doc.querySelectorAll('[id]'))
+        .map((el) => el.id)
+        .filter((id) => /^c\d+$/.test(id) || /tt_content/.test(id));
+      const haystack = doc.body.innerHTML;
+      const textHits = {};
+      for (const uid of [liveUid, workspaceUid].filter((u, idx, arr) => u && arr.indexOf(u) === idx)) {
+        const re = new RegExp(`["'\\s=>](c${uid}|tt_content:${uid}|uid="${uid}")["'\\s<]`, 'g');
+        textHits[`uid_${uid}`] = haystack.match(re)?.slice(0, 5) || null;
+      }
+      payload.push({
+        iframe: i,
+        id: iframe.id || '(none)',
+        src: iframe.src?.slice(0, 120),
+        bodyLength: haystack.length,
+        veContentElementCount: veWrappers.length,
+        veContentElements: veWrappers.slice(0, 20).map((el) => ({
+          uid: el.getAttribute('uid'),
+          table: el.getAttribute('table'),
+          id: el.getAttribute('id'),
+          CType: el.getAttribute('CType'),
+        })),
+        idCElementCount: cElements.length,
+        idCElements: cElements.slice(0, 30),
+        dataUidElementCount: dataUidElements.length,
+        dataUidElements: dataUidElements.slice(0, 20).map((el) => ({
+          tag: el.tagName.toLowerCase(),
+          'data-uid': el.getAttribute('data-uid'),
+          'data-table': el.getAttribute('data-table'),
+          'data-content-uid': el.getAttribute('data-content-uid'),
+          id: el.id || null,
+        })),
+        textHits,
+      });
+    }
+    console.warn(
+      `[easy-workspace] eye couldn't locate uid ${liveUid} / ws #${workspaceUid}. Iframe diagnostics:`,
+      payload,
+    );
+  }
+
+  /**
+   * Collect every iframe reachable from this document and its top.
+   * Deduped by element identity so iframes living in both contexts
+   * (when the toolbar is nested) aren't counted twice.
+   *
+   * @returns {HTMLIFrameElement[]}
+   */
+  _collectIframes() {
+    const seen = new Set();
+    const out = [];
+    const roots = [document];
+    try { if (window.top?.document && window.top.document !== document) roots.push(window.top.document); } catch { /* cross-origin */ }
+    for (const root of roots) {
+      for (const iframe of root.querySelectorAll('iframe')) {
+        if (!seen.has(iframe)) {
+          seen.add(iframe);
+          out.push(iframe);
+        }
+      }
+    }
+    return out;
+  }
+
+  /**
+   * After a successful discard the workspace version is gone — the live
+   * record is unchanged, but the editor's preview iframe is still
+   * showing the now-deleted workspace render. Reload it so the live
+   * content reappears.
+   *
+   * Scoped to FE-preview frames only:
+   *  - Visual Editor:  iframe#visual-editor-iframe
+   *  - cms-viewpage:   any iframe whose src carries the editMode flag
+   *                    (visual-editor sets it; the View module's
+   *                    plain-preview iframe doesn't, so we still catch
+   *                    it via the visual-editor frame id)
+   *
+   * The outer BE module shell (#typo3-contentIframe) is intentionally
+   * left alone so dropdown state, scroll position and any pending BE
+   * form input survive the discard.
+   *
+   * @returns {number} count of preview iframes that were reloaded
+   */
+  _reloadPreviewIframes() {
+    let reloaded = 0;
+    for (const iframe of this._collectIframes()) {
+      const src = iframe.src || '';
+      const isPreview = iframe.id === 'visual-editor-iframe'
+        || /[?&]editMode=/.test(src);
+      if (!isPreview) continue;
+      try {
+        // Preferred: same-origin reload preserves the existing URL
+        // (including editMode + any anchor/scroll state).
+        iframe.contentWindow.location.reload();
+      } catch {
+        // Cross-origin or detached document — re-assigning the same
+        // src forces the iframe to refetch. eslint disabled intentionally:
+        // the assignment is the side-effect we want.
+        // eslint-disable-next-line no-self-assign
+        iframe.src = iframe.src;
+      }
+      reloaded++;
+    }
+    return reloaded;
+  }
+
+  /**
+   * Iterate every reachable iframe and return the first one whose
+   * contentDocument contains a content element for the given item.
+   * We prefer the visual-editor <ve-content-element> wrapper because
+   * dispatching mouseenter on it triggers the editor's native dashed
+   * border + floating action-bar. Only if no wrapper is present do
+   * we fall back to the rendered <div id="cX">.
+   *
+   * Probes BOTH the live uid and the workspace-version uid since the
+   * visual-editor wrapper uses "versioned uid" (live for unchanged,
+   * workspace for modified records).
+   *
+   * @returns {{ iframe: HTMLIFrameElement, doc: Document, el: HTMLElement, isVeWrapper: boolean }|null}
+   */
+  _locateInAnyIframe(item) {
+    const uids = [item?.liveUid, item?.workspaceUid]
+      .map((n) => parseInt(n, 10))
+      .filter((n) => n > 0)
+      .filter((n, i, arr) => arr.indexOf(n) === i); // unique
+    if (uids.length === 0) return null;
+
+    const veSelector = uids.flatMap((u) => [
+      `ve-content-element[uid="${u}"][table="tt_content"]`,
+      `ve-content-element[id="tt_content:${u}"]`,
+    ]).join(', ');
+
+    for (const iframe of this._collectIframes()) {
+      let doc;
+      try {
+        doc = iframe.contentDocument || iframe.contentWindow?.document;
+      } catch { continue; }
+      if (!doc) continue;
+
+      // First-choice: visual-editor's wrapper (any matching uid).
+      const veEl = doc.querySelector(veSelector);
+      if (veEl) return { iframe, doc, el: veEl, isVeWrapper: true };
+
+      // Fallback for cms-viewpage / plain frontend rendering — try
+      // every uid against every known inner-element selector.
+      for (const u of uids) {
+        const el = this._findContentElement(doc, u);
+        if (el) return { iframe, doc, el, isVeWrapper: false };
+      }
+    }
+    return null;
   }
 
   /**
@@ -217,13 +424,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _findVisualEditorIframe() {
     const tries = [
-      // Same document the toolbar runs in.
+      // friendsoftypo3/visual-editor — the canonical selector
       () => document.querySelector('iframe#visual-editor-iframe'),
       () => document.querySelector('iframe[id*="visual-editor"]'),
-      // Top frame (Bootstrap modal might re-host elements).
       () => window.top?.document?.querySelector('iframe#visual-editor-iframe'),
       () => window.top?.document?.querySelector('iframe[id*="visual-editor"]'),
-      // Page module / preview module fallbacks.
+      // typo3/cms-viewpage — Web → View module
+      () => document.querySelector('iframe#tx_viewpage_iframe'),
+      () => window.top?.document?.querySelector('iframe#tx_viewpage_iframe'),
+      // Page module / preview module fallbacks
       () => window.top?.document?.querySelector('iframe[id*="page-preview"], iframe[id*="pagepreview"], iframe[name*="pagepreview"], iframe[name*="preview"]'),
       // Final fallback: any iframe whose contentDocument we can read.
       () => {
@@ -308,7 +517,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   render() {
-    const { pageUid } = this._detectContext();
     return html`
       <div class="wew-menu">
         <header class="wew-menu__head">
@@ -329,24 +537,52 @@ class WebconEasyWorkspaceMenu extends LitElement {
             </h3>
             <p class="wew-menu__subtitle">${this.contextLabel || 'Loading…'}</p>
           </div>
-          ${pageUid > 0 && this._config.enablePreviewLink
-            ? html`<button
-                type="button"
-                class="btn btn-sm btn-default wew-menu__copy"
-                title="Copy a shareable preview link for this page"
-                @click=${() => this._copyPreviewLink(pageUid)}
-                ?disabled=${this.copyingPreview}
-              >
-                ${this.copyingPreview
-                  ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
-                  : this._linkIcon()}
-                <span class="wew-menu__copy-label">Preview link</span>
-              </button>`
-            : nothing}
         </header>
         ${this._renderFilter()}
         ${this._renderBody()}
         ${this._renderFooter()}
+      </div>
+    `;
+  }
+
+  /**
+   * Tri-state master-checkbox selection bar — the proper pattern for
+   * "select all" in a multi-item list (GitHub PRs, Gmail, JIRA all
+   * use this). One control, three states:
+   *
+   *   unchecked      → click selects all changeable rows
+   *   indeterminate  → click selects all changeable rows
+   *   checked        → click deselects all
+   *
+   * Replaces the "Select all · None" link pair which mixed two
+   * mutually exclusive commands into parallel affordances and gave
+   * editors no visual cue about the current selection state.
+   */
+  _renderSelectionBar() {
+    if (this.state !== 'loaded') return nothing;
+    const changeable = this.items.filter((i) => i.isChanged);
+    if (changeable.length === 0) return nothing;
+    const selectedCount = this.selection.size;
+    const allChecked = selectedCount === changeable.length;
+    const someChecked = selectedCount > 0 && selectedCount < changeable.length;
+    const label = allChecked
+      ? 'All selected — click to deselect'
+      : (someChecked ? 'Some selected — click to select all' : 'Select all');
+    return html`
+      <div class="wew-menu__selectbar">
+        <label class="wew-menu__selectbar-label">
+          <input
+            type="checkbox"
+            class="wew-menu__selectbar-check"
+            .checked=${allChecked}
+            .indeterminate=${someChecked}
+            aria-checked=${allChecked ? 'true' : (someChecked ? 'mixed' : 'false')}
+            aria-label=${allChecked ? 'Deselect all changes' : 'Select all changes'}
+            @change=${() => this._selectAll(!allChecked)}
+          />
+          <span class="wew-menu__selectbar-text">${label}</span>
+        </label>
+        <span class="wew-menu__selectbar-count" aria-hidden="true">${selectedCount} / ${changeable.length}</span>
       </div>
     `;
   }
@@ -362,6 +598,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
+  /**
+   * WAI-ARIA "Tabs with Automatic Activation" pattern.
+   * https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+   *
+   *  - role=tablist around the buttons
+   *  - role=tab on each button + aria-selected + aria-controls
+   *  - role=tabpanel on the list area + aria-labelledby
+   *  - Roving tabindex: active tab tabindex=0, others tabindex=-1
+   *  - Arrow Left/Right + Home/End move focus AND activate
+   *    ("automatic activation" is the friendlier UX for filter tabs)
+   */
   _renderFilter() {
     if (!this._config.enableFilter) {
       return nothing;
@@ -369,27 +616,82 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (this.state === 'loading' || this.state === 'no-context' || this.state === 'error') {
       return nothing;
     }
+    // Counts shown next to each tab label. "To publish" only counts
+    // records that actually have a workspace version (isChanged), while
+    // "All on page" counts everything in scope — matches the panel
+    // contents under each mode.
+    const changedCount = this.items.filter((i) => i.isChanged).length;
+    const totalCount = this.items.length;
     return html`
-      <div class="wew-menu__filter" role="tablist" aria-label="Filter items">
+      <div
+        class="wew-menu__filter"
+        role="tablist"
+        aria-label="Filter pending records"
+        @keydown=${(e) => this._handleTabKeydown(e)}
+      >
         <button
           type="button"
+          id="wew-tab-changed"
           class="wew-menu__chip ${this.mode === 'changed' ? 'wew-menu__chip--active' : ''}"
           role="tab"
-          aria-selected=${this.mode === 'changed'}
+          aria-selected=${this.mode === 'changed' ? 'true' : 'false'}
+          aria-controls="wew-tabpanel"
+          tabindex=${this.mode === 'changed' ? '0' : '-1'}
           @click=${() => this._setMode('changed')}
-        >To publish</button>
+        >To publish <span class="wew-menu__chip-count" aria-label="${changedCount} record${changedCount === 1 ? '' : 's'}">${changedCount}</span></button>
         <button
           type="button"
+          id="wew-tab-all"
           class="wew-menu__chip ${this.mode === 'all' ? 'wew-menu__chip--active' : ''}"
           role="tab"
-          aria-selected=${this.mode === 'all'}
+          aria-selected=${this.mode === 'all' ? 'true' : 'false'}
+          aria-controls="wew-tabpanel"
+          tabindex=${this.mode === 'all' ? '0' : '-1'}
           @click=${() => this._setMode('all')}
-        >All on page</button>
+        >All on page <span class="wew-menu__chip-count" aria-label="${totalCount} record${totalCount === 1 ? '' : 's'}">${totalCount}</span></button>
       </div>
     `;
   }
 
+  _handleTabKeydown(event) {
+    const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const tabs = Array.from(this.querySelectorAll('.wew-menu__filter [role="tab"]'));
+    if (tabs.length === 0) return;
+    const currentIdx = tabs.indexOf(document.activeElement);
+    let nextIdx;
+    switch (event.key) {
+      case 'ArrowLeft':  nextIdx = currentIdx <= 0 ? tabs.length - 1 : currentIdx - 1; break;
+      case 'ArrowRight': nextIdx = currentIdx >= tabs.length - 1 ? 0 : currentIdx + 1; break;
+      case 'Home':       nextIdx = 0; break;
+      case 'End':        nextIdx = tabs.length - 1; break;
+      default:           return;
+    }
+    const next = tabs[nextIdx];
+    next.focus();
+    next.click(); // automatic activation
+  }
+
   _renderBody() {
+    // The panel changes contents based on the active tab; that's
+    // the WAI-ARIA "single tabpanel reflecting selection" pattern
+    // referenced by ARIA APG when the panel content is filtered
+    // rather than swapped wholesale.
+    return html`
+      <div
+        id="wew-tabpanel"
+        role=${this._config.enableFilter ? 'tabpanel' : nothing}
+        aria-labelledby=${this._config.enableFilter
+          ? (this.mode === 'all' ? 'wew-tab-all' : 'wew-tab-changed')
+          : nothing}
+      >
+        ${this._renderBodyInner()}
+      </div>
+    `;
+  }
+
+  _renderBodyInner() {
     if (this.state === 'loading') {
       return html`
         <div class="wew-menu__loading">
@@ -419,9 +721,26 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (this.state === 'error') {
       return html`<div class="alert alert-danger wew-menu__alert">Could not load pending changes.</div>`;
     }
+    // Client-side filter: "To publish" hides records without a
+    // workspace version, "All on page" shows everything. The server
+    // already returned the full record set so we don't refetch.
+    const visible = this.mode === 'changed'
+      ? this.items.filter((i) => i.isChanged)
+      : this.items;
+    if (visible.length === 0) {
+      const message = this.mode === 'all'
+        ? 'This page is empty (no records yet).'
+        : 'Nothing pending on this page.';
+      return html`
+        <div class="wew-menu__empty">
+          <span class="wew-menu__empty-icon" aria-hidden="true">✓</span>
+          <p>${message}</p>
+        </div>
+      `;
+    }
     return html`
       <ul class="wew-list">
-        ${this.items.map((item) => this._renderItem(item))}
+        ${visible.map((item) => this._renderItem(item))}
       </ul>
     `;
   }
@@ -545,7 +864,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
           const result = await response.resolve();
           if (result?.success) {
             Notification.success('Discarded', `Workspace version of “${item.title}” discarded.`, 4);
+            // Refresh our own list, then reload the editor's preview
+            // iframe so the live record (no longer overlaid by the
+            // discarded workspace version) is rendered.
             await this._refresh();
+            this._reloadPreviewIframes();
           } else {
             const errors = Array.isArray(result?.errors) && result.errors.length
               ? result.errors.join(' / ')
@@ -568,12 +891,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * actions-eye icon (currentColor).
    */
   _renderLocateButton(item) {
+    const tooltip = this._config.hasVisualEditor
+      ? 'Hover or click to focus this element in the Visual Editor'
+      : 'Hover or click to locate in preview';
     return html`
       <button
         type="button"
         class="wew-list__locate"
-        title="Show in editor"
-        aria-label="Show this content element in the editor"
+        title=${tooltip}
+        aria-label=${tooltip}
         @mouseenter=${(e) => { e.stopPropagation(); this._highlightInIframe(item); }}
         @mouseleave=${() => this._clearIframeHighlight()}
         @focus=${() => this._highlightInIframe(item)}
@@ -590,40 +916,83 @@ class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
+  /**
+   * Footer is the action area of the dropdown. Three visual tiers,
+   * left-to-right:
+   *
+   *   tier 3 (least): tiny icon-only Preview link
+   *   tier 2:         tri-state master checkbox + "N of M selected"
+   *   tier 1 (most):  the primary "Publish to live" button
+   *
+   * On narrow viewports the three tiers stack onto separate rows in
+   * the same order, keeping Publish at the bottom-right (thumb-zone
+   * on touch).
+   */
   _renderFooter() {
     if (this.state !== 'loaded') {
       return nothing;
     }
+    const { pageUid } = this._detectContext();
+    const showPreview = this._config.enablePreviewLink && pageUid > 0;
     const changeable = this.items.filter((i) => i.isChanged);
+    const total = changeable.length;
     const selectedCount = this.selection.size;
+    const allChecked = total > 0 && selectedCount === total;
+    const someChecked = selectedCount > 0 && selectedCount < total;
+    const selectLabel = allChecked
+      ? 'Deselect all'
+      : (someChecked ? 'Select all' : 'Select all');
     return html`
       <footer class="wew-menu__foot">
-        <div class="wew-menu__counters">
-          <button
-            type="button"
-            class="btn btn-link btn-sm wew-menu__select-all"
-            ?disabled=${changeable.length === 0}
-            @click=${() => this._selectAll(true)}
-          >Select all</button>
-          <span class="text-muted">·</span>
-          <button
-            type="button"
-            class="btn btn-link btn-sm"
-            ?disabled=${selectedCount === 0}
-            @click=${() => this._selectAll(false)}
-          >None</button>
-          <span class="wew-menu__count">${selectedCount} of ${changeable.length} selected</span>
+        <div class="wew-menu__foot-preview">
+          ${showPreview
+            ? html`<button
+                type="button"
+                class="wew-menu__preview-icon"
+                title="Copy a shareable preview link for this page"
+                aria-label="Copy preview link"
+                @click=${() => this._copyPreviewLink(pageUid)}
+                ?disabled=${this.copyingPreview}
+              >
+                ${this.copyingPreview
+                  ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner>`
+                  : this._linkIcon()}
+              </button>`
+            : nothing}
         </div>
-        <button
-          type="button"
-          class="btn btn-primary wew-menu__publish"
-          ?disabled=${selectedCount === 0 || this.publishing}
-          @click=${() => this._publish()}
-        >
-          ${this.publishing
-            ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner> Publishing…`
-            : html`Publish to live${selectedCount > 0 ? html` (${selectedCount})` : nothing}`}
-        </button>
+
+        <div class="wew-menu__foot-selection">
+          ${total > 0 ? html`
+            <label class="wew-menu__selectall">
+              <input
+                type="checkbox"
+                class="wew-menu__selectall-check"
+                .checked=${allChecked}
+                .indeterminate=${someChecked}
+                aria-checked=${allChecked ? 'true' : (someChecked ? 'mixed' : 'false')}
+                aria-label=${allChecked ? 'Deselect all changes' : 'Select all changes'}
+                @change=${() => this._selectAll(!allChecked)}
+              />
+              <span class="wew-menu__selectall-label">${selectLabel}</span>
+            </label>
+            <span class="wew-menu__count" aria-live="polite">
+              <strong>${selectedCount}</strong> of ${total}
+            </span>
+          ` : nothing}
+        </div>
+
+        <div class="wew-menu__foot-action">
+          <button
+            type="button"
+            class="btn btn-primary wew-menu__publish"
+            ?disabled=${selectedCount === 0 || this.publishing}
+            @click=${() => this._publish()}
+          >
+            ${this.publishing
+              ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner> Publishing…`
+              : html`Publish to live${selectedCount > 0 ? html` (${selectedCount})` : nothing}`}
+          </button>
+        </div>
       </footer>
     `;
   }
@@ -666,7 +1035,26 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return;
     }
     this.mode = mode;
+    this._writePersistedMode(mode);
     this._refresh();
+  }
+
+  // localStorage key kept short to avoid colliding with other modules.
+  static _MODE_STORAGE_KEY = 'wew:filter-mode';
+
+  _readPersistedMode() {
+    try {
+      const value = window.localStorage?.getItem(WebconEasyWorkspaceMenu._MODE_STORAGE_KEY);
+      return value === 'all' || value === 'changed' ? value : null;
+    } catch {
+      return null; // private mode / disabled storage
+    }
+  }
+
+  _writePersistedMode(mode) {
+    try {
+      window.localStorage?.setItem(WebconEasyWorkspaceMenu._MODE_STORAGE_KEY, mode);
+    } catch { /* ignore */ }
   }
 
   async _refresh() {
@@ -682,7 +1070,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return;
     }
 
-    const query = pageUid ? { pageUid, mode: this.mode } : { newsUid, mode: this.mode };
+    // Always fetch the full set of records on the page. The mode tab
+    // (changed vs. all) is applied client-side in _renderList — that
+    // way the count badges on both tabs stay stable as the editor
+    // switches between filters, instead of mutating each time we
+    // re-query the server with a narrower scope.
+    const query = pageUid ? { pageUid, mode: 'all' } : { newsUid, mode: 'all' };
     try {
       const response = await new AjaxRequest(ENDPOINTS.items).withQueryArguments(query).get();
       const data = await response.resolve();

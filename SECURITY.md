@@ -1,0 +1,39 @@
+# Security
+
+## Reporting a vulnerability
+
+Please open a private security advisory on the [GitHub Security tab](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new) — do not open a public issue for security reports.
+
+## Audit summary (2026-05-13)
+
+A focused TYPO3 v14 security review covered authorization, CSRF, input validation, SQL injection, XSS, path traversal, TSconfig bypass and workspace boundaries across:
+
+- `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (4 AJAX endpoints)
+- `Classes/Service/PendingItemsService.php` (record collection + thumbnail / type / table resolution)
+- `Classes/Service/PublishSelectedService.php` (DataHandler publish + discard)
+- `Classes/Configuration/ConfigurationProvider.php` (TSconfig)
+- `Resources/Public/JavaScript/easy-workspace-menu-element.js` (Lit element)
+- `Resources/Private/Templates/ToolbarItems/EasyWorkspaceDropDown.html` (Fluid shell)
+
+### Findings (resolved)
+
+| ID | Severity | Issue | Fix |
+|---|---|---|---|
+| H1 | High | `publishAction` did not consult the `enabled` TSconfig flag, so a request could publish even when the toolbar item was hidden by TSconfig. | Added the same `$config['enabled']` gate the other endpoints already used (returns `403`). |
+| H2 | High | `publishAction` and `discardAction` accepted any non-empty `table` string and passed it straight to the DataHandler cmdmap. DataHandler enforced permissions for the actual record write, but the attack surface was wider than the UI offers. | Added an allow-list constant `ALLOWED_TABLES = [pages, tt_content, tx_news_domain_model_news]`; selections outside it are silently dropped. |
+| M1 | Medium | Selected `workspaceUid` was never verified against the active workspace inside `PublishSelectedService::publish()`. DataHandler rejected mismatches downstream, but the cmdmap was built optimistically. | New `belongsToWorkspace($table, $uid, $wsId)` helper now confirms `t3ver_wsid` matches the active workspace and that the row is not deleted before the uid is added to the cmdmap. Both `publish()` and `discard()` use it. |
+| M4 | Low/Medium | `previewLinkAction` echoed `$e->getMessage()` from `PreviewUriBuilder` into the JSON response. | Replaced with a generic `"Could not build a preview link for this page."` — the underlying exception is logged by Core's error handler. |
+
+### Findings (no change needed)
+
+- **CSRF**: AJAX routes are under `/typo3/ajax/...` and pass through `BackendUserAuthenticator` + same-origin middleware. The Lit client uses `@typo3/core/ajax/ajax-request.js` which sends credentials.
+- **SQL injection**: every `WHERE` clause uses `QueryBuilder::createNamedParameter()` with explicit `Connection::PARAM_INT` for ids. `orderBy()` columns are literals (`sorting`, `datetime`, `uid`, `sorting_foreign`) — no user input.
+- **XSS**: the dropdown shell escapes the JSON config via `f:format.htmlspecialchars()`; the Lit element renders all user-facing strings (titles, type labels, badges) through `html\`…\`` templates which Lit auto-escapes. Thumbnail URLs come from `File::getPublicUrl()` (server-resolved), not from a request parameter.
+- **Path traversal**: the thumbnail lookup uses `ResourceFactory::getFileObject(int)` with a uid from `sys_file_reference` — never a path string.
+- **TSconfig gating**: `enabled` / `enablePreviewLink` / `enableRevert` are enforced server-side in the matching endpoints (return `403` when off).
+- **Workspace boundary on items**: `PendingItemsService` consistently passes the request's workspace id from `Context` to the `WorkspaceRestriction` (with `$includeRowsForWorkspacePreview=false`); records from other workspaces never reach the response payload.
+
+### Out of scope
+
+- The optional `wapplersystems/multisite-belogin` extension changes BE cookie handling and registers its own auth service. Its security model is independent of this extension and should be reviewed separately if used.
+- The optional `friendsoftypo3/visual-editor` extension provides the `<ve-content-element>` wrapper this extension's eye icon dispatches to. The dispatch is a synthetic `MouseEvent` on a same-origin DOM node — no privilege boundary crossed.

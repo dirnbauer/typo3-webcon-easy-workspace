@@ -31,6 +31,21 @@ final readonly class PublishSelectedService
     ) {}
 
     /**
+     * Table priority for the cmdmap order. Pages must be published
+     * before any tt_content sitting on them, otherwise NEW workspace
+     * content elements can lose their parent. News records similarly
+     * need to be published before the tt_content rows that reference
+     * them via tx_news_related_news.
+     *
+     * @var list<string>
+     */
+    private const TABLE_ORDER = [
+        'pages',
+        'tx_news_domain_model_news',
+        'tt_content',
+    ];
+
+    /**
      * @param list<array{table: string, workspaceUid: int}> $selections
      * @return array{success: bool, published: int, errors: list<string>}
      */
@@ -44,26 +59,53 @@ final readonly class PublishSelectedService
             return ['success' => false, 'published' => 0, 'errors' => ['Cannot publish from the live workspace.']];
         }
 
-        $cmd = [];
+        // Group selections by table so we can insert them in priority order.
+        $byTable = [];
         $count = 0;
+        $rejected = 0;
         foreach ($selections as $entry) {
             $table = $entry['table'] ?? '';
             $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
             if ($table === '' || $workspaceUid <= 0) {
                 continue;
             }
+            // Defence-in-depth: confirm the record really belongs to
+            // the active workspace before we hand it to DataHandler.
+            // DataHandler does its own workspace check too, but
+            // rejecting up front gives a cleaner error path and
+            // prevents the cmdmap from being polluted with foreign
+            // workspace ids that a crafted payload could include.
+            if (!$this->belongsToWorkspace($table, $workspaceUid, $workspaceId)) {
+                ++$rejected;
+                continue;
+            }
             $liveUid = $this->resolveLiveUid($table, $workspaceUid);
             if ($liveUid <= 0) {
                 continue;
             }
-            $cmd[$table][$liveUid]['version'] = [
-                'action' => 'publish',
-                'swapWith' => $workspaceUid,
+            $byTable[$table][$liveUid] = [
+                'version' => ['action' => 'publish', 'swapWith' => $workspaceUid],
             ];
             ++$count;
         }
-        if ($cmd === []) {
-            return ['success' => false, 'published' => 0, 'errors' => ['No publishable records in selection.']];
+        if ($byTable === []) {
+            $msg = $rejected > 0
+                ? 'Selection contained records that do not belong to the active workspace.'
+                : 'No publishable records in selection.';
+            return ['success' => false, 'published' => 0, 'errors' => [$msg]];
+        }
+
+        // Build the cmdmap in priority order: parents first, children
+        // second, then anything else in stable order.
+        $cmd = [];
+        foreach (self::TABLE_ORDER as $orderedTable) {
+            if (isset($byTable[$orderedTable])) {
+                $cmd[$orderedTable] = $byTable[$orderedTable];
+                unset($byTable[$orderedTable]);
+            }
+        }
+        foreach ($byTable as $table => $rows) {
+            $cmd[$table] = $rows;
         }
 
         $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
@@ -96,6 +138,11 @@ final readonly class PublishSelectedService
         if ($workspaceId <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => ['Cannot discard from the live workspace.']];
         }
+        // Defence-in-depth: confirm the workspace version belongs to
+        // the active workspace before handing it to DataHandler.
+        if (!$this->belongsToWorkspace($table, $workspaceUid, $workspaceId)) {
+            return ['success' => false, 'discarded' => 0, 'errors' => ['Record does not belong to the active workspace.']];
+        }
 
         $cmd = [
             $table => [
@@ -113,6 +160,30 @@ final readonly class PublishSelectedService
             'discarded' => 1,
             'errors' => $dataHandler->errorLog,
         ];
+    }
+
+    /**
+     * Verify the row at $table#$workspaceUid actually lives in the
+     * given workspace. Returns false for stale uids, deleted rows
+     * and — critically — rows belonging to a different workspace.
+     */
+    private function belongsToWorkspace(string $table, int $workspaceUid, int $workspaceId): bool
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $row = $queryBuilder
+            ->select('t3ver_wsid', 'deleted')
+            ->from($table)
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($workspaceUid, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
+        if (!is_array($row)) {
+            return false;
+        }
+        if ((int)($row['deleted'] ?? 0) !== 0) {
+            return false;
+        }
+        return (int)($row['t3ver_wsid'] ?? 0) === $workspaceId;
     }
 
     private function resolveLiveUid(string $table, int $workspaceUid): int

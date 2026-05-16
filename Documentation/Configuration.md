@@ -62,8 +62,19 @@ All keys live under `options.webcon_easy_workspace`. Boolean keys take `1` (on) 
 
 | Key | Default | Effect when `0` |
 |---|---|---|
-| `enableHoverHighlight` | `1` | Hides the eye icon. Hover / click no longer scrolls or outlines anything in the Visual Editor iframe. |
+| `enableHoverHighlight` | `1` | Hides the eye icon. Hover / click no longer scrolls or outlines anything in the rendered preview iframe. |
 | `enableRevert` | `1` | Hides the discard button. The discard AJAX endpoint also returns `403`. |
+
+## Detected environment
+
+Two additional **read-only** keys are merged into the config payload server-side and cannot be set in TSconfig:
+
+| Key | Source | Used for |
+|---|---|---|
+| `hasVisualEditor` | `ExtensionManagementUtility::isLoaded('visual_editor')` | Tooltip + "no iframe" notification copy. |
+| `hasViewpage` | `ExtensionManagementUtility::isLoaded('viewpage')` | Tooltip + "no iframe" notification copy. |
+
+These let the Lit element say *"Show in Visual Editor"* when `friendsoftypo3/visual-editor` is installed, *"Show in page preview"* when `typo3/cms-viewpage` is, or *"Show in preview"* otherwise. None of the publish / discard / preview-link features depend on either extension — only the eye-icon affordance does, and even there the lookup falls back to any reachable same-origin iframe.
 
 ## Examples
 
