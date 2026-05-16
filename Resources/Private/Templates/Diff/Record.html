@@ -34,11 +34,11 @@
             {tableLabel} · #{workspaceUid}
             <f:if condition="{liveUid} > 0">
                 <span class="wew-diff-modal__sep">·</span>
-                live #{liveUid}
+                {labels.liveUid}
             </f:if>
             <f:if condition="{timeline -> f:count()} > 0">
                 <span class="wew-diff-modal__sep">·</span>
-                <span class="wew-diff-modal__history-count">{timeline -> f:count()} edit<f:if condition="{timeline -> f:count()} != 1">s</f:if> in this workspace</span>
+                <span class="wew-diff-modal__history-count">{labels.historyCount}</span>
             </f:if>
         </p>
     </header>
@@ -47,7 +47,7 @@
         id="wew-diff-panel-history"
         class="wew-diff-modal__panel wew-diff-modal__panel--active"
         role="region"
-        aria-label="Workspace edit history"
+        aria-label="{labels.historyAria}"
         data-wew-panel="history"
     >
         <f:if condition="{timeline -> f:count()} > 0">
@@ -65,8 +65,8 @@
                                         class="wew-history__rollback"
                                         data-wew-rollback="linear"
                                         data-history-uid="{entry.historyUid}"
-                                        title="Revert this edit and every later edit on this record"
-                                    >Revert to before</button>
+                                        title="{labels.rollbackLinearTitle}"
+                                    >{labels.rollbackLinear}</button>
                                 </f:if>
                             </div>
                             <f:if condition="{entry.diffs -> f:count()} > 0">
@@ -82,8 +82,8 @@
                                                     data-wew-rollback="field"
                                                     data-history-uid="{d.historyUid}"
                                                     data-field="{d.field}"
-                                                    title="Revert only this field's change"
-                                                    aria-label="Revert {d.label}"
+                                                    title="{labels.rollbackFieldTitle}"
+                                                    aria-label="{labels.rollbackFieldAria} {d.label}"
                                                 >&#x21bb;</button>
                                             </f:if>
                                         </dd>
@@ -96,7 +96,7 @@
             </f:then>
             <f:else>
                 <p class="wew-diff-modal__empty">
-                    <em>No workspace edit history recorded for this record yet.</em>
+                    <em>{labels.empty}</em>
                 </p>
             </f:else>
         </f:if>
@@ -109,7 +109,7 @@
                 class="btn btn-default wew-diff-modal__edit"
                 data-edit-url="{editUrl}"
             >
-                Open in form editor
+                {labels.openEditor}
             </button>
         </footer>
     </f:if>

@@ -28,6 +28,7 @@ final readonly class PublishSelectedService
     public function __construct(
         private ConnectionPool $connectionPool,
         private Context $context,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -56,7 +57,7 @@ final readonly class PublishSelectedService
         }
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0) {
-            return ['success' => false, 'published' => 0, 'errors' => ['Cannot publish from the live workspace.']];
+            return ['success' => false, 'published' => 0, 'errors' => [$this->localizationService->translate('error.publishFromLive')]];
         }
 
         // Group selections by table so we can insert them in priority order.
@@ -90,8 +91,8 @@ final readonly class PublishSelectedService
         }
         if ($byTable === []) {
             $msg = $rejected > 0
-                ? 'Selection contained records that do not belong to the active workspace.'
-                : 'No publishable records in selection.';
+                ? $this->localizationService->translate('error.selectionWrongWorkspace')
+                : $this->localizationService->translate('error.noPublishableRecords');
             return ['success' => false, 'published' => 0, 'errors' => [$msg]];
         }
 
@@ -132,16 +133,16 @@ final readonly class PublishSelectedService
     public function discard(string $table, int $workspaceUid): array
     {
         if ($table === '' || $workspaceUid <= 0) {
-            return ['success' => false, 'discarded' => 0, 'errors' => ['Missing table / workspaceUid.']];
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0) {
-            return ['success' => false, 'discarded' => 0, 'errors' => ['Cannot discard from the live workspace.']];
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.discardFromLive')]];
         }
         // Defence-in-depth: confirm the workspace version belongs to
         // the active workspace before handing it to DataHandler.
         if (!$this->belongsToWorkspace($table, $workspaceUid, $workspaceId)) {
-            return ['success' => false, 'discarded' => 0, 'errors' => ['Record does not belong to the active workspace.']];
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
         }
 
         $cmd = [

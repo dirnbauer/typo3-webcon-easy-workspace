@@ -21,6 +21,7 @@ use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
+use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 
 final readonly class EasyWorkspaceAjaxController
 {
@@ -47,6 +48,7 @@ final readonly class EasyWorkspaceAjaxController
         private BackendUriBuilder $backendUriBuilder,
         private RecordHistoryTimelineService $historyTimelineService,
         private RecordHistoryRollback $recordHistoryRollback,
+        private LocalizationService $localizationService,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -57,7 +59,7 @@ final readonly class EasyWorkspaceAjaxController
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
-            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
 
         $defaultMode = $config['defaultMode'];
@@ -101,7 +103,7 @@ final readonly class EasyWorkspaceAjaxController
     {
         $config = $this->configurationProvider->get(null);
         if (!$config['enabled']) {
-            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
 
         $query = $request->getQueryParams();
@@ -134,18 +136,18 @@ final readonly class EasyWorkspaceAjaxController
         $query = $request->getQueryParams();
         $config = $this->configurationProvider->get(null);
         if (!$config['enabled']) {
-            return new HtmlResponse('<p class="alert alert-danger">Easy Workspace is disabled by TSconfig.</p>', 403);
+            return new HtmlResponse('<p class="alert alert-danger">' . htmlspecialchars($this->localizationService->translate('error.disabled')) . '</p>', 403);
         }
 
         $table = (string)($query['table'] ?? '');
         $workspaceUid = (int)($query['workspaceUid'] ?? 0);
         if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
-            return new HtmlResponse('<p class="alert alert-danger">Invalid table or record id.</p>', 400);
+            return new HtmlResponse('<p class="alert alert-danger">' . htmlspecialchars($this->localizationService->translate('error.invalidRecord')) . '</p>', 400);
         }
 
         $row = BackendUtility::getRecord($table, $workspaceUid);
         if (!is_array($row)) {
-            return new HtmlResponse('<p class="alert alert-warning">Record not found or not accessible in this workspace.</p>', 404);
+            return new HtmlResponse('<p class="alert alert-warning">' . htmlspecialchars($this->localizationService->translate('error.recordNotFound')) . '</p>', 404);
         }
 
         $payload = $this->recordDiffService->diffWithHtml($table, $row);
@@ -180,6 +182,17 @@ final readonly class EasyWorkspaceAjaxController
             'editUrl' => $editUrl,
             'timeline' => $timeline,
             'rollbackEnabled' => true,
+            'labels' => [
+                'liveUid' => $this->localizationService->translate('diff.template.liveUid', ['uid' => $payload['liveUid']]),
+                'historyCount' => $this->localizationService->translate('history.editCount', ['count' => count($timeline)]),
+                'historyAria' => $this->localizationService->translate('history.aria'),
+                'rollbackLinearTitle' => $this->localizationService->translate('history.rollback.linearTitle'),
+                'rollbackLinear' => $this->localizationService->translate('history.rollback.linear'),
+                'rollbackFieldTitle' => $this->localizationService->translate('history.rollback.fieldTitle'),
+                'rollbackFieldAria' => $this->localizationService->translate('history.rollback.fieldAria'),
+                'empty' => $this->localizationService->translate('history.empty'),
+                'openEditor' => $this->localizationService->translate('history.openEditor'),
+            ],
         ]);
 
         return new HtmlResponse($view->render());
@@ -203,7 +216,7 @@ final readonly class EasyWorkspaceAjaxController
     {
         $config = $this->configurationProvider->get(null);
         if (!$config['enabled']) {
-            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
 
         // JS posts Content-Type: application/json — PSR-7's
@@ -217,10 +230,10 @@ final readonly class EasyWorkspaceAjaxController
         $field = (string)($body['field'] ?? '');
 
         if (!$this->isAllowedWorkspaceTable($table) || $uid <= 0 || $historyUid <= 0) {
-            return new JsonResponse(['success' => false, 'error' => 'Invalid arguments.'], 400);
+            return new JsonResponse(['success' => false, 'error' => $this->localizationService->translate('error.invalidArguments')], 400);
         }
         if ($mode !== 'linear' && $mode !== 'field') {
-            return new JsonResponse(['success' => false, 'error' => 'Unknown rollback mode.'], 400);
+            return new JsonResponse(['success' => false, 'error' => $this->localizationService->translate('error.unknownRollbackMode')], 400);
         }
 
         // performRollback's first arg is a "rollbackFields" selector:
@@ -244,7 +257,7 @@ final readonly class EasyWorkspaceAjaxController
             if (empty($diff['insertsDeletes'] ?? null) && empty($diff['oldData'] ?? null)) {
                 return new JsonResponse([
                     'success' => false,
-                    'error' => 'Nothing to roll back at this entry. The history entry may be older than the live baseline, or the diff is empty.',
+                    'error' => $this->localizationService->translate('error.nothingToRollback'),
                 ]);
             }
             $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $GLOBALS['BE_USER'] ?? null);
@@ -265,13 +278,13 @@ final readonly class EasyWorkspaceAjaxController
         // the publish endpoint would still happily accept POSTs.
         $config = $this->configurationProvider->get();
         if (!$config['enabled']) {
-            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
 
         $payload = $this->decodeBody($request);
         $rawSelections = $payload['selections'] ?? [];
         if (!is_array($rawSelections)) {
-            return new JsonResponse(['error' => 'Invalid selections payload.'], 400);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.invalidSelections')], 400);
         }
 
         $selections = [];
@@ -298,14 +311,14 @@ final readonly class EasyWorkspaceAjaxController
         $table = (string)($payload['table'] ?? '');
         $workspaceUid = (int)($payload['workspaceUid'] ?? 0);
         if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
-            return new JsonResponse(['error' => 'Missing or unsupported table / workspaceUid.'], 400);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.missingTableWorkspace')], 400);
         }
         $config = $this->configurationProvider->get();
         if (!$config['enabled']) {
-            return new JsonResponse(['error' => 'Easy Workspace is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
         if (!($config['enableRevert'] ?? true)) {
-            return new JsonResponse(['error' => 'Revert is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.revertDisabled')], 403);
         }
         return new JsonResponse($this->publishService->discard($table, $workspaceUid));
     }
@@ -314,18 +327,18 @@ final readonly class EasyWorkspaceAjaxController
     {
         $pageUid = (int)($request->getQueryParams()['pageUid'] ?? 0);
         if ($pageUid <= 0) {
-            return new JsonResponse(['error' => 'Missing pageUid.'], 400);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.missingPageUid')], 400);
         }
         $config = $this->configurationProvider->get($pageUid);
         if (!$config['enablePreviewLink']) {
-            return new JsonResponse(['error' => 'Preview link is disabled by TSconfig.'], 403);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.previewLinkDisabled')], 403);
         }
         try {
             $url = $this->previewUriBuilder->buildUriForPage($pageUid);
         } catch (\Throwable) {
             // Generic message to the client; the underlying exception
             // is already logged by Core's error handler.
-            return new JsonResponse(['error' => 'Could not build a preview link for this page.'], 500);
+            return new JsonResponse(['error' => $this->localizationService->translate('error.previewLinkBuild')], 500);
         }
         return new JsonResponse(['url' => $url]);
     }

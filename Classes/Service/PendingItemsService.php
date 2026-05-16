@@ -47,6 +47,7 @@ final readonly class PendingItemsService
         private RecordDiffService $recordDiffService,
         private BackendLayoutView $backendLayoutView,
         private RecordHistoryTimelineService $historyTimelineService,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -169,13 +170,13 @@ final readonly class PendingItemsService
     private function resolveWorkspaceTitle(int $workspaceId): string
     {
         if ($workspaceId <= 0) {
-            return 'Live';
+            return $this->localizationService->translate('state.live');
         }
         $row = BackendUtility::getRecord('sys_workspace', $workspaceId);
         if (is_array($row) && !empty($row['title'])) {
             return (string)$row['title'];
         }
-        return 'Workspace #' . $workspaceId;
+        return $this->localizationService->translate('toolbar.title') . ' #' . $workspaceId;
     }
 
     /**
@@ -591,14 +592,15 @@ final readonly class PendingItemsService
 
         $state = VersionState::tryFrom((int)($row['t3ver_state'] ?? 0)) ?? VersionState::DEFAULT_STATE;
         if (!$isChanged) {
-            $kindLabel = 'Live';
+            $kindKey = 'live';
+            $kindLabel = $this->localizationService->translate('state.live');
             $badge = 'secondary';
         } else {
-            [$kindLabel, $badge] = match ($state) {
-                VersionState::NEW_PLACEHOLDER => ['New', 'success'],
-                VersionState::DELETE_PLACEHOLDER => ['Will be deleted', 'danger'],
-                VersionState::MOVE_POINTER => ['Moved', 'warning'],
-                default => ['Modified', 'info'],
+            [$kindKey, $kindLabel, $badge] = match ($state) {
+                VersionState::NEW_PLACEHOLDER => ['new', $this->localizationService->translate('state.new'), 'success'],
+                VersionState::DELETE_PLACEHOLDER => ['delete', $this->localizationService->translate('state.delete'), 'danger'],
+                VersionState::MOVE_POINTER => ['move', $this->localizationService->translate('state.move'), 'warning'],
+                default => ['modified', $this->localizationService->translate('state.modified'), 'info'],
             };
         }
 
@@ -629,7 +631,7 @@ final readonly class PendingItemsService
             $colPos = (int)$row['colPos'];
             $colPosLabel = $columnLabels[$colPos] ?? null;
             if ($colPosLabel === null || $colPosLabel === '') {
-                $colPosLabel = sprintf('Column %d', $colPos);
+                $colPosLabel = $this->localizationService->translate('toolbar.column', ['number' => $colPos]);
             }
         }
 
@@ -638,6 +640,7 @@ final readonly class PendingItemsService
             liveUid: $liveUid,
             workspaceUid: $workspaceUid,
             title: $title,
+            kindKey: $kindKey,
             kindLabel: $kindLabel,
             badge: $badge,
             thumbnailUrl: $enableThumbnails ? $this->resolveThumbnailUrl($table, $workspaceUid) : null,
