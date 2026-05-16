@@ -32,6 +32,7 @@ final readonly class PendingItem
         public ?string $editUrl,
         public ?string $contextualEditUrl = null,
         public array $diff = [],
+        public int $historyDiffCount = 0,
         public ?int $colPos = null,
         public ?string $colPosLabel = null,
     ) {}
@@ -57,6 +58,7 @@ final readonly class PendingItem
             'editUrl' => $this->editUrl,
             'contextualEditUrl' => $this->contextualEditUrl,
             'diff' => $this->diff,
+            'historyDiffCount' => $this->historyDiffCount,
             'colPos' => $this->colPos,
             'colPosLabel' => $this->colPosLabel,
         ];

@@ -131,6 +131,23 @@ final readonly class RecordHistoryTimelineService
         return $entries;
     }
 
+    public function countModifiedFields(string $table, int $uid): int
+    {
+        $fields = [];
+        foreach ($this->build($table, $uid) as $entry) {
+            if (($entry['actionKey'] ?? '') !== 'modified') {
+                continue;
+            }
+            foreach ($entry['diffs'] as $diff) {
+                $field = (string)($diff['field'] ?? '');
+                if ($field !== '') {
+                    $fields[$field] = true;
+                }
+            }
+        }
+        return count($fields);
+    }
+
     /**
      * @param array<string, mixed> $old
      * @param array<string, mixed> $new

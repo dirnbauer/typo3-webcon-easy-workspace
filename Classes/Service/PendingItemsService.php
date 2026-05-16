@@ -46,6 +46,7 @@ final readonly class PendingItemsService
         private Context $context,
         private RecordDiffService $recordDiffService,
         private BackendLayoutView $backendLayoutView,
+        private RecordHistoryTimelineService $historyTimelineService,
     ) {}
 
     /**
@@ -615,6 +616,9 @@ final readonly class PendingItemsService
         // expand to show *what* changed. Only computed for actual
         // workspace versions; live rows have nothing to diff.
         $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
+        $historyDiffCount = $isChanged && $state === VersionState::NEW_PLACEHOLDER
+            ? $this->historyTimelineService->countModifiedFields($table, $workspaceUid)
+            : 0;
 
         // Resolve colPos info for tt_content rows so the frontend
         // can group items by page column with proper labels (e.g.
@@ -645,6 +649,7 @@ final readonly class PendingItemsService
             editUrl: $editUrl,
             contextualEditUrl: $contextualEditUrl,
             diff: $diff,
+            historyDiffCount: $historyDiffCount,
             colPos: $colPos,
             colPosLabel: $colPosLabel,
         );

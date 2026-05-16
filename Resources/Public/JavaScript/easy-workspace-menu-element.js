@@ -1078,6 +1078,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   _diffTriggerLabel(item, diff) {
     if (item.kindLabel === 'New') {
+      const historyDiffCount = Number.isInteger(item.historyDiffCount) ? item.historyDiffCount : 0;
+      if (historyDiffCount > 0) {
+        return historyDiffCount === 1 ? '1 field changed' : `${historyDiffCount} fields changed`;
+      }
       return 'View details';
     }
     if (item.kindLabel === 'Will be deleted') {
@@ -1094,6 +1098,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   _diffTriggerTitle(item, hasDiff) {
     if (item.kindLabel === 'New') {
+      const historyDiffCount = Number.isInteger(item.historyDiffCount) ? item.historyDiffCount : 0;
+      if (historyDiffCount > 0) {
+        return 'View changed fields and edit history for this new workspace record';
+      }
       return 'Open this new workspace record details and edit history';
     }
     if (item.kindLabel === 'Will be deleted') {
