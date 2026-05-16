@@ -66,7 +66,7 @@ final readonly class PublishSelectedService
         foreach ($selections as $entry) {
             $table = $entry['table'] ?? '';
             $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
-            if ($table === '' || $workspaceUid <= 0) {
+            if ($table === '' || $workspaceUid <= 0 || !$this->isAllowedWorkspaceTable($table)) {
                 continue;
             }
             // Defence-in-depth: confirm the record really belongs to
@@ -201,5 +201,56 @@ final readonly class PublishSelectedService
         }
         $liveUid = (int)$row['t3ver_oid'];
         return $liveUid > 0 ? $liveUid : (int)$row['uid'];
+    }
+
+    private function isAllowedWorkspaceTable(string $table): bool
+    {
+        if (in_array($table, self::TABLE_ORDER, true)) {
+            return true;
+        }
+        if ($table === 'sys_file_reference' || !$this->isWorkspaceAwareHiddenTable($table)) {
+            return false;
+        }
+        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
+            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+                continue;
+            }
+            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+                if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private function isWorkspaceAwareHiddenTable(string $table): bool
+    {
+        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
+        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
+    }
+
+    /**
+     * @param array<string, mixed> $tca
+     * @return list<array<string, mixed>>
+     */
+    private function extractInlineFieldConfigs(array $tca): array
+    {
+        $configs = [];
+        foreach ($tca['columns'] ?? [] as $column) {
+            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
+            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                $configs[] = $fieldConfig;
+            }
+        }
+        foreach ($tca['types'] ?? [] as $typeConfig) {
+            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
+                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
+                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                    $configs[] = $fieldConfig;
+                }
+            }
+        }
+        return $configs;
     }
 }

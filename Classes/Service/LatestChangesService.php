@@ -16,7 +16,8 @@ use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
  * dropdown can show a cross-page "latest activity" feed.
  *
  * The query selects every workspace-version row of the supported
- * tables (pages, tt_content, optionally tx_news_domain_model_news)
+ * tables (pages, tt_content, optionally tx_news_domain_model_news, plus
+ * workspace-aware inline child tables such as Content Blocks Collection rows)
  * with `t3ver_wsid = current workspace`, sorted by `tstamp DESC`,
  * then merges across tables and trims to $limit.
  *
@@ -79,7 +80,7 @@ final readonly class LatestChangesService
         // the final $limit.
         $perTableCap = $limit;
         $rows = [];
-        foreach (self::TABLES as $table) {
+        foreach ($this->resolveWorkspaceTables() as $table) {
             if (!$this->tcaSchemaFactory->has($table)) {
                 continue;
             }
@@ -112,6 +113,59 @@ final readonly class LatestChangesService
         }
 
         return ['workspaceId' => $workspaceId, 'items' => $items];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolveWorkspaceTables(): array
+    {
+        $tables = self::TABLES;
+        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
+            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+                continue;
+            }
+            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+                $foreignTable = (string)($fieldConfig['foreign_table'] ?? '');
+                if ($foreignTable !== '' && $this->isWorkspaceAwareHiddenTable($foreignTable)) {
+                    $tables[] = $foreignTable;
+                }
+            }
+        }
+        return array_values(array_unique($tables));
+    }
+
+    private function isWorkspaceAwareHiddenTable(string $table): bool
+    {
+        if ($table === 'sys_file_reference') {
+            return false;
+        }
+        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
+        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
+    }
+
+    /**
+     * @param array<string, mixed> $tca
+     * @return list<array<string, mixed>>
+     */
+    private function extractInlineFieldConfigs(array $tca): array
+    {
+        $configs = [];
+        foreach ($tca['columns'] ?? [] as $column) {
+            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
+            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                $configs[] = $fieldConfig;
+            }
+        }
+        foreach ($tca['types'] ?? [] as $typeConfig) {
+            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
+                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
+                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                    $configs[] = $fieldConfig;
+                }
+            }
+        }
+        return $configs;
     }
 
     /**

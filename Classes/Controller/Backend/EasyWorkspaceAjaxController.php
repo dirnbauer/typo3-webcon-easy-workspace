@@ -139,7 +139,7 @@ final readonly class EasyWorkspaceAjaxController
 
         $table = (string)($query['table'] ?? '');
         $workspaceUid = (int)($query['workspaceUid'] ?? 0);
-        if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+        if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
             return new HtmlResponse('<p class="alert alert-danger">Invalid table or record id.</p>', 400);
         }
 
@@ -216,7 +216,7 @@ final readonly class EasyWorkspaceAjaxController
         $mode = (string)($body['mode'] ?? 'linear');
         $field = (string)($body['field'] ?? '');
 
-        if (!in_array($table, self::ALLOWED_TABLES, true) || $uid <= 0 || $historyUid <= 0) {
+        if (!$this->isAllowedWorkspaceTable($table) || $uid <= 0 || $historyUid <= 0) {
             return new JsonResponse(['success' => false, 'error' => 'Invalid arguments.'], 400);
         }
         if ($mode !== 'linear' && $mode !== 'field') {
@@ -283,7 +283,7 @@ final readonly class EasyWorkspaceAjaxController
             $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
             // Allow-list — keeps arbitrary TCA tables (be_users,
             // sys_log, …) out of the DataHandler cmdmap.
-            if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+            if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
                 continue;
             }
             $selections[] = ['table' => $table, 'workspaceUid' => $workspaceUid];
@@ -297,7 +297,7 @@ final readonly class EasyWorkspaceAjaxController
         $payload = $this->decodeBody($request);
         $table = (string)($payload['table'] ?? '');
         $workspaceUid = (int)($payload['workspaceUid'] ?? 0);
-        if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+        if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
             return new JsonResponse(['error' => 'Missing or unsupported table / workspaceUid.'], 400);
         }
         $config = $this->configurationProvider->get();
@@ -345,5 +345,56 @@ final readonly class EasyWorkspaceAjaxController
         }
         $parsed = $request->getParsedBody();
         return is_array($parsed) ? $parsed : [];
+    }
+
+    private function isAllowedWorkspaceTable(string $table): bool
+    {
+        if (in_array($table, self::ALLOWED_TABLES, true)) {
+            return true;
+        }
+        if ($table === 'sys_file_reference' || !$this->isWorkspaceAwareHiddenTable($table)) {
+            return false;
+        }
+        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
+            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+                continue;
+            }
+            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+                if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private function isWorkspaceAwareHiddenTable(string $table): bool
+    {
+        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
+        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
+    }
+
+    /**
+     * @param array<string, mixed> $tca
+     * @return list<array<string, mixed>>
+     */
+    private function extractInlineFieldConfigs(array $tca): array
+    {
+        $configs = [];
+        foreach ($tca['columns'] ?? [] as $column) {
+            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
+            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                $configs[] = $fieldConfig;
+            }
+        }
+        foreach ($tca['types'] ?? [] as $typeConfig) {
+            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
+                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
+                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                    $configs[] = $fieldConfig;
+                }
+            }
+        }
+        return $configs;
     }
 }
