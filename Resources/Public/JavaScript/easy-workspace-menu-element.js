@@ -76,6 +76,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     publishing: { state: true },
     contextLabel: { state: true },
     workspaceTitle: { state: true },
+    workspaceId: { state: true },
     mode: { state: true },
     copyingPreview: { state: true },
     previewJustCopied: { state: true },
@@ -97,6 +98,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.context = null;
     this.contextLabel = '';
     this.workspaceTitle = '';
+    this.workspaceId = 0;
     this.publishing = false;
     this.copyingPreview = false;
     this.previewJustCopied = false;
@@ -104,8 +106,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
-    this.visualEditorState = null;
-    this._observedVisualEditorButton = null;
+    this._refreshAfterSaveTimer = null;
   }
 
   connectedCallback() {
@@ -134,15 +135,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
       || this.closest('.toolbar-item');
     if (dropdownHost) {
       dropdownHost.addEventListener('shown.bs.dropdown', () => {
-        this._syncVisualEditorStateFromSaveButton();
         this._refresh();
       });
       // Belt + braces: also refresh on a direct click on the toggle.
       const toggle = dropdownHost.querySelector('.dropdown-toggle');
-      toggle?.addEventListener('click', () => {
-        this._syncVisualEditorStateFromSaveButton();
-        this._refresh();
-      });
+      toggle?.addEventListener('click', () => this._refresh());
     }
 
     // Listen for the {type: 'wew-decline', table, uid} postMessage
@@ -158,7 +155,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
     this._visualEditorMessageListener = (event) => this._onVisualEditorMessage(event);
     window.addEventListener('message', this._visualEditorMessageListener);
-    this._syncVisualEditorStateFromSaveButton();
   }
 
   disconnectedCallback() {
@@ -179,119 +175,22 @@ class WebconEasyWorkspaceMenu extends LitElement {
       window.removeEventListener('message', this._visualEditorMessageListener);
       this._visualEditorMessageListener = null;
     }
-    this._visualEditorButtonObserver?.disconnect();
-    this._visualEditorButtonObserver = null;
-    this._observedVisualEditorButton = null;
+    if (this._refreshAfterSaveTimer) {
+      window.clearTimeout(this._refreshAfterSaveTimer);
+      this._refreshAfterSaveTimer = null;
+    }
   }
 
   /**
-   * Mirror the count source used by friendsoftypo3/visual-editor's
-   * <ve-backend-save-button>. Its frontend iframe sends
-   * {command: 've_updateEditorState', detail: {count, invalidCount}}
-   * whenever the DataHandler store changes, and {command:
-   * 've_saveEnded'} after a successful save.
+   * Use Visual Editor's save lifecycle as a refresh signal only.
+   * The toolbar badge must show server-side workspace versions ready
+   * to publish, not the Visual Editor's temporary unsaved field count.
    */
   _onVisualEditorMessage(event) {
     const command = event.data?.command;
-    if (command === 've_updateEditorState') {
-      this._setVisualEditorState(event.data.detail);
-      return;
-    }
     if (command === 've_saveEnded') {
-      this._setVisualEditorState({ count: 0, invalidCount: 0 });
-      this._refresh();
+      this._refreshAfterVisualEditorSave();
     }
-  }
-
-  _setVisualEditorState(detail) {
-    const count = Number(detail?.count);
-    const invalidCount = Number(detail?.invalidCount ?? 0);
-    if (!Number.isFinite(count) || !Number.isFinite(invalidCount)) {
-      return;
-    }
-    this.visualEditorState = {
-      count: Math.max(0, count),
-      invalidCount: Math.max(0, invalidCount),
-    };
-    this._updateToolbarBadge();
-  }
-
-  _syncVisualEditorStateFromSaveButton() {
-    const button = this._findVisualEditorSaveButton();
-    if (!button) {
-      if (!this._hasVisualEditorFrame()) {
-        this._clearVisualEditorState();
-      }
-      return false;
-    }
-    this._setVisualEditorState({
-      count: button.count,
-      invalidCount: button.invalidCount,
-    });
-    this._observeVisualEditorSaveButton(button);
-    return true;
-  }
-
-  _clearVisualEditorState() {
-    this._visualEditorButtonObserver?.disconnect();
-    this._visualEditorButtonObserver = null;
-    this._observedVisualEditorButton = null;
-    if (this.visualEditorState === null) {
-      return;
-    }
-    this.visualEditorState = null;
-    this._updateToolbarBadge();
-  }
-
-  _observeVisualEditorSaveButton(button) {
-    if (this._observedVisualEditorButton === button) {
-      return;
-    }
-    this._visualEditorButtonObserver?.disconnect();
-    this._observedVisualEditorButton = button;
-    this._visualEditorButtonObserver = new MutationObserver(() => {
-      this._setVisualEditorState({
-        count: button.count,
-        invalidCount: button.invalidCount,
-      });
-    });
-    this._visualEditorButtonObserver.observe(button, {
-      attributes: true,
-      childList: true,
-      subtree: true,
-    });
-  }
-
-  _findVisualEditorSaveButton() {
-    const roots = [document];
-    try {
-      if (window.top?.document && window.top.document !== document) {
-        roots.push(window.top.document);
-      }
-    } catch { /* cross-origin */ }
-    for (const iframe of this._collectIframes()) {
-      try {
-        if (iframe.contentDocument) {
-          roots.push(iframe.contentDocument);
-        }
-      } catch { /* cross-origin */ }
-    }
-    for (const root of roots) {
-      try {
-        const button = root.querySelector('ve-backend-save-button');
-        if (button) {
-          return button;
-        }
-      } catch { /* detached or inaccessible document */ }
-    }
-    return null;
-  }
-
-  _hasVisualEditorFrame() {
-    return this._collectIframes().some((iframe) => {
-      const id = iframe.id || '';
-      return id === 'visual-editor-iframe' || id.includes('visual-editor');
-    });
   }
 
   /**
@@ -1997,6 +1896,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   async _refresh() {
     if (!ENDPOINTS.items) {
       this.state = 'error';
+      this.workspaceId = 0;
       return;
     }
     this.state = 'loading';
@@ -2004,6 +1904,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (!pageUid && !newsUid) {
       this.state = 'no-context';
       this.contextLabel = 'No page or news selected.';
+      this.items = [];
+      this.workspaceId = 0;
+      this._updateToolbarBadge();
       return;
     }
 
@@ -2018,12 +1921,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const data = await response.resolve();
       this.context = data.context;
       this.items = Array.isArray(data.items) ? data.items : [];
+      this.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
       this.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
       this.contextLabel = this._buildContextLabel(data);
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
-      this._syncVisualEditorStateFromSaveButton();
       this._updateToolbarBadge();
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
@@ -2032,18 +1935,29 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
   }
 
+  async _refreshAfterVisualEditorSave() {
+    if (this._refreshAfterSaveTimer) {
+      window.clearTimeout(this._refreshAfterSaveTimer);
+      this._refreshAfterSaveTimer = null;
+    }
+    await this._refresh();
+    // The Visual Editor emits saveEnded after DataHandler returns, but
+    // TYPO3 side effects such as page-tree/workspace overlays can still
+    // settle one tick later in the surrounding backend frames. Refresh
+    // once more shortly after so the badge and tab counts reflect the
+    // persisted workspace version, not the pre-save list.
+    this._refreshAfterSaveTimer = window.setTimeout(() => {
+      this._refreshAfterSaveTimer = null;
+      this._refresh();
+    }, 800);
+  }
+
   /**
-   * Sync the toolbar trigger badge. If Visual Editor is active, use
-   * the exact unsaved-change count from <ve-backend-save-button>.
-   * Otherwise fall back to the current page's publishable changed
-   * records. Mirrors core's System Information
-   * pattern: the badge is a sibling of `.toolbar-item-icon` under the
-   * toolbar item host, gets the standard `.toolbar-item-badge`,
-   * `.badge`, `.badge-pill` classes, and toggles the `.hidden` class
-   * (not the `hidden` attribute) to match the rest of the toolbar.
-   *
-   * Visual Editor state wins because editors compare this badge with
-   * the "N changes save" button while editing inline.
+   * Sync the toolbar trigger badge with the persisted workspace
+   * versions for the current page/news context. Live workspace never
+   * shows a count; Visual Editor's unsaved field count is deliberately
+   * ignored because it is not the number of publishable workspace
+   * changes.
    */
   _updateToolbarBadge() {
     const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
@@ -2051,16 +1965,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
-    const usesVisualEditorState = this.visualEditorState !== null;
-    const count = usesVisualEditorState
-      ? this.visualEditorState.count
-      : (this.state === 'loaded' ? this.items.filter((i) => i.isChanged).length : 0);
+    const count = this.workspaceId > 0 && (this.state === 'loaded' || this.state === 'empty')
+      ? this.items.filter((i) => i.isChanged).length
+      : 0;
     badge.textContent = count > 0 ? String(count) : '';
     badge.classList.toggle('hidden', count <= 0);
     if (count > 0) {
-      const label = usesVisualEditorState
-        ? `${count} unsaved visual editor change${count === 1 ? '' : 's'}`
-        : `${count} pending change${count === 1 ? '' : 's'} on this page`;
+      const label = `${count} pending workspace change${count === 1 ? '' : 's'} on this page`;
       badge.setAttribute('aria-label', label);
     } else {
       badge.removeAttribute('aria-label');
