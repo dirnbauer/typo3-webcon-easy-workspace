@@ -28,6 +28,7 @@ final readonly class PublishSelectedService
     public function __construct(
         private ConnectionPool $connectionPool,
         private Context $context,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -56,7 +57,7 @@ final readonly class PublishSelectedService
         }
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0) {
-            return ['success' => false, 'published' => 0, 'errors' => ['Cannot publish from the live workspace.']];
+            return ['success' => false, 'published' => 0, 'errors' => [$this->localizationService->translate('error.publishFromLive')]];
         }
 
         // Group selections by table so we can insert them in priority order.
@@ -66,7 +67,7 @@ final readonly class PublishSelectedService
         foreach ($selections as $entry) {
             $table = $entry['table'] ?? '';
             $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
-            if ($table === '' || $workspaceUid <= 0) {
+            if ($table === '' || $workspaceUid <= 0 || !$this->isAllowedWorkspaceTable($table)) {
                 continue;
             }
             // Defence-in-depth: confirm the record really belongs to
@@ -90,8 +91,8 @@ final readonly class PublishSelectedService
         }
         if ($byTable === []) {
             $msg = $rejected > 0
-                ? 'Selection contained records that do not belong to the active workspace.'
-                : 'No publishable records in selection.';
+                ? $this->localizationService->translate('error.selectionWrongWorkspace')
+                : $this->localizationService->translate('error.noPublishableRecords');
             return ['success' => false, 'published' => 0, 'errors' => [$msg]];
         }
 
@@ -132,16 +133,16 @@ final readonly class PublishSelectedService
     public function discard(string $table, int $workspaceUid): array
     {
         if ($table === '' || $workspaceUid <= 0) {
-            return ['success' => false, 'discarded' => 0, 'errors' => ['Missing table / workspaceUid.']];
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
         if ($workspaceId <= 0) {
-            return ['success' => false, 'discarded' => 0, 'errors' => ['Cannot discard from the live workspace.']];
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.discardFromLive')]];
         }
         // Defence-in-depth: confirm the workspace version belongs to
         // the active workspace before handing it to DataHandler.
         if (!$this->belongsToWorkspace($table, $workspaceUid, $workspaceId)) {
-            return ['success' => false, 'discarded' => 0, 'errors' => ['Record does not belong to the active workspace.']];
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
         }
 
         $cmd = [
@@ -201,5 +202,56 @@ final readonly class PublishSelectedService
         }
         $liveUid = (int)$row['t3ver_oid'];
         return $liveUid > 0 ? $liveUid : (int)$row['uid'];
+    }
+
+    private function isAllowedWorkspaceTable(string $table): bool
+    {
+        if (in_array($table, self::TABLE_ORDER, true)) {
+            return true;
+        }
+        if ($table === 'sys_file_reference' || !$this->isWorkspaceAwareHiddenTable($table)) {
+            return false;
+        }
+        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
+            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+                continue;
+            }
+            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+                if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private function isWorkspaceAwareHiddenTable(string $table): bool
+    {
+        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
+        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
+    }
+
+    /**
+     * @param array<string, mixed> $tca
+     * @return list<array<string, mixed>>
+     */
+    private function extractInlineFieldConfigs(array $tca): array
+    {
+        $configs = [];
+        foreach ($tca['columns'] ?? [] as $column) {
+            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
+            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                $configs[] = $fieldConfig;
+            }
+        }
+        foreach ($tca['types'] ?? [] as $typeConfig) {
+            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
+                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
+                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
+                    $configs[] = $fieldConfig;
+                }
+            }
+        }
+        return $configs;
     }
 }

@@ -71,6 +71,7 @@ final readonly class RecordDiffService
         private TcaSchemaFactory $tcaSchemaFactory,
         private LanguageServiceFactory $languageServiceFactory,
         private DiffUtility $diffUtility,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -133,15 +134,15 @@ final readonly class RecordDiffService
                 return $candidate;
             }
         }
-        return '[No title]';
+        return $this->localizationService->translate('diff.noTitle');
     }
 
     private function resolveTableLabelHint(string $table): string
     {
         return match ($table) {
-            'pages'                       => 'Page',
-            'tt_content'                  => 'Page Content',
-            'tx_news_domain_model_news'   => 'News',
+            'pages'                       => $this->localizationService->translate('table.pages'),
+            'tt_content'                  => $this->localizationService->translate('table.tt_content'),
+            'tx_news_domain_model_news'   => $this->localizationService->translate('table.tx_news_domain_model_news'),
             default                       => $table,
         };
     }

@@ -49,6 +49,7 @@ final readonly class RecordHistoryTimelineService
         private DiffUtility $diffUtility,
         private LanguageServiceFactory $languageServiceFactory,
         private Context $context,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -84,7 +85,6 @@ final readonly class RecordHistoryTimelineService
         // row uid. Re-fold into our timeline shape.
         $diffEntries = $diffData['differences'] ?? [];
 
-        $languageService = $this->getLanguageService();
         $entries = [];
         foreach ($changeLog as $log) {
             // Skip entries outside the current workspace context —
@@ -109,16 +109,15 @@ final readonly class RecordHistoryTimelineService
             }
             $newRecord = is_array($log['newRecord'] ?? null) ? $log['newRecord'] : [];
             $oldRecord = is_array($log['oldRecord'] ?? null) ? $log['oldRecord'] : [];
-            $action = $this->describeAction((int)($log['actiontype'] ?? 0), $languageService);
+            $actionType = (int)($log['actiontype'] ?? 0);
+            $actionKey = $this->resolveActionKey($actionType);
+            $action = $this->describeAction($actionKey);
             $entries[] = [
                 'historyUid' => $historyUid,
                 'tstamp' => (int)($log['tstamp'] ?? 0),
                 'tstampFormatted' => BackendUtility::datetime((int)($log['tstamp'] ?? 0)),
                 'action' => $action,
-                // Lowercased copy for the CSS variant class
-                // (.wew-history__action--{key}). Keeping it in PHP
-                // dodges Fluid's lack of a string-lower ViewHelper.
-                'actionKey' => strtolower($action),
+                'actionKey' => $actionKey,
                 'user' => $this->resolveUser((int)($log['userid'] ?? 0)),
                 // historyUid duplicated into each diff so the inner
                 // <f:for as="d"> doesn't have to reach back into the
@@ -129,6 +128,23 @@ final readonly class RecordHistoryTimelineService
         }
 
         return $entries;
+    }
+
+    public function countModifiedFields(string $table, int $uid): int
+    {
+        $fields = [];
+        foreach ($this->build($table, $uid) as $entry) {
+            if (($entry['actionKey'] ?? '') !== 'modified') {
+                continue;
+            }
+            foreach ($entry['diffs'] as $diff) {
+                $field = (string)($diff['field'] ?? '');
+                if ($field !== '') {
+                    $fields[$field] = true;
+                }
+            }
+        }
+        return count($fields);
     }
 
     /**
@@ -163,32 +179,43 @@ final readonly class RecordHistoryTimelineService
         return $out;
     }
 
-    private function describeAction(int $actionType, LanguageService $languageService): string
+    private function resolveActionKey(int $actionType): string
     {
         return match ($actionType) {
-            1 => 'Created',
-            2 => 'Modified',
-            3 => 'Moved',
-            4 => 'Deleted',
-            default => 'Changed',
+            1 => 'created',
+            2 => 'modified',
+            3 => 'moved',
+            4 => 'deleted',
+            default => 'changed',
+        };
+    }
+
+    private function describeAction(string $actionKey): string
+    {
+        return match ($actionKey) {
+            'created' => $this->localizationService->translate('history.action.created'),
+            'modified' => $this->localizationService->translate('history.action.modified'),
+            'moved' => $this->localizationService->translate('history.action.moved'),
+            'deleted' => $this->localizationService->translate('history.action.deleted'),
+            default => $this->localizationService->translate('history.action.changed'),
         };
     }
 
     private function resolveUser(int $userId): string
     {
         if ($userId <= 0) {
-            return 'System';
+            return $this->localizationService->translate('history.user.system');
         }
         $row = BackendUtility::getRecord('be_users', $userId, 'realName, username');
         if (!is_array($row)) {
-            return sprintf('User #%d', $userId);
+            return $this->localizationService->translate('history.user.fallback', ['uid' => $userId]);
         }
         $realName = trim((string)($row['realName'] ?? ''));
         $username = trim((string)($row['username'] ?? ''));
         if ($realName !== '' && $username !== '') {
             return sprintf('%s (%s)', $realName, $username);
         }
-        return $realName !== '' ? $realName : ($username !== '' ? $username : sprintf('User #%d', $userId));
+        return $realName !== '' ? $realName : ($username !== '' ? $username : $this->localizationService->translate('history.user.fallback', ['uid' => $userId]));
     }
 
     private function getLanguageService(): LanguageService

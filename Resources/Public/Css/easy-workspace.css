@@ -1353,6 +1353,45 @@ webcon-easy-workspace-menu {
    {type: ajax}). The .wew-diff-modal-shell additional class on
    the modal lets us scope `<ins>` / `<del>` styles to this dialog
    only so they don't leak into other backend modals. */
+.wew-diff-modal-shell .modal-header {
+    align-items: flex-start;
+    flex-wrap: nowrap;
+}
+
+.wew-diff-modal-shell .modal-header-title {
+    display: -webkit-box;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    padding-right: .75rem;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+:is(.wew-diff-modal-shell, .wew-edit-modal-shell) .modal-header-close {
+    align-self: flex-start;
+    flex: 0 0 auto;
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+:is(.wew-diff-modal-shell, .wew-edit-modal-shell) .modal-header-close :is(.icon, svg) {
+    width: 24px;
+    height: 24px;
+}
+
+:is(.wew-diff-modal-shell, .wew-edit-modal-shell) .modal-header-close typo3-backend-icon {
+    --icon-size-small: 24px;
+    width: 24px;
+    height: 24px;
+}
+
 .wew-diff-modal {
     font-size: 13px;
     color: var(--typo3-text-color-base, var(--bs-body-color));

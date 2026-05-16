@@ -76,6 +76,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     publishing: { state: true },
     contextLabel: { state: true },
     workspaceTitle: { state: true },
+    workspaceId: { state: true },
     mode: { state: true },
     copyingPreview: { state: true },
     previewJustCopied: { state: true },
@@ -97,6 +98,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.context = null;
     this.contextLabel = '';
     this.workspaceTitle = '';
+    this.workspaceId = 0;
     this.publishing = false;
     this.copyingPreview = false;
     this.previewJustCopied = false;
@@ -104,6 +106,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
+    this._refreshAfterSaveTimer = null;
   }
 
   connectedCallback() {
@@ -131,22 +134,23 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item');
     if (dropdownHost) {
-      dropdownHost.addEventListener('shown.bs.dropdown', () => this._refresh());
+      dropdownHost.addEventListener('shown.bs.dropdown', () => {
+        this._refresh();
+      });
       // Belt + braces: also refresh on a direct click on the toggle.
       const toggle = dropdownHost.querySelector('.dropdown-toggle');
       toggle?.addEventListener('click', () => this._refresh());
     }
 
-    // Listen for the {type: 'wew-decline', table, uid} postMessage
-    // sent by visual-editor's <ve-content-element> action-bar
-    // "decline" button (added via patches/visual-editor-add-decline-
-    // workspace-changes-button.patch). The button lives in the FE
-    // iframe and doesn't have direct access to the BE token /
-    // ajaxUrls — it just signals intent; the discard runs here in
-    // the BE context with full session + the existing confirmation
-    // modal.
+    // Listen for the Visual Editor iframe helper. The button lives in
+    // the FE iframe and doesn't have direct access to the BE token /
+    // ajaxUrls, so the discard runs here in the BE context with the
+    // existing confirmation modal.
     this._declineMessageListener = (event) => this._onDeclineMessage(event);
     window.addEventListener('message', this._declineMessageListener);
+
+    this._visualEditorMessageListener = (event) => this._onVisualEditorMessage(event);
+    window.addEventListener('message', this._visualEditorMessageListener);
   }
 
   disconnectedCallback() {
@@ -163,27 +167,48 @@ class WebconEasyWorkspaceMenu extends LitElement {
       window.removeEventListener('message', this._declineMessageListener);
       this._declineMessageListener = null;
     }
+    if (this._visualEditorMessageListener) {
+      window.removeEventListener('message', this._visualEditorMessageListener);
+      this._visualEditorMessageListener = null;
+    }
+    if (this._refreshAfterSaveTimer) {
+      window.clearTimeout(this._refreshAfterSaveTimer);
+      this._refreshAfterSaveTimer = null;
+    }
   }
 
   /**
-   * Handle a `wew-decline` postMessage from the visual-editor FE
-   * iframe (the patched <ve-content-element> action-bar button).
-   * Validates the payload, then synthesizes an item descriptor that
-   * matches what _confirmAndDiscard expects from the dropdown list.
+   * Use Visual Editor's save lifecycle as a refresh signal only.
+   * The toolbar badge must show server-side workspace versions ready
+   * to publish, not the Visual Editor's temporary unsaved field count.
+   */
+  _onVisualEditorMessage(event) {
+    const command = event.data?.command;
+    if (command === 've_saveEnded') {
+      this._refreshAfterVisualEditorSave();
+    }
+  }
+
+  /**
+   * Handle Visual Editor iframe messages from our FE helper module.
+   * Validates the iframe source, serves the changed-record state,
+   * or synthesizes an item descriptor for _confirmAndDiscard.
    *
    * The discard endpoint takes (table, workspaceUid). When the
-   * editor clicks the FE-side button we only know the rendered uid
-   * — which IS the workspace uid because visual-editor uses the
-   * versioned uid via getVersionedUid() on tt_content nodes. The
-   * backend accepts this and resolves the live record via DataHandler.
+   * editor clicks the FE-side button we only know the rendered uid.
+   * That can be either the live uid or the workspace uid, so we
+   * resolve it through the currently loaded toolbar item list first.
    */
   _onDeclineMessage(event) {
-    // Origin check: only accept messages from our own origin. The
-    // FE iframe lives on the same host (BE cookie path is /) so
-    // event.origin matches window.origin.
-    if (event.origin !== window.location.origin) return;
     const data = event.data;
-    if (!data || data.type !== 'wew-decline') return;
+    if (!data || (data.type !== 'wew-decline' && data.type !== 'wew-decline-state-request')) return;
+    if (!this._isKnownPreviewWindow(event.source)) return;
+
+    if (data.type === 'wew-decline-state-request') {
+      this._sendDeclineState(event.source, event.origin);
+      return;
+    }
+
     const table = String(data.table || '');
     const uid = parseInt(data.uid, 10);
     if (!table || uid <= 0) return;
@@ -205,6 +230,53 @@ class WebconEasyWorkspaceMenu extends LitElement {
       isChanged: true,
     };
     this._confirmAndDiscard(item);
+  }
+
+  _isKnownPreviewWindow(source) {
+    if (!source) return false;
+    for (const iframe of this._collectIframes()) {
+      try {
+        if (this._isKnownPreviewFrame(iframe) && iframe.contentWindow === source) {
+          return true;
+        }
+      } catch { /* cross-origin frame access can throw */ }
+    }
+    return false;
+  }
+
+  _declineStatePayload() {
+    return {
+      type: 'wew-decline-state',
+      workspaceId: this.workspaceId || 0,
+      records: this.items
+        .filter((item) => item?.isChanged)
+        .map((item) => ({
+          table: item.table,
+          liveUid: item.liveUid,
+          workspaceUid: item.workspaceUid,
+        })),
+    };
+  }
+
+  _sendDeclineState(source, origin = '*') {
+    try {
+      source?.postMessage(this._declineStatePayload(), origin || '*');
+    } catch { /* target frame may already be gone */ }
+  }
+
+  _broadcastDeclineState() {
+    const payload = this._declineStatePayload();
+    for (const iframe of this._collectIframes()) {
+      if (!this._isKnownPreviewFrame(iframe)) continue;
+      try {
+        iframe.contentWindow?.postMessage(payload, '*');
+      } catch { /* target frame may already be gone */ }
+    }
+  }
+
+  _isKnownPreviewFrame(iframe) {
+    const src = iframe?.src || '';
+    return iframe?.id === 'visual-editor-iframe' || /[?&]editMode=/.test(src);
   }
 
   /**
@@ -254,15 +326,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
         const gated = accessible.filter((f) => this._isPreviewGate(f.contentDocument));
         if (accessible.length === 0) {
           const hint = this._config.hasVisualEditor
-            ? 'No preview iframe present. Open the page in Web → Edit (Visual Editor).'
+            ? this._label('preview.noIframe.visualEditor')
             : (this._config.hasViewpage
-                ? 'No preview iframe present. Open the page in Web → View.'
-                : 'No preview iframe present. Install friendsoftypo3/visual-editor or use Web → View.');
-          Notification.info('Show in preview', hint, 5);
+                ? this._label('preview.noIframe.viewpage')
+                : this._label('preview.noIframe.install'));
+          Notification.info(this._label('preview.show.title'), hint, 5);
         } else if (gated.length === accessible.length) {
           Notification.info(
-            'Show in preview',
-            'The Visual Editor preview is waiting for a frontend login (the BE cookie doesn’t reach the FE domain). Click “Go to login” inside the editor panel, sign in, then reload — or use Web → Layout where this works without the extra login.',
+            this._label('preview.show.title'),
+            this._label('preview.loginHint'),
             10,
           );
         } else {
@@ -270,8 +342,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
           // be tuned to whatever wrapper this site actually emits.
           this._logIframeDiagnostics(accessible, liveUid, workspaceUid);
           Notification.warning(
-            'Show in preview',
-            `Searched ${accessible.length} preview iframe(s) but did not find element for uid ${liveUid}${workspaceUid !== liveUid ? ` (workspace #${workspaceUid})` : ''}. See the browser console for what was actually in the preview iframe.`,
+            this._label('preview.show.title'),
+            this._label('preview.notFound', { count: accessible.length, liveUid, workspaceUid }),
             8,
           );
         }
@@ -653,6 +725,27 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
   }
 
+  _label(key, variables = {}) {
+    const labels = this._config.labels || {};
+    const message = typeof labels[key] === 'string' && labels[key] !== '' ? labels[key] : key;
+    return this._formatIcu(message, variables);
+  }
+
+  _formatIcu(message, variables = {}) {
+    let formatted = String(message);
+    formatted = formatted.replace(
+      /\{(\w+),\s*plural,\s*one\s*\{([^{}]*)}\s*other\s*\{([^{}]*)}}/g,
+      (_match, name, one, other) => {
+        const count = Number(variables[name] ?? 0);
+        return (count === 1 ? one : other).replaceAll('#', String(count));
+      },
+    );
+    for (const [name, value] of Object.entries(variables)) {
+      formatted = formatted.replaceAll(`{${name}}`, String(value));
+    }
+    return formatted;
+  }
+
   render() {
     return html`
       <div class="wew-menu">
@@ -667,9 +760,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
           </div>
           <div class="wew-menu__title-wrap">
             <h3 class="wew-menu__title">
-              <span>Workspace</span>
+              <span>${this._label('toolbar.title')}</span>
               ${this._config.enableWorkspaceChip && this.workspaceTitle
-                ? html`<span class="wew-menu__ws-chip" title="Active workspace">${this.workspaceTitle}</span>`
+                ? html`<span class="wew-menu__ws-chip" title=${this._label('toolbar.activeWorkspace')}>${this.workspaceTitle}</span>`
                 : nothing}
             </h3>
           </div>
@@ -704,8 +797,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const allChecked = selectedCount === changeable.length;
     const someChecked = selectedCount > 0 && selectedCount < changeable.length;
     const label = allChecked
-      ? 'All selected — click to deselect'
-      : (someChecked ? 'Some selected — click to select all' : 'Select all');
+      ? this._label('toolbar.allSelected')
+      : (someChecked ? this._label('toolbar.someSelected') : this._label('toolbar.selectAll'));
     return html`
       <div class="wew-menu__selectbar">
         <label class="wew-menu__selectbar-label">
@@ -715,12 +808,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
             .checked=${allChecked}
             .indeterminate=${someChecked}
             aria-checked=${allChecked ? 'true' : (someChecked ? 'mixed' : 'false')}
-            aria-label=${allChecked ? 'Deselect all changes' : 'Select all changes'}
+            aria-label=${allChecked ? this._label('toolbar.deselectAllChanges') : this._label('toolbar.selectAllChanges')}
             @change=${() => this._selectAll(!allChecked)}
           />
           <span class="wew-menu__selectbar-text">${label}</span>
         </label>
-        <span class="wew-menu__selectbar-count" aria-hidden="true">${selectedCount} / ${changeable.length}</span>
+        <span class="wew-menu__selectbar-count" aria-hidden="true">${this._label('toolbar.selectedOf', { selected: selectedCount, total: changeable.length })}</span>
       </div>
     `;
   }
@@ -801,7 +894,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       <div
         class="wew-menu__filter"
         role="tablist"
-        aria-label="Filter pending records"
+        aria-label=${this._label('toolbar.filter.aria')}
         @keydown=${(e) => this._handleTabKeydown(e)}
       >
         <button
@@ -813,7 +906,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           aria-controls="wew-tabpanel"
           tabindex=${this.mode === 'changed' ? '0' : '-1'}
           @click=${() => this._setMode('changed')}
-        >To publish <span class="wew-menu__chip-count" aria-label="${changedCount} record${changedCount === 1 ? '' : 's'}">${changedCount}</span></button>
+        >${this._label('toolbar.tab.changed')} <span class="wew-menu__chip-count" aria-label=${this._label('toolbar.records', { count: changedCount })}>${changedCount}</span></button>
         <button
           type="button"
           id="wew-tab-all"
@@ -823,7 +916,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           aria-controls="wew-tabpanel"
           tabindex=${this.mode === 'all' ? '0' : '-1'}
           @click=${() => this._setMode('all')}
-        >All on page <span class="wew-menu__chip-count" aria-label="${totalCount} record${totalCount === 1 ? '' : 's'}">${totalCount}</span></button>
+        >${this._label('toolbar.tab.all')} <span class="wew-menu__chip-count" aria-label=${this._label('toolbar.records', { count: totalCount })}>${totalCount}</span></button>
       </div>
     `;
   }
@@ -871,21 +964,21 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return html`
         <div class="wew-menu__loading">
           <typo3-backend-spinner size="default"></typo3-backend-spinner>
-          <span>Loading pending changes…</span>
+          <span>${this._label('toolbar.loading')}</span>
         </div>
       `;
     }
     if (this.state === 'no-context') {
       return html`
         <div class="alert alert-info wew-menu__alert" role="status">
-          Open a page or a news record in the page tree to see what's ready to publish.
+          ${this._label('toolbar.noContext')}
         </div>
       `;
     }
     if (this.state === 'empty') {
       const message = this.mode === 'all'
-        ? 'This page is empty (no records yet).'
-        : 'Nothing pending on this page.';
+        ? this._label('toolbar.empty.all')
+        : this._label('toolbar.empty.changed');
       return html`
         <div class="wew-menu__empty">
           <span class="wew-menu__empty-icon" aria-hidden="true">✓</span>
@@ -894,7 +987,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       `;
     }
     if (this.state === 'error') {
-      return html`<div class="alert alert-danger wew-menu__alert">Could not load pending changes.</div>`;
+      return html`<div class="alert alert-danger wew-menu__alert">${this._label('toolbar.loadError')}</div>`;
     }
     // Client-side filter: "To publish" hides records without a
     // workspace version, "All on page" shows everything. The server
@@ -904,8 +997,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
       : this.items;
     if (visible.length === 0) {
       const message = this.mode === 'all'
-        ? 'This page is empty (no records yet).'
-        : 'Nothing pending on this page.';
+        ? this._label('toolbar.empty.all')
+        : this._label('toolbar.empty.changed');
       return html`
         <div class="wew-menu__empty">
           <span class="wew-menu__empty-icon" aria-hidden="true">✓</span>
@@ -927,7 +1020,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       if (itemColPos !== null && itemColPos !== previousColPos) {
         rendered.push(html`
           <li class="wew-list__colheader" role="presentation">
-            <span class="wew-list__colheader-label">${item.colPosLabel || `Column ${itemColPos}`}</span>
+            <span class="wew-list__colheader-label">${item.colPosLabel || this._label('toolbar.column', { number: itemColPos })}</span>
           </li>
         `);
         previousColPos = itemColPos;
@@ -976,6 +1069,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // affordance to nowhere.
     const diff = Array.isArray(item.diff) ? item.diff : [];
     const hasDiff = diff.length > 0;
+    const diffTriggerLabel = this._diffTriggerLabel(item, diff);
+    const diffTriggerTitle = this._diffTriggerTitle(item, hasDiff);
     // Compact 3-row layout per item:
     //  Row 1: title (full width)  +  actions on right (discard, eye)
     //  Row 2: status pill          +  table label · type label
@@ -1017,7 +1112,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             <span class="wew-list__sub">
               <span class="wew-state-pill wew-state-pill--${item.badge || 'info'} wew-state-pill--inline">${item.kindLabel}</span>
               ${item.isHidden && this._config.enableHiddenBadge
-                ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title="Record is hidden (won't show on the live site)">Hidden</span>`
+                ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title=${this._label('toolbar.hidden.title')}>${this._label('toolbar.hidden')}</span>`
                 : nothing}
               ${this._config.enableTypeLabels
                 ? html`<span class="wew-list__table">
@@ -1033,21 +1128,56 @@ class WebconEasyWorkspaceMenu extends LitElement {
               ? html`<button
                   type="button"
                   class="wew-list__diff-trigger"
-                  title=${hasDiff ? 'View what changed in this record (opens a dialog)' : 'No field-level differences right now — opens the history of this record'}
+                  title=${diffTriggerTitle}
                   @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
                 >
                   <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-                  <span class="wew-list__diff-trigger-label">${
-                    diff.length === 0
-                      ? 'View history'
-                      : (diff.length === 1 ? '1 change' : `${diff.length} changes`)
-                  }</span>
+                  <span class="wew-list__diff-trigger-label">${diffTriggerLabel}</span>
                 </button>`
               : nothing}
           </span>
         </label>
       </li>
     `;
+  }
+
+  _diffTriggerLabel(item, diff) {
+    if (item.kindKey === 'new') {
+      const historyDiffCount = Number.isInteger(item.historyDiffCount) ? item.historyDiffCount : 0;
+      if (historyDiffCount > 0) {
+        return this._label('diff.fieldsChanged', { count: historyDiffCount });
+      }
+      return this._label('diff.viewDetails');
+    }
+    if (item.kindKey === 'delete') {
+      return this._label('diff.viewRemoval');
+    }
+    if (item.kindKey === 'move') {
+      return this._label('diff.viewMove');
+    }
+    if (diff.length === 0) {
+      return this._label('diff.viewHistory');
+    }
+    return this._label('diff.fieldsChanged', { count: diff.length });
+  }
+
+  _diffTriggerTitle(item, hasDiff) {
+    if (item.kindKey === 'new') {
+      const historyDiffCount = Number.isInteger(item.historyDiffCount) ? item.historyDiffCount : 0;
+      if (historyDiffCount > 0) {
+        return this._label('diff.title.newWithChanges');
+      }
+      return this._label('diff.title.newDetails');
+    }
+    if (item.kindKey === 'delete') {
+      return this._label('diff.title.removal');
+    }
+    if (item.kindKey === 'move') {
+      return this._label('diff.title.move');
+    }
+    return hasDiff
+      ? this._label('diff.title.changed')
+      : this._label('diff.title.history');
   }
 
   /**
@@ -1065,11 +1195,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _renderRevertButton(item, canRevert = true) {
     const title = canRevert
-      ? 'Discard this change'
-      : 'Discard is disabled by configuration (enableRevert = 0)';
+      ? this._label('discard.button.title')
+      : this._label('discard.button.disabledTitle');
     const ariaLabel = canRevert
-      ? 'Discard this workspace change'
-      : 'Discard disabled by configuration';
+      ? this._label('discard.button.aria')
+      : this._label('discard.button.disabledAria');
     const cls = `wew-list__discard${canRevert ? '' : ' wew-list__discard--disabled'}`;
     // Hover preview wiring is only meaningful when the button is
     // active — bind nothing when the button is disabled so we don't
@@ -1128,9 +1258,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
       // the last published version" / "Zurück zur zuletzt
       // veröffentlichten Version") — same idea as a snackbar's
       // primary + secondary line.
-      const labels = this._config.labels || {};
-      const title = labels.discardTagTitle || 'Decline the changes';
-      const subtitle = labels.discardTagSubtitle || 'Back to the last published version';
+      const title = this._label('discardTag.title');
+      const subtitle = this._label('discardTag.subtitle');
       const tag = doc.createElement('div');
       tag.className = 'wew-discard-tag';
       Object.assign(tag.style, {
@@ -1139,13 +1268,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
         padding: '4px 9px 5px',
         fontSize: '11px',
         lineHeight: '1.25',
-        background: '#dc3545',
+        background: 'rgba(220, 53, 69, 0.78)',
         color: '#fff',
+        border: '1px solid rgba(255, 255, 255, 0.32)',
         borderRadius: '3px',
-        boxShadow: '0 2px 6px rgba(0,0,0,.25)',
+        boxShadow: '0 3px 12px rgba(0, 0, 0, 0.28)',
+        backdropFilter: 'blur(4px) saturate(135%)',
+        WebkitBackdropFilter: 'blur(4px) saturate(135%)',
         pointerEvents: 'none',
         whiteSpace: 'nowrap',
         fontFamily: 'inherit',
+        textShadow: '0 1px 1px rgba(0, 0, 0, 0.38)',
       });
       const titleEl = doc.createElement('div');
       titleEl.textContent = title;
@@ -1180,12 +1313,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (!ENDPOINTS.discard) return;
 
     const modal = Modal.confirm(
-      'Discard this change?',
-      `“${item.title}” (${item.tableLabel || item.table}) will lose its workspace edits. The live record stays untouched — but the staged change is gone for good. This cannot be undone.`,
+      this._label('discard.modal.title'),
+      this._label('discard.modal.message', { title: item.title, table: item.tableLabel || item.table }),
       SeverityEnum.warning,
       [
-        { text: 'Cancel', btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },
-        { text: 'Discard', btnClass: 'btn-warning', name: 'discard', active: true, trigger: () => modal.hideModal() },
+        { text: this._label('discard.modal.cancel'), btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },
+        { text: this._label('discard.modal.confirm'), btnClass: 'btn-warning', name: 'discard', active: true, trigger: () => modal.hideModal() },
       ],
     );
 
@@ -1204,7 +1337,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             );
           const result = await response.resolve();
           if (result?.success) {
-            Notification.success('Discarded', `Workspace version of “${item.title}” discarded.`, 4);
+            Notification.success(this._label('discard.success.title'), this._label('discard.success.message', { title: item.title }), 4);
             // Refresh our own list, then reload the editor's preview
             // iframe so the live record (no longer overlaid by the
             // discarded workspace version) is rendered.
@@ -1214,11 +1347,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
           } else {
             const errors = Array.isArray(result?.errors) && result.errors.length
               ? result.errors.join(' / ')
-              : (result?.error || 'Unknown error.');
-            Notification.error('Could not discard', errors);
+              : (result?.error || this._label('error.unknown'));
+            Notification.error(this._label('discard.error.title'), errors);
           }
         } catch (error) {
-          Notification.error('Discard failed', error?.message || 'Unexpected error.');
+          Notification.error(this._label('discard.error.failedTitle'), error?.message || this._label('error.unexpected'));
         } finally {
           resolve(true);
         }
@@ -1246,10 +1379,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _renderLocateButton(item) {
     const hasEditUrl = !!item.editUrl;
-    const editPart = hasEditUrl ? ' · Click to edit this element' : '';
+    const editPart = hasEditUrl ? this._label('edit.tooltip.part') : '';
     const tooltip = this._config.hasVisualEditor
-      ? `Hover to show this in the Visual Editor${editPart}`
-      : `Hover to locate in preview${editPart}`;
+      ? this._label('edit.tooltip.visualEditor', { editPart })
+      : this._label('edit.tooltip.preview', { editPart });
     return html`
       <button
         type="button"
@@ -1267,7 +1400,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           if (hasEditUrl) {
             this._openEditModal(item);
           } else {
-            Notification.info('Edit', 'No edit form available for this record.');
+            Notification.info(this._label('edit.title'), this._label('edit.noForm'));
           }
         }}
       >
@@ -1313,7 +1446,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (!url) return;
     const isContextual = Boolean(item.contextualEditUrl);
     const modal = Modal.advanced({
-      title: isContextual ? '' : `Edit — ${item.title || '[No title]'}`,
+      title: isContextual ? '' : this._label('edit.modalTitle', { title: item.title || this._label('diff.noTitle') }),
       type: ModalTypes.iframe,
       content: url,
       size: isContextual ? ModalSizes.expand : ModalSizes.large,
@@ -1368,8 +1501,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this._reloadPreviewIframes();
       this._invalidateLatest();
       Notification.success(
-        'Record saved',
-        savedTitle ? `"${savedTitle}" was updated.` : 'Record was updated.',
+        this._label('edit.saved.title'),
+        savedTitle ? this._label('edit.saved.messageWithTitle', { title: savedTitle }) : this._label('edit.saved.message'),
         4,
       );
     });
@@ -1418,7 +1551,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       <button
         type="button"
         class=${stateClass}
-        title="Copy a shareable preview URL of this page to the clipboard"
+        title=${this._label('preview.button.title')}
         @click=${() => this._copyPreviewLink(pageUid)}
         ?disabled=${this.copyingPreview}
       >
@@ -1427,7 +1560,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           : justCopied
             ? this._checkIcon()
             : this._copyIcon()}
-        <span class="wew-menu__preview-label">${this.copyingPreview ? 'Copying…' : justCopied ? 'Copied' : 'Preview'}</span>
+        <span class="wew-menu__preview-label">${this.copyingPreview ? this._label('preview.button.copying') : justCopied ? this._label('preview.button.copied') : this._label('preview.button.preview')}</span>
       </button>
     `;
   }
@@ -1442,8 +1575,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const allChecked = total > 0 && selectedCount === total;
     const someChecked = selectedCount > 0 && selectedCount < total;
     const selectLabel = allChecked
-      ? 'Deselect all'
-      : (someChecked ? 'Select all' : 'Select all');
+      ? this._label('toolbar.deselectAll')
+      : (someChecked ? this._label('toolbar.selectAll') : this._label('toolbar.selectAll'));
     return html`
       <footer class="wew-menu__foot">
         <div class="wew-menu__foot-selection">
@@ -1455,13 +1588,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 .checked=${allChecked}
                 .indeterminate=${someChecked}
                 aria-checked=${allChecked ? 'true' : (someChecked ? 'mixed' : 'false')}
-                aria-label=${allChecked ? 'Deselect all changes' : 'Select all changes'}
+                aria-label=${allChecked ? this._label('toolbar.deselectAllChanges') : this._label('toolbar.selectAllChanges')}
                 @change=${() => this._selectAll(!allChecked)}
               />
               <span class="wew-menu__selectall-label">${selectLabel}</span>
             </label>
             <span class="wew-menu__count" aria-live="polite">
-              <strong>${selectedCount}</strong> of ${total}
+              <strong>${selectedCount}</strong> ${this._label('toolbar.of')} ${total}
             </span>
           ` : nothing}
         </div>
@@ -1474,8 +1607,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
             @click=${() => this._publish()}
           >
             ${this.publishing
-              ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner> Publishing…`
-              : html`Publish to live${selectedCount > 0 ? html` (${selectedCount})` : nothing}`}
+              ? html`<typo3-backend-spinner size="small"></typo3-backend-spinner> ${this._label('toolbar.publishing')}`
+              : html`${this._label('toolbar.publishToLive')}${selectedCount > 0 ? html` (${selectedCount})` : nothing}`}
           </button>
         </div>
       </footer>
@@ -1484,10 +1617,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   _friendlyTable(table) {
     switch (table) {
-      case 'pages':                       return 'Page';
-      case 'tt_content':                  return 'Content element';
-      case 'tx_news_domain_model_news':   return 'News';
-      case 'tt_address':                  return 'Address';
+      case 'pages':                       return this._label('table.pages');
+      case 'tt_content':                  return this._label('table.tt_content');
+      case 'tx_news_domain_model_news':   return this._label('table.tx_news_domain_model_news');
+      case 'tt_address':                  return this._label('table.tt_address');
       default:                            return table;
     }
   }
@@ -1514,9 +1647,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @toggle=${(e) => this._onLatestToggle(e)}
       >
         <summary class="wew-menu__latest-summary">
-          <span class="wew-menu__latest-summary-label">Latest workspace changes</span>
+          <span class="wew-menu__latest-summary-label">${this._label('latest.title')}</span>
           ${this.latestState === 'loaded' && this.latestItems.length > 0
-            ? html`<span class="wew-menu__chip-count" aria-label="${this.latestItems.length} record${this.latestItems.length === 1 ? '' : 's'}">${this.latestItems.length}</span>`
+            ? html`<span class="wew-menu__chip-count" aria-label=${this._label('toolbar.records', { count: this.latestItems.length })}>${this.latestItems.length}</span>`
             : nothing}
         </summary>
         <div class="wew-menu__latest-body">
@@ -1532,21 +1665,21 @@ class WebconEasyWorkspaceMenu extends LitElement {
       // editor expands the accordion, so the placeholder is just a
       // belt-and-braces "in case CSS doesn't" affordance — won't
       // normally be seen.
-      return html`<p class="wew-menu__latest-hint">Open to load.</p>`;
+      return html`<p class="wew-menu__latest-hint">${this._label('latest.openHint')}</p>`;
     }
     if (this.latestState === 'loading') {
       return html`
         <div class="wew-menu__loading">
           <typo3-backend-spinner size="default"></typo3-backend-spinner>
-          <span>Loading latest changes…</span>
+          <span>${this._label('latest.loading')}</span>
         </div>
       `;
     }
     if (this.latestState === 'error') {
-      return html`<div class="alert alert-danger wew-menu__alert">Could not load latest changes.</div>`;
+      return html`<div class="alert alert-danger wew-menu__alert">${this._label('latest.loadError')}</div>`;
     }
     if (this.latestState === 'empty') {
-      return html`<p class="wew-menu__latest-hint">No pending changes in this workspace yet.</p>`;
+      return html`<p class="wew-menu__latest-hint">${this._label('latest.empty')}</p>`;
     }
     return html`
       <ul class="wew-changelog">
@@ -1577,7 +1710,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
     const headerInner = html`
       <div class="wew-changelog__heading">
-        <span class="wew-changelog__title">${item.title || '[No title]'}</span>
+        <span class="wew-changelog__title">${item.title || this._label('diff.noTitle')}</span>
         <span class="wew-changelog__meta">${tableLabel} · #${item.workspaceUid}</span>
       </div>
       ${kindBadge}
@@ -1593,7 +1726,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
           ? html`<ul class="wew-changelog__fields">
               ${diff.map((d) => this._renderDiffEntry(d))}
             </ul>`
-          : html`<p class="wew-changelog__nodiff">No field-level differences resolved for this record.</p>`}
+          : html`<p class="wew-changelog__nodiff">${this._label('latest.noDiff')}</p>`}
       </li>
     `;
   }
@@ -1614,17 +1747,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const beforeChip = (val) => html`<span
       class="wew-changelog__chip wew-changelog__chip--before"
       title=${d.beforeFull || val || ''}
-    >${val ? val : html`<em class="wew-changelog__chip-empty">empty</em>`}</span>`;
+    >${val ? val : html`<em class="wew-changelog__chip-empty">${this._label('latest.diff.empty')}</em>`}</span>`;
     const afterChip = (val) => html`<span
       class="wew-changelog__chip wew-changelog__chip--after"
       title=${d.afterFull || val || ''}
-    >${val ? val : html`<em class="wew-changelog__chip-empty">empty</em>`}</span>`;
+    >${val ? val : html`<em class="wew-changelog__chip-empty">${this._label('latest.diff.empty')}</em>`}</span>`;
 
     let body;
     if (kind === 'added') {
-      body = html`<span class="wew-changelog__kind">Added</span>${afterChip(d.after)}`;
+      body = html`<span class="wew-changelog__kind">${this._label('latest.diff.added')}</span>${afterChip(d.after)}`;
     } else if (kind === 'removed') {
-      body = html`<span class="wew-changelog__kind">Removed</span>${beforeChip(d.before)}`;
+      body = html`<span class="wew-changelog__kind">${this._label('latest.diff.removed')}</span>${beforeChip(d.before)}`;
     } else {
       body = html`${beforeChip(d.before)}<span class="wew-changelog__arrow" aria-hidden="true">→</span>${afterChip(d.after)}`;
     }
@@ -1695,9 +1828,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   _openDiffModal(item) {
     if (!ENDPOINTS.diff) return;
     const url = `${ENDPOINTS.diff}&table=${encodeURIComponent(item.table)}&workspaceUid=${encodeURIComponent(item.workspaceUid)}`;
-    const recordTitle = item.title || '[No title]';
+    const recordTitle = item.title || this._label('diff.noTitle');
     const modal = Modal.advanced({
-      title: `History — ${recordTitle}`,
+      title: this._label('diff.modal.historyTitle', { title: recordTitle }),
       type: ModalTypes.ajax,
       content: url,
       size: ModalSizes.large,
@@ -1726,7 +1859,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             // left, so editors don't lose their place.
             setTimeout(() => {
               Modal.advanced({
-                title: `Edit — ${recordTitle}`,
+                title: this._label('diff.modal.editTitle', { title: recordTitle }),
                 type: ModalTypes.iframe,
                 content: editUrl,
                 size: ModalSizes.large,
@@ -1772,17 +1905,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const historyUid = parseInt(btn.dataset.historyUid || '0', 10);
       const field = btn.dataset.field || '';
       if ((mode !== 'linear' && mode !== 'field') || !Number.isFinite(historyUid) || historyUid <= 0) {
-        Notification.error('Revert failed', `Missing data on the revert button (mode=${mode || '∅'}, historyUid=${btn.dataset.historyUid || '∅'}).`);
+        Notification.error(this._label('rollback.failedTitle'), this._label('rollback.missingData', { mode: mode || this._label('latest.diff.empty'), historyUid: btn.dataset.historyUid || this._label('latest.diff.empty') }));
         return;
       }
       if (mode === 'field' && field === '') {
-        Notification.error('Revert failed', 'No field name on the revert button.');
+        Notification.error(this._label('rollback.failedTitle'), this._label('rollback.noField'));
         return;
       }
 
       const confirmMsg = mode === 'field'
-        ? `Revert this field’s change for “${item.title || item.workspaceUid}”? Later edits to other fields are kept.`
-        : `Revert this edit and every later edit on “${item.title || item.workspaceUid}”? This affects every field touched after this point.`;
+        ? this._label('rollback.confirmField', { title: item.title || item.workspaceUid })
+        : this._label('rollback.confirmLinear', { title: item.title || item.workspaceUid });
       if (!window.confirm(confirmMsg)) return;
 
       btn.disabled = true;
@@ -1799,17 +1932,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
         );
         const result = await response.resolve();
         if (result?.success) {
-          Notification.success('Reverted', mode === 'field' ? `Field “${field}” reverted.` : 'Edit reverted.', 4);
+          Notification.success(this._label('rollback.successTitle'), mode === 'field' ? this._label('rollback.successField', { field }) : this._label('rollback.successLinear'), 4);
           modal.hideModal();
           await this._refresh();
           this._reloadPreviewIframes();
           this._invalidateLatest();
         } else {
-          Notification.error('Could not revert', result?.error || 'Unknown error.');
+          Notification.error(this._label('rollback.errorTitle'), result?.error || this._label('error.unknown'));
           btn.disabled = false;
         }
       } catch (error) {
-        Notification.error('Revert failed', error?.message || 'Unexpected error.');
+        Notification.error(this._label('rollback.failedTitle'), error?.message || this._label('error.unexpected'));
         btn.disabled = false;
       }
     });
@@ -1868,13 +2001,18 @@ class WebconEasyWorkspaceMenu extends LitElement {
   async _refresh() {
     if (!ENDPOINTS.items) {
       this.state = 'error';
+      this.workspaceId = 0;
       return;
     }
     this.state = 'loading';
     const { pageUid, newsUid } = this._detectContext();
     if (!pageUid && !newsUid) {
       this.state = 'no-context';
-      this.contextLabel = 'No page or news selected.';
+      this.contextLabel = this._label('toolbar.context.none');
+      this.items = [];
+      this.workspaceId = 0;
+      this._updateToolbarBadge();
+      this._broadcastDeclineState();
       return;
     }
 
@@ -1889,12 +2027,14 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const data = await response.resolve();
       this.context = data.context;
       this.items = Array.isArray(data.items) ? data.items : [];
+      this.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
       this.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
       this.contextLabel = this._buildContextLabel(data);
       // Default selection: every changed item is selected.
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
       this._updateToolbarBadge();
+      this._broadcastDeclineState();
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
       this.state = 'error';
@@ -1902,17 +2042,29 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
   }
 
+  async _refreshAfterVisualEditorSave() {
+    if (this._refreshAfterSaveTimer) {
+      window.clearTimeout(this._refreshAfterSaveTimer);
+      this._refreshAfterSaveTimer = null;
+    }
+    await this._refresh();
+    // The Visual Editor emits saveEnded after DataHandler returns, but
+    // TYPO3 side effects such as page-tree/workspace overlays can still
+    // settle one tick later in the surrounding backend frames. Refresh
+    // once more shortly after so the badge and tab counts reflect the
+    // persisted workspace version, not the pre-save list.
+    this._refreshAfterSaveTimer = window.setTimeout(() => {
+      this._refreshAfterSaveTimer = null;
+      this._refresh();
+    }, 800);
+  }
+
   /**
-   * Sync the pending-count badge on the toolbar trigger with the
-   * current page's changed-count. Mirrors core's System Information
-   * pattern: the badge is a sibling of `.toolbar-item-icon` under the
-   * toolbar item host, gets the standard `.toolbar-item-badge`,
-   * `.badge`, `.badge-pill` classes, and toggles the `.hidden` class
-   * (not the `hidden` attribute) to match the rest of the toolbar.
-   *
-   * Count source is the same number the dropdown's "To publish" tab
-   * shows — what's actually publishable from this page right now —
-   * which is what editors expect to see when they glance at the icon.
+   * Sync the toolbar trigger badge with the persisted workspace
+   * versions for the current page/news context. Live workspace never
+   * shows a count; Visual Editor's unsaved field count is deliberately
+   * ignored because it is not the number of publishable workspace
+   * changes.
    */
   _updateToolbarBadge() {
     const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
@@ -1920,13 +2072,14 @@ class WebconEasyWorkspaceMenu extends LitElement {
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
-    const count = this.state === 'loaded'
+    const count = this.workspaceId > 0 && (this.state === 'loaded' || this.state === 'empty')
       ? this.items.filter((i) => i.isChanged).length
       : 0;
     badge.textContent = count > 0 ? String(count) : '';
     badge.classList.toggle('hidden', count <= 0);
     if (count > 0) {
-      badge.setAttribute('aria-label', `${count} pending change${count === 1 ? '' : 's'} on this page`);
+      const label = this._label('toolbar.badge.pending', { count });
+      badge.setAttribute('aria-label', label);
     } else {
       badge.removeAttribute('aria-label');
     }
@@ -1940,9 +2093,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // doesn't compete with the workspace name + preview button up
     // top.
     if (this.mode === 'all') {
-      return `${totalCount} record${totalCount === 1 ? '' : 's'}, ${changedCount} pending`;
+      return this._label('toolbar.context.recordsPending', { total: totalCount, changed: changedCount });
     }
-    return `${changedCount} pending`;
+    return this._label('toolbar.context.pending', { count: changedCount });
   }
 
   /**
@@ -1959,9 +2112,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const { pageUid, newsUid } = this._detectContext();
     let label = null;
     if (newsUid > 0) {
-      label = `News #${newsUid}`;
+      label = this._label('context.news', { uid: newsUid });
     } else if (pageUid > 0) {
-      label = `Page #${pageUid}`;
+      label = this._label('context.page', { uid: pageUid });
     }
     if (!label) return nothing;
     return html`<div class="wew-menu__context" role="note">${label}</div>`;
@@ -2021,19 +2174,19 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const result = await response.resolve();
       if (result?.success) {
         Notification.success(
-          'Published to live',
-          `${result.published} record(s) updated.`,
+          this._label('publish.success.title'),
+          this._label('publish.success.message', { count: Number(result.published || 0) }),
         );
         await this._refresh();
         this._invalidateLatest();
       } else {
         const errors = Array.isArray(result?.errors) && result.errors.length
           ? result.errors.join(' / ')
-          : (result?.error || 'Unknown error.');
-        Notification.warning('Publish finished with errors', errors);
+          : (result?.error || this._label('error.unknown'));
+        Notification.warning(this._label('publish.warning.title'), errors);
       }
     } catch (error) {
-      Notification.error('Publish failed', error?.message || 'Unexpected error.');
+      Notification.error(this._label('publish.failedTitle'), error?.message || this._label('error.unexpected'));
     } finally {
       this.publishing = false;
     }
@@ -2050,11 +2203,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
         .get();
       const data = await response.resolve();
       if (!data?.url) {
-        Notification.error('Preview link', data?.error || 'No URL returned.');
+        Notification.error(this._label('preview.link.title'), data?.error || this._label('preview.link.noUrl'));
         return;
       }
       await this._writeToOsClipboard(data.url);
-      Notification.success('Preview link copied', data.url, 4);
+      Notification.success(this._label('preview.link.copied'), data.url, 4);
       // Transient in-button confirmation: swap to a green
       // checkmark + "Copied" for 2 s. Auto-reset on a timer rather
       // than a re-render trigger so the editor can read the
@@ -2068,7 +2221,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         this._previewCopiedResetTimer = null;
       }, 2000);
     } catch (error) {
-      Notification.error('Preview link', error?.message || 'Unexpected error.');
+      Notification.error(this._label('preview.link.title'), error?.message || this._label('error.unexpected'));
     } finally {
       this.copyingPreview = false;
     }

@@ -21,6 +21,7 @@ final readonly class PendingItem
         public int $liveUid,
         public int $workspaceUid,
         public string $title,
+        public string $kindKey,
         public string $kindLabel,
         public string $badge,
         public ?string $thumbnailUrl,
@@ -32,6 +33,7 @@ final readonly class PendingItem
         public ?string $editUrl,
         public ?string $contextualEditUrl = null,
         public array $diff = [],
+        public int $historyDiffCount = 0,
         public ?int $colPos = null,
         public ?string $colPosLabel = null,
     ) {}
@@ -46,6 +48,7 @@ final readonly class PendingItem
             'liveUid' => $this->liveUid,
             'workspaceUid' => $this->workspaceUid,
             'title' => $this->title,
+            'kindKey' => $this->kindKey,
             'kindLabel' => $this->kindLabel,
             'badge' => $this->badge,
             'thumbnailUrl' => $this->thumbnailUrl,
@@ -57,6 +60,7 @@ final readonly class PendingItem
             'editUrl' => $this->editUrl,
             'contextualEditUrl' => $this->contextualEditUrl,
             'diff' => $this->diff,
+            'historyDiffCount' => $this->historyDiffCount,
             'colPos' => $this->colPos,
             'colPosLabel' => $this->colPosLabel,
         ];

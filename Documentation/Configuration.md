@@ -135,3 +135,20 @@ This is the default — no overrides needed.
 ## Server-side enforcement
 
 Toggling a flag in the dropdown only would let a power user re-enable it via DevTools. **All boolean flags are also enforced on the PHP side** — `EasyWorkspaceAjaxController` re-reads `ConfigurationProvider::get()` on every request and returns `403` when the matching flag is off. `showHidden = 0` and `enableThumbnails = 0` additionally short-circuit the database / FAL work so the response payload is smaller.
+
+## Content Blocks collection tables
+
+When `enableTypeLabels = 1`, Easy Workspace resolves a friendly label for each
+record in the dropdown. For typed tables, such as `tt_content`, TYPO3's schema
+API can provide the subtype field (`CType`) and the label for the current value.
+
+Content Blocks collection child tables may be intentionally untyped. A table
+like `accordion_items` or `feature_grid_3_items` can have one fixed row shape
+and therefore no `ctrl[type]` field. TYPO3 then throws
+`TYPO3\CMS\Core\Schema\Exception\InvalidSchemaTypeException` if code asks
+`TcaSchema::getSubSchemaTypeInformation()` for that table.
+
+Easy Workspace handles this explicitly. Untyped child tables are still listed;
+the service falls back to the table title from TCA instead of treating the
+missing subtype metadata as invalid data. No TSconfig toggle or database seed
+repair is required for this case.

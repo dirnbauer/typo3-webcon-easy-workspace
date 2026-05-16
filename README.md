@@ -133,6 +133,22 @@ Resources/
 
 The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`). The dropdown is a `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.
 
+### Content Blocks collection tables
+
+Content Blocks collection child tables are valid TYPO3 records even when their
+TCA has no subtype discriminator such as `ctrl[type]`. Examples are generated
+tables like `accordion_items`, `feature_grid_3_items`, or other inline child
+tables that have one fixed record shape.
+
+TYPO3's `TcaSchema::getSubSchemaTypeInformation()` is only safe for schemas
+that actually define subtype/type information. Calling it unconditionally on an
+untyped collection table raises `InvalidSchemaTypeException` ("The schema ...
+has no type information."). Easy Workspace treats that as a normal untyped
+schema case: `PendingItemsService` catches the exception and falls back to the
+table's TCA title when building the row type label. The parent `tt_content`
+record and its workspace/version data remain valid; this is not a seed-data
+repair case.
+
 ## License
 
 GPL-2.0-or-later. See [LICENSE](LICENSE).

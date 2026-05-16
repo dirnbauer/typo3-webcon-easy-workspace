@@ -17,6 +17,7 @@ use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
+use TYPO3\CMS\Core\Schema\Exception\InvalidSchemaTypeException;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
@@ -46,6 +47,8 @@ final readonly class PendingItemsService
         private Context $context,
         private RecordDiffService $recordDiffService,
         private BackendLayoutView $backendLayoutView,
+        private RecordHistoryTimelineService $historyTimelineService,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -86,18 +89,15 @@ final readonly class PendingItemsService
         // inside each column.
         $contentOrder = [['colPos', 'ASC'], ['sorting', 'ASC']];
 
-        if ($mode === self::MODE_ALL) {
-            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder) as $row) {
-                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
-                if ($item !== null) {
-                    $items[] = $item->toArray();
-                    if (count($items) >= $maxItems) break;
-                }
-            }
-        } else {
-            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId, $config, $contentOrder, $columnLabels) as $item) {
+        foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder) as $row) {
+            $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
+            if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
                 $items[] = $item->toArray();
                 if (count($items) >= $maxItems) break;
+            }
+            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels) as $childItem) {
+                $items[] = $childItem->toArray();
+                if (count($items) >= $maxItems) break 2;
             }
         }
 
@@ -143,18 +143,15 @@ final readonly class PendingItemsService
             $items[] = $newsItem->toArray();
         }
 
-        if ($mode === self::MODE_ALL) {
-            foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
-                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
-                if ($item !== null) {
-                    $items[] = $item->toArray();
-                    if (count($items) >= $maxItems) break;
-                }
-            }
-        } else {
-            foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, $config) as $item) {
+        foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
+            $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
+            if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
                 $items[] = $item->toArray();
                 if (count($items) >= $maxItems) break;
+            }
+            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config) as $childItem) {
+                $items[] = $childItem->toArray();
+                if (count($items) >= $maxItems) break 2;
             }
         }
 
@@ -174,13 +171,13 @@ final readonly class PendingItemsService
     private function resolveWorkspaceTitle(int $workspaceId): string
     {
         if ($workspaceId <= 0) {
-            return 'Live';
+            return $this->localizationService->translate('state.live');
         }
         $row = BackendUtility::getRecord('sys_workspace', $workspaceId);
         if (is_array($row) && !empty($row['title'])) {
             return (string)$row['title'];
         }
-        return 'Workspace #' . $workspaceId;
+        return $this->localizationService->translate('toolbar.title') . ' #' . $workspaceId;
     }
 
     /**
@@ -236,6 +233,179 @@ final readonly class PendingItemsService
         $rows = [];
         while ($row = $result->fetchAssociative()) {
             BackendUtility::workspaceOL($table, $row, $workspaceId);
+            if (is_array($row)) {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
+    }
+
+    /**
+     * Content Blocks Collection fields are TYPO3 inline/IRRE child records.
+     * They are versioned in their own generated tables, so a parent
+     * tt_content record can be unchanged while its repeatable child rows
+     * have pending workspace versions.
+     *
+     * @param array<string, mixed> $parentRow
+     * @param array<string, mixed> $config
+     * @param array<int, string>   $columnLabels
+     * @return list<PendingItem>
+     */
+    private function resolveInlineChildItems(
+        string $parentTable,
+        array $parentRow,
+        int $workspaceId,
+        string $mode,
+        array $config = [],
+        array $columnLabels = [],
+    ): array {
+        $parentLiveUid = (int)($parentRow['t3ver_oid'] ?? 0) ?: (int)($parentRow['uid'] ?? 0);
+        $parentWorkspaceUid = (int)($parentRow['_ORIG_uid'] ?? $parentRow['uid'] ?? 0);
+        $parentUids = array_values(array_unique(array_filter([$parentLiveUid, $parentWorkspaceUid], static fn(int $uid): bool => $uid > 0)));
+        if ($parentUids === []) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($this->resolveInlineChildConfigs($parentTable, $parentRow) as $inlineConfig) {
+            foreach ($this->listInlineChildRows($parentTable, $parentUids, $workspaceId, $mode, $inlineConfig) as $childRow) {
+                $item = $this->buildItem($inlineConfig['table'], $childRow, isPrimary: false, config: $config, columnLabels: $columnLabels);
+                if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
+                    $items[] = $item;
+                }
+            }
+        }
+        return $items;
+    }
+
+    /**
+     * @param array<string, mixed> $parentRow
+     * @return list<array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>}>
+     */
+    private function resolveInlineChildConfigs(string $parentTable, array $parentRow): array
+    {
+        $parentTca = $GLOBALS['TCA'][$parentTable] ?? null;
+        if (!is_array($parentTca)) {
+            return [];
+        }
+
+        $columns = $parentTca['columns'] ?? [];
+        $typeField = (string)($parentTca['ctrl']['type'] ?? '');
+        $typeName = $typeField !== '' ? (string)($parentRow[$typeField] ?? '') : '';
+        $columnsOverrides = $typeName !== '' ? ($parentTca['types'][$typeName]['columnsOverrides'] ?? []) : [];
+        if (is_array($columnsOverrides)) {
+            foreach ($columnsOverrides as $fieldName => $override) {
+                $columns[$fieldName] = array_replace_recursive($columns[$fieldName] ?? [], is_array($override) ? $override : []);
+            }
+        }
+
+        $inlineConfigs = [];
+        foreach ($columns as $fieldName => $column) {
+            if (!is_array($column)) {
+                continue;
+            }
+            $fieldConfig = $column['config'] ?? [];
+            if (!is_array($fieldConfig) || ($fieldConfig['type'] ?? '') !== 'inline') {
+                continue;
+            }
+            $foreignTable = (string)($fieldConfig['foreign_table'] ?? '');
+            $foreignField = (string)($fieldConfig['foreign_field'] ?? '');
+            if ($foreignTable === '' || $foreignField === '' || !$this->isWorkspaceAwareInlineChildTable($foreignTable)) {
+                continue;
+            }
+            $foreignMatchFields = $fieldConfig['foreign_match_fields'] ?? [];
+            $inlineConfigs[] = [
+                'field' => (string)$fieldName,
+                'label' => (string)($column['label'] ?? $fieldConfig['label'] ?? $fieldName),
+                'table' => $foreignTable,
+                'foreignField' => $foreignField,
+                'foreignTableField' => isset($fieldConfig['foreign_table_field']) ? (string)$fieldConfig['foreign_table_field'] : null,
+                'foreignMatchFields' => is_array($foreignMatchFields) ? $foreignMatchFields : [],
+                'orderBy' => $this->resolveChildOrderBy($foreignTable, $fieldConfig),
+            ];
+        }
+        return $inlineConfigs;
+    }
+
+    private function isWorkspaceAwareInlineChildTable(string $table): bool
+    {
+        if ($table === 'sys_file_reference') {
+            return false;
+        }
+        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
+        return is_array($ctrl)
+            && !empty($ctrl['versioningWS'])
+            && !empty($ctrl['hideTable']);
+    }
+
+    /**
+     * @param array<string, mixed> $fieldConfig
+     * @return list<array{0: string, 1: string}>
+     */
+    private function resolveChildOrderBy(string $table, array $fieldConfig): array
+    {
+        $sortField = (string)($fieldConfig['foreign_sortby'] ?? $GLOBALS['TCA'][$table]['ctrl']['sortby'] ?? '');
+        if ($sortField !== '' && isset($GLOBALS['TCA'][$table]['columns'][$sortField])) {
+            return [[$sortField, 'ASC']];
+        }
+        if (isset($GLOBALS['TCA'][$table]['columns']['sorting'])) {
+            return [['sorting', 'ASC']];
+        }
+        return [['uid', 'ASC']];
+    }
+
+    /**
+     * @param list<int> $parentUids
+     * @param array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>} $inlineConfig
+     * @return list<array<string, mixed>>
+     */
+    private function listInlineChildRows(string $parentTable, array $parentUids, int $workspaceId, string $mode, array $inlineConfig): array
+    {
+        $table = $inlineConfig['table'];
+        $foreignField = $inlineConfig['foreignField'];
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        if ($mode === self::MODE_ALL) {
+            $queryBuilder->getRestrictions()
+                ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
+                ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, false));
+        }
+
+        $constraints = [
+            $queryBuilder->expr()->in($foreignField, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
+        ];
+        if ($mode !== self::MODE_ALL) {
+            $constraints[] = $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT));
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+        if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
+            $constraints[] = $queryBuilder->expr()->eq(
+                $inlineConfig['foreignTableField'],
+                $queryBuilder->createNamedParameter($parentTable),
+            );
+        }
+        foreach ($inlineConfig['foreignMatchFields'] as $field => $value) {
+            $constraints[] = $queryBuilder->expr()->eq((string)$field, $queryBuilder->createNamedParameter((string)$value));
+        }
+
+        $queryBuilder
+            ->select('*')
+            ->from($table)
+            ->where(...$constraints);
+        foreach ($inlineConfig['orderBy'] as $i => [$column, $direction]) {
+            if ($i === 0) {
+                $queryBuilder->orderBy($column, $direction);
+            } else {
+                $queryBuilder->addOrderBy($column, $direction);
+            }
+        }
+
+        $result = $queryBuilder->executeQuery();
+        $rows = [];
+        while ($row = $result->fetchAssociative()) {
+            if ($mode === self::MODE_ALL) {
+                BackendUtility::workspaceOL($table, $row, $workspaceId);
+            }
             if (is_array($row)) {
                 $rows[] = $row;
             }
@@ -423,14 +593,15 @@ final readonly class PendingItemsService
 
         $state = VersionState::tryFrom((int)($row['t3ver_state'] ?? 0)) ?? VersionState::DEFAULT_STATE;
         if (!$isChanged) {
-            $kindLabel = 'Live';
+            $kindKey = 'live';
+            $kindLabel = $this->localizationService->translate('state.live');
             $badge = 'secondary';
         } else {
-            [$kindLabel, $badge] = match ($state) {
-                VersionState::NEW_PLACEHOLDER => ['New', 'success'],
-                VersionState::DELETE_PLACEHOLDER => ['Will be deleted', 'danger'],
-                VersionState::MOVE_POINTER => ['Moved', 'warning'],
-                default => ['Modified', 'info'],
+            [$kindKey, $kindLabel, $badge] = match ($state) {
+                VersionState::NEW_PLACEHOLDER => ['new', $this->localizationService->translate('state.new'), 'success'],
+                VersionState::DELETE_PLACEHOLDER => ['delete', $this->localizationService->translate('state.delete'), 'danger'],
+                VersionState::MOVE_POINTER => ['move', $this->localizationService->translate('state.move'), 'warning'],
+                default => ['modified', $this->localizationService->translate('state.modified'), 'info'],
             };
         }
 
@@ -448,6 +619,9 @@ final readonly class PendingItemsService
         // expand to show *what* changed. Only computed for actual
         // workspace versions; live rows have nothing to diff.
         $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
+        $historyDiffCount = $isChanged && $state === VersionState::NEW_PLACEHOLDER
+            ? $this->historyTimelineService->countModifiedFields($table, $workspaceUid)
+            : 0;
 
         // Resolve colPos info for tt_content rows so the frontend
         // can group items by page column with proper labels (e.g.
@@ -458,7 +632,7 @@ final readonly class PendingItemsService
             $colPos = (int)$row['colPos'];
             $colPosLabel = $columnLabels[$colPos] ?? null;
             if ($colPosLabel === null || $colPosLabel === '') {
-                $colPosLabel = sprintf('Column %d', $colPos);
+                $colPosLabel = $this->localizationService->translate('toolbar.column', ['number' => $colPos]);
             }
         }
 
@@ -467,6 +641,7 @@ final readonly class PendingItemsService
             liveUid: $liveUid,
             workspaceUid: $workspaceUid,
             title: $title,
+            kindKey: $kindKey,
             kindLabel: $kindLabel,
             badge: $badge,
             thumbnailUrl: $enableThumbnails ? $this->resolveThumbnailUrl($table, $workspaceUid) : null,
@@ -478,6 +653,7 @@ final readonly class PendingItemsService
             editUrl: $editUrl,
             contextualEditUrl: $contextualEditUrl,
             diff: $diff,
+            historyDiffCount: $historyDiffCount,
             colPos: $colPos,
             colPosLabel: $colPosLabel,
         );
@@ -637,12 +813,17 @@ final readonly class PendingItemsService
             return $table;
         }
         $schema = $this->tcaSchemaFactory->get($table);
-        $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+        try {
+            $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+        } catch (InvalidSchemaTypeException) {
+            $typeField = null;
+        }
 
         // No discriminator field — fall back to the schema's own title.
         if ($typeField === null || !isset($row[$typeField])) {
             $title = $schema->getRawConfiguration()['ctrl']['title'] ?? $table;
-            return (string)$this->getLanguageService()->sL($title);
+            $label = (string)$this->getLanguageService()->sL($title);
+            return $label !== '' ? $label : $table;
         }
 
         $value = (string)$row[$typeField];
