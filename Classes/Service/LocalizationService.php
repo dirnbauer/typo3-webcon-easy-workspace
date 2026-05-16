@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
+use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 
@@ -131,6 +132,9 @@ final readonly class LocalizationService
         private LanguageServiceFactory $languageServiceFactory,
     ) {}
 
+    /**
+     * @param array<string, mixed> $arguments
+     */
     public function translate(string $key, array $arguments = []): string
     {
         $languageService = $this->getLanguageService();
@@ -152,6 +156,10 @@ final readonly class LocalizationService
 
     private function getLanguageService(): LanguageService
     {
-        return $GLOBALS['LANG'] ?? $this->languageServiceFactory->createFromUserPreferences($GLOBALS['BE_USER'] ?? null);
+        if (($GLOBALS['LANG'] ?? null) instanceof LanguageService) {
+            return $GLOBALS['LANG'];
+        }
+        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
+        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 }

@@ -16,6 +16,8 @@ Each row shows a **checkbox** (checked by default), the record **title**, a stat
 - TYPO3 14.3 LTS
 - PHP 8.3+
 - `typo3/cms-workspaces`
+- `typo3/cms-fluid`
+- `typo3/cms-frontend`
 - *Optional:* `georgringer/news` — enables news + linked content-element bundles
 - *Optional:* `friendsoftypo3/visual-editor` — enables the per-row eye icon to scroll & outline a content element inside the rendered page. **The dropdown works without it** — the eye gracefully falls back to `typo3/cms-viewpage`'s preview iframe (`#tx_viewpage_iframe`), and if no iframe is reachable at all the eye click shows a TYPO3 Notification telling the editor which module to open.
 
@@ -70,7 +72,7 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 | Rendering | `maxItems` | `200` | Hard cap on rows per request. |
 | Scope | `enableNewsBundles` | `1` | Also list news on the page + their linked content elements. |
 | Per-row | `enableHoverHighlight` | `1` | Eye icon → scroll + outline the CE in `#visual-editor-iframe`. |
-| Per-row | `enableRevert` | `1` | Discard button + DataHandler `flush` cmd (revert ↔ discard, same op). |
+| Per-row | `enableRevert` | `1` | Discard button using TYPO3 v14's DataHandler `discard` cmd. |
 
 **Override precedence** (highest wins): Page TSconfig → User TSconfig on user → User TSconfig on group → defaults.
 
@@ -97,10 +99,10 @@ Both effects are reverted on `mouseleave` / `blur` and again on element disconne
 
 ### Discard a single change
 
-Next to the eye, every **changed** row also has a curved-arrow **discard** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). *Discard* is TYPO3's own term for this operation — the underlying DataHandler command is `flush`, which removes the workspace version. Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to `/ajax/webcon-easy-workspace/discard`, which runs `DataHandler` with the v14-canonical command:
+Next to the eye, every **changed** row also has a curved-arrow **discard** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). *Discard* is TYPO3's own term for this operation and maps directly to TYPO3 v14's DataHandler `discard` command, which removes the workspace version. Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to `/ajax/webcon-easy-workspace/discard`, which runs `DataHandler` with the v14 command:
 
 ```php
-$cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];
+$cmd[$table][$workspaceUid]['discard'] = true;
 ```
 
 This deletes the workspace version of that record only — the **live** row stays untouched. The dropdown auto-refreshes after the discard so the row disappears (in "Changes only" mode) or its badge flips back to "Live" (in "All on page" mode).
@@ -113,14 +115,14 @@ Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`
 Classes/
 ├── Backend/ToolbarItem/EasyWorkspaceToolbarItem.php   # Toolbar registration + config injection
 ├── Configuration/ConfigurationProvider.php            # Reads & normalizes TSconfig
-├── Controller/Backend/EasyWorkspaceAjaxController.php # /ajax/items + /ajax/publish + /ajax/preview-link
+├── Controller/Backend/EasyWorkspaceAjaxController.php # Backend AJAX endpoints
 ├── Service/
 │   ├── PendingItemsService.php                       # Aggregates page + ce + news (honors config)
 │   └── PublishSelectedService.php                    # DataHandler publish cmdmap
 └── Dto/PendingItem.php
 
 Configuration/
-├── Backend/AjaxRoutes.php                            # 3 AJAX routes (items, publish, preview-link)
+├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, latest, diff, rollback
 ├── Services.yaml                                     # DI / autowiring
 ├── Icons.php                                         # Toolbar icon registration
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
@@ -132,6 +134,16 @@ Resources/
 ```
 
 The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`). The dropdown is a `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.
+
+## Quality checks
+
+```bash
+composer test
+Build/Scripts/runTests.sh -s phpstan
+Build/Scripts/runTests.sh -s lint
+```
+
+PHPStan runs with `level: max` through `Build/phpstan/phpstan.neon`.
 
 ### Content Blocks collection tables
 

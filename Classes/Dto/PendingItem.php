@@ -11,8 +11,6 @@ final readonly class PendingItem
      *   Field-level diff between this record's live and workspace
      *   versions. Empty for unchanged rows (isChanged=false) or when
      *   the diff service couldn't compute one.
-     */
-    /**
      * @param int|null    $colPos      Column position from the page's BackendLayout. tt_content rows only; null for pages/news/etc. Used by the frontend to group rows by page column ("Hero area", "Content area", …).
      * @param string|null $colPosLabel Human-readable column name resolved via BackendLayout/usedColumns. Falls back to "Column N" when no layout is configured. Null when colPos is null.
      */

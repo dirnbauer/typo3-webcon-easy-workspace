@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Configuration;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Reads the Easy Workspace feature flags from User TSconfig (and
@@ -49,12 +51,18 @@ final readonly class ConfigurationProvider
      *                          precedence over User TSconfig.
      * @return array{
      *     enabled: bool,
+     *     enableWorkspaceChip: bool,
      *     enablePreviewLink: bool,
      *     enableFilter: bool,
      *     defaultMode: string,
-     *     showHidden: bool,
      *     enableThumbnails: bool,
-     *     maxItems: int
+     *     enableTypeLabels: bool,
+     *     enableHiddenBadge: bool,
+     *     showHidden: bool,
+     *     maxItems: int,
+     *     enableNewsBundles: bool,
+     *     enableHoverHighlight: bool,
+     *     enableRevert: bool
      * }
      */
     public function get(?int $pageUid = null): array
@@ -67,7 +75,7 @@ final readonly class ConfigurationProvider
 
         // Page TSconfig overrides for the specific page context, if any.
         if ($pageUid !== null && $pageUid > 0) {
-            $pageOptions = $this->extractOptions(BackendUtility::getPagesTSconfig($pageUid));
+            $pageOptions = $this->extractOptions(Value::stringKeyArray(BackendUtility::getPagesTSconfig($pageUid)));
             $merged = array_merge($merged, $pageOptions);
         }
 
@@ -77,12 +85,12 @@ final readonly class ConfigurationProvider
             'enableWorkspaceChip' => $this->toBool($merged['enableWorkspaceChip']),
             'enablePreviewLink' => $this->toBool($merged['enablePreviewLink']),
             'enableFilter' => $this->toBool($merged['enableFilter']),
-            'defaultMode' => $this->normalizeMode((string)$merged['defaultMode']),
+            'defaultMode' => $this->normalizeMode(Value::string($merged['defaultMode'])),
             'enableThumbnails' => $this->toBool($merged['enableThumbnails']),
             'enableTypeLabels' => $this->toBool($merged['enableTypeLabels']),
             'enableHiddenBadge' => $this->toBool($merged['enableHiddenBadge']),
             'showHidden' => $this->toBool($merged['showHidden']),
-            'maxItems' => max(1, (int)$merged['maxItems']),
+            'maxItems' => max(1, Value::int($merged['maxItems'])),
             'enableNewsBundles' => $this->toBool($merged['enableNewsBundles']),
             'enableHoverHighlight' => $this->toBool($merged['enableHoverHighlight']),
             'enableRevert' => $this->toBool($merged['enableRevert']),
@@ -98,7 +106,8 @@ final readonly class ConfigurationProvider
      */
     private function extractOptions(array $tsConfig): array
     {
-        $options = $tsConfig['options.'][self::NAMESPACE_KEY] ?? null;
+        $optionsRoot = Value::stringKeyArray($tsConfig['options.'] ?? null);
+        $options = $optionsRoot[self::NAMESPACE_KEY] ?? null;
         if (!is_array($options)) {
             return [];
         }
@@ -116,11 +125,11 @@ final readonly class ConfigurationProvider
      */
     private function getUserTsConfig(): array
     {
-        if (!isset($GLOBALS['BE_USER'])) {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication) {
             return [];
         }
-        $tsConfig = $GLOBALS['BE_USER']->getTSConfig();
-        return is_array($tsConfig) ? $tsConfig : [];
+        return Value::stringKeyArray($backendUser->getTSConfig());
     }
 
     private function toBool(mixed $value): bool

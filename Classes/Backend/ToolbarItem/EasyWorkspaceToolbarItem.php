@@ -9,11 +9,13 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Backend\Toolbar\RequestAwareToolbarItemInterface;
 use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Renders the "Easy Workspace" trigger in the top-right backend toolbar.
@@ -43,20 +45,29 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function checkAccess(): bool
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if ($backendUser === null) {
+        if (!$backendUser instanceof BackendUserAuthentication) {
             return false;
         }
         if (!$this->configurationProvider->get()['enabled']) {
             return false;
         }
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
-        if ($workspaceId <= 0) {
+
+        if ($this->resolveActiveWorkspaceId($backendUser) <= 0) {
             return false;
         }
-        if ($backendUser->isAdmin()) {
-            return true;
-        }
+
         return true;
+    }
+
+    private function resolveActiveWorkspaceId(BackendUserAuthentication $backendUser): int
+    {
+        $userWorkspaceId = $backendUser->workspace;
+        if ($userWorkspaceId <= 0) {
+            return 0;
+        }
+
+        $contextWorkspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+        return $contextWorkspaceId > 0 ? $contextWorkspaceId : $userWorkspaceId;
     }
 
     public function getItem(): string

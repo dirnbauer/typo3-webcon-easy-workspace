@@ -4,7 +4,7 @@
 
 Please open a private security advisory on the [GitHub Security tab](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new) — do not open a public issue for security reports.
 
-## Audit summary (2026-05-13)
+## Audit summary (updated 2026-05-16)
 
 A focused TYPO3 v14 security review covered authorization, CSRF, input validation, SQL injection, XSS, path traversal, TSconfig bypass and workspace boundaries across:
 
@@ -23,6 +23,8 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 | H2 | High | `publishAction` and `discardAction` accepted any non-empty `table` string and passed it straight to the DataHandler cmdmap. DataHandler enforced permissions for the actual record write, but the attack surface was wider than the UI offers. | Added an allow-list constant `ALLOWED_TABLES = [pages, tt_content, tx_news_domain_model_news]`; selections outside it are silently dropped. |
 | M1 | Medium | Selected `workspaceUid` was never verified against the active workspace inside `PublishSelectedService::publish()`. DataHandler rejected mismatches downstream, but the cmdmap was built optimistically. | New `belongsToWorkspace($table, $uid, $wsId)` helper now confirms `t3ver_wsid` matches the active workspace and that the row is not deleted before the uid is added to the cmdmap. Both `publish()` and `discard()` use it. |
 | M4 | Low/Medium | `previewLinkAction` echoed `$e->getMessage()` from `PreviewUriBuilder` into the JSON response. | Replaced with a generic `"Could not build a preview link for this page."` — the underlying exception is logged by Core's error handler. |
+| M5 | Medium | `historyRollbackAction` returned raw exception messages, filenames and line numbers to the browser. | Replaced with a localized generic rollback failure response. |
+| M6 | Medium | Workspace discard used the legacy `version => flush` cmdmap. | Switched to TYPO3 v14's explicit DataHandler `discard` command after verifying the record belongs to the active workspace. |
 
 ### Findings (no change needed)
 
