@@ -1004,6 +1004,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // affordance to nowhere.
     const diff = Array.isArray(item.diff) ? item.diff : [];
     const hasDiff = diff.length > 0;
+    const diffTriggerLabel = this._diffTriggerLabel(item, diff);
+    const diffTriggerTitle = this._diffTriggerTitle(item, hasDiff);
     // Compact 3-row layout per item:
     //  Row 1: title (full width)  +  actions on right (discard, eye)
     //  Row 2: status pill          +  table label · type label
@@ -1061,21 +1063,48 @@ class WebconEasyWorkspaceMenu extends LitElement {
               ? html`<button
                   type="button"
                   class="wew-list__diff-trigger"
-                  title=${hasDiff ? 'View what changed in this record (opens a dialog)' : 'No field-level differences right now — opens the history of this record'}
+                  title=${diffTriggerTitle}
                   @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
                 >
                   <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-                  <span class="wew-list__diff-trigger-label">${
-                    diff.length === 0
-                      ? 'View history'
-                      : (diff.length === 1 ? '1 change' : `${diff.length} changes`)
-                  }</span>
+                  <span class="wew-list__diff-trigger-label">${diffTriggerLabel}</span>
                 </button>`
               : nothing}
           </span>
         </label>
       </li>
     `;
+  }
+
+  _diffTriggerLabel(item, diff) {
+    if (item.kindLabel === 'New') {
+      return 'View details';
+    }
+    if (item.kindLabel === 'Will be deleted') {
+      return 'View removal';
+    }
+    if (item.kindLabel === 'Moved') {
+      return 'View move';
+    }
+    if (diff.length === 0) {
+      return 'View history';
+    }
+    return diff.length === 1 ? '1 field changed' : `${diff.length} fields changed`;
+  }
+
+  _diffTriggerTitle(item, hasDiff) {
+    if (item.kindLabel === 'New') {
+      return 'Open this new workspace record details and edit history';
+    }
+    if (item.kindLabel === 'Will be deleted') {
+      return 'Open details and edit history for this pending removal';
+    }
+    if (item.kindLabel === 'Moved') {
+      return 'Open details and edit history for this pending move';
+    }
+    return hasDiff
+      ? 'View which fields changed in this record (opens a dialog)'
+      : 'No field-level differences right now — opens the history of this record';
   }
 
   /**
