@@ -17,6 +17,7 @@ use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
+use TYPO3\CMS\Core\Schema\Exception\InvalidSchemaTypeException;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
@@ -812,12 +813,17 @@ final readonly class PendingItemsService
             return $table;
         }
         $schema = $this->tcaSchemaFactory->get($table);
-        $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+        try {
+            $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+        } catch (InvalidSchemaTypeException) {
+            $typeField = null;
+        }
 
         // No discriminator field — fall back to the schema's own title.
         if ($typeField === null || !isset($row[$typeField])) {
             $title = $schema->getRawConfiguration()['ctrl']['title'] ?? $table;
-            return (string)$this->getLanguageService()->sL($title);
+            $label = (string)$this->getLanguageService()->sL($title);
+            return $label !== '' ? $label : $table;
         }
 
         $value = (string)$row[$typeField];
