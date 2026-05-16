@@ -1369,10 +1369,27 @@ webcon-easy-workspace-menu {
     -webkit-line-clamp: 2;
 }
 
-.wew-diff-modal-shell .modal-header-close {
+:is(.wew-diff-modal-shell, .wew-edit-modal-shell) .modal-header-close {
     align-self: flex-start;
     flex: 0 0 auto;
     margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+:is(.wew-diff-modal-shell, .wew-edit-modal-shell) .modal-header-close :is(.icon, svg) {
+    width: 24px;
+    height: 24px;
+}
+
+:is(.wew-diff-modal-shell, .wew-edit-modal-shell) .modal-header-close typo3-backend-icon {
+    --icon-size-small: 24px;
+    width: 24px;
+    height: 24px;
 }
 
 .wew-diff-modal {
