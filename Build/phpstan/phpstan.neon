@@ -1,0 +1,17 @@
+includes:
+  - phpstan-baseline.neon
+
+parameters:
+  level: max
+
+  paths:
+    - ../../Classes
+    - ../../Configuration
+
+  tmpDir: .cache/phpstan/
+
+  excludePaths:
+    - '**/node_modules/*'
+    - '**/ext_emconf.php'
+
+  checkMissingOverrideMethodAttribute: false

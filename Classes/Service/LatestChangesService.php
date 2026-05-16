@@ -9,6 +9,8 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
+use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Lists the most recently changed records *across the workspace* —
@@ -69,7 +71,7 @@ final readonly class LatestChangesService
      */
     public function list(int $limit = self::DEFAULT_LIMIT, array $config = []): array
     {
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         if ($workspaceId <= 0) {
             return ['workspaceId' => $workspaceId, 'items' => []];
         }
@@ -85,7 +87,8 @@ final readonly class LatestChangesService
                 continue;
             }
             foreach ($this->queryWorkspaceVersions($table, $workspaceId, $perTableCap) as $row) {
-                $rows[] = ['table' => $table, 'row' => $row, 'tstamp' => (int)($row['tstamp'] ?? 0)];
+                $row = Value::stringKeyArray($row);
+                $rows[] = ['table' => $table, 'row' => $row, 'tstamp' => Value::int($row['tstamp'] ?? null)];
             }
         }
 
@@ -121,51 +124,19 @@ final readonly class LatestChangesService
     private function resolveWorkspaceTables(): array
     {
         $tables = self::TABLES;
-        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
-            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+        foreach (TcaUtility::tables() as $parentTca) {
+            $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
+            if (empty($ctrl['versioningWS'])) {
                 continue;
             }
-            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
-                $foreignTable = (string)($fieldConfig['foreign_table'] ?? '');
-                if ($foreignTable !== '' && $this->isWorkspaceAwareHiddenTable($foreignTable)) {
+            foreach (TcaUtility::extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+                $foreignTable = Value::string($fieldConfig['foreign_table'] ?? null);
+                if ($foreignTable !== '' && TcaUtility::isWorkspaceAwareHiddenTable($foreignTable)) {
                     $tables[] = $foreignTable;
                 }
             }
         }
         return array_values(array_unique($tables));
-    }
-
-    private function isWorkspaceAwareHiddenTable(string $table): bool
-    {
-        if ($table === 'sys_file_reference') {
-            return false;
-        }
-        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
-        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
-    }
-
-    /**
-     * @param array<string, mixed> $tca
-     * @return list<array<string, mixed>>
-     */
-    private function extractInlineFieldConfigs(array $tca): array
-    {
-        $configs = [];
-        foreach ($tca['columns'] ?? [] as $column) {
-            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
-            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
-                $configs[] = $fieldConfig;
-            }
-        }
-        foreach ($tca['types'] ?? [] as $typeConfig) {
-            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
-                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
-                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
-                    $configs[] = $fieldConfig;
-                }
-            }
-        }
-        return $configs;
     }
 
     /**
@@ -194,7 +165,7 @@ final readonly class LatestChangesService
         $result = $queryBuilder->executeQuery();
         $rows = [];
         while ($row = $result->fetchAssociative()) {
-            $rows[] = $row;
+            $rows[] = Value::stringKeyArray($row);
         }
         return $rows;
     }

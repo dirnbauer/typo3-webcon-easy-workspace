@@ -1,6 +1,9 @@
 /vendor/
 /.Build/
+/Build/phpstan/.cache/
 /composer.lock
+/public/
+/var/
 /.idea/
 /.vscode/
 .DS_Store

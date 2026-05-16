@@ -6,11 +6,14 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Utility\DiffGranularity;
 use TYPO3\CMS\Core\Utility\DiffUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Builds a workspace-scoped edit timeline for a single record by
@@ -64,13 +67,14 @@ final readonly class RecordHistoryTimelineService
      *   tstamp: int,
      *   tstampFormatted: string,
      *   action: string,
+     *   actionKey: string,
      *   user: string,
-     *   diffs: list<array{field: string, label: string, before: string, after: string, html: string}>
+     *   diffs: list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
      * }>
      */
     public function build(string $table, int $uid): array
     {
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
 
         // RecordHistory reads $element from constructor as "table:uid".
         // setShowSubElements(false) keeps it focused on this record;
@@ -86,12 +90,13 @@ final readonly class RecordHistoryTimelineService
         $diffEntries = $diffData['differences'] ?? [];
 
         $entries = [];
-        foreach ($changeLog as $log) {
+        foreach ($changeLog as $rawLog) {
+            $log = Value::stringKeyArray($rawLog);
             // Skip entries outside the current workspace context —
             // editors are reviewing "what will publish", live edits
             // aren't part of that decision. Action 1 = INSERT,
             // 2 = UPDATE, 3 = MOVE, 4 = DELETE per DataHandler.
-            $entryWs = (int)($log['workspace'] ?? 0);
+            $entryWs = Value::int($log['workspace'] ?? null);
             if ($workspaceId > 0 && $entryWs !== $workspaceId) {
                 continue;
             }
@@ -103,22 +108,22 @@ final readonly class RecordHistoryTimelineService
             // positions. Reading the position would land us at
             // historyUid=0 (and break the rollback endpoint that
             // strict-validates historyUid > 0).
-            $historyUid = (int)($log['uid'] ?? 0);
+            $historyUid = Value::int($log['uid'] ?? null);
             if ($historyUid <= 0) {
                 continue;
             }
-            $newRecord = is_array($log['newRecord'] ?? null) ? $log['newRecord'] : [];
-            $oldRecord = is_array($log['oldRecord'] ?? null) ? $log['oldRecord'] : [];
-            $actionType = (int)($log['actiontype'] ?? 0);
+            $newRecord = Value::stringKeyArray($log['newRecord'] ?? null);
+            $oldRecord = Value::stringKeyArray($log['oldRecord'] ?? null);
+            $actionType = Value::int($log['actiontype'] ?? null);
             $actionKey = $this->resolveActionKey($actionType);
             $action = $this->describeAction($actionKey);
             $entries[] = [
                 'historyUid' => $historyUid,
-                'tstamp' => (int)($log['tstamp'] ?? 0),
-                'tstampFormatted' => BackendUtility::datetime((int)($log['tstamp'] ?? 0)),
+                'tstamp' => Value::int($log['tstamp'] ?? null),
+                'tstampFormatted' => BackendUtility::datetime(Value::int($log['tstamp'] ?? null)),
                 'action' => $action,
                 'actionKey' => $actionKey,
-                'user' => $this->resolveUser((int)($log['userid'] ?? 0)),
+                'user' => $this->resolveUser(Value::int($log['userid'] ?? null)),
                 // historyUid duplicated into each diff so the inner
                 // <f:for as="d"> doesn't have to reach back into the
                 // enclosing entry scope and so the per-field rollback
@@ -134,11 +139,11 @@ final readonly class RecordHistoryTimelineService
     {
         $fields = [];
         foreach ($this->build($table, $uid) as $entry) {
-            if (($entry['actionKey'] ?? '') !== 'modified') {
+            if ($entry['actionKey'] !== 'modified') {
                 continue;
             }
             foreach ($entry['diffs'] as $diff) {
-                $field = (string)($diff['field'] ?? '');
+                $field = $diff['field'];
                 if ($field !== '') {
                     $fields[$field] = true;
                 }
@@ -161,15 +166,18 @@ final readonly class RecordHistoryTimelineService
             if (in_array($field, self::SKIP_FIELDS, true)) {
                 continue;
             }
-            $before = (string)($old[$field] ?? '');
-            $after = (string)($new[$field] ?? '');
+            $before = Value::string($old[$field] ?? null);
+            $after = Value::string($new[$field] ?? null);
             if ($before === $after) {
                 continue;
             }
-            $tcaLabel = $GLOBALS['TCA'][$table]['columns'][$field]['label'] ?? $field;
+            $tableTca = TcaUtility::table($table);
+            $columns = Value::stringKeyArray($tableTca['columns'] ?? null);
+            $fieldTca = Value::stringKeyArray($columns[$field] ?? null);
+            $tcaLabel = Value::string($fieldTca['label'] ?? $field);
             $out[] = [
                 'field' => $field,
-                'label' => $languageService->sL((string)$tcaLabel) ?: $field,
+                'label' => $languageService->sL($tcaLabel) ?: $field,
                 'before' => $before,
                 'after' => $after,
                 'html' => $this->diffUtility->diff($before, $after, DiffGranularity::WORD),
@@ -210,8 +218,8 @@ final readonly class RecordHistoryTimelineService
         if (!is_array($row)) {
             return $this->localizationService->translate('history.user.fallback', ['uid' => $userId]);
         }
-        $realName = trim((string)($row['realName'] ?? ''));
-        $username = trim((string)($row['username'] ?? ''));
+        $realName = trim(Value::string($row['realName'] ?? null));
+        $username = trim(Value::string($row['username'] ?? null));
         if ($realName !== '' && $username !== '') {
             return sprintf('%s (%s)', $realName, $username);
         }
@@ -220,6 +228,10 @@ final readonly class RecordHistoryTimelineService
 
     private function getLanguageService(): LanguageService
     {
-        return $GLOBALS['LANG'] ?? $this->languageServiceFactory->createFromUserPreferences($GLOBALS['BE_USER'] ?? null);
+        if (($GLOBALS['LANG'] ?? null) instanceof LanguageService) {
+            return $GLOBALS['LANG'];
+        }
+        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
+        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 }

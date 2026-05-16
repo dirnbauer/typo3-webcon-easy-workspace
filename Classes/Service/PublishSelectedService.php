@@ -9,6 +9,8 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Publishes a user-selected list of workspace records to live in one
@@ -55,7 +57,7 @@ final readonly class PublishSelectedService
         if ($selections === []) {
             return ['success' => true, 'published' => 0, 'errors' => []];
         }
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         if ($workspaceId <= 0) {
             return ['success' => false, 'published' => 0, 'errors' => [$this->localizationService->translate('error.publishFromLive')]];
         }
@@ -65,8 +67,8 @@ final readonly class PublishSelectedService
         $count = 0;
         $rejected = 0;
         foreach ($selections as $entry) {
-            $table = $entry['table'] ?? '';
-            $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
+            $table = $entry['table'];
+            $workspaceUid = $entry['workspaceUid'];
             if ($table === '' || $workspaceUid <= 0 || !$this->isAllowedWorkspaceTable($table)) {
                 continue;
             }
@@ -116,7 +118,7 @@ final readonly class PublishSelectedService
         return [
             'success' => $dataHandler->errorLog === [],
             'published' => $count,
-            'errors' => $dataHandler->errorLog,
+            'errors' => Value::stringList($dataHandler->errorLog),
         ];
     }
 
@@ -124,9 +126,9 @@ final readonly class PublishSelectedService
      * Discard (revert) a single workspace version. Removes the
      * offline record so the live row remains the only version.
      *
-     * Uses DataHandler with the standard v14 cmdmap form
-     *   $cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];
-     * which is the supported way to clear a workspace version.
+     * Uses DataHandler with the TYPO3 v14 cmdmap form:
+     *   $cmd[$table][$workspaceUid]['discard'] = true;
+     * which is the explicit API for clearing a workspace version.
      *
      * @return array{success: bool, discarded: int, errors: list<string>}
      */
@@ -135,7 +137,7 @@ final readonly class PublishSelectedService
         if ($table === '' || $workspaceUid <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         if ($workspaceId <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.discardFromLive')]];
         }
@@ -148,7 +150,7 @@ final readonly class PublishSelectedService
         $cmd = [
             $table => [
                 $workspaceUid => [
-                    'version' => ['action' => 'flush'],
+                    'discard' => true,
                 ],
             ],
         ];
@@ -159,7 +161,7 @@ final readonly class PublishSelectedService
         return [
             'success' => $dataHandler->errorLog === [],
             'discarded' => 1,
-            'errors' => $dataHandler->errorLog,
+            'errors' => Value::stringList($dataHandler->errorLog),
         ];
     }
 
@@ -181,10 +183,10 @@ final readonly class PublishSelectedService
         if (!is_array($row)) {
             return false;
         }
-        if ((int)($row['deleted'] ?? 0) !== 0) {
+        if (Value::int($row['deleted'] ?? null) !== 0) {
             return false;
         }
-        return (int)($row['t3ver_wsid'] ?? 0) === $workspaceId;
+        return Value::int($row['t3ver_wsid'] ?? null) === $workspaceId;
     }
 
     private function resolveLiveUid(string $table, int $workspaceUid): int
@@ -200,8 +202,8 @@ final readonly class PublishSelectedService
         if (!is_array($row)) {
             return 0;
         }
-        $liveUid = (int)$row['t3ver_oid'];
-        return $liveUid > 0 ? $liveUid : (int)$row['uid'];
+        $liveUid = Value::int($row['t3ver_oid'] ?? null);
+        return $liveUid > 0 ? $liveUid : Value::int($row['uid'] ?? null);
     }
 
     private function isAllowedWorkspaceTable(string $table): bool
@@ -209,49 +211,20 @@ final readonly class PublishSelectedService
         if (in_array($table, self::TABLE_ORDER, true)) {
             return true;
         }
-        if ($table === 'sys_file_reference' || !$this->isWorkspaceAwareHiddenTable($table)) {
+        if ($table === 'sys_file_reference' || !TcaUtility::isWorkspaceAwareHiddenTable($table)) {
             return false;
         }
-        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
-            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+        foreach (TcaUtility::tables() as $parentTca) {
+            $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
+            if (empty($ctrl['versioningWS'])) {
                 continue;
             }
-            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+            foreach (TcaUtility::extractInlineFieldConfigs($parentTca) as $fieldConfig) {
                 if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    private function isWorkspaceAwareHiddenTable(string $table): bool
-    {
-        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
-        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
-    }
-
-    /**
-     * @param array<string, mixed> $tca
-     * @return list<array<string, mixed>>
-     */
-    private function extractInlineFieldConfigs(array $tca): array
-    {
-        $configs = [];
-        foreach ($tca['columns'] ?? [] as $column) {
-            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
-            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
-                $configs[] = $fieldConfig;
-            }
-        }
-        foreach ($tca['types'] ?? [] as $typeConfig) {
-            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
-                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
-                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
-                    $configs[] = $fieldConfig;
-                }
-            }
-        }
-        return $configs;
     }
 }

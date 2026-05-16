@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\DiffGranularity;
 use TYPO3\CMS\Core\Utility\DiffUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Field-level diff between a workspace-version row and its live
@@ -84,7 +86,8 @@ final readonly class RecordDiffService
      * Returns the metadata needed to title the diff dialog as well,
      * so a single controller call can fully populate the overlay.
      *
-     * @return array{title: string, tableLabel: string, table: string, workspaceUid: int, liveUid: int, kind: string, diffs: list<array{field: string, label: string, before: string, after: string, html: string, kind: string}>}
+     * @param array<string, mixed> $versionRow
+     * @return array{title: string, tableLabel: string, table: string, workspaceUid: int, liveUid: int, kind: string, diffs: list<array{field: string, label: string, before: string, after: string, beforeFull: string, afterFull: string, type: string, html: string, kind: string}>}
      */
     public function diffWithHtml(string $table, array $versionRow): array
     {
@@ -107,8 +110,8 @@ final readonly class RecordDiffService
             'title' => $this->resolveTitle($table, $versionRow),
             'tableLabel' => $this->resolveTableLabelHint($table),
             'table' => $table,
-            'workspaceUid' => (int)($versionRow['uid'] ?? 0),
-            'liveUid' => (int)($versionRow['t3ver_oid'] ?? 0),
+            'workspaceUid' => Value::int($versionRow['uid'] ?? null),
+            'liveUid' => Value::int($versionRow['t3ver_oid'] ?? null),
             'kind' => $kind,
             'diffs' => $diffs,
         ];
@@ -120,6 +123,9 @@ final readonly class RecordDiffService
      * PendingItemsService::resolveTitle(); we duplicate a minimal
      * version here so the diff service stays standalone.
      */
+    /**
+     * @param array<string, mixed> $row
+     */
     private function resolveTitle(string $table, array $row): string
     {
         $candidates = [
@@ -129,7 +135,7 @@ final readonly class RecordDiffService
             $row['subject'] ?? null,
         ];
         foreach ($candidates as $candidate) {
-            $candidate = trim((string)$candidate);
+            $candidate = trim(Value::string($candidate));
             if ($candidate !== '') {
                 return $candidate;
             }
@@ -150,6 +156,7 @@ final readonly class RecordDiffService
     /**
      * Diff a single workspace-version row against its live record.
      *
+     * @param array<string, mixed> $versionRow
      * @return list<array{field: string, label: string, before: string, after: string, beforeFull: string, afterFull: string, type: string, kind: string}>
      */
     public function diff(string $table, array $versionRow): array
@@ -160,7 +167,7 @@ final readonly class RecordDiffService
         $schema = $this->tcaSchemaFactory->get($table);
         $languageService = $this->getLanguageService();
 
-        $versionState = VersionState::tryFrom((int)($versionRow['t3ver_state'] ?? 0)) ?? VersionState::DEFAULT_STATE;
+        $versionState = VersionState::tryFrom(Value::int($versionRow['t3ver_state'] ?? null)) ?? VersionState::DEFAULT_STATE;
         $isNew = $versionState === VersionState::NEW_PLACEHOLDER;
         $isDelete = $versionState === VersionState::DELETE_PLACEHOLDER;
 
@@ -168,8 +175,8 @@ final readonly class RecordDiffService
         // record (t3ver_oid); for fresh new-placeholder versions
         // there's no live counterpart yet — empty array, every
         // populated field reads as "added".
-        $liveUid = (int)($versionRow['t3ver_oid'] ?? 0);
-        $liveRow = ($liveUid > 0) ? (array)BackendUtility::getRecord($table, $liveUid) : [];
+        $liveUid = Value::int($versionRow['t3ver_oid'] ?? null);
+        $liveRow = Value::stringKeyArray($liveUid > 0 ? BackendUtility::getRecord($table, $liveUid) : null);
 
         // Union of field names; ensures fields only set in one of
         // the two snapshots still get diffed.
@@ -185,8 +192,8 @@ final readonly class RecordDiffService
                 continue;
             }
 
-            $beforeRaw = (string)($liveRow[$field] ?? '');
-            $afterRaw = (string)($versionRow[$field] ?? '');
+            $beforeRaw = Value::string($liveRow[$field] ?? null);
+            $afterRaw = Value::string($versionRow[$field] ?? null);
 
             // For modify edits, skip fields that didn't actually
             // change. For new/delete placeholders, every populated
@@ -202,9 +209,9 @@ final readonly class RecordDiffService
                 $label = $field;
             }
 
-            $configuration = $fieldType->getConfiguration();
+            $configuration = Value::stringKeyArray($fieldType->getConfiguration());
             $beforeFormatted = $this->formatValue($table, $field, $beforeRaw, $liveUid, $configuration, $liveRow);
-            $afterFormatted = $this->formatValue($table, $field, $afterRaw, (int)($versionRow['uid'] ?? 0), $configuration, $versionRow);
+            $afterFormatted = $this->formatValue($table, $field, $afterRaw, Value::int($versionRow['uid'] ?? null), $configuration, $versionRow);
 
             // After format normalization, an unchanged display value
             // means the difference is purely cosmetic (e.g. trailing
@@ -220,7 +227,7 @@ final readonly class RecordDiffService
                 'after' => $this->truncate($afterFormatted),
                 'beforeFull' => $beforeFormatted,
                 'afterFull' => $afterFormatted,
-                'type' => (string)($configuration['type'] ?? 'string'),
+                'type' => Value::string($configuration['type'] ?? 'string'),
                 'kind' => $isNew ? 'added' : ($isDelete ? 'removed' : 'changed'),
             ];
         }
@@ -235,6 +242,10 @@ final readonly class RecordDiffService
      * (which honors itemsProcFunc, select item labels, file
      * references, datetime formatting, etc.). For RTE fields we
      * strip HTML so the inline chip stays readable.
+     */
+    /**
+     * @param array<string, mixed> $configuration
+     * @param array<string, mixed> $row
      */
     private function formatValue(string $table, string $field, string $value, int $uid, array $configuration, array $row): string
     {
@@ -251,7 +262,7 @@ final readonly class RecordDiffService
                 false,
                 $uid,
                 true,
-                (int)($row['pid'] ?? 0),
+                Value::int($row['pid'] ?? null),
                 $row,
             );
             $formatted = (string)($processed ?? $value);
@@ -290,6 +301,7 @@ final readonly class RecordDiffService
         if (isset($GLOBALS['LANG']) && $GLOBALS['LANG'] instanceof LanguageService) {
             return $GLOBALS['LANG'];
         }
-        return $this->languageServiceFactory->createFromUserPreferences($GLOBALS['BE_USER'] ?? null);
+        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
+        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 }

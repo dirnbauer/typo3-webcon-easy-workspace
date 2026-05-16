@@ -2002,6 +2002,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (!ENDPOINTS.items) {
       this.state = 'error';
       this.workspaceId = 0;
+      this._syncToolbarVisibility();
       return;
     }
     this.state = 'loading';
@@ -2012,6 +2013,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.items = [];
       this.workspaceId = 0;
       this._updateToolbarBadge();
+      this._syncToolbarVisibility();
       this._broadcastDeclineState();
       return;
     }
@@ -2034,6 +2036,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
       this._updateToolbarBadge();
+      this._syncToolbarVisibility();
       this._broadcastDeclineState();
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
@@ -2067,9 +2070,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * changes.
    */
   _updateToolbarBadge() {
-    const host = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
-      || this.closest('.toolbar-item')
-      || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
+    const host = this._toolbarHost();
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
     const count = this.workspaceId > 0 && (this.state === 'loaded' || this.state === 'empty')
@@ -2083,6 +2084,20 @@ class WebconEasyWorkspaceMenu extends LitElement {
     } else {
       badge.removeAttribute('aria-label');
     }
+  }
+
+  _syncToolbarVisibility() {
+    const host = this._toolbarHost();
+    if (!host) return;
+    const stateKnown = this.state === 'loaded' || this.state === 'empty' || this.state === 'no-context';
+    if (!stateKnown) return;
+    host.hidden = this.workspaceId <= 0 || !this.items.some((i) => i.isChanged);
+  }
+
+  _toolbarHost() {
+    return this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
+      || this.closest('.toolbar-item')
+      || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
   }
 
   _buildContextLabel(data) {

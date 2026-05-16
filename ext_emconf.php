@@ -1,10 +1,8 @@
 <?php
 
-declare(strict_types=1);
-
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Easy Workspace',
-    'description' => 'Toolbar item that lets editors publish the current page (or news record) together with its content elements in one click.',
+    'description' => 'TYPO3 v14 workspace toolbar item that lets editors publish the current page (or news record) together with its content elements in one click.',
     'category' => 'be',
     'author' => 'Kurt Dirnbauer',
     'author_email' => 'office@webconsulting.at',

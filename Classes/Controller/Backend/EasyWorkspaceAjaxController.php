@@ -8,20 +8,24 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Routing\RouterInterface;
 use TYPO3\CMS\Core\View\ViewFactoryData;
 use TYPO3\CMS\Core\View\ViewFactoryInterface;
+use TYPO3\CMS\Backend\History\RecordHistory;
+use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LatestChangesService;
+use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
-use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
-use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 final readonly class EasyWorkspaceAjaxController
 {
@@ -54,8 +58,8 @@ final readonly class EasyWorkspaceAjaxController
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
     {
         $query = $request->getQueryParams();
-        $newsUid = (int)($query['newsUid'] ?? 0);
-        $pageUid = (int)($query['pageUid'] ?? 0);
+        $newsUid = Value::int($query['newsUid'] ?? null);
+        $pageUid = Value::int($query['pageUid'] ?? null);
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
@@ -63,7 +67,7 @@ final readonly class EasyWorkspaceAjaxController
         }
 
         $defaultMode = $config['defaultMode'];
-        $requestedMode = (string)($query['mode'] ?? $defaultMode);
+        $requestedMode = Value::string($query['mode'] ?? $defaultMode);
         $mode = $config['enableFilter']
             ? ($requestedMode === PendingItemsService::MODE_ALL ? PendingItemsService::MODE_ALL : PendingItemsService::MODE_CHANGED)
             : PendingItemsService::MODE_CHANGED;
@@ -107,7 +111,7 @@ final readonly class EasyWorkspaceAjaxController
         }
 
         $query = $request->getQueryParams();
-        $requestedLimit = (int)($query['limit'] ?? LatestChangesService::DEFAULT_LIMIT);
+        $requestedLimit = Value::int($query['limit'] ?? LatestChangesService::DEFAULT_LIMIT);
         // Clamp to a sane range. 1 keeps degenerate ?limit=0 calls
         // from returning the entire workspace, 50 caps the response
         // size for the dropdown UI.
@@ -139,8 +143,8 @@ final readonly class EasyWorkspaceAjaxController
             return new HtmlResponse('<p class="alert alert-danger">' . htmlspecialchars($this->localizationService->translate('error.disabled')) . '</p>', 403);
         }
 
-        $table = (string)($query['table'] ?? '');
-        $workspaceUid = (int)($query['workspaceUid'] ?? 0);
+        $table = Value::string($query['table'] ?? null);
+        $workspaceUid = Value::int($query['workspaceUid'] ?? null);
         if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
             return new HtmlResponse('<p class="alert alert-danger">' . htmlspecialchars($this->localizationService->translate('error.invalidRecord')) . '</p>', 400);
         }
@@ -150,7 +154,7 @@ final readonly class EasyWorkspaceAjaxController
             return new HtmlResponse('<p class="alert alert-warning">' . htmlspecialchars($this->localizationService->translate('error.recordNotFound')) . '</p>', 404);
         }
 
-        $payload = $this->recordDiffService->diffWithHtml($table, $row);
+        $payload = $this->recordDiffService->diffWithHtml($table, Value::stringKeyArray($row));
         $editUrl = null;
         $liveUid = $payload['liveUid'] ?: $workspaceUid;
         if ($liveUid > 0) {
@@ -159,7 +163,7 @@ final readonly class EasyWorkspaceAjaxController
                     'record_edit',
                     [
                         'edit' => [$table => [$liveUid => 'edit']],
-                        'returnUrl' => (string)($request->getServerParams()['HTTP_REFERER'] ?? ''),
+                        'returnUrl' => Value::string($request->getServerParams()['HTTP_REFERER'] ?? null),
                     ],
                     RouterInterface::ABSOLUTE_URL,
                 );
@@ -223,11 +227,11 @@ final readonly class EasyWorkspaceAjaxController
         // getParsedBody only auto-parses application/x-www-form-urlencoded,
         // so we need the decodeBody helper to read the JSON body.
         $body = $this->decodeBody($request);
-        $table = (string)($body['table'] ?? '');
-        $uid = (int)($body['uid'] ?? 0);
-        $historyUid = (int)($body['historyUid'] ?? 0);
-        $mode = (string)($body['mode'] ?? 'linear');
-        $field = (string)($body['field'] ?? '');
+        $table = Value::string($body['table'] ?? null);
+        $uid = Value::int($body['uid'] ?? null);
+        $historyUid = Value::int($body['historyUid'] ?? null);
+        $mode = Value::string($body['mode'] ?? 'linear');
+        $field = Value::string($body['field'] ?? null);
 
         if (!$this->isAllowedWorkspaceTable($table) || $uid <= 0 || $historyUid <= 0) {
             return new JsonResponse(['success' => false, 'error' => $this->localizationService->translate('error.invalidArguments')], 400);
@@ -251,7 +255,7 @@ final readonly class EasyWorkspaceAjaxController
             $rollbackSelector = $mode === 'field' && $field !== ''
                 ? sprintf('%s:%d:%s', $table, $uid, $field)
                 : sprintf('%s:%d', $table, $uid);
-            $historyService = new \TYPO3\CMS\Backend\History\RecordHistory(sprintf('%s:%d', $table, $uid));
+            $historyService = new RecordHistory(sprintf('%s:%d', $table, $uid));
             $historyService->setLastHistoryEntryNumber($historyUid);
             $diff = $historyService->getDiff($historyService->getChangeLog());
             if (empty($diff['insertsDeletes'] ?? null) && empty($diff['oldData'] ?? null)) {
@@ -260,11 +264,12 @@ final readonly class EasyWorkspaceAjaxController
                     'error' => $this->localizationService->translate('error.nothingToRollback'),
                 ]);
             }
-            $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $GLOBALS['BE_USER'] ?? null);
+            $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof BackendUserAuthentication ? $GLOBALS['BE_USER'] : null;
+            $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $backendUser);
         } catch (\Throwable $e) {
             return new JsonResponse([
                 'success' => false,
-                'error' => sprintf('%s (%s:%d)', $e->getMessage(), basename($e->getFile()), $e->getLine()),
+                'error' => $this->localizationService->translate('error.rollbackFailed'),
             ]);
         }
 
@@ -292,8 +297,8 @@ final readonly class EasyWorkspaceAjaxController
             if (!is_array($entry)) {
                 continue;
             }
-            $table = (string)($entry['table'] ?? '');
-            $workspaceUid = (int)($entry['workspaceUid'] ?? 0);
+            $table = Value::string($entry['table'] ?? null);
+            $workspaceUid = Value::int($entry['workspaceUid'] ?? null);
             // Allow-list — keeps arbitrary TCA tables (be_users,
             // sys_log, …) out of the DataHandler cmdmap.
             if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
@@ -308,8 +313,8 @@ final readonly class EasyWorkspaceAjaxController
     public function discardAction(ServerRequestInterface $request): ResponseInterface
     {
         $payload = $this->decodeBody($request);
-        $table = (string)($payload['table'] ?? '');
-        $workspaceUid = (int)($payload['workspaceUid'] ?? 0);
+        $table = Value::string($payload['table'] ?? null);
+        $workspaceUid = Value::int($payload['workspaceUid'] ?? null);
         if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.missingTableWorkspace')], 400);
         }
@@ -317,7 +322,7 @@ final readonly class EasyWorkspaceAjaxController
         if (!$config['enabled']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
-        if (!($config['enableRevert'] ?? true)) {
+        if (!$config['enableRevert']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.revertDisabled')], 403);
         }
         return new JsonResponse($this->publishService->discard($table, $workspaceUid));
@@ -325,7 +330,7 @@ final readonly class EasyWorkspaceAjaxController
 
     public function previewLinkAction(ServerRequestInterface $request): ResponseInterface
     {
-        $pageUid = (int)($request->getQueryParams()['pageUid'] ?? 0);
+        $pageUid = Value::int($request->getQueryParams()['pageUid'] ?? null);
         if ($pageUid <= 0) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.missingPageUid')], 400);
         }
@@ -354,10 +359,10 @@ final readonly class EasyWorkspaceAjaxController
                 return [];
             }
             $decoded = json_decode($body, true);
-            return is_array($decoded) ? $decoded : [];
+            return Value::stringKeyArray($decoded);
         }
         $parsed = $request->getParsedBody();
-        return is_array($parsed) ? $parsed : [];
+        return Value::stringKeyArray($parsed);
     }
 
     private function isAllowedWorkspaceTable(string $table): bool
@@ -365,49 +370,20 @@ final readonly class EasyWorkspaceAjaxController
         if (in_array($table, self::ALLOWED_TABLES, true)) {
             return true;
         }
-        if ($table === 'sys_file_reference' || !$this->isWorkspaceAwareHiddenTable($table)) {
+        if ($table === 'sys_file_reference' || !TcaUtility::isWorkspaceAwareHiddenTable($table)) {
             return false;
         }
-        foreach ($GLOBALS['TCA'] ?? [] as $parentTca) {
-            if (!is_array($parentTca) || empty($parentTca['ctrl']['versioningWS'])) {
+        foreach (TcaUtility::tables() as $parentTca) {
+            $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
+            if (empty($ctrl['versioningWS'])) {
                 continue;
             }
-            foreach ($this->extractInlineFieldConfigs($parentTca) as $fieldConfig) {
+            foreach (TcaUtility::extractInlineFieldConfigs($parentTca) as $fieldConfig) {
                 if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    private function isWorkspaceAwareHiddenTable(string $table): bool
-    {
-        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
-        return is_array($ctrl) && !empty($ctrl['versioningWS']) && !empty($ctrl['hideTable']);
-    }
-
-    /**
-     * @param array<string, mixed> $tca
-     * @return list<array<string, mixed>>
-     */
-    private function extractInlineFieldConfigs(array $tca): array
-    {
-        $configs = [];
-        foreach ($tca['columns'] ?? [] as $column) {
-            $fieldConfig = is_array($column) ? ($column['config'] ?? []) : [];
-            if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
-                $configs[] = $fieldConfig;
-            }
-        }
-        foreach ($tca['types'] ?? [] as $typeConfig) {
-            foreach (($typeConfig['columnsOverrides'] ?? []) as $override) {
-                $fieldConfig = is_array($override) ? ($override['config'] ?? []) : [];
-                if (is_array($fieldConfig) && ($fieldConfig['type'] ?? '') === 'inline') {
-                    $configs[] = $fieldConfig;
-                }
-            }
-        }
-        return $configs;
     }
 }

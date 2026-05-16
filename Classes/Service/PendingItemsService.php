@@ -7,6 +7,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Backend\View\BackendLayoutView;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -22,6 +23,8 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
+use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Collects records visible in the toolbar dropdown for a given page or
@@ -57,13 +60,13 @@ final readonly class PendingItemsService
      */
     public function forPage(int $pageUid, string $mode = self::MODE_CHANGED, array $config = []): array
     {
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $pageUid <= 0) {
             return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
         }
 
-        $maxItems = (int)($config['maxItems'] ?? 200);
+        $maxItems = Value::int($config['maxItems'] ?? 200);
         $items = [];
 
         $pageItem = $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true, config: $config);
@@ -130,13 +133,13 @@ final readonly class PendingItemsService
      */
     public function forNews(int $newsUid, string $mode = self::MODE_CHANGED, array $config = []): array
     {
-        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
             return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'newsUid' => $newsUid, 'items' => [], 'mode' => $mode];
         }
 
-        $maxItems = (int)($config['maxItems'] ?? 200);
+        $maxItems = Value::int($config['maxItems'] ?? 200);
         $items = [];
         $newsItem = $this->resolveRecordItem('tx_news_domain_model_news', $newsUid, $workspaceId, isPrimary: true, config: $config);
         if ($newsItem !== null && ($mode === self::MODE_ALL || $newsItem->isChanged)) {
@@ -175,7 +178,7 @@ final readonly class PendingItemsService
         }
         $row = BackendUtility::getRecord('sys_workspace', $workspaceId);
         if (is_array($row) && !empty($row['title'])) {
-            return (string)$row['title'];
+            return Value::string($row['title']);
         }
         return $this->localizationService->translate('toolbar.title') . ' #' . $workspaceId;
     }
@@ -234,7 +237,7 @@ final readonly class PendingItemsService
         while ($row = $result->fetchAssociative()) {
             BackendUtility::workspaceOL($table, $row, $workspaceId);
             if (is_array($row)) {
-                $rows[] = $row;
+                $rows[] = Value::stringKeyArray($row);
             }
         }
         return $rows;
@@ -259,8 +262,8 @@ final readonly class PendingItemsService
         array $config = [],
         array $columnLabels = [],
     ): array {
-        $parentLiveUid = (int)($parentRow['t3ver_oid'] ?? 0) ?: (int)($parentRow['uid'] ?? 0);
-        $parentWorkspaceUid = (int)($parentRow['_ORIG_uid'] ?? $parentRow['uid'] ?? 0);
+        $parentLiveUid = Value::int($parentRow['t3ver_oid'] ?? null) ?: Value::int($parentRow['uid'] ?? null);
+        $parentWorkspaceUid = Value::int($parentRow['_ORIG_uid'] ?? $parentRow['uid'] ?? null);
         $parentUids = array_values(array_unique(array_filter([$parentLiveUid, $parentWorkspaceUid], static fn(int $uid): bool => $uid > 0)));
         if ($parentUids === []) {
             return [];
@@ -284,19 +287,22 @@ final readonly class PendingItemsService
      */
     private function resolveInlineChildConfigs(string $parentTable, array $parentRow): array
     {
-        $parentTca = $GLOBALS['TCA'][$parentTable] ?? null;
-        if (!is_array($parentTca)) {
+        $parentTca = TcaUtility::table($parentTable);
+        if ($parentTca === []) {
             return [];
         }
 
-        $columns = $parentTca['columns'] ?? [];
-        $typeField = (string)($parentTca['ctrl']['type'] ?? '');
-        $typeName = $typeField !== '' ? (string)($parentRow[$typeField] ?? '') : '';
-        $columnsOverrides = $typeName !== '' ? ($parentTca['types'][$typeName]['columnsOverrides'] ?? []) : [];
-        if (is_array($columnsOverrides)) {
-            foreach ($columnsOverrides as $fieldName => $override) {
-                $columns[$fieldName] = array_replace_recursive($columns[$fieldName] ?? [], is_array($override) ? $override : []);
-            }
+        $columns = Value::stringKeyArray($parentTca['columns'] ?? null);
+        $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
+        $typeField = Value::string($ctrl['type'] ?? null);
+        $typeName = $typeField !== '' ? Value::string($parentRow[$typeField] ?? null) : '';
+        $types = Value::stringKeyArray($parentTca['types'] ?? null);
+        $typeConfig = Value::stringKeyArray($types[$typeName] ?? null);
+        foreach (Value::stringKeyArray($typeConfig['columnsOverrides'] ?? null) as $fieldName => $override) {
+            $columns[$fieldName] = array_replace_recursive(
+                Value::stringKeyArray($columns[$fieldName] ?? null),
+                Value::stringKeyArray($override),
+            );
         }
 
         $inlineConfigs = [];
@@ -304,23 +310,23 @@ final readonly class PendingItemsService
             if (!is_array($column)) {
                 continue;
             }
-            $fieldConfig = $column['config'] ?? [];
-            if (!is_array($fieldConfig) || ($fieldConfig['type'] ?? '') !== 'inline') {
+            $fieldConfig = Value::stringKeyArray(Value::stringKeyArray($column)['config'] ?? null);
+            if (($fieldConfig['type'] ?? null) !== 'inline') {
                 continue;
             }
-            $foreignTable = (string)($fieldConfig['foreign_table'] ?? '');
-            $foreignField = (string)($fieldConfig['foreign_field'] ?? '');
+            $foreignTable = Value::string($fieldConfig['foreign_table'] ?? null);
+            $foreignField = Value::string($fieldConfig['foreign_field'] ?? null);
             if ($foreignTable === '' || $foreignField === '' || !$this->isWorkspaceAwareInlineChildTable($foreignTable)) {
                 continue;
             }
-            $foreignMatchFields = $fieldConfig['foreign_match_fields'] ?? [];
+            $foreignMatchFields = Value::scalarStringKeyArray($fieldConfig['foreign_match_fields'] ?? null);
             $inlineConfigs[] = [
-                'field' => (string)$fieldName,
-                'label' => (string)($column['label'] ?? $fieldConfig['label'] ?? $fieldName),
+                'field' => $fieldName,
+                'label' => Value::string(Value::stringKeyArray($column)['label'] ?? $fieldConfig['label'] ?? $fieldName),
                 'table' => $foreignTable,
                 'foreignField' => $foreignField,
-                'foreignTableField' => isset($fieldConfig['foreign_table_field']) ? (string)$fieldConfig['foreign_table_field'] : null,
-                'foreignMatchFields' => is_array($foreignMatchFields) ? $foreignMatchFields : [],
+                'foreignTableField' => isset($fieldConfig['foreign_table_field']) ? Value::string($fieldConfig['foreign_table_field']) : null,
+                'foreignMatchFields' => $foreignMatchFields,
                 'orderBy' => $this->resolveChildOrderBy($foreignTable, $fieldConfig),
             ];
         }
@@ -332,10 +338,7 @@ final readonly class PendingItemsService
         if ($table === 'sys_file_reference') {
             return false;
         }
-        $ctrl = $GLOBALS['TCA'][$table]['ctrl'] ?? null;
-        return is_array($ctrl)
-            && !empty($ctrl['versioningWS'])
-            && !empty($ctrl['hideTable']);
+        return TcaUtility::isWorkspaceAwareHiddenTable($table);
     }
 
     /**
@@ -344,11 +347,13 @@ final readonly class PendingItemsService
      */
     private function resolveChildOrderBy(string $table, array $fieldConfig): array
     {
-        $sortField = (string)($fieldConfig['foreign_sortby'] ?? $GLOBALS['TCA'][$table]['ctrl']['sortby'] ?? '');
-        if ($sortField !== '' && isset($GLOBALS['TCA'][$table]['columns'][$sortField])) {
+        $tableTca = TcaUtility::table($table);
+        $ctrl = Value::stringKeyArray($tableTca['ctrl'] ?? null);
+        $sortField = Value::string($fieldConfig['foreign_sortby'] ?? $ctrl['sortby'] ?? null);
+        if ($sortField !== '' && TcaUtility::hasColumn($table, $sortField)) {
             return [[$sortField, 'ASC']];
         }
-        if (isset($GLOBALS['TCA'][$table]['columns']['sorting'])) {
+        if (TcaUtility::hasColumn($table, 'sorting')) {
             return [['sorting', 'ASC']];
         }
         return [['uid', 'ASC']];
@@ -407,16 +412,12 @@ final readonly class PendingItemsService
                 BackendUtility::workspaceOL($table, $row, $workspaceId);
             }
             if (is_array($row)) {
-                $rows[] = $row;
+                $rows[] = Value::stringKeyArray($row);
             }
         }
         return $rows;
     }
 
-    /**
-     * @param array<string, mixed> $config
-     * @return list<PendingItem>
-     */
     /**
      * @param array<string, mixed>             $config
      * @param list<array{0: string, 1: string}> $orderBy       Defaults to [['sorting','ASC']] to match the original behaviour for non-tt_content tables.
@@ -484,7 +485,7 @@ final readonly class PendingItemsService
                 ->executeQuery();
             $newsRows = [];
             while ($row = $result->fetchAssociative()) {
-                $newsRows[] = $row;
+                $newsRows[] = Value::stringKeyArray($row);
             }
         }
 
@@ -539,13 +540,9 @@ final readonly class PendingItemsService
         if (!is_array($row)) {
             return null;
         }
-        return $this->buildItem($table, $row, $isPrimary, $config);
+        return $this->buildItem($table, Value::stringKeyArray($row), $isPrimary, $config);
     }
 
-    /**
-     * @param array<string, mixed> $row
-     * @param array<string, mixed> $config
-     */
     /**
      * Public adapter for LatestChangesService — same logic as the
      * internal buildItem(), but always builds with isPrimary=false
@@ -567,10 +564,18 @@ final readonly class PendingItemsService
     /**
      * @param array<int, string> $columnLabels colPos → name map; only consulted for tt_content rows. Empty falls back to the numeric colPos.
      */
+    /**
+     * @param array<string, mixed> $row
+     * @param array<string, mixed> $config
+     * @param array<int, string> $columnLabels colPos -> name map; only consulted for tt_content rows.
+     */
     private function buildItem(string $table, array $row, bool $isPrimary, array $config = [], array $columnLabels = []): ?PendingItem
     {
-        $rawUid = (int)($row['uid'] ?? 0);
+        $rawUid = Value::int($row['uid'] ?? null);
         if ($rawUid <= 0) {
+            return null;
+        }
+        if (Value::int($row['deleted'] ?? null) !== 0) {
             return null;
         }
 
@@ -579,11 +584,11 @@ final readonly class PendingItemsService
             return null;
         }
 
-        $isChanged = isset($row['_ORIG_uid']) || (int)($row['t3ver_wsid'] ?? 0) > 0;
+        $isChanged = isset($row['_ORIG_uid']) || Value::int($row['t3ver_wsid'] ?? null) > 0;
         // After workspaceOL the row's uid is the *live* uid; _ORIG_uid is the workspace version uid.
         if ($isChanged) {
-            $workspaceUid = (int)($row['_ORIG_uid'] ?? $row['uid']);
-            $liveUid = (int)($row['t3ver_oid'] ?? 0) ?: (int)$row['uid'];
+            $workspaceUid = Value::int($row['_ORIG_uid'] ?? $row['uid'] ?? null);
+            $liveUid = Value::int($row['t3ver_oid'] ?? null) ?: Value::int($row['uid'] ?? null);
         } else {
             $workspaceUid = $rawUid;
             $liveUid = $rawUid;
@@ -591,7 +596,7 @@ final readonly class PendingItemsService
 
         $title = $this->resolveTitle($table, $row);
 
-        $state = VersionState::tryFrom((int)($row['t3ver_state'] ?? 0)) ?? VersionState::DEFAULT_STATE;
+        $state = VersionState::tryFrom(Value::int($row['t3ver_state'] ?? null)) ?? VersionState::DEFAULT_STATE;
         if (!$isChanged) {
             $kindKey = 'live';
             $kindLabel = $this->localizationService->translate('state.live');
@@ -611,8 +616,8 @@ final readonly class PendingItemsService
         $editUrl = $this->buildEditUrl($table, $liveUid);
         // The v14 contextual variant of the same route — slim Save/Close
         // chrome that fits the sheet-position modal we open from the
-        // dropdown's pencil. The JS prefers this URL when available
-        // and falls back to $editUrl on older TYPO3 versions.
+        // dropdown's pencil. The JS prefers this URL because this
+        // extension is TYPO3 v14-only.
         $contextualEditUrl = $this->buildContextualEditUrl($table, $liveUid);
 
         // Attach the field-level diff so each row in the dropdown can
@@ -629,7 +634,7 @@ final readonly class PendingItemsService
         $colPos = null;
         $colPosLabel = null;
         if ($table === 'tt_content' && array_key_exists('colPos', $row)) {
-            $colPos = (int)$row['colPos'];
+            $colPos = Value::int($row['colPos'] ?? null);
             $colPosLabel = $columnLabels[$colPos] ?? null;
             if ($colPosLabel === null || $colPosLabel === '') {
                 $colPosLabel = $this->localizationService->translate('toolbar.column', ['number' => $colPos]);
@@ -680,8 +685,8 @@ final readonly class PendingItemsService
         $languageService = $this->getLanguageService();
         $out = [];
         foreach ($columns as $colPos => $rawLabel) {
-            $resolved = $languageService->sL((string)$rawLabel);
-            $out[(int)$colPos] = $resolved !== '' ? $resolved : (string)$rawLabel;
+            $resolved = $languageService->sL(Value::string($rawLabel));
+            $out[Value::int($colPos)] = $resolved !== '' ? $resolved : Value::string($rawLabel);
         }
         return $out;
     }
@@ -707,7 +712,7 @@ final readonly class PendingItemsService
     }
 
     /**
-     * TYPO3 v14 introduced `record_edit_contextual` — a lightweight
+     * TYPO3 v14 provides `record_edit_contextual` — a lightweight
      * variant of EditDocumentController that renders the same
      * FormEngine but with a minimal "Save / Close" chrome, designed
      * to be opened inside a sheet-position modal. We prefer that
@@ -716,9 +721,9 @@ final readonly class PendingItemsService
      * right-side panel and posts back save/close signals via
      * window.postMessage so the dropdown can refresh after a save.
      *
-     * Returns null on older TYPO3 versions that don't have the
-     * route registered — the JS falls back to the regular editUrl
-     * in that case.
+     * Returns null if a site customizes backend routes in a way that
+     * makes the route unavailable — the JS falls back to the regular
+     * editUrl in that case.
      */
     private function buildContextualEditUrl(string $table, int $uid): ?string
     {
@@ -769,16 +774,16 @@ final readonly class PendingItemsService
             return $title;
         }
         if ($table === 'tt_content' && isset($row['bodytext'])) {
-            $fallback = $this->extractTextSnippet((string)$row['bodytext']);
+            $fallback = $this->extractTextSnippet(Value::string($row['bodytext']));
             if ($fallback !== '') {
                 return $fallback;
             }
         }
         $typeLabel = $this->resolveTypeLabel($table, $row);
         if ($typeLabel !== '') {
-            return $typeLabel . ' · #' . (int)$row['uid'];
+            return $typeLabel . ' · #' . Value::int($row['uid'] ?? null);
         }
-        return $table . ' #' . (int)$row['uid'];
+        return $table . ' #' . Value::int($row['uid'] ?? null);
     }
 
     private function extractTextSnippet(string $raw): string
@@ -814,22 +819,24 @@ final readonly class PendingItemsService
         }
         $schema = $this->tcaSchemaFactory->get($table);
         try {
-            $typeField = $schema->getSubSchemaTypeInformation()?->getFieldName();
+            $typeField = $schema->getSubSchemaTypeInformation()->getFieldName();
         } catch (InvalidSchemaTypeException) {
             $typeField = null;
         }
 
         // No discriminator field — fall back to the schema's own title.
         if ($typeField === null || !isset($row[$typeField])) {
-            $title = $schema->getRawConfiguration()['ctrl']['title'] ?? $table;
-            $label = (string)$this->getLanguageService()->sL($title);
+            $rawConfiguration = $schema->getRawConfiguration();
+            $ctrl = Value::stringKeyArray($rawConfiguration['ctrl'] ?? null);
+            $title = Value::string($ctrl['title'] ?? $table);
+            $label = $this->getLanguageService()->sL($title);
             return $label !== '' ? $label : $table;
         }
 
-        $value = (string)$row[$typeField];
+        $value = Value::string($row[$typeField] ?? null);
         $label = BackendUtility::getLabelFromItemlist($table, $typeField, $value);
-        if (is_string($label) && $label !== '') {
-            return (string)$this->getLanguageService()->sL($label);
+        if ($label !== '') {
+            return $this->getLanguageService()->sL($label);
         }
         // Last resort — the raw value (still better than nothing).
         return $value;
@@ -875,7 +882,7 @@ final readonly class PendingItemsService
             ->setMaxResults(1)
             ->executeQuery()
             ->fetchAssociative();
-        return is_array($row) ? (int)$row['uid_local'] : 0;
+        return is_array($row) ? Value::int($row['uid_local'] ?? null) : 0;
     }
 
     private function referenceToUrl(int $fileUid): ?string
@@ -897,9 +904,12 @@ final readonly class PendingItemsService
         if (isset($GLOBALS['LANG']) && $GLOBALS['LANG'] instanceof LanguageService) {
             return $GLOBALS['LANG'];
         }
-        $lang = is_string($GLOBALS['BE_USER']->user['lang'] ?? null) && $GLOBALS['BE_USER']->user['lang'] !== ''
-            ? (string)$GLOBALS['BE_USER']->user['lang']
-            : 'default';
+        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof BackendUserAuthentication ? $GLOBALS['BE_USER'] : null;
+        $user = $backendUser instanceof BackendUserAuthentication ? $backendUser->user : [];
+        $lang = Value::string($user['lang'] ?? null);
+        if ($lang === '') {
+            $lang = 'default';
+        }
         return $this->languageServiceFactory->create($lang);
     }
 }

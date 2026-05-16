@@ -36,6 +36,6 @@ final readonly class VisualEditorDeclineButtonMiddleware implements MiddlewareIn
             return false;
         }
 
-        return (int)($backendUser->workspace ?? 0) > 0;
+        return $backendUser->workspace > 0;
     }
 }

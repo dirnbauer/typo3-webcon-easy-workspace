@@ -136,6 +136,19 @@ This is the default — no overrides needed.
 
 Toggling a flag in the dropdown only would let a power user re-enable it via DevTools. **All boolean flags are also enforced on the PHP side** — `EasyWorkspaceAjaxController` re-reads `ConfigurationProvider::get()` on every request and returns `403` when the matching flag is off. `showHidden = 0` and `enableThumbnails = 0` additionally short-circuit the database / FAL work so the response payload is smaller.
 
+## Development checks
+
+The repository ships TYPO3 14-only quality tooling:
+
+```bash
+composer test
+Build/Scripts/runTests.sh -s phpstan
+Build/Scripts/runTests.sh -s lint
+```
+
+PHPStan uses the current TYPO3-style `Build/phpstan/phpstan.neon`
+location and runs with `level: max`.
+
 ## Content Blocks collection tables
 
 When `enableTypeLabels = 1`, Easy Workspace resolves a friendly label for each
