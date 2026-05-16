@@ -1224,13 +1224,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
         padding: '4px 9px 5px',
         fontSize: '11px',
         lineHeight: '1.25',
-        background: '#dc3545',
+        background: 'rgba(220, 53, 69, 0.78)',
         color: '#fff',
+        border: '1px solid rgba(255, 255, 255, 0.32)',
         borderRadius: '3px',
-        boxShadow: '0 2px 6px rgba(0,0,0,.25)',
+        boxShadow: '0 3px 12px rgba(0, 0, 0, 0.28)',
+        backdropFilter: 'blur(4px) saturate(135%)',
+        WebkitBackdropFilter: 'blur(4px) saturate(135%)',
         pointerEvents: 'none',
         whiteSpace: 'nowrap',
         fontFamily: 'inherit',
+        textShadow: '0 1px 1px rgba(0, 0, 0, 0.38)',
       });
       const titleEl = doc.createElement('div');
       titleEl.textContent = title;
