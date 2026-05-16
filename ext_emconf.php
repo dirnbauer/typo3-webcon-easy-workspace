@@ -7,11 +7,12 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'Kurt Dirnbauer',
     'author_email' => 'office@webconsulting.at',
     'author_company' => 'webconsulting.at',
-    'state' => 'beta',
-    'version' => '0.1.0',
+    'state' => 'stable',
+    'version' => '14.0.0',
     'constraints' => [
         'depends' => [
             'typo3' => '14.3.0-14.99.99',
+            'php' => '8.2.0-8.5.99',
             'workspaces' => '14.3.0-14.99.99',
         ],
         'conflicts' => [],

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<guides
+    xmlns="https://www.phpdoc.org/guides"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://www.phpdoc.org/guides vendor/phpdocumentor/guides-cli/resources/schema/guides.xsd"
+    theme="typo3docs"
+    default-code-language="php"
+    links-are-relative="true"
+>
+    <project
+        title="Easy Workspace"
+        version="14.0"
+        release="14.0.0"
+        copyright="since 2026 by webconsulting.at"
+    />
+
+    <extension
+        class="\T3Docs\Typo3DocsTheme\DependencyInjection\Typo3DocsThemeExtension"
+        typo3-core-preferred="stable"
+        interlink-shortcode="webconsulting/webcon-easy-workspace"
+        project-home="https://github.com/dirnbauer/typo3-webcon-easy-workspace"
+        project-contact="https://github.com/dirnbauer/typo3-webcon-easy-workspace/issues"
+        project-repository="https://github.com/dirnbauer/typo3-webcon-easy-workspace"
+        project-issues="https://github.com/dirnbauer/typo3-webcon-easy-workspace/issues"
+        edit-on-github="dirnbauer/typo3-webcon-easy-workspace"
+        edit-on-github-branch="main"
+        edit-on-github-directory="Documentation"
+    />
+
+    <inventory id="t3coreapi" url="https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/"/>
+    <inventory id="t3tsconfig" url="https://docs.typo3.org/m/typo3/reference-tsconfig/main/en-us/"/>
+</guides>

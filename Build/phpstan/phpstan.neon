@@ -1,8 +1,6 @@
-includes:
-  - phpstan-baseline.neon
-
 parameters:
   level: max
+  phpVersion: 80200
 
   paths:
     - ../../Classes
@@ -14,4 +12,8 @@ parameters:
     - '**/node_modules/*'
     - '**/ext_emconf.php'
 
+  treatPhpDocTypesAsCertain: false
   checkMissingOverrideMethodAttribute: false
+
+  typo3:
+    containerXmlPath: null

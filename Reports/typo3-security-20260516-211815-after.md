@@ -1,0 +1,19 @@
+# TYPO3 Security Report
+
+**Generated:** 2026-05-16 21:18:15 Europe/Vienna
+**Skill:** `/typo3-security`
+
+## Changes Applied
+
+- Read endpoints are restricted to GET.
+- Publish, discard and history rollback endpoints are restricted to POST.
+- `SECURITY.md` now documents TYPO3 route token generation through
+  `TYPO3.settings.ajaxUrls`.
+- No custom CSRF mechanism was added; the extension keeps TYPO3's backend
+  route token and authentication stack as the source of truth.
+
+## Verification
+
+- Security audit script: passed with 0 errors.
+- Remaining scanner warnings are generic false positives for TYPO3 backend
+  route tokens and project-level security headers.

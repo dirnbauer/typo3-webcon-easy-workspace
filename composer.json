@@ -1,6 +1,7 @@
 {
     "name": "webconsulting/webcon-easy-workspace",
     "description": "Easy Workspace — a backend toolbar item for TYPO3 v14 that lets editors publish the current page (or news record) together with its content elements in one click.",
+    "version": "14.0.0",
     "license": "GPL-2.0-or-later",
     "type": "typo3-cms-extension",
     "keywords": [
@@ -23,7 +24,7 @@
         "source": "https://github.com/dirnbauer/typo3-webcon-easy-workspace"
     },
     "require": {
-        "php": "^8.3",
+        "php": "^8.2",
         "typo3/cms-backend": "^14.3",
         "typo3/cms-core": "^14.3",
         "typo3/cms-fluid": "^14.3",
@@ -33,7 +34,7 @@
     "require-dev": {
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
-        "saschaegerer/phpstan-typo3": "^3.0"
+        "saschaegerer/phpstan-typo3": "^3.0.1"
     },
     "suggest": {
         "georgringer/news": "Adds news-bundle publishing (news record + content elements via tx_news_related_news).",

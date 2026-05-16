@@ -20,7 +20,6 @@ use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Schema\Exception\InvalidSchemaTypeException;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
@@ -216,8 +215,8 @@ final readonly class PendingItemsService
         // shown and the reduce logic needs to be added after").
         $queryBuilder->getRestrictions()
             ->removeAll()
-            ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
-            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, false));
+            ->add(new DeletedRestriction())
+            ->add(new WorkspaceRestriction($workspaceId, false));
 
         $queryBuilder
             ->select('*')
@@ -372,8 +371,8 @@ final readonly class PendingItemsService
         $queryBuilder->getRestrictions()->removeAll();
         if ($mode === self::MODE_ALL) {
             $queryBuilder->getRestrictions()
-                ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
-                ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, false));
+                ->add(new DeletedRestriction())
+                ->add(new WorkspaceRestriction($workspaceId, false));
         }
 
         $constraints = [
@@ -523,8 +522,8 @@ final readonly class PendingItemsService
         // See listAllRelatedRecords for why $includeRowsForWorkspacePreview=false.
         $queryBuilder->getRestrictions()
             ->removeAll()
-            ->add(GeneralUtility::makeInstance(DeletedRestriction::class))
-            ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId, false));
+            ->add(new DeletedRestriction())
+            ->add(new WorkspaceRestriction($workspaceId, false));
 
         $row = $queryBuilder
             ->select('*')
@@ -561,9 +560,6 @@ final readonly class PendingItemsService
         return $this->buildItem($table, $row, isPrimary: false, config: $config);
     }
 
-    /**
-     * @param array<int, string> $columnLabels colPos → name map; only consulted for tt_content rows. Empty falls back to the numeric colPos.
-     */
     /**
      * @param array<string, mixed> $row
      * @param array<string, mixed> $config

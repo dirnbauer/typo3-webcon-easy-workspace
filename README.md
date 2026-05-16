@@ -13,8 +13,9 @@ Each row shows a **checkbox** (checked by default), the record **title**, a stat
 
 ## Requirements
 
-- TYPO3 14.3 LTS
-- PHP 8.3+
+- Easy Workspace 14.0.0
+- TYPO3 14.3 LTS only (`^14.3`)
+- PHP 8.2-8.5
 - `typo3/cms-workspaces`
 - `typo3/cms-fluid`
 - `typo3/cms-frontend`
@@ -86,7 +87,7 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 
 **Server-side enforcement.** Every boolean flag is read by `Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider` (via `BackendUserAuthentication::getTSConfig()` and `BackendUtility::getPagesTSconfig()` — public v14 APIs) and *also* checked in `EasyWorkspaceAjaxController`: e.g. when `showHidden = 0` the hidden rows never reach the response payload, and toggling `enableRevert = 0` returns `403` on the discard endpoint so DevTools can't bypass it.
 
-📘 **[Full configuration reference → `Documentation/Configuration.md`](Documentation/Configuration.md)** — every key with its server-side consequences, plus four ready-made profiles (junior editor, reviewer, performance setup, news-free site).
+**[Full configuration reference](Documentation/Configuration.rst)** — every key with its server-side consequences, plus ready-made TSconfig examples.
 
 ### Preview link & OS clipboard
 
@@ -169,6 +170,10 @@ Build/Scripts/runTests.sh -s lint
 ```
 
 PHPStan runs with `level: max` through `Build/phpstan/phpstan.neon`.
+The repository uses `saschaegerer/phpstan-typo3` 3.0.1 with
+`phpstan/extension-installer`, matching the current TYPO3 14/PHPStan 2
+tooling. GitHub Actions runs the same checks on PHP 8.2, 8.3, 8.4 and
+8.5.
 
 ### Content Blocks collection tables
 
