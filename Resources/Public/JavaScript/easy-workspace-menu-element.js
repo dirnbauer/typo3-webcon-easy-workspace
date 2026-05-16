@@ -142,14 +142,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
       toggle?.addEventListener('click', () => this._refresh());
     }
 
-    // Listen for the {type: 'wew-decline', table, uid} postMessage
-    // sent by visual-editor's <ve-content-element> action-bar
-    // "decline" button (added via patches/visual-editor-add-decline-
-    // workspace-changes-button.patch). The button lives in the FE
-    // iframe and doesn't have direct access to the BE token /
-    // ajaxUrls — it just signals intent; the discard runs here in
-    // the BE context with full session + the existing confirmation
-    // modal.
+    // Listen for the Visual Editor iframe helper. The button lives in
+    // the FE iframe and doesn't have direct access to the BE token /
+    // ajaxUrls, so the discard runs here in the BE context with the
+    // existing confirmation modal.
     this._declineMessageListener = (event) => this._onDeclineMessage(event);
     window.addEventListener('message', this._declineMessageListener);
 
@@ -194,24 +190,25 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Handle a `wew-decline` postMessage from the visual-editor FE
-   * iframe (the patched <ve-content-element> action-bar button).
-   * Validates the payload, then synthesizes an item descriptor that
-   * matches what _confirmAndDiscard expects from the dropdown list.
+   * Handle Visual Editor iframe messages from our FE helper module.
+   * Validates the iframe source, serves the changed-record state,
+   * or synthesizes an item descriptor for _confirmAndDiscard.
    *
    * The discard endpoint takes (table, workspaceUid). When the
-   * editor clicks the FE-side button we only know the rendered uid
-   * — which IS the workspace uid because visual-editor uses the
-   * versioned uid via getVersionedUid() on tt_content nodes. The
-   * backend accepts this and resolves the live record via DataHandler.
+   * editor clicks the FE-side button we only know the rendered uid.
+   * That can be either the live uid or the workspace uid, so we
+   * resolve it through the currently loaded toolbar item list first.
    */
   _onDeclineMessage(event) {
-    // Origin check: only accept messages from our own origin. The
-    // FE iframe lives on the same host (BE cookie path is /) so
-    // event.origin matches window.origin.
-    if (event.origin !== window.location.origin) return;
     const data = event.data;
-    if (!data || data.type !== 'wew-decline') return;
+    if (!data || (data.type !== 'wew-decline' && data.type !== 'wew-decline-state-request')) return;
+    if (!this._isKnownPreviewWindow(event.source)) return;
+
+    if (data.type === 'wew-decline-state-request') {
+      this._sendDeclineState(event.source, event.origin);
+      return;
+    }
+
     const table = String(data.table || '');
     const uid = parseInt(data.uid, 10);
     if (!table || uid <= 0) return;
@@ -233,6 +230,53 @@ class WebconEasyWorkspaceMenu extends LitElement {
       isChanged: true,
     };
     this._confirmAndDiscard(item);
+  }
+
+  _isKnownPreviewWindow(source) {
+    if (!source) return false;
+    for (const iframe of this._collectIframes()) {
+      try {
+        if (this._isKnownPreviewFrame(iframe) && iframe.contentWindow === source) {
+          return true;
+        }
+      } catch { /* cross-origin frame access can throw */ }
+    }
+    return false;
+  }
+
+  _declineStatePayload() {
+    return {
+      type: 'wew-decline-state',
+      workspaceId: this.workspaceId || 0,
+      records: this.items
+        .filter((item) => item?.isChanged)
+        .map((item) => ({
+          table: item.table,
+          liveUid: item.liveUid,
+          workspaceUid: item.workspaceUid,
+        })),
+    };
+  }
+
+  _sendDeclineState(source, origin = '*') {
+    try {
+      source?.postMessage(this._declineStatePayload(), origin || '*');
+    } catch { /* target frame may already be gone */ }
+  }
+
+  _broadcastDeclineState() {
+    const payload = this._declineStatePayload();
+    for (const iframe of this._collectIframes()) {
+      if (!this._isKnownPreviewFrame(iframe)) continue;
+      try {
+        iframe.contentWindow?.postMessage(payload, '*');
+      } catch { /* target frame may already be gone */ }
+    }
+  }
+
+  _isKnownPreviewFrame(iframe) {
+    const src = iframe?.src || '';
+    return iframe?.id === 'visual-editor-iframe' || /[?&]editMode=/.test(src);
   }
 
   /**
@@ -1968,6 +2012,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.items = [];
       this.workspaceId = 0;
       this._updateToolbarBadge();
+      this._broadcastDeclineState();
       return;
     }
 
@@ -1989,6 +2034,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.selection = new Set(this.items.filter((i) => i.isChanged).map((i) => this._key(i)));
       this.state = this.items.length === 0 ? 'empty' : 'loaded';
       this._updateToolbarBadge();
+      this._broadcastDeclineState();
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
       this.state = 'error';
