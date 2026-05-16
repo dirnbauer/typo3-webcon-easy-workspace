@@ -3,33 +3,48 @@
  * All visual tokens are sourced from TYPO3 v14 backend styleguide
  * variables (--typo3-* / --bs-*) so the dropdown follows the
  * editor's light / dark theme automatically.
+ *
+ * Compact layout: 420px wide, scrolling list, dense rows.
  */
 
 webcon-easy-workspace-menu {
     display: block;
-    width: 420px;
+    width: min(380px, calc(100vw - 24px));
     max-width: 95vw;
     font-size: 13px;
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 
+/* Bootstrap dropdown clamps width to its parent — force the dropdown
+   menu to grow to fit our element, but cap at the same width so it
+   stays right-anchored within the viewport. */
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu) {
+    width: auto;
+    max-width: min(380px, calc(100vw - 24px));
+    min-width: 320px;
+}
+
+/* ---- Header ---- */
+
 .wew-menu__head {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: .75rem;
-    padding: .85rem 1rem;
+    gap: .55rem;
+    padding: .6rem .75rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 .wew-menu__icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
     color: var(--typo3-link-color, var(--bs-primary));
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 .wew-menu__title-wrap { min-width: 0; }
 .wew-menu__title {
@@ -37,15 +52,75 @@ webcon-easy-workspace-menu {
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+}
+.wew-menu__ws-chip {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .1rem .45rem;
+    border-radius: 999px;
+    color: var(--icon-color-accent, #ff8700);
+    background: color-mix(in srgb, var(--icon-color-accent, #ff8700) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--icon-color-accent, #ff8700) 32%, transparent);
 }
 .wew-menu__subtitle {
     margin: .15rem 0 0;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.wew-menu__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .55rem;
+    font-size: 11px;
+    line-height: 1.4;
+    border-radius: 999px;
+}
+.wew-menu__copy-label {
+    font-weight: 500;
+}
+
+/* ---- Filter chips ---- */
+
+.wew-menu__filter {
+    display: flex;
+    gap: .25rem;
+    padding: .45rem .75rem .25rem;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-menu__chip {
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+.wew-menu__chip:hover {
+    color: var(--typo3-component-color, var(--bs-body-color));
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, var(--typo3-component-border-color, var(--bs-border-color)));
+}
+.wew-menu__chip--active {
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: #fff;
+    border-color: var(--typo3-link-color, var(--bs-primary));
+}
+
+/* ---- States ---- */
 
 .wew-menu__loading {
     display: flex;
@@ -57,7 +132,7 @@ webcon-easy-workspace-menu {
 }
 .wew-menu__alert {
     margin: .75rem 1rem;
-    font-size: 13px;
+    font-size: 12px;
 }
 .wew-menu__empty {
     padding: 2rem 1rem;
@@ -79,33 +154,153 @@ webcon-easy-workspace-menu {
     justify-content: center;
 }
 
+/* ---- Item list ---- */
+
 .wew-list {
     list-style: none;
     margin: 0;
-    padding: .25rem 0;
+    padding: .2rem 0;
     max-height: 50vh;
     overflow-y: auto;
+    /* Thin, subtle scrollbar — visible only when the list overflows. */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d)) 45%, transparent) transparent;
+    scrollbar-gutter: stable;
 }
-.wew-list__row { border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color)); }
+/* WebKit (Chrome / Safari / Edge) implementation of the same. */
+.wew-list::-webkit-scrollbar {
+    width: 6px;
+}
+.wew-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.wew-list::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d)) 40%, transparent);
+    border-radius: 3px;
+}
+.wew-list::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 55%, transparent);
+}
+.wew-list__row {
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    position: relative;
+}
 .wew-list__row:last-child { border-bottom: 0; }
-.wew-list__row--primary { background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent); }
+/* No row-level highlight any more — the eye icon is the affordance. */
+.wew-list__row--primary {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 5%, transparent);
+}
+/* Changed rows get a left accent stripe — no greyed out fallback for the rest. */
+.wew-list__row--changed::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--bs-info);
+}
+.wew-list__row--changed[data-table="pages"]::before,
+.wew-list__row--changed[data-table="tx_news_domain_model_news"]::before {
+    background: var(--typo3-link-color, var(--bs-primary));
+}
+/* Hidden state: a subtle diagonal-stripe overlay on the thumbnail only. */
+.wew-list__row--hidden .wew-list__thumb {
+    position: relative;
+}
+.wew-list__row--hidden .wew-list__thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(45deg,
+        transparent 0 4px,
+        color-mix(in srgb, var(--bs-secondary-color, #6c757d) 25%, transparent) 4px 6px);
+    pointer-events: none;
+}
 
 .wew-list__label {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    /* checkbox | title (flex) | optional eye-button | optional thumbnail.
+       Trailing columns whose elements aren't rendered collapse to 0 px
+       width via grid auto-flow, so rows reflow naturally. */
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
-    gap: .65rem;
-    padding: .6rem 1rem;
+    gap: .55rem;
+    padding: .45rem .75rem .45rem .9rem;
     cursor: pointer;
     margin: 0;
+}
+
+.wew-list__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    flex-shrink: 0;
+}
+
+.wew-list__locate,
+.wew-list__discard {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d));
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
+}
+.wew-list__locate svg,
+.wew-list__discard svg { display: block; }
+
+.wew-list__locate:hover,
+.wew-list__locate:focus-visible {
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+    color: var(--typo3-link-color, var(--bs-primary));
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    outline: none;
+    transform: scale(1.05);
+}
+
+/* Discard intentionally uses the warning hue so it reads as
+   destructive even before the user clicks it. "Discard" is TYPO3's
+   term — same DataHandler operation as Revert. */
+.wew-list__discard:hover,
+.wew-list__discard:focus-visible {
+    background: color-mix(in srgb, var(--bs-warning, #e8a33d) 18%, transparent);
+    color: var(--bs-warning, #e8a33d);
+    border-color: color-mix(in srgb, var(--bs-warning, #e8a33d) 45%, transparent);
+    outline: none;
+    transform: scale(1.05);
+}
+.wew-list__row--unchanged .wew-list__label { cursor: default; }
+.wew-list__check-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
 }
 .wew-list__check {
     margin: 0;
     flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--typo3-link-color, var(--bs-primary));
+    cursor: pointer;
 }
+.wew-list__check-spacer { display: inline-block; width: 14px; height: 14px; }
+
 .wew-list__title {
     display: flex;
     flex-direction: column;
+    /* CRITICAL for ellipsis: grid items default to min-width:auto which
+       grows them to fit the longest child. Setting min-width:0 lets
+       the 1fr column actually constrain width so .wew-list__title-text
+       overflows and truncates. */
     min-width: 0;
 }
 .wew-list__title-text {
@@ -114,13 +309,26 @@ webcon-easy-workspace-menu {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 12.5px;
+    line-height: 1.3;
 }
 .wew-list__meta {
     display: flex;
-    gap: .45rem;
+    gap: .3rem;
     align-items: center;
     margin-top: .1rem;
-    font-size: 11px;
+    font-size: 10.5px;
+    overflow: hidden;
+    /* Allow flex children with min-width:0 to shrink + ellipsis. */
+    min-width: 0;
+}
+.wew-list__meta .badge {
+    flex-shrink: 0;
+}
+.wew-list__sep {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    opacity: .6;
+    flex-shrink: 0;
 }
 .wew-list__meta .badge {
     font-size: 10px;
@@ -128,17 +336,29 @@ webcon-easy-workspace-menu {
     text-transform: uppercase;
     letter-spacing: .04em;
     padding: .1rem .35rem;
-    border-radius: 4px;
+    border-radius: 3px;
+    line-height: 1.3;
 }
-.wew-list__meta .badge-success { background: color-mix(in srgb, var(--bs-success) 18%, transparent); color: var(--bs-success); }
-.wew-list__meta .badge-info    { background: color-mix(in srgb, var(--bs-info)    18%, transparent); color: var(--bs-info); }
-.wew-list__meta .badge-warning { background: color-mix(in srgb, var(--bs-warning) 18%, transparent); color: var(--bs-warning); }
-.wew-list__meta .badge-danger  { background: color-mix(in srgb, var(--bs-danger)  18%, transparent); color: var(--bs-danger); }
-.wew-list__table { color: var(--typo3-text-color-secondary, var(--bs-secondary-color)); }
+.wew-list__meta .badge-success    { background: color-mix(in srgb, var(--bs-success)         18%, transparent); color: var(--bs-success); }
+.wew-list__meta .badge-info       { background: color-mix(in srgb, var(--bs-info)            18%, transparent); color: var(--bs-info); }
+.wew-list__meta .badge-warning    { background: color-mix(in srgb, var(--bs-warning)         18%, transparent); color: var(--bs-warning); }
+.wew-list__meta .badge-danger     { background: color-mix(in srgb, var(--bs-danger)          18%, transparent); color: var(--bs-danger); }
+.wew-list__meta .badge-secondary  { background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 14%, transparent); color: var(--bs-secondary-color, #6c757d); }
+.wew-list__meta .badge-dark       { background: color-mix(in srgb, var(--bs-body-color)      14%, transparent); color: var(--typo3-component-color, var(--bs-body-color)); }
+.wew-list__hidden-badge { letter-spacing: .03em; }
+.wew-list__table {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Let this label shrink first when row is tight, badges stay full. */
+    flex: 1 1 auto;
+    min-width: 0;
+}
 
 .wew-list__thumb {
-    width: 48px;
-    height: 36px;
+    width: 40px;
+    height: 30px;
     border-radius: 4px;
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .04));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
@@ -153,17 +373,15 @@ webcon-easy-workspace-menu {
     height: 100%;
     object-fit: cover;
 }
-.wew-list__thumb--placeholder {
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    font-size: 18px;
-}
+
+/* ---- Footer ---- */
 
 .wew-menu__foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: .75rem;
-    padding: .65rem 1rem;
+    gap: .5rem;
+    padding: .5rem .75rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
@@ -172,18 +390,63 @@ webcon-easy-workspace-menu {
     align-items: center;
     gap: .35rem;
     flex-wrap: wrap;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
 .wew-menu__counters .btn-link {
     padding: 0;
-    font-size: 12px;
+    font-size: 11px;
     text-decoration: none;
 }
 .wew-menu__count {
-    margin-left: .35rem;
+    margin-left: .25rem;
     font-weight: 500;
 }
-.wew-menu__foot .btn-primary {
-    min-width: 140px;
+.wew-menu__publish {
+    min-width: 130px;
+    font-size: 12px;
+    padding: .35rem .75rem;
+}
+
+/* ---- Mobile / narrow viewport ---- */
+
+@media (max-width: 600px) {
+    webcon-easy-workspace-menu {
+        width: calc(100vw - 16px);
+    }
+    .wew-menu__head {
+        grid-template-columns: auto 1fr;
+        gap: .55rem;
+        padding: .55rem .65rem;
+    }
+    .wew-menu__icon { width: 28px; height: 28px; }
+    .wew-menu__copy {
+        grid-column: 1 / -1;
+        justify-self: end;
+        margin-top: .25rem;
+    }
+    .wew-menu__copy-label { display: none; }
+    .wew-menu__title { font-size: 13px; }
+    .wew-menu__subtitle { font-size: 10.5px; }
+
+    .wew-menu__filter { padding: .35rem .65rem .15rem; }
+
+    .wew-list__label {
+        grid-template-columns: auto 1fr 36px;
+        gap: .45rem;
+        padding: .45rem .65rem .45rem .8rem;
+    }
+    .wew-list__thumb { width: 36px; height: 28px; }
+    .wew-list__title-text { font-size: 12.5px; }
+    .wew-list__meta { font-size: 10px; }
+    .wew-list__meta .badge { padding: .05rem .3rem; }
+
+    .wew-menu__foot {
+        padding: .45rem .65rem;
+        flex-wrap: wrap;
+    }
+    .wew-menu__publish {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
 }

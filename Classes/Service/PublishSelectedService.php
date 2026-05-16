@@ -77,6 +77,44 @@ final readonly class PublishSelectedService
         ];
     }
 
+    /**
+     * Discard (revert) a single workspace version. Removes the
+     * offline record so the live row remains the only version.
+     *
+     * Uses DataHandler with the standard v14 cmdmap form
+     *   $cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];
+     * which is the supported way to clear a workspace version.
+     *
+     * @return array{success: bool, discarded: int, errors: list<string>}
+     */
+    public function discard(string $table, int $workspaceUid): array
+    {
+        if ($table === '' || $workspaceUid <= 0) {
+            return ['success' => false, 'discarded' => 0, 'errors' => ['Missing table / workspaceUid.']];
+        }
+        $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id', 0);
+        if ($workspaceId <= 0) {
+            return ['success' => false, 'discarded' => 0, 'errors' => ['Cannot discard from the live workspace.']];
+        }
+
+        $cmd = [
+            $table => [
+                $workspaceUid => [
+                    'version' => ['action' => 'flush'],
+                ],
+            ],
+        ];
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start([], $cmd);
+        $dataHandler->process_cmdmap();
+
+        return [
+            'success' => $dataHandler->errorLog === [],
+            'discarded' => 1,
+            'errors' => $dataHandler->errorLog,
+        ];
+    }
+
     private function resolveLiveUid(string $table, int $workspaceUid): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
