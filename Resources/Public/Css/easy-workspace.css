@@ -7,10 +7,20 @@
  * Compact layout: 420px wide, scrolling list, dense rows.
  */
 
+/* The toolbar trigger badge uses core's `.toolbar-item-badge` /
+   `.badge` / `.badge-pill` styles (mirrors System Information's
+   message-count badge), so no extension-specific styling is needed
+   here — the markup lives in EasyWorkspaceItem.html. */
+
 webcon-easy-workspace-menu {
     display: block;
     width: min(380px, calc(100vw - 24px));
     max-width: 95vw;
+    /* No content inside should ever push past the panel width.
+       Without this clip, a single long unbreakable token in a
+       title (URLs, IDs, etc.) inflated the dropdown and the parent
+       .dropdown-menu showed a horizontal scrollbar. */
+    overflow-x: hidden;
     font-size: 13px;
     color: var(--typo3-component-color, var(--bs-body-color));
 }
@@ -22,22 +32,32 @@ webcon-easy-workspace-menu {
     width: auto;
     max-width: min(380px, calc(100vw - 24px));
     min-width: 320px;
+    overflow-x: hidden;
+}
+/* Defensive: same belt-and-braces clamp on the inner root. */
+.wew-menu {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* ---- Header ---- */
 
 .wew-menu__head {
     display: grid;
-    grid-template-columns: auto 1fr;
+    /* icon | title-wrap | preview-button (auto-hidden when not
+       rendered, so the title-wrap fills the row).               */
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: .65rem;
-    padding: .75rem .85rem;
+    gap: .55rem;
+    /* Slimmer header now that the subtitle is gone — just enough
+       padding to seat the icon + title comfortably. */
+    padding: .45rem .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 .wew-menu__icon {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
     color: var(--typo3-link-color, var(--bs-primary));
@@ -45,6 +65,10 @@ webcon-easy-workspace-menu {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+.wew-menu__icon svg {
+    width: 18px;
+    height: 18px;
 }
 .wew-menu__title-wrap { min-width: 0; }
 .wew-menu__title {
@@ -92,6 +116,11 @@ webcon-easy-workspace-menu {
 .wew-menu__chip {
     border: 0;
     background: transparent;
+    /* TYPO3 v14 styleguide tokens — `--typo3-text-color-*` come from
+       cms-backend/Resources/Public/Css/backend.css and adapt to
+       light/dark via light-dark(). Inactive tab uses the secondary
+       text color, active tab gets the base text color (same as body
+       copy) so it reads as "I'm here" without a competing blue. */
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     padding: .55rem .85rem .5rem;
     margin-bottom: -1px; /* overlap the container's bottom border */
@@ -104,41 +133,127 @@ webcon-easy-workspace-menu {
     /* No rounded background — this is a tab, not a pill. */
 }
 .wew-menu__chip:hover {
-    color: var(--typo3-component-color, var(--bs-body-color));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-menu__chip--active {
-    color: var(--typo3-link-color, var(--bs-primary));
-    border-bottom-color: var(--typo3-link-color, var(--bs-primary));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+    /* Underline accent uses TYPO3's primary state bg — that's the
+       brand color (orange in default TYPO3), not Bootstrap blue. */
+    border-bottom-color: var(--typo3-state-primary-bg, var(--bs-primary));
     font-weight: 600;
 }
 .wew-menu__chip:focus-visible {
     /* WCAG 2.2 SC 2.4.11 — focus indicator visible against both light
        and dark backgrounds. Inset outline so it sits on the tab and
        doesn't get clipped by overflow:hidden parents. */
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
     outline-offset: -2px;
     border-radius: 2px;
 }
-/* Count badge sitting next to each tab label. Subtle pill against the
-   tab text — the active tab inherits the link color so the badge
-   visually attaches. */
+/* Count badge sitting next to each tab label. Uses TYPO3 state tokens
+   — `default` for inactive, `primary` (brand) for the active tab so
+   the badge visually attaches to the underline accent. */
 .wew-menu__chip-count {
     display: inline-block;
     min-width: 1.5em;
     padding: 0 .4em;
     margin-left: .35em;
     border-radius: 999px;
-    background: var(--typo3-component-bg, var(--bs-tertiary-bg));
-    color: inherit;
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, inherit);
+    border: 1px solid var(--typo3-state-default-border-color, transparent);
     font-size: 11px;
     font-weight: 600;
-    line-height: 1.45;
+    line-height: 1.4;
     text-align: center;
     vertical-align: baseline;
 }
 .wew-menu__chip--active .wew-menu__chip-count {
-    background: var(--typo3-link-color, var(--bs-primary));
-    color: var(--typo3-component-bg, var(--bs-body-bg));
+    background: var(--typo3-state-primary-bg, var(--bs-primary));
+    color: var(--typo3-state-primary-color, var(--bs-body-bg));
+    border-color: var(--typo3-state-primary-border-color, transparent);
+}
+
+/* ---- Status pills (MODIFIED, NEW, MOVED, …) ----
+   Built on TYPO3 v14's `--typo3-state-{name}-*` design tokens
+   (cms-backend/Resources/Public/Css/backend.css). Each token triple
+   (bg + color + border-color) is theme-aware via light-dark(), so
+   the pill picks the right shade in both light and dark backends
+   without us hard-coding hex values.
+
+   Mapping (matches PendingItemsService::buildItem severity output):
+     Modified           → info
+     New                → success
+     Will be deleted    → danger
+     Moved              → warning
+     Live / Hidden      → secondary
+*/
+.wew-state-pill {
+    display: inline-block;
+    padding: .1em .55em;
+    border-radius: 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    vertical-align: baseline;
+}
+/* Use TYPO3's dedicated badge tokens — they're specifically tuned
+   for pill/badge components (not full-width alerts like the
+   state-* tokens) and are already mode-aware via light-dark(),
+   so the same declarations work in both light and dark backends
+   without an extension-side override. Falls back to the matching
+   state-* tokens on older TYPO3 versions that don't define the
+   badge variants yet. */
+.wew-state-pill--info {
+    background: var(--typo3-badge-info-bg, var(--typo3-state-info-bg));
+    color: var(--typo3-badge-info-color, var(--typo3-state-info-color));
+    border-color: var(--typo3-badge-info-border-color, var(--typo3-state-info-border-color));
+}
+.wew-state-pill--success {
+    background: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
+    color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
+    border-color: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+}
+.wew-state-pill--warning {
+    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
+    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
+    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+}
+.wew-state-pill--danger {
+    background: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
+    color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
+    border-color: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
+}
+.wew-state-pill--secondary {
+    background: var(--typo3-badge-secondary-bg, var(--typo3-state-secondary-bg, var(--typo3-state-default-bg)));
+    color: var(--typo3-badge-secondary-color, var(--typo3-state-secondary-color, var(--typo3-state-default-color)));
+    border-color: var(--typo3-badge-secondary-border-color, var(--typo3-state-secondary-border-color, var(--typo3-state-default-border-color)));
+}
+.wew-state-pill--notice {
+    background: var(--typo3-badge-info-bg, var(--typo3-state-notice-bg));
+    color: var(--typo3-badge-info-color, var(--typo3-state-notice-color));
+    border-color: var(--typo3-badge-info-border-color, var(--typo3-state-notice-border-color));
+}
+
+/* In-row variant — same color tokens but lighter typographic
+   weight: state-pills inside the publish list need to read as
+   metadata, not as headings. The modal still uses the bold +
+   uppercase base style for primary emphasis. */
+.wew-state-pill--inline {
+    padding: .08em .5em;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    border-radius: 3px;
+    /* The pill has its own meta-row baseline; line-height matches
+       the type-label so they sit on the same axis. */
+    line-height: 1.4;
+    flex-shrink: 0;
 }
 
 /* ---- Selection bar (master checkbox) ---- */
@@ -160,14 +275,9 @@ webcon-easy-workspace-menu {
     margin: 0;
     cursor: pointer;
     user-select: none;
-    /* Whole label is the click target — bigger hit area than the
-       16-px checkbox alone (WCAG 2.5.8 target size considerations). */
-    padding: .15rem .2rem;
-    border-radius: 4px;
-    transition: background-color .12s ease;
+    transition: color .12s ease;
 }
 .wew-menu__selectbar-label:hover {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 10%, transparent);
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 .wew-menu__selectbar-check {
@@ -178,6 +288,11 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     appearance: auto;
     -webkit-appearance: auto;
+    /* macOS / Safari render the native checkbox focus ring as
+       rounded "( )" brackets flanking the control — they're not a
+       CSS outline, they're the platform focus style. Suppress
+       them and provide our own flat ring instead. */
+    outline: none;
 }
 .wew-menu__selectbar-text {
     font-weight: 500;
@@ -192,9 +307,13 @@ webcon-easy-workspace-menu {
     background: var(--typo3-component-bg, var(--bs-body-bg));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
 }
-.wew-menu__selectbar-label:focus-within {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
-    outline-offset: 2px;
+/* Focus indicator: box-shadow ring instead of `outline`, because
+   on macOS Chrome the OS draws its own rounded-bracket focus ring
+   over any CSS outline applied to a native checkbox. box-shadow
+   sits on the box layout — the platform doesn't replace it. */
+.wew-menu__selectbar-check:focus-visible {
+    box-shadow: 0 0 0 2px var(--typo3-state-primary-bg, var(--bs-primary));
+    border-radius: 2px;
 }
 
 /* ---- States ---- */
@@ -263,37 +382,86 @@ webcon-easy-workspace-menu {
     position: relative;
 }
 .wew-list__row:last-child { border-bottom: 0; }
-/* No row-level highlight any more — the eye icon is the affordance. */
+/* ---- Primary row (page or news) ----
+   The "parent" record of the dropdown — the page (or news article)
+   that owns the content elements listed beneath it. Treated as a
+   card-header so editors instantly read the hierarchy:
+   "this PAGE has the following CONTENT ELEMENTS below". The
+   styling intentionally mirrors the colheader (uppercase strip
+   under it) to anchor the group visually.
+
+   Distinguished from the content-element rows by:
+     - stronger background tint (vs. bare row bg below)
+     - larger, bolder title with prominent leading icon
+     - clear bottom separator in the primary color
+     - a small uppercase "Page" / "News" eyebrow above the title
+*/
 .wew-list__row--primary {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 8%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 12%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+}
+.wew-list__row--primary .wew-list__label {
+    padding-top: .65rem;
+    padding-bottom: .65rem;
 }
 /* Sit above the standard left accent stripe on the primary row */
 .wew-list__row--primary.wew-list__row--changed::before {
     width: 4px;
 }
 .wew-list__row--primary .wew-list__title-text {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 13.5px;
 }
-/* Small leading icon on the primary row's title so it's instantly
-   distinguishable from the content-element rows beneath it. */
+/* Larger leading icon on the primary row's title so it reads as
+   a record-class glyph, not a tiny decoration. */
 .wew-list__row--primary[data-table="pages"] .wew-list__title-text::before,
 .wew-list__row--primary[data-table="tx_news_domain_model_news"] .wew-list__title-text::before {
     content: "";
     display: inline-block;
-    width: 14px;
-    height: 14px;
-    margin-right: .35rem;
-    vertical-align: -2px;
-    background: currentColor;
+    width: 18px;
+    height: 18px;
+    margin-right: .5rem;
+    vertical-align: -4px;
+    background: var(--typo3-link-color, var(--bs-primary));
     -webkit-mask: var(--wew-primary-icon) center / contain no-repeat;
             mask: var(--wew-primary-icon) center / contain no-repeat;
-    opacity: .75;
+    opacity: .9;
 }
 .wew-list__row--primary[data-table="pages"] {
     --wew-primary-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M3 1.5A.5.5 0 0 1 3.5 1h6a.5.5 0 0 1 .354.146l3 3A.5.5 0 0 1 13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V1.5Zm6.5 1.207V4.5h1.793L9.5 2.707Z"/></svg>');
 }
 .wew-list__row--primary[data-table="tx_news_domain_model_news"] {
     --wew-primary-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M1.5 2h11A1.5 1.5 0 0 1 14 3.5V13h1v1H1V3.5A1.5 1.5 0 0 1 2.5 2H1.5Zm1 1.5V13h10V3.5h-10Zm1.5 2h7v1H4v-1Zm0 2.5h7v1H4v-1Zm0 2.5h5v1H4v-1Z"/></svg>');
+}
+
+/* ---- Content element rows (children of the primary above) ----
+   No indent — hierarchy is carried by a continuous left rail
+   (declared below) that runs from the colheader strip down
+   through every CE row, the same pattern TYPO3's main navigation
+   uses for sub-items. */
+.wew-list__row[data-table="tt_content"]:not(.wew-list__row--primary)::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: -1px;
+    width: 3px;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 35%, transparent);
+}
+/* Changed CE rows: the rail switches to the primary info color
+   so "modified" still reads at a glance — same color as the
+   short rounded stripe used on pages/news primary rows, just
+   stretched to the full height so it merges into the group rail
+   above and below. */
+.wew-list__row[data-table="tt_content"].wew-list__row--changed:not(.wew-list__row--primary)::before {
+    background: var(--bs-info);
+}
+/* Stop the rail cleanly at the end of the list — without this
+   the `bottom: -1px` bridge leaks 1 px past the last row into
+   the dropdown's footer divider. */
+.wew-list__row[data-table="tt_content"]:not(.wew-list__row--primary):last-child::before {
+    bottom: 0;
 }
 /* Changed rows get a left accent stripe — no greyed out fallback for the rest. */
 .wew-list__row--changed::before {
@@ -324,24 +492,159 @@ webcon-easy-workspace-menu {
     pointer-events: none;
 }
 
-.wew-list__label {
-    display: grid;
-    /* checkbox | title (flex) | optional eye-button | optional thumbnail.
-       Trailing columns whose elements aren't rendered collapse to 0 px
-       width via grid auto-flow, so rows reflow naturally. */
-    grid-template-columns: auto 1fr auto auto;
+/* ---- Column group header ("Hero area", "Content area", …) ----
+   Subtle separator emitted by _renderBodyInner whenever consecutive
+   tt_content rows belong to a different colPos. Matches the page's
+   BackendLayout column order so editors see workspace changes the
+   way they'd see them in Web → Layout. */
+.wew-list__colheader {
+    list-style: none;
+    padding: .35rem .85rem .15rem;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .03));
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    position: relative;
+}
+/* Continuous left rail running from the colheader strip down
+   through every tt_content child below it — mirrors TYPO3 main
+   nav's sub-item indicator: a thin vertical line on the left
+   edge of the group that signals "these belong to the parent
+   record above". The rail bridges the 1-px row-bottom border
+   via `bottom: -1px` so the segments merge visually into one
+   continuous line. */
+.wew-list__colheader::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: -1px;
+    width: 3px;
+    background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 35%, transparent);
+}
+.wew-list__colheader-label {
+    /* No extra styling — the <li> rules above carry the look.
+       Wrapper kept so future variants (icon, count, etc.) have a
+       hook. */
+}
+
+/* ---- Per-row "N changes" trigger pill ----
+   Tiny inline button that opens a TYPO3 backend Modal with the
+   record's field-level diff (server-rendered Fluid template using
+   core's DiffUtility). Replaces the inline <details> accordion —
+   the modal has the vertical breathing room the dropdown lacked.
+
+   Contrast: text in the full body color (not the secondary-text
+   grey we previously used) on a slightly tinted row background
+   clears WCAG 2.2 AA. Border is solid, full opacity icon. */
+.wew-list__diff-trigger {
+    display: inline-flex;
     align-items: center;
-    gap: .55rem;
-    padding: .45rem .75rem .45rem .9rem;
+    gap: .35rem;
+    align-self: flex-start;
+    /* Sit flush against the body's left edge, matching the title
+       column. The slight top margin (created by the row-gap on
+       .wew-list__body) gives it air. */
+    margin: 0;
+    padding: .15rem .6rem .15rem .45rem;
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    color: var(--typo3-component-color, var(--bs-body-color));
+    border: 1px solid color-mix(in srgb, var(--typo3-component-color, var(--bs-body-color)) 35%, transparent);
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+.wew-list__diff-trigger:hover {
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: var(--bs-white, #fff);
+    border-color: var(--typo3-link-color, var(--bs-primary));
+}
+.wew-list__diff-trigger:hover .wew-list__diff-trigger-icon {
+    opacity: 1;
+}
+.wew-list__diff-trigger:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
+    outline-offset: 2px;
+}
+.wew-list__diff-trigger-icon {
+    font-size: 11px;
+    line-height: 1;
+    opacity: .9;
+}
+
+/* Visually hidden — the checkbox stays in the DOM and reachable
+   via Tab so screen-reader users still have a semantic toggle,
+   but the dropdown's first column gets reclaimed for content.
+   Same trick TYPO3 backend uses for .visually-hidden / .sr-only. */
+.wew-list__check.visually-hidden,
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.wew-list__label {
+    display: flex;
+    align-items: stretch;
+    /* Consistent rhythm with the column-header above each block. */
+    padding: .5rem .55rem .5rem .85rem;
     cursor: pointer;
     margin: 0;
+}
+.wew-list__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    /* Title → meta → diff-trigger vertical rhythm: each step is
+       a tighter pad than the one above. The trigger row gets a
+       slightly larger gap because it sits below a smaller-font
+       sub-row and needs a visual cue that it's an action. */
+    row-gap: .2rem;
+}
+.wew-list__head {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+    /* Pull actions a hair closer to the right edge so the title
+       gets every available pixel before truncating. */
+    min-height: 22px;
+}
+.wew-list__sub {
+    display: flex;
+    align-items: center;
+    /* Generous gap so the state pill doesn't bump into the type
+       label. The pill is a discrete chip, the type label is body
+       copy — they need air between them. */
+    gap: .55rem;
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
 
 .wew-list__actions {
     display: inline-flex;
     align-items: center;
-    gap: .2rem;
+    gap: 0;                /* buttons carry their own hit-area padding */
     flex-shrink: 0;
+    margin-left: auto;     /* push to the right of the title row */
+    margin-right: -.15rem; /* let the rightmost icon kiss the row edge */
 }
 
 .wew-list__locate,
@@ -349,8 +652,8 @@ webcon-easy-workspace-menu {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: 1px solid transparent;
     background: transparent;
@@ -359,14 +662,53 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
-.wew-list__locate svg,
-.wew-list__discard svg { display: block; }
+.wew-list__locate { position: relative; }
+.wew-list__discard svg { width: 14px; height: 14px; display: block; }
 
+/* Locate button hosts a stack of two SVGs (eye + pencil) sharing
+   the same absolute-centered slot. We swap their opacity on
+   hover/focus to morph the icon, signaling the two-step affordance:
+     - resting state: eye → "I'll show you where this is"
+     - hovered state: pencil → "the next click edits it"
+   Each variant sets its own width/height so the eye reads a touch
+   larger than the pencil — editors flagged the pencil as too
+   dominant on hover. Pointer events are off on the icons themselves
+   so the parent button keeps a single click target. */
+.wew-list__locate-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    pointer-events: none;
+    transition: opacity .12s ease;
+}
+.wew-list__locate-icon--eye {
+    width: 16px;
+    height: 16px;
+    opacity: 1;
+}
+.wew-list__locate-icon--pencil {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+}
+.wew-list__locate:hover .wew-list__locate-icon--eye,
+.wew-list__locate:focus-visible .wew-list__locate-icon--eye { opacity: 0; }
+.wew-list__locate:hover .wew-list__locate-icon--pencil,
+.wew-list__locate:focus-visible .wew-list__locate-icon--pencil { opacity: 1; }
+
+/* Hover/focus: switch to a FILLED primary button with a WHITE
+   icon — earlier the tinted background with primary-on-tint icon
+   washed out and editors reported low contrast. White on full
+   primary clears WCAG AA comfortably (≈ 4.7:1 against
+   TYPO3 default primary #006ec3) and reads as a clear "click me
+   to edit" affordance against the soft row tints around it. */
 .wew-list__locate:hover,
 .wew-list__locate:focus-visible {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
-    color: var(--typo3-link-color, var(--bs-primary));
-    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    background: var(--typo3-link-color, var(--bs-primary));
+    color: var(--bs-white, #fff);
+    border-color: var(--typo3-link-color, var(--bs-primary));
     outline: none;
     transform: scale(1.05);
 }
@@ -374,13 +716,23 @@ webcon-easy-workspace-menu {
 /* Discard intentionally uses the warning hue so it reads as
    destructive even before the user clicks it. "Discard" is TYPO3's
    term — same DataHandler operation as Revert. */
-.wew-list__discard:hover,
-.wew-list__discard:focus-visible {
-    background: color-mix(in srgb, var(--bs-warning, #e8a33d) 18%, transparent);
-    color: var(--bs-warning, #e8a33d);
-    border-color: color-mix(in srgb, var(--bs-warning, #e8a33d) 45%, transparent);
+.wew-list__discard:hover:not(:disabled),
+.wew-list__discard:focus-visible:not(:disabled) {
+    background: var(--bs-warning, #e8a33d);
+    color: var(--bs-white, #fff);
+    border-color: var(--bs-warning, #e8a33d);
     outline: none;
     transform: scale(1.05);
+}
+/* Disabled state: enableRevert is off in TSconfig. Render the
+   icon at reduced opacity with not-allowed cursor and no hover
+   reaction so the editor reads it as "control is here, just
+   inactive in this environment". */
+.wew-list__discard--disabled,
+.wew-list__discard:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d));
 }
 .wew-list__row--unchanged .wew-list__label { cursor: default; }
 .wew-list__check-cell {
@@ -407,14 +759,14 @@ webcon-easy-workspace-menu {
    whole row a primary-color wash so the editor instantly sees what's
    queued for the next "Publish to live" click. Tuned for WCAG 2.2 AA
    contrast against both the light and dark backend body colors:
-   primary @ 15-18 % keeps row text readable while the tint reads as
+   primary @ 18-25 % keeps row text readable while the tint reads as
    "selected". Primary rows (page / news) get a slightly stronger
    wash to keep the hierarchy. */
 .wew-list__row:has(.wew-list__check:checked) {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 15%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 18%, transparent);
 }
 .wew-list__row--primary:has(.wew-list__check:checked) {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 22%, transparent);
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 25%, transparent);
 }
 /* The 4-px left accent stripe on changed rows already encodes
    "modified". When also checked, brighten it to the full primary
@@ -424,16 +776,72 @@ webcon-easy-workspace-menu {
     background: var(--typo3-link-color, var(--bs-primary));
 }
 
-.wew-list__title {
-    display: flex;
-    flex-direction: column;
-    /* CRITICAL for ellipsis: grid items default to min-width:auto which
-       grows them to fit the longest child. Setting min-width:0 lets
-       the 1fr column actually constrain width so .wew-list__title-text
-       overflows and truncates. */
-    min-width: 0;
+/* ---- Selection mark ("dot/check" on the row's left edge) ----
+   Replaces the visible checkbox we removed earlier. Renders as a
+   small empty ring when the row is unselected and fills with the
+   primary color + a white checkmark when selected. Gives editors
+   the at-a-glance "this is queued" cue that the soft row tint
+   alone wasn't carrying. Only emitted on changed rows (others
+   can't be toggled). */
+.wew-list__mark {
+    flex-shrink: 0;
+    align-self: flex-start;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    margin-right: .55rem;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--bs-secondary-color, #6c757d) 55%, transparent);
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bs-white, #fff);
+    transition: background-color .12s ease, border-color .12s ease, transform .12s ease;
 }
+.wew-list__mark svg {
+    opacity: 0;
+    transform: scale(.5);
+    transition: opacity .12s ease, transform .12s ease;
+}
+.wew-list__label:hover .wew-list__mark {
+    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, transparent);
+}
+.wew-list__row:has(.wew-list__check:checked) .wew-list__mark {
+    background: var(--typo3-link-color, var(--bs-primary));
+    border-color: var(--typo3-link-color, var(--bs-primary));
+}
+.wew-list__row:has(.wew-list__check:checked) .wew-list__mark svg {
+    opacity: 1;
+    transform: scale(1);
+}
+.wew-list__check:focus-visible + .wew-list__mark {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: 2px;
+}
+
+/* ---- Dim unselected rows once something is selected ----
+   When nothing's selected the list reads normally. The moment the
+   editor picks the first row, the unselected ones drop to .58
+   opacity — selection becomes obvious by contrast instead of
+   relying solely on the soft tint, and the publish button's
+   counter visibly matches "the bright rows above".
+   The primary row (page / news) is excluded from this dim: it's
+   the parent context for everything below, so it always stays
+   prominent regardless of what's queued for publish. */
+.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(.wew-list__row--primary):not(:has(.wew-list__check:checked)) {
+    opacity: .58;
+}
+.wew-list:has(.wew-list__check:checked) .wew-list__row--changed:not(.wew-list__row--primary):not(:has(.wew-list__check:checked)):hover {
+    opacity: .85;
+}
+
 .wew-list__title-text {
+    /* CRITICAL for ellipsis: flex children default to min-width:auto
+       which grows them to fit the longest child. Setting min-width:0
+       (via the parent .wew-list__head) lets this span truncate. */
+    flex: 1 1 auto;
+    min-width: 0;
     font-weight: 500;
     color: var(--typo3-component-color, var(--bs-body-color));
     overflow: hidden;
@@ -441,16 +849,6 @@ webcon-easy-workspace-menu {
     white-space: nowrap;
     font-size: 12.5px;
     line-height: 1.3;
-}
-.wew-list__meta {
-    display: flex;
-    gap: .3rem;
-    align-items: center;
-    margin-top: .1rem;
-    font-size: 10.5px;
-    overflow: hidden;
-    /* Allow flex children with min-width:0 to shrink + ellipsis. */
-    min-width: 0;
 }
 .wew-list__meta .badge {
     flex-shrink: 0;
@@ -519,59 +917,98 @@ webcon-easy-workspace-menu {
  * adapt automatically without media queries.
  */
 .wew-menu__foot {
+    /* Two columns now that preview moved to the header:
+       selection (1fr) · action (auto). Tighter vertical
+       rhythm — the action below is no longer a hero button. */
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: .65rem;
-    padding: .55rem .75rem;
+    gap: .5rem;
+    padding: .4rem .75rem .4rem .85rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
 
-/* Tier 3: preview link, icon-only, ghost button. Smallest visual
-   weight — present but never competes with the primary action. */
-.wew-menu__foot-preview {
-    display: flex;
-    align-items: center;
-    min-width: 28px;
+/* Quiet context footnote: identifies which page/news record the
+   publish list is scoped to. Joined visually to the footer above
+   (no extra top-border / heavy padding) so the two read as one
+   integrated chrome block instead of two stacked bars. */
+.wew-menu__context {
+    padding: .15rem .85rem .4rem;
+    font-size: 10px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+    text-align: right;
+    letter-spacing: .02em;
 }
-.wew-menu__preview-icon {
+
+/* Preview link button — promoted to the header's top-right slot.
+   Icon + text, real button affordance so editors can scan and
+   click it confidently rather than hunt for a tiny icon. */
+.wew-menu__preview {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    border-radius: 50%;
+    /* Tighter spacing and ~10% smaller font than before (11.5px →
+       10.35px). Button now reads as a compact utility action, not
+       a primary call. */
+    gap: .25rem;
+    padding: .2rem .45rem;
+    border: 1px solid var(--typo3-state-default-border-color, var(--bs-border-color));
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, var(--bs-body-color));
+    border-radius: 4px;
+    font-size: 10.35px;
+    font-weight: 600;
+    line-height: 1.3;
     cursor: pointer;
-    transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+    white-space: nowrap;
 }
-.wew-menu__preview-icon:hover,
-.wew-menu__preview-icon:focus-visible {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
-    color: var(--typo3-link-color, var(--bs-primary));
-    border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
-    outline: none;
-    transform: scale(1.05);
+.wew-menu__preview:hover {
+    background: var(--typo3-state-default-hover-bg, var(--bs-secondary-bg));
+    border-color: var(--typo3-state-default-hover-border-color, var(--bs-border-color));
+    color: var(--typo3-state-default-hover-color, var(--bs-body-color));
 }
-.wew-menu__preview-icon:focus-visible {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+.wew-menu__preview:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
     outline-offset: 2px;
 }
-.wew-menu__preview-icon:disabled { opacity: .55; cursor: progress; }
+.wew-menu__preview:disabled {
+    opacity: .55;
+    cursor: progress;
+}
+
+/* Transient post-copy state — the JS flips this on for 2 s after a
+   successful clipboard write so the editor has unambiguous visual
+   confirmation that "Copy" did its job. Uses TYPO3's success-state
+   tokens so the green works in both light and dark themes. */
+.wew-menu__preview--copied {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+    border-color: var(--typo3-state-success-border-color);
+}
+.wew-menu__preview--copied:hover {
+    background: var(--typo3-state-success-hover-bg, var(--typo3-state-success-bg));
+    color: var(--typo3-state-success-color);
+    border-color: var(--typo3-state-success-hover-border-color, var(--typo3-state-success-border-color));
+}
+.wew-menu__preview svg {
+    flex-shrink: 0;
+}
+.wew-menu__preview-label {
+    /* Hidden at narrow widths — gives the editor an icon-only
+       fallback if the header otherwise wraps. Handled in the
+       responsive section below. */
+}
 
 /* Tier 2: selection state — master checkbox + adaptive label + N/M
-   counter. Centered in its flexible column. Muted secondary text
-   keeps it from competing with the primary action visually. */
+   counter. Sits flush-left now so it reads as "current state"
+   rather than competing with the publish action for centre stage. */
 .wew-menu__foot-selection {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: .55rem;
-    font-size: 11.5px;
+    gap: .45rem;
+    font-size: 11px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     min-width: 0;
     overflow: hidden;
@@ -579,56 +1016,58 @@ webcon-easy-workspace-menu {
 .wew-menu__selectall {
     display: inline-flex;
     align-items: center;
-    gap: .35rem;
+    gap: .3rem;
     margin: 0;
-    padding: .15rem .35rem;
-    border-radius: 4px;
+    padding: 0;
     cursor: pointer;
     user-select: none;
-    transition: background-color .12s ease, color .12s ease;
+    transition: color .12s ease;
 }
 .wew-menu__selectall:hover {
-    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 12%, transparent);
-    color: var(--typo3-component-color, var(--bs-body-color));
-}
-.wew-menu__selectall:focus-within {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
-    outline-offset: 2px;
+    color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-menu__selectall-check {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     margin: 0;
-    accent-color: var(--typo3-link-color, var(--bs-primary));
+    accent-color: var(--typo3-state-primary-bg, var(--bs-primary));
     cursor: pointer;
     appearance: auto;
     -webkit-appearance: auto;
+    outline: none;
+}
+.wew-menu__selectall-check:focus-visible {
+    box-shadow: 0 0 0 2px var(--typo3-state-primary-bg, var(--bs-primary));
+    border-radius: 2px;
 }
 .wew-menu__selectall-label {
     font-weight: 500;
-    color: var(--typo3-component-color, var(--bs-body-color));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-menu__count {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    opacity: .85;
 }
 .wew-menu__count strong {
-    color: var(--typo3-component-color, var(--bs-body-color));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
     font-weight: 600;
 }
 
-/* Tier 1: the primary action. Largest visual weight — solid primary
-   color, bold label, larger padding, generous min-width. */
+/* Tier 1: the primary action. Refined — no longer a hero button.
+   Tight padding, weight 600, smaller font, no min-width so it
+   only takes the room its label needs. The selection counter to
+   its left already carries the action context (4 of 4). */
 .wew-menu__publish {
-    min-width: 150px;
-    font-size: 12.5px;
-    font-weight: 700;
-    padding: .45rem 1rem;
-    letter-spacing: .01em;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: .3rem .75rem;
+    letter-spacing: 0;
+    border-radius: 4px;
+    line-height: 1.4;
 }
 .wew-menu__publish:focus-visible {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
     outline-offset: 2px;
 }
 /* Bootstrap sets pointer-events:none on disabled buttons, which also
@@ -676,23 +1115,501 @@ webcon-easy-workspace-menu {
     .wew-list__meta { font-size: 10px; }
     .wew-list__meta .badge { padding: .05rem .3rem; }
 
-    /* Footer: stack the three tiers onto separate rows below 600 px.
-       Selection row sits in the middle; Publish at the bottom-right
-       (thumb zone on touch). Preview stays on top-left. */
+    /* Footer: stack selection and action onto separate rows below
+       600 px. Publish at the bottom-right (thumb zone on touch).
+       Preview button lives in the header so it's not in this grid. */
     .wew-menu__foot {
         grid-template-columns: 1fr;
         grid-template-areas:
-            "preview"
             "selection"
             "action";
         gap: .35rem;
         padding: .45rem .65rem;
     }
-    .wew-menu__foot-preview    { grid-area: preview;    justify-self: start; }
     .wew-menu__foot-selection  { grid-area: selection;  justify-content: flex-start; }
     .wew-menu__foot-action     { grid-area: action;     justify-self: stretch; }
+
+    /* Narrow viewport: drop the preview label, keep the icon. The
+       title attribute still carries the full action description. */
+    .wew-menu__preview-label { display: none; }
+    .wew-menu__preview { padding: .25rem .35rem; }
     .wew-menu__publish {
         width: 100%;
         min-width: 0;
     }
+}
+
+/* ---- Latest workspace changes accordion (lazy-loaded feed) ---- */
+/* Sits below the publish footer as a peripheral "what's happening
+   elsewhere" view. Native <details> handles the disclosure and
+   keyboard / ARIA wiring — these styles only theme it.            */
+.wew-menu__latest {
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+}
+.wew-menu__latest-summary {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .55rem .85rem;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+/* Hide the default disclosure triangle in webkit so we can render
+   our own caret that flips on [open]. */
+.wew-menu__latest-summary::-webkit-details-marker { display: none; }
+.wew-menu__latest-summary::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 5px solid currentColor;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform .15s ease;
+    flex-shrink: 0;
+}
+.wew-menu__latest[open] > .wew-menu__latest-summary::before {
+    transform: rotate(90deg);
+}
+.wew-menu__latest-summary:hover {
+    color: var(--typo3-component-color, var(--bs-body-color));
+}
+.wew-menu__latest-summary:focus-visible {
+    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
+    outline-offset: -2px;
+    border-radius: 2px;
+}
+.wew-menu__latest-summary-label {
+    flex: 1 1 auto;
+}
+.wew-menu__latest-body {
+    max-height: 18rem;
+    overflow-y: auto;
+    padding: 0 .5rem .5rem;
+}
+.wew-menu__latest-hint {
+    margin: 0;
+    padding: .5rem .85rem;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* ---- Changelog cards (Latest workspace changes accordion) ----
+   One card per record. Header has title + meta + state pill;
+   body lists each modified field with a "before → after" pair.
+   Styled with TYPO3 v14 styleguide tokens so it adapts to light
+   and dark backends automatically. */
+.wew-changelog {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+.wew-changelog__item {
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px;
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    overflow: hidden;
+}
+.wew-changelog__header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .55rem;
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-surface-dim, transparent);
+}
+.wew-changelog__header--link:hover {
+    background: var(--typo3-component-hover-bg, var(--bs-tertiary-bg));
+}
+.wew-changelog__header--link:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
+    outline-offset: -2px;
+}
+.wew-changelog__heading {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.wew-changelog__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wew-changelog__meta {
+    font-size: 11px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+
+/* Field diff list ---------------------------------------------- */
+.wew-changelog__fields {
+    list-style: none;
+    margin: 0;
+    padding: .35rem .55rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.wew-changelog__field {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+.wew-changelog__label {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-changelog__values {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .35rem;
+    font-size: 12px;
+    line-height: 1.35;
+}
+.wew-changelog__arrow {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    font-weight: 600;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.wew-changelog__kind {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    flex-shrink: 0;
+}
+
+/* Before / after chips — use the styleguide's danger / success
+   state tokens so red ↔ green reads correctly in both themes. */
+.wew-changelog__chip {
+    display: inline-block;
+    padding: .1rem .4rem;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    max-width: 22rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: baseline;
+    font-family: var(--typo3-font-family-monospace, monospace);
+    font-size: 11.5px;
+}
+.wew-changelog__chip--before {
+    background: var(--typo3-state-danger-bg);
+    color: var(--typo3-state-danger-color);
+    border-color: var(--typo3-state-danger-border-color);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--typo3-state-danger-color, currentColor) 40%, transparent);
+}
+.wew-changelog__chip--after {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+    border-color: var(--typo3-state-success-border-color);
+}
+.wew-changelog__chip-empty {
+    font-style: italic;
+    opacity: .7;
+    text-decoration: none;
+}
+.wew-changelog__field--added .wew-changelog__chip--after,
+.wew-changelog__field--removed .wew-changelog__chip--before {
+    /* On placeholder records (every field is "added" or "removed")
+       drop the strikethrough on `before` chips because nothing's
+       being replaced — the chip *is* the value being removed. */
+    text-decoration: none;
+}
+
+.wew-changelog__nodiff {
+    margin: 0;
+    padding: .4rem .65rem;
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+
+/* ---- Diff modal content ----
+   Rendered inside core's TYPO3 backend Modal (Modal.advanced
+   {type: ajax}). The .wew-diff-modal-shell additional class on
+   the modal lets us scope `<ins>` / `<del>` styles to this dialog
+   only so they don't leak into other backend modals. */
+.wew-diff-modal {
+    font-size: 13px;
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
+.wew-diff-modal__head {
+    margin: 0 0 1rem 0;
+    padding: 0 0 .65rem 0;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-diff-modal__title {
+    margin: 0 0 .15rem 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+.wew-diff-modal__meta {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-diff-modal__sep {
+    display: inline-block;
+    margin: 0 .25rem;
+    opacity: .55;
+}
+.wew-diff-modal__history-count {
+    font-size: inherit;
+    color: inherit;
+    opacity: .85;
+}
+.wew-diff-modal__field-label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    padding-top: .15rem;
+}
+.wew-diff-modal__field-value {
+    margin: 0;
+    line-height: 1.55;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+/* TYPO3 core's DiffUtility emits <ins>/<del> for word-level diffs.
+   Style them as small inline chips with the badge tokens so each
+   change reads as a distinct pill instead of bleeding into the
+   surrounding text — important for rich-text fields where the
+   diff is dense and editors need to scan it quickly. */
+.wew-diff-modal__field-value ins,
+.wew-diff-modal__field-value del {
+    padding: .05rem .3rem;
+    margin: 0 1px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    text-decoration: none;
+}
+.wew-diff-modal__field-value ins {
+    background: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
+    color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
+    border-color: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+}
+.wew-diff-modal__field-value del {
+    background: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
+    color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
+    border-color: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in srgb, var(--typo3-badge-danger-color, currentColor) 50%, transparent);
+}
+.wew-diff-modal__empty {
+    margin: 0;
+    font-size: 12px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-diff-modal__foot {
+    margin-top: 1.25rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    text-align: right;
+}
+
+/* ---- History panel ---- */
+.wew-diff-modal__panel {
+    padding-top: 1rem;
+}
+
+/* ---- History timeline ---- */
+.wew-history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+.wew-history::before {
+    /* Vertical line connecting the timeline dots. */
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-history__entry {
+    position: relative;
+    padding: .25rem 0 1rem 1.65rem;
+}
+.wew-history__entry::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: .5rem;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    border: 2px solid var(--typo3-component-bg, var(--bs-body-bg));
+    box-shadow: 0 0 0 1px var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-history__entry:first-child::before {
+    background: var(--typo3-state-primary-bg, var(--bs-primary));
+}
+.wew-history__meta {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: .35rem;
+    font-size: 11.5px;
+}
+.wew-history__action {
+    padding: .05em .5em;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: var(--typo3-state-info-bg);
+    color: var(--typo3-state-info-color);
+}
+.wew-history__action--created {
+    background: var(--typo3-state-success-bg);
+    color: var(--typo3-state-success-color);
+}
+.wew-history__action--deleted {
+    background: var(--typo3-state-danger-bg);
+    color: var(--typo3-state-danger-color);
+}
+.wew-history__action--moved {
+    background: var(--typo3-state-warning-bg);
+    color: var(--typo3-state-warning-color);
+}
+.wew-history__when {
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+    font-weight: 500;
+}
+.wew-history__who {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-history__rollback {
+    margin-left: auto;
+    padding: .15rem .5rem;
+    border: 1px solid var(--typo3-state-default-border-color, var(--bs-border-color));
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, var(--bs-body-color));
+    border-radius: 3px;
+    font-size: 10.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+.wew-history__rollback:hover {
+    background: var(--typo3-state-warning-bg, var(--bs-warning-bg-subtle));
+    border-color: var(--typo3-state-warning-border-color, var(--bs-warning-border-subtle));
+    color: var(--typo3-state-warning-color, var(--bs-warning-text));
+}
+.wew-history__rollback:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
+    outline-offset: 2px;
+}
+.wew-history__rollback:disabled {
+    opacity: .55;
+    cursor: progress;
+}
+
+/* Stacked layout: label above each value. Side-by-side grid worked
+   for short fields (header, slug) but cramped the value column for
+   long bodytext / RTE fields where the diff is the most useful and
+   the most cramped. Labels still read as labels (uppercase, smaller,
+   secondary color), values get a full-width card with breathing room
+   and an accent stripe so each field reads as its own block. */
+.wew-history__diff {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+}
+.wew-history__diff .wew-diff-modal__field-label {
+    margin: .9rem 0 .3rem 0;
+    padding: 0;
+    font-size: 10px;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-history__diff .wew-diff-modal__field-label:first-child {
+    margin-top: 0;
+}
+.wew-history__diff .wew-diff-modal__field-value {
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    margin: 0;
+    padding: .65rem .85rem;
+    background: color-mix(in srgb, var(--typo3-text-color-base, currentColor) 5%, transparent);
+    border-radius: 4px;
+    border-left: 3px solid color-mix(in srgb, var(--typo3-text-color-secondary, currentColor) 35%, transparent);
+    line-height: 1.65;
+    font-size: 12.5px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+/* The diff HTML lives in its own wrapper so it can grow to fill
+   the card while the revert button shrinks to its own width on
+   the right. Long bodytext diffs wrap naturally inside the
+   wrapper instead of bumping the button to the end of a
+   multi-line block. */
+.wew-history__diff-html {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.wew-history__rollback-field {
+    flex-shrink: 0;
+    /* 24x24 / 16px — 20% larger than the original 20x20 / 13px so
+       the ↺ reads as a clickable action without dominating the
+       diff row. Inline-flex + centering keeps the glyph in the
+       middle of the round button instead of riding the font
+       baseline. */
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
+}
+.wew-history__rollback-field:hover,
+.wew-history__rollback-field:focus-visible {
+    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
+    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
+    outline: none;
+    transform: scale(1.08);
 }

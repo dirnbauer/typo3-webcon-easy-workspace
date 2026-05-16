@@ -6,6 +6,16 @@ namespace Webconsulting\WebconEasyWorkspace\Dto;
 
 final readonly class PendingItem
 {
+    /**
+     * @param list<array{field: string, label: string, before: string, after: string, beforeFull: string, afterFull: string, type: string, kind: string}> $diff
+     *   Field-level diff between this record's live and workspace
+     *   versions. Empty for unchanged rows (isChanged=false) or when
+     *   the diff service couldn't compute one.
+     */
+    /**
+     * @param int|null    $colPos      Column position from the page's BackendLayout. tt_content rows only; null for pages/news/etc. Used by the frontend to group rows by page column ("Hero area", "Content area", …).
+     * @param string|null $colPosLabel Human-readable column name resolved via BackendLayout/usedColumns. Falls back to "Column N" when no layout is configured. Null when colPos is null.
+     */
     public function __construct(
         public string $table,
         public int $liveUid,
@@ -20,6 +30,10 @@ final readonly class PendingItem
         public string $tableLabel,
         public string $typeLabel,
         public ?string $editUrl,
+        public ?string $contextualEditUrl = null,
+        public array $diff = [],
+        public ?int $colPos = null,
+        public ?string $colPosLabel = null,
     ) {}
 
     /**
@@ -41,6 +55,10 @@ final readonly class PendingItem
             'tableLabel' => $this->tableLabel,
             'typeLabel' => $this->typeLabel,
             'editUrl' => $this->editUrl,
+            'contextualEditUrl' => $this->contextualEditUrl,
+            'diff' => $this->diff,
+            'colPos' => $this->colPos,
+            'colPosLabel' => $this->colPosLabel,
         ];
     }
 }

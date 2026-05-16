@@ -6,6 +6,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Backend\View\BackendLayoutView;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -43,6 +44,8 @@ final readonly class PendingItemsService
         private LanguageServiceFactory $languageServiceFactory,
         private BackendUriBuilder $backendUriBuilder,
         private Context $context,
+        private RecordDiffService $recordDiffService,
+        private BackendLayoutView $backendLayoutView,
     ) {}
 
     /**
@@ -69,16 +72,30 @@ final readonly class PendingItemsService
             $items[] = $pageItem->toArray();
         }
 
+        // Resolve column labels (e.g. "Hero area", "Content area")
+        // from the page's BackendLayout so each tt_content row in the
+        // dropdown carries the colPos name that the page tree shows
+        // in Web → Layout. Empty array if no layout selected — items
+        // then just show the numeric colPos ("Column 0", "Column 3"
+        // etc.) on the frontend.
+        $columnLabels = $this->resolveColumnLabels($pageUid);
+
+        // Order tt_content rows the way editors read them in the
+        // Layout module: colPos ASC first (hero / main / sidebar /
+        // footer in their backend-layout order), then sorting ASC
+        // inside each column.
+        $contentOrder = [['colPos', 'ASC'], ['sorting', 'ASC']];
+
         if ($mode === self::MODE_ALL) {
-            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
-                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
+            foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder) as $row) {
+                $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
                 if ($item !== null) {
                     $items[] = $item->toArray();
                     if (count($items) >= $maxItems) break;
                 }
             }
         } else {
-            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId, $config) as $item) {
+            foreach ($this->resolveChangedRelated('tt_content', 'pid', $pageUid, $workspaceId, $config, $contentOrder, $columnLabels) as $item) {
                 $items[] = $item->toArray();
                 if (count($items) >= $maxItems) break;
             }
@@ -230,25 +247,44 @@ final readonly class PendingItemsService
      * @param array<string, mixed> $config
      * @return list<PendingItem>
      */
-    private function resolveChangedRelated(string $table, string $field, int $parentUid, int $workspaceId, array $config = []): array
-    {
+    /**
+     * @param array<string, mixed>             $config
+     * @param list<array{0: string, 1: string}> $orderBy       Defaults to [['sorting','ASC']] to match the original behaviour for non-tt_content tables.
+     * @param array<int, string>               $columnLabels  colPos → name map. Only relevant for tt_content; ignored for other tables.
+     * @return list<PendingItem>
+     */
+    private function resolveChangedRelated(
+        string $table,
+        string $field,
+        int $parentUid,
+        int $workspaceId,
+        array $config = [],
+        array $orderBy = [['sorting', 'ASC']],
+        array $columnLabels = [],
+    ): array {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
 
-        $result = $queryBuilder
+        $queryBuilder
             ->select('*')
             ->from($table)
             ->where(
                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            )
-            ->orderBy('sorting', 'ASC')
-            ->executeQuery();
+            );
+        foreach ($orderBy as $i => [$column, $direction]) {
+            if ($i === 0) {
+                $queryBuilder->orderBy($column, $direction);
+            } else {
+                $queryBuilder->addOrderBy($column, $direction);
+            }
+        }
 
+        $result = $queryBuilder->executeQuery();
         $items = [];
         while ($row = $result->fetchAssociative()) {
-            $item = $this->buildItem($table, $row, isPrimary: false, config: $config);
+            $item = $this->buildItem($table, $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
             if ($item !== null) {
                 $items[] = $item;
             }
@@ -340,7 +376,28 @@ final readonly class PendingItemsService
      * @param array<string, mixed> $row
      * @param array<string, mixed> $config
      */
-    private function buildItem(string $table, array $row, bool $isPrimary, array $config = []): ?PendingItem
+    /**
+     * Public adapter for LatestChangesService — same logic as the
+     * internal buildItem(), but always builds with isPrimary=false
+     * since the latest-changes feed doesn't have a "primary record"
+     * concept (each row stands on its own across pages).
+     *
+     * Kept as a thin wrapper rather than promoting buildItem itself
+     * so the page/news flows can keep the isPrimary flag exclusive
+     * to their internal use.
+     *
+     * @param array<string, mixed> $row    Raw workspace-version row.
+     * @param array<string, mixed> $config Normalized ConfigurationProvider output.
+     */
+    public function buildItemFromRow(string $table, array $row, array $config = []): ?PendingItem
+    {
+        return $this->buildItem($table, $row, isPrimary: false, config: $config);
+    }
+
+    /**
+     * @param array<int, string> $columnLabels colPos → name map; only consulted for tt_content rows. Empty falls back to the numeric colPos.
+     */
+    private function buildItem(string $table, array $row, bool $isPrimary, array $config = [], array $columnLabels = []): ?PendingItem
     {
         $rawUid = (int)($row['uid'] ?? 0);
         if ($rawUid <= 0) {
@@ -381,6 +438,29 @@ final readonly class PendingItemsService
         // record_edit expects the *live* uid for existing records;
         // FormEngine handles the workspace overlay on save automatically.
         $editUrl = $this->buildEditUrl($table, $liveUid);
+        // The v14 contextual variant of the same route — slim Save/Close
+        // chrome that fits the sheet-position modal we open from the
+        // dropdown's pencil. The JS prefers this URL when available
+        // and falls back to $editUrl on older TYPO3 versions.
+        $contextualEditUrl = $this->buildContextualEditUrl($table, $liveUid);
+
+        // Attach the field-level diff so each row in the dropdown can
+        // expand to show *what* changed. Only computed for actual
+        // workspace versions; live rows have nothing to diff.
+        $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
+
+        // Resolve colPos info for tt_content rows so the frontend
+        // can group items by page column with proper labels (e.g.
+        // "Hero area" / "Content area"). Null for other tables.
+        $colPos = null;
+        $colPosLabel = null;
+        if ($table === 'tt_content' && array_key_exists('colPos', $row)) {
+            $colPos = (int)$row['colPos'];
+            $colPosLabel = $columnLabels[$colPos] ?? null;
+            if ($colPosLabel === null || $colPosLabel === '') {
+                $colPosLabel = sprintf('Column %d', $colPos);
+            }
+        }
 
         return new PendingItem(
             table: $table,
@@ -396,7 +476,38 @@ final readonly class PendingItemsService
             tableLabel: $this->resolveTableLabel($table),
             typeLabel: $this->resolveTypeLabel($table, $row),
             editUrl: $editUrl,
+            contextualEditUrl: $contextualEditUrl,
+            diff: $diff,
+            colPos: $colPos,
+            colPosLabel: $colPosLabel,
         );
+    }
+
+    /**
+     * Resolve the BackendLayout column names for $pageUid as a
+     * `colPos => name` map. Returns empty array when no layout is
+     * configured — callers then fall back to numeric "Column N".
+     *
+     * @return array<int, string>
+     */
+    private function resolveColumnLabels(int $pageUid): array
+    {
+        try {
+            $structure = $this->backendLayoutView->getSelectedBackendLayout($pageUid);
+        } catch (\Throwable) {
+            return [];
+        }
+        $columns = $structure['usedColumns'] ?? [];
+        if (!is_array($columns)) {
+            return [];
+        }
+        $languageService = $this->getLanguageService();
+        $out = [];
+        foreach ($columns as $colPos => $rawLabel) {
+            $resolved = $languageService->sL((string)$rawLabel);
+            $out[(int)$colPos] = $resolved !== '' ? $resolved : (string)$rawLabel;
+        }
+        return $out;
     }
 
     /**
@@ -412,6 +523,34 @@ final readonly class PendingItemsService
         }
         try {
             return (string)$this->backendUriBuilder->buildUriFromRoute('record_edit', [
+                'edit' => [$table => [$uid => 'edit']],
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * TYPO3 v14 introduced `record_edit_contextual` — a lightweight
+     * variant of EditDocumentController that renders the same
+     * FormEngine but with a minimal "Save / Close" chrome, designed
+     * to be opened inside a sheet-position modal. We prefer that
+     * over the full record_edit when the pencil is clicked from the
+     * workspace dropdown: the contextual form fits the slim
+     * right-side panel and posts back save/close signals via
+     * window.postMessage so the dropdown can refresh after a save.
+     *
+     * Returns null on older TYPO3 versions that don't have the
+     * route registered — the JS falls back to the regular editUrl
+     * in that case.
+     */
+    private function buildContextualEditUrl(string $table, int $uid): ?string
+    {
+        if ($uid <= 0) {
+            return null;
+        }
+        try {
+            return (string)$this->backendUriBuilder->buildUriFromRoute('record_edit_contextual', [
                 'edit' => [$table => [$uid => 'edit']],
             ]);
         } catch (\Throwable) {
