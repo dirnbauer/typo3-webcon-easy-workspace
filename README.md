@@ -6,10 +6,10 @@ When an editor opens the dropdown while editing a page, they immediately see:
 
 - the page record (if it has workspace changes)
 - every changed content element on that page
-- every changed news record pinned to that page
+- every changed news record stored on that page
 - for each news, every content element linked via `tx_news_related_news`
 
-Each row shows a **checkbox** (checked by default), the record **title**, a state badge (New / Modified / Will be deleted / Moved), and the **first attached image** as a thumbnail. The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single `version` cmdmap.
+Each row shows a **checkbox** (checked by default), the record **title**, a state badge (New / Modified / Will be deleted / Moved), and the first supported FAL image as a thumbnail (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
 ## Requirements
 
@@ -23,13 +23,7 @@ Each row shows a **checkbox** (checked by default), the record **title**, a stat
 
 ## Installation
 
-```bash
-composer require webconsulting/webcon-easy-workspace
-ddev typo3 extension:setup
-ddev typo3 cache:flush
-```
-
-Or as a VCS dependency in your project's `composer.json`:
+This package is installed from this Git repository. Add it as a VCS repository in your project's `composer.json`:
 
 ```json
 {
@@ -43,6 +37,20 @@ Or as a VCS dependency in your project's `composer.json`:
     "webconsulting/webcon-easy-workspace": "dev-main"
   }
 }
+```
+
+Then install and set up the extension:
+
+```bash
+composer update webconsulting/webcon-easy-workspace --with-dependencies
+ddev typo3 extension:setup
+ddev typo3 cache:flush
+```
+
+If the package is published to Packagist later, the equivalent install command is:
+
+```bash
+composer require webconsulting/webcon-easy-workspace
 ```
 
 ## Usage
@@ -71,7 +79,7 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 | Rendering | `showHidden` | `1` | When `0`, hidden records are filtered out **server-side**. |
 | Rendering | `maxItems` | `200` | Hard cap on rows per request. |
 | Scope | `enableNewsBundles` | `1` | Also list news on the page + their linked content elements. |
-| Per-row | `enableHoverHighlight` | `1` | Eye icon → scroll + outline the CE in `#visual-editor-iframe`. |
+| Per-row | `enableHoverHighlight` | `1` | Eye icon → scroll + outline the CE in Visual Editor, Viewpage, or another same-origin preview iframe. |
 | Per-row | `enableRevert` | `1` | Discard button using TYPO3 v14's DataHandler `discard` cmd. |
 
 **Override precedence** (highest wins): Page TSconfig → User TSconfig on user → User TSconfig on group → defaults.
@@ -99,7 +107,7 @@ Both effects are reverted on `mouseleave` / `blur` and again on element disconne
 
 ### Discard a single change
 
-Next to the eye, every **changed** row also has a curved-arrow **discard** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). *Discard* is TYPO3's own term for this operation and maps directly to TYPO3 v14's DataHandler `discard` command, which removes the workspace version. Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to `/ajax/webcon-easy-workspace/discard`, which runs `DataHandler` with the v14 command:
+Next to the eye, every **changed** row also has a curved-arrow **discard** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). *Discard* is TYPO3's own term for this operation and maps directly to TYPO3 v14's DataHandler `discard` command, which removes the workspace version. Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to the `webcon_easy_workspace_discard` backend AJAX route (`/webcon-easy-workspace/discard`), which runs `DataHandler` with the v14 command:
 
 ```php
 $cmd[$table][$workspaceUid]['discard'] = true;
@@ -108,6 +116,12 @@ $cmd[$table][$workspaceUid]['discard'] = true;
 This deletes the workspace version of that record only — the **live** row stays untouched. The dropdown auto-refreshes after the discard so the row disappears (in "Changes only" mode) or its badge flips back to "Live" (in "All on page" mode).
 
 Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`.
+
+### Latest changes, diff and history
+
+The dropdown also includes a **Latest changes** accordion. It lazy-loads the most recent records in the active workspace through the `webcon_easy_workspace_latest` backend AJAX route (`/webcon-easy-workspace/latest`), scoped to the backend user's current workspace and capped at 50 rows server-side.
+
+Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed.
 
 ## Architecture
 
@@ -123,14 +137,19 @@ Classes/
 
 Configuration/
 ├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, latest, diff, rollback
-├── Services.yaml                                     # DI / autowiring
-├── Icons.php                                         # Toolbar icon registration
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
+├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
+├── Services.yaml                                     # DI / autowiring
 └── user.tsconfig                                     # Auto-loaded TSconfig defaults
 
 Resources/
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (JSON config attr)
-└── Public/JavaScript/easy-workspace-menu-element.js  # Lit element with list + publish + OS clipboard
+├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
+└── Public/JavaScript/                                # Lit menu + eye/decline helpers
+
+Build/
+├── Scripts/runTests.sh                               # Local quality runner
+└── phpstan/phpstan.neon                              # TYPO3 PHPStan config at level max
 ```
 
 The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`). The dropdown is a `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.

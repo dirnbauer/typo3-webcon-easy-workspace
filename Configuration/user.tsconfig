@@ -86,15 +86,15 @@ options.webcon_easy_workspace {
     # -- Per-row actions -----------------------------------------
 
     # Show the eye icon on every tt_content row. Hovering / clicking
-    # the eye reaches into the Visual Editor iframe
-    # (#visual-editor-iframe), scrolls the rendered content element
-    # into view and outlines it. (1)
+    # the eye reaches into the Visual Editor iframe, the Viewpage
+    # preview iframe, or another same-origin preview iframe, scrolls
+    # the rendered content element into view and outlines it. (1)
     enableHoverHighlight = 1
 
     # Show the curved-arrow discard button on every changed row.
     # Clicking triggers a warning confirmation modal, then runs the
     # v14-canonical DataHandler command
-    #   $cmd[$table][$workspaceUid]['version'] = ['action' => 'flush'];
+    #   $cmd[$table][$workspaceUid]['discard'] = true;
     # which removes the workspace version. The live record stays
     # untouched. TYPO3 calls this operation "discard". (1)
     enableRevert = 1

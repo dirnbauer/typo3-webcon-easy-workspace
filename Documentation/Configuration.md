@@ -90,9 +90,9 @@ options.webcon_easy_workspace {
 }
 ```
 
-### Reviewer profile (no publishing, just inspection)
+### Reviewer profile (inspection-first)
 
-(The publish + discard buttons can be hidden; reviewers can still see what's pending and use the preview link to QA.)
+There is no separate "hide publish" switch. A reviewer group can see everything in the workspace, keep preview links enabled, and hide the per-row discard button. Publishing remains available as long as TYPO3 permissions and the `enabled` master flag allow the toolbar.
 
 ```typoscript
 options.webcon_easy_workspace {
@@ -100,6 +100,8 @@ options.webcon_easy_workspace {
     defaultMode       = all
 }
 ```
+
+`enableRevert` controls the per-row discard button and discard endpoint. The diff/history modal is a separate inspection surface and can still show rollback controls for its history entries.
 
 ### Performance setup for a heavy-traffic page
 
@@ -135,6 +137,12 @@ This is the default — no overrides needed.
 ## Server-side enforcement
 
 Toggling a flag in the dropdown only would let a power user re-enable it via DevTools. **All boolean flags are also enforced on the PHP side** — `EasyWorkspaceAjaxController` re-reads `ConfigurationProvider::get()` on every request and returns `403` when the matching flag is off. `showHidden = 0` and `enableThumbnails = 0` additionally short-circuit the database / FAL work so the response payload is smaller.
+
+## Diff, history and latest changes
+
+The **Latest changes** accordion is not controlled by a TSconfig flag. It is lazy-loaded from the active workspace, never from live, and the request limit is clamped to 1-50 rows server-side.
+
+The diff/history modal is also available without extra TSconfig. It uses TYPO3 backend rendering for the selected record and includes recent `sys_history` entries. Rollback buttons are rendered for history entries in that modal; the rollback POST still runs through TYPO3's DataHandler and backend permission checks.
 
 ## Development checks
 
