@@ -67,6 +67,29 @@ final readonly class PendingItem
             'locateTable' => $this->locateTable,
             'locateLiveUid' => $this->locateLiveUid,
             'locateWorkspaceUid' => $this->locateWorkspaceUid,
+            'changeBadges' => $this->isChanged ? [[
+                'kindKey' => $this->kindKey,
+                'kindLabel' => $this->kindLabel,
+                'badge' => $this->badge,
+            ]] : [],
+            'publishRecords' => $this->isChanged ? [[
+                'table' => $this->table,
+                'liveUid' => $this->liveUid,
+                'workspaceUid' => $this->workspaceUid,
+            ]] : [],
+            'changeRecords' => $this->isChanged ? [[
+                'table' => $this->table,
+                'liveUid' => $this->liveUid,
+                'workspaceUid' => $this->workspaceUid,
+                'title' => $this->title,
+                'kindKey' => $this->kindKey,
+                'kindLabel' => $this->kindLabel,
+                'badge' => $this->badge,
+                'diff' => $this->diff,
+                'historyDiffCount' => $this->historyDiffCount,
+                'editUrl' => $this->editUrl,
+                'contextualEditUrl' => $this->contextualEditUrl,
+            ]] : [],
         ];
     }
 }

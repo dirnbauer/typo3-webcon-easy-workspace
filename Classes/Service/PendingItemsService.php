@@ -56,14 +56,14 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config Normalized config from ConfigurationProvider.
-     * @return array{workspaceId: int, workspaceTitle: string, pageUid: int, languageUid: int|null, items: list<array<string, mixed>>, hasNews: bool, mode: string}
+     * @return array{workspaceId: int, workspaceTitle: string, pageUid: int, languageUid: int|null, items: list<array<string, mixed>>, itemGroups: list<array{key: string, label: string|null, items: list<array<string, mixed>>}>, changedItemGroups: list<array{key: string, label: string|null, items: list<array<string, mixed>>}>, hasNews: bool, mode: string}
      */
     public function forPage(int $pageUid, string $mode = self::MODE_CHANGED, array $config = [], ?int $languageUid = null): array
     {
         $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $pageUid <= 0) {
-            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
+            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'items' => [], 'itemGroups' => [], 'changedItemGroups' => [], 'hasNews' => false, 'mode' => $mode];
         }
 
         $maxItems = Value::int($config['maxItems'] ?? 200);
@@ -97,13 +97,15 @@ final readonly class PendingItemsService
 
         foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder, $languageUid) as $row) {
             $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
-            if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
-                $items[] = $item->toArray();
+            if ($item !== null) {
+                $itemArray = $this->withRelatedChanges(
+                    $item->toArray(),
+                    $this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels, $languageUid),
+                );
+                if ($mode === self::MODE_ALL || !empty($itemArray['isChanged'])) {
+                    $items[] = $itemArray;
+                }
                 if (count($items) >= $maxItems) break;
-            }
-            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels, $languageUid) as $childItem) {
-                $items[] = $childItem->toArray();
-                if (count($items) >= $maxItems) break 2;
             }
         }
 
@@ -120,12 +122,16 @@ final readonly class PendingItemsService
             }
         }
 
+        $items = $this->deduplicateItems($items);
+
         return [
             'workspaceId' => $workspaceId,
             'workspaceTitle' => $workspaceTitle,
             'pageUid' => $pageUid,
             'languageUid' => $languageUid,
-            'items' => $this->deduplicateItems($items),
+            'items' => $items,
+            'itemGroups' => $this->groupItems($items),
+            'changedItemGroups' => $this->groupItems($this->changedItems($items)),
             'hasNews' => $hasNews,
             'mode' => $mode,
         ];
@@ -133,14 +139,14 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, workspaceTitle: string, newsUid: int, languageUid: int|null, items: list<array<string, mixed>>, mode: string}
+     * @return array{workspaceId: int, workspaceTitle: string, newsUid: int, languageUid: int|null, items: list<array<string, mixed>>, itemGroups: list<array{key: string, label: string|null, items: list<array<string, mixed>>}>, changedItemGroups: list<array{key: string, label: string|null, items: list<array<string, mixed>>}>, mode: string}
      */
     public function forNews(int $newsUid, string $mode = self::MODE_CHANGED, array $config = [], ?int $languageUid = null): array
     {
         $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
-            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'items' => [], 'mode' => $mode];
+            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'items' => [], 'itemGroups' => [], 'changedItemGroups' => [], 'mode' => $mode];
         }
 
         $maxItems = Value::int($config['maxItems'] ?? 200);
@@ -155,31 +161,102 @@ final readonly class PendingItemsService
 
         foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']], $languageUid) as $row) {
             $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
-            if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
-                $items[] = $item->toArray();
+            if ($item !== null) {
+                $itemArray = $this->withRelatedChanges(
+                    $item->toArray(),
+                    $this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, languageUid: $languageUid),
+                );
+                if ($mode === self::MODE_ALL || !empty($itemArray['isChanged'])) {
+                    $items[] = $itemArray;
+                }
                 if (count($items) >= $maxItems) break;
             }
-            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, languageUid: $languageUid) as $childItem) {
-                $items[] = $childItem->toArray();
-                if (count($items) >= $maxItems) break 2;
-            }
         }
+
+        $items = $this->deduplicateItems($items);
 
         return [
             'workspaceId' => $workspaceId,
             'workspaceTitle' => $workspaceTitle,
             'newsUid' => $newsUid,
             'languageUid' => $languageUid,
-            'items' => $this->deduplicateItems($items),
+            'items' => $items,
+            'itemGroups' => $this->groupItems($items),
+            'changedItemGroups' => $this->groupItems($this->changedItems($items)),
             'mode' => $mode,
         ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     * @return list<array<string, mixed>>
+     */
+    private function changedItems(array $items): array
+    {
+        return array_values(array_filter(
+            $items,
+            static fn (array $item): bool => !empty($item['isChanged']),
+        ));
+    }
+
+    /**
+     * PHP owns the display grouping contract. The frontend receives a
+     * ready-to-render group list and only filters/renders it per tab.
+     * Each BackendLayout column appears once, regardless of how many
+     * content records or folded inline child changes live inside it.
+     *
+     * @param list<array<string, mixed>> $items
+     * @return list<array{key: string, label: string|null, items: list<array<string, mixed>>}>
+     */
+    private function groupItems(array $items): array
+    {
+        $groups = [];
+        $primaryItems = [];
+
+        foreach ($items as $item) {
+            $table = Value::string($item['table'] ?? null);
+            $colPos = array_key_exists('colPos', $item) ? Value::int($item['colPos']) : null;
+            if ($table !== 'tt_content' || $colPos === null) {
+                $primaryItems[] = $item;
+                continue;
+            }
+
+            $key = 'column:' . $colPos;
+            if (!isset($groups[$key])) {
+                $label = Value::string($item['colPosLabel'] ?? null);
+                if ($label === '') {
+                    $label = $this->localizationService->translate('toolbar.column', ['number' => $colPos]);
+                }
+                $groups[$key] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'items' => [],
+                ];
+            }
+            $groups[$key]['items'][] = $item;
+        }
+
+        $out = [];
+        if ($primaryItems !== []) {
+            $out[] = [
+                'key' => 'records',
+                'label' => null,
+                'items' => $primaryItems,
+            ];
+        }
+        foreach ($groups as $group) {
+            $out[] = $group;
+        }
+        return $out;
     }
 
     /**
      * The dropdown should show one row per conceptual workspace record.
      * Workspace overlays and inline lookups can otherwise surface the
      * same record more than once when both live and versioned parent ids
-     * are valid lookup anchors.
+     * are valid lookup anchors. If duplicates still arrive, keep the
+     * newest workspace row and merge publish metadata so "All on page"
+     * and "To publish" both show the latest visible version only.
      *
      * @param list<array<string, mixed>> $items
      * @return list<array<string, mixed>>
@@ -200,12 +277,157 @@ final readonly class PendingItemsService
             }
             $key = $table . ':' . $identityUid;
             if (isset($seen[$key])) {
+                $index = $seen[$key];
+                $deduplicated[$index] = $this->mergeItemArrays($deduplicated[$index], $item);
                 continue;
             }
-            $seen[$key] = true;
+            $seen[$key] = count($deduplicated);
             $deduplicated[] = $item;
         }
         return $deduplicated;
+    }
+
+    /**
+     * Fold workspace changes from inline child records into the visible
+     * parent content element. Editors publish "the accordion" or "the
+     * article grid", not three implementation rows from a generated
+     * Content Blocks child table.
+     *
+     * @param array<string, mixed> $item
+     * @param list<PendingItem> $relatedItems
+     * @return array<string, mixed>
+     */
+    private function withRelatedChanges(array $item, array $relatedItems): array
+    {
+        foreach ($relatedItems as $relatedItem) {
+            $item = $this->mergeItemArrays($item, $relatedItem->toArray());
+        }
+        return $item;
+    }
+
+    /**
+     * @param array<string, mixed> $base
+     * @param array<string, mixed> $incoming
+     * @return array<string, mixed>
+     */
+    private function mergeItemArrays(array $base, array $incoming): array
+    {
+        $baseWorkspaceUid = Value::int($base['workspaceUid'] ?? null);
+        $incomingWorkspaceUid = Value::int($incoming['workspaceUid'] ?? null);
+        $baseChanged = !empty($base['isChanged']);
+        $incomingChanged = !empty($incoming['isChanged']);
+
+        if (
+            Value::string($base['table'] ?? null) === Value::string($incoming['table'] ?? null)
+            && Value::int($base['liveUid'] ?? null) === Value::int($incoming['liveUid'] ?? null)
+            && $incomingChanged
+            && (!$baseChanged || $incomingWorkspaceUid > $baseWorkspaceUid)
+        ) {
+            $replacementTable = Value::string($incoming['table'] ?? null);
+            $replacementLiveUid = Value::int($incoming['liveUid'] ?? null);
+            $preservedBadges = $this->listArray($base['changeBadges'] ?? null);
+            $preservedPublishRecords = $this->withoutConceptualRecord(
+                $this->listArray($base['publishRecords'] ?? null),
+                $replacementTable,
+                $replacementLiveUid,
+            );
+            $preservedChangeRecords = $this->withoutConceptualRecord(
+                $this->listArray($base['changeRecords'] ?? null),
+                $replacementTable,
+                $replacementLiveUid,
+            );
+            $base = array_replace($base, $incoming);
+            $base['changeBadges'] = $preservedBadges;
+            $base['publishRecords'] = $preservedPublishRecords;
+            $base['changeRecords'] = $preservedChangeRecords;
+        }
+
+        if ($incomingChanged) {
+            $base['isChanged'] = true;
+        }
+        $base['changeBadges'] = $this->mergeChangeBadges(
+            $this->listArray($base['changeBadges'] ?? null),
+            $this->listArray($incoming['changeBadges'] ?? null),
+        );
+        $base['publishRecords'] = $this->mergeRecordReferences(
+            $this->listArray($base['publishRecords'] ?? null),
+            $this->listArray($incoming['publishRecords'] ?? null),
+        );
+        $base['changeRecords'] = $this->mergeRecordReferences(
+            $this->listArray($base['changeRecords'] ?? null),
+            $this->listArray($incoming['changeRecords'] ?? null),
+        );
+
+        return $base;
+    }
+
+    /**
+     * @return list<mixed>
+     */
+    private function listArray(mixed $value): array
+    {
+        return is_array($value) ? array_values($value) : [];
+    }
+
+    /**
+     * @param list<mixed> $records
+     * @return list<mixed>
+     */
+    private function withoutConceptualRecord(array $records, string $table, int $liveUid): array
+    {
+        return array_values(array_filter(
+            $records,
+            static fn (mixed $record): bool => !is_array($record)
+                || Value::string($record['table'] ?? null) !== $table
+                || Value::int($record['liveUid'] ?? null) !== $liveUid,
+        ));
+    }
+
+    /**
+     * @param list<mixed> $base
+     * @param list<mixed> $incoming
+     * @return list<array{kindKey: string, kindLabel: string, badge: string}>
+     */
+    private function mergeChangeBadges(array $base, array $incoming): array
+    {
+        $merged = [];
+        foreach ([...$base, ...$incoming] as $badge) {
+            if (!is_array($badge)) {
+                continue;
+            }
+            $kindKey = Value::string($badge['kindKey'] ?? null);
+            if ($kindKey === '' || isset($merged[$kindKey])) {
+                continue;
+            }
+            $merged[$kindKey] = [
+                'kindKey' => $kindKey,
+                'kindLabel' => Value::string($badge['kindLabel'] ?? null),
+                'badge' => Value::string($badge['badge'] ?? null) ?: 'info',
+            ];
+        }
+        return array_values($merged);
+    }
+
+    /**
+     * @param list<mixed> $base
+     * @param list<mixed> $incoming
+     * @return list<array<string, mixed>>
+     */
+    private function mergeRecordReferences(array $base, array $incoming): array
+    {
+        $merged = [];
+        foreach ([...$base, ...$incoming] as $record) {
+            if (!is_array($record)) {
+                continue;
+            }
+            $table = Value::string($record['table'] ?? null);
+            $workspaceUid = Value::int($record['workspaceUid'] ?? null);
+            if ($table === '' || $workspaceUid <= 0) {
+                continue;
+            }
+            $merged[$table . ':' . $workspaceUid] = Value::stringKeyArray($record);
+        }
+        return array_values($merged);
     }
 
     /**

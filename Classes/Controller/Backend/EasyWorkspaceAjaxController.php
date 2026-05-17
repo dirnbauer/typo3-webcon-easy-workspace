@@ -88,6 +88,8 @@ final readonly class EasyWorkspaceAjaxController
         return new JsonResponse([
             'context' => 'none',
             'items' => [],
+            'itemGroups' => [],
+            'changedItemGroups' => [],
             'workspaceId' => 0,
             'mode' => $mode,
         ]);

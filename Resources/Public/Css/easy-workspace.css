@@ -637,6 +637,20 @@ webcon-easy-workspace-menu {
     line-height: 1.3;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
+.wew-list__badges,
+.wew-list__change-actions {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .25rem;
+    min-width: 0;
+}
+.wew-list__badges {
+    flex: 0 0 auto;
+}
+.wew-list__change-actions {
+    align-self: flex-start;
+}
 
 .wew-list__actions {
     display: inline-flex;

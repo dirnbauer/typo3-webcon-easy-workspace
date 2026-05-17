@@ -71,6 +71,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     config: { type: String, reflect: false },
     state: { state: true },
     items: { state: true },
+    itemGroups: { state: true },
+    changedItemGroups: { state: true },
     selection: { state: true },
     context: { state: true },
     publishing: { state: true },
@@ -94,6 +96,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     super();
     this.state = 'idle';
     this.items = [];
+    this.itemGroups = [];
+    this.changedItemGroups = [];
     this.selection = new Set();
     this.context = null;
     this.contextLabel = '';
@@ -1022,37 +1026,37 @@ class WebconEasyWorkspaceMenu extends LitElement {
         </div>
       `;
     }
-    // Walk the visible list and emit a column header before each
-    // run of tt_content rows that belong to a different colPos.
-    // Server sorted by colPos ASC + sorting ASC, so each colPos
-    // appears in a contiguous block — a single previousColPos
-    // tracker is enough; no grouping into intermediate arrays.
-    let previousColPos = null;
     const rendered = [];
-    for (const item of visible) {
-      const itemColPos = item.table === 'tt_content' && Number.isInteger(item.colPos)
-        ? item.colPos
-        : null;
-      if (itemColPos !== null && itemColPos !== previousColPos) {
+    for (const group of this._visibleGroups()) {
+      if (group.label) {
         rendered.push(html`
           <li class="wew-list__colheader" role="presentation">
-            <span class="wew-list__colheader-label">${item.colPosLabel || this._label('toolbar.column', { number: itemColPos })}</span>
+            <span class="wew-list__colheader-label">${group.label}</span>
           </li>
         `);
-        previousColPos = itemColPos;
       }
-      if (itemColPos === null) {
-        // Non-tt_content rows (pages / news) reset the tracker so a
-        // tt_content block that follows still emits its header.
-        previousColPos = null;
+      for (const item of group.items) {
+        rendered.push(this._renderItem(item));
       }
-      rendered.push(this._renderItem(item));
     }
     return html`
       <ul class="wew-list">
         ${rendered}
       </ul>
     `;
+  }
+
+  _visibleGroups() {
+    const groups = this.mode === 'changed'
+      ? (Array.isArray(this.changedItemGroups) ? this.changedItemGroups : [])
+      : (Array.isArray(this.itemGroups) ? this.itemGroups : []);
+    return groups
+      .map((group) => ({
+        key: group.key || '',
+        label: group.label || null,
+        items: Array.isArray(group.items) ? group.items : [],
+      }))
+      .filter((group) => group.items.length > 0);
   }
 
   _renderItem(item) {
@@ -1083,10 +1087,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // resolve (broken FAL refs, etc.) — in which case we just skip
     // the disclosure so the row reads cleanly without a "0 changes"
     // affordance to nowhere.
-    const diff = Array.isArray(item.diff) ? item.diff : [];
-    const hasDiff = diff.length > 0;
-    const diffTriggerLabel = this._diffTriggerLabel(item, diff);
-    const diffTriggerTitle = this._diffTriggerTitle(item, hasDiff);
+    const changeRecords = this._changeRecordsForItem(item);
     // Compact 3-row layout per item:
     //  Row 1: title (full width)  +  actions on right (discard, eye)
     //  Row 2: status pill          +  table label · type label
@@ -1126,7 +1127,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 : nothing}
             </span>
             <span class="wew-list__sub">
-              <span class="wew-state-pill wew-state-pill--${item.badge || 'info'} wew-state-pill--inline">${item.kindLabel}</span>
+              ${this._renderChangeBadges(item)}
               ${item.isHidden && this._config.enableHiddenBadge
                 ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title=${this._label('toolbar.hidden.title')}>${this._label('toolbar.hidden')}</span>`
                 : nothing}
@@ -1140,20 +1141,58 @@ class WebconEasyWorkspaceMenu extends LitElement {
                   </span>`
                 : nothing}
             </span>
-            ${item.isChanged && ENDPOINTS.diff
-              ? html`<button
-                  type="button"
-                  class="wew-list__diff-trigger"
-                  title=${diffTriggerTitle}
-                  @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(item); }}
-                >
-                  <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-                  <span class="wew-list__diff-trigger-label">${diffTriggerLabel}</span>
-                </button>`
+            ${item.isChanged && ENDPOINTS.diff && changeRecords.length > 0
+              ? html`<span class="wew-list__change-actions">
+                  ${changeRecords.map((record) => this._renderChangeAction(record))}
+                </span>`
               : nothing}
           </span>
         </label>
       </li>
+    `;
+  }
+
+  _renderChangeBadges(item) {
+    const badges = Array.isArray(item.changeBadges) && item.changeBadges.length > 0
+      ? item.changeBadges
+      : (item.kindLabel ? [{ kindKey: item.kindKey, kindLabel: item.kindLabel, badge: item.badge || 'info' }] : []);
+    if (badges.length === 0) return nothing;
+    return html`
+      <span class="wew-list__badges">
+        ${badges.map((badge) => html`
+          <span class="wew-state-pill wew-state-pill--${badge.badge || 'info'} wew-state-pill--inline">${badge.kindLabel}</span>
+        `)}
+      </span>
+    `;
+  }
+
+  _changeRecordsForItem(item) {
+    const records = Array.isArray(item.changeRecords) && item.changeRecords.length > 0
+      ? item.changeRecords
+      : (item.isChanged ? [item] : []);
+    const byKind = new Map();
+    for (const record of records) {
+      const kind = record?.kindKey || 'modified';
+      if (!byKind.has(kind)) {
+        byKind.set(kind, { ...item, ...record });
+      }
+    }
+    return Array.from(byKind.values());
+  }
+
+  _renderChangeAction(record) {
+    const diff = Array.isArray(record.diff) ? record.diff : [];
+    const hasDiff = diff.length > 0;
+    return html`
+      <button
+        type="button"
+        class="wew-list__diff-trigger"
+        title=${this._diffTriggerTitle(record, hasDiff)}
+        @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(record); }}
+      >
+        <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
+        <span class="wew-list__diff-trigger-label">${this._diffTriggerLabel(record, diff)}</span>
+      </button>
     `;
   }
 
@@ -1346,13 +1385,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
           return;
         }
         try {
-          const response = await new AjaxRequest(ENDPOINTS.discard)
-            .post(
-              { table: item.table, workspaceUid: item.workspaceUid },
-              { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
-            );
-          const result = await response.resolve();
-          if (result?.success) {
+          const results = [];
+          for (const record of this._publishRecordsForItem(item)) {
+            const response = await new AjaxRequest(ENDPOINTS.discard)
+              .post(
+                { table: record.table, workspaceUid: record.workspaceUid },
+                { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
+              );
+            results.push(await response.resolve());
+          }
+          const failed = results.filter((result) => !result?.success);
+          if (failed.length === 0) {
             Notification.success(this._label('discard.success.title'), this._label('discard.success.message', { title: item.title }), 4);
             // Refresh our own list, then reload the editor's preview
             // iframe so the live record (no longer overlaid by the
@@ -1361,9 +1404,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
             this._reloadPreviewIframes();
             this._invalidateLatest();
           } else {
-            const errors = Array.isArray(result?.errors) && result.errors.length
-              ? result.errors.join(' / ')
-              : (result?.error || this._label('error.unknown'));
+            const errors = failed.flatMap((result) => Array.isArray(result?.errors) && result.errors.length
+              ? result.errors
+              : [result?.error || this._label('error.unknown')]).join(' / ');
             Notification.error(this._label('discard.error.title'), errors);
           }
         } catch (error) {
@@ -1719,9 +1762,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   _renderLatestItem(item) {
     const editHref = item.editUrl || null;
     const tableLabel = item.tableLabel || item.table;
-    const kindBadge = item.kindLabel
-      ? html`<span class="wew-state-pill wew-state-pill--${item.badge || 'info'}">${item.kindLabel}</span>`
-      : nothing;
+    const kindBadge = this._renderChangeBadges(item);
     const diff = Array.isArray(item.diff) ? item.diff : [];
 
     const headerInner = html`
@@ -1968,6 +2009,20 @@ class WebconEasyWorkspaceMenu extends LitElement {
     return `${item.table}:${item.workspaceUid}`;
   }
 
+  _publishRecordsForItem(item) {
+    const records = Array.isArray(item.publishRecords) && item.publishRecords.length > 0
+      ? item.publishRecords
+      : (item.isChanged ? [{ table: item.table, workspaceUid: item.workspaceUid }] : []);
+    const unique = new Map();
+    for (const record of records) {
+      const table = String(record?.table || '');
+      const workspaceUid = parseInt(record?.workspaceUid || 0, 10);
+      if (!table || workspaceUid <= 0) continue;
+      unique.set(`${table}:${workspaceUid}`, { table, workspaceUid });
+    }
+    return Array.from(unique.values());
+  }
+
   _toggle(item, checked) {
     const next = new Set(this.selection);
     const key = this._key(item);
@@ -2017,6 +2072,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   async _refresh() {
     if (!ENDPOINTS.items) {
       this.state = 'error';
+      this.items = [];
+      this.itemGroups = [];
+      this.changedItemGroups = [];
       this.workspaceId = 0;
       this._syncToolbarVisibility();
       return;
@@ -2028,6 +2086,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.state = 'no-context';
       this.contextLabel = this._label('toolbar.context.none');
       this.items = [];
+      this.itemGroups = [];
+      this.changedItemGroups = [];
       this.workspaceId = 0;
       this._updateToolbarBadge();
       this._syncToolbarVisibility();
@@ -2049,6 +2109,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const data = await response.resolve();
       this.context = data.context;
       this.items = Array.isArray(data.items) ? data.items : [];
+      this.itemGroups = Array.isArray(data.itemGroups) ? data.itemGroups : [];
+      this.changedItemGroups = Array.isArray(data.changedItemGroups) ? data.changedItemGroups : [];
       this.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
       this.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
       this.contextLabel = this._buildContextLabel(data);
@@ -2061,6 +2123,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     } catch (error) {
       console.error('[easy-workspace] items request failed', error);
       this.state = 'error';
+      this.itemGroups = [];
+      this.changedItemGroups = [];
       this._updateToolbarBadge();
     }
   }
@@ -2280,9 +2344,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
     try {
       const selections = this.items
         .filter((i) => this.selection.has(this._key(i)))
-        .map((i) => ({ table: i.table, workspaceUid: i.workspaceUid }));
+        .flatMap((i) => this._publishRecordsForItem(i));
+      const uniqueSelections = Array.from(
+        new Map(selections.map((selection) => [`${selection.table}:${selection.workspaceUid}`, selection])).values(),
+      );
       const response = await new AjaxRequest(ENDPOINTS.publish)
-        .post({ selections }, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+        .post({ selections: uniqueSelections }, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
       const result = await response.resolve();
       if (result?.success) {
         Notification.success(
