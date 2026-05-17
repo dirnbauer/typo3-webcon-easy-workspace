@@ -33,6 +33,8 @@
     <unit id="toolbar.context.none"><segment><source>No page or news selected.</source></segment></unit>
     <unit id="context.page"><segment><source>Page #{uid}</source></segment></unit>
     <unit id="context.news"><segment><source>News #{uid}</source></segment></unit>
+    <unit id="record.pageRecord"><segment><source>Page record</source></segment></unit>
+    <unit id="record.newsRecord"><segment><source>News record</source></segment></unit>
     <unit id="state.live"><segment><source>Live</source></segment></unit>
     <unit id="state.new"><segment><source>New</source></segment></unit>
     <unit id="state.delete"><segment><source>Will be deleted</source></segment></unit>
@@ -42,11 +44,7 @@
     <unit id="table.tt_content"><segment><source>Page Content</source></segment></unit>
     <unit id="table.tx_news_domain_model_news"><segment><source>News</source></segment></unit>
     <unit id="table.tt_address"><segment><source>Address</source></segment></unit>
-    <unit id="diff.fieldsChanged"><segment><source>{count, plural, one {# field changed} other {# fields changed}}</source></segment></unit>
-    <unit id="diff.viewDetails"><segment><source>View details</source></segment></unit>
-    <unit id="diff.viewRemoval"><segment><source>View removal</source></segment></unit>
-    <unit id="diff.viewMove"><segment><source>View move</source></segment></unit>
-    <unit id="diff.viewHistory"><segment><source>View history</source></segment></unit>
+    <unit id="diff.viewHistory"><segment><source>History</source></segment></unit>
     <unit id="diff.title.newWithChanges"><segment><source>View changed fields and edit history for this new workspace record</source></segment></unit>
     <unit id="diff.title.newDetails"><segment><source>Open this new workspace record details and edit history</source></segment></unit>
     <unit id="diff.title.removal"><segment><source>Open details and edit history for this pending removal</source></segment></unit>

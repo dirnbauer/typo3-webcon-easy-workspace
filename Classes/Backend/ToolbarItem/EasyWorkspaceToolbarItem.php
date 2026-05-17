@@ -86,6 +86,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function getDropDown(): string
     {
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
         // Merge user-configurable TSconfig with detected runtime
         // capabilities so the Lit element can adapt its messaging
         // (eye icon tooltip, "no iframe" notification) to what's
@@ -94,6 +95,9 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // Keeping them server-rendered keeps the JS bundle locale-free
         // and lets editors switch backend language without rebuilds.
         $payload = $this->configurationProvider->get() + [
+            'activeWorkspaceId' => $backendUser instanceof BackendUserAuthentication
+                ? $this->resolveActiveWorkspaceId($backendUser)
+                : 0,
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
             'labels' => $this->localizationService->labelsForJavaScript(),

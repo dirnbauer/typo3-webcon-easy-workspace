@@ -191,7 +191,7 @@ webcon-easy-workspace-menu {
 .wew-state-pill {
     display: inline-block;
     padding: .1em .55em;
-    border-radius: 2px;
+    border-radius: 999px;
     font-size: 10.5px;
     font-weight: 700;
     line-height: 1.4;
@@ -249,7 +249,7 @@ webcon-easy-workspace-menu {
     font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
-    border-radius: 3px;
+    border-radius: 999px;
     /* The pill has its own meta-row baseline; line-height matches
        the type-label so they sit on the same axis. */
     line-height: 1.4;
@@ -400,6 +400,19 @@ webcon-easy-workspace-menu {
     background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 12%, transparent);
     border-bottom: 2px solid color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 35%, transparent);
 }
+.wew-list__row--primary[data-table="pages"] {
+    margin: .4rem .45rem .45rem;
+    border: 1px solid color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 42%, var(--typo3-component-border-color, var(--bs-border-color)));
+    border-radius: 6px;
+    background:
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 22%, transparent),
+            color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 9%, transparent));
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--bs-white, #fff) 11%, transparent),
+        0 6px 14px color-mix(in srgb, var(--bs-black, #000) 18%, transparent);
+    overflow: hidden;
+}
 .wew-list__row--primary .wew-list__label {
     padding-top: .65rem;
     padding-bottom: .65rem;
@@ -408,9 +421,42 @@ webcon-easy-workspace-menu {
 .wew-list__row--primary.wew-list__row--changed::before {
     width: 4px;
 }
+.wew-list__row--primary[data-table="pages"].wew-list__row--changed::before {
+    top: 10px;
+    bottom: 10px;
+    left: 0;
+    border-radius: 0 999px 999px 0;
+    background: var(--typo3-link-color, var(--bs-primary));
+}
 .wew-list__row--primary .wew-list__title-text {
     font-weight: 700;
     font-size: 13.5px;
+}
+.wew-list__primary-kicker {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: .35rem;
+    max-width: 100%;
+    padding: .08rem .45rem;
+    border: 1px solid color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 38%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 14%, transparent);
+    color: var(--typo3-link-color, var(--bs-primary));
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.wew-list__primary-kicker::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
 }
 /* Larger leading icon on the primary row's title so it reads as
    a record-class glyph, not a tiny decoration. */

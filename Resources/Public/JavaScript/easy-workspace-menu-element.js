@@ -48,6 +48,7 @@ const DEFAULT_CONFIG = Object.freeze({
   enableRevert: true,
   // Runtime-detected environment (NOT user-configurable). Set by
   // EasyWorkspaceToolbarItem::getDropDown() via ExtensionManagementUtility::isLoaded.
+  activeWorkspaceId: 0,
   hasVisualEditor: false,
   hasViewpage: false,
 });
@@ -116,6 +117,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._config = this._readConfig();
+    this.workspaceId = this._configuredWorkspaceId();
     // Mode resolution: user's last choice in this browser >
     // TSconfig defaultMode > hardcoded 'changed' fallback.
     this.mode = this._readPersistedMode() ?? this._config.defaultMode;
@@ -1082,6 +1084,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const canRevert = this._config.enableRevert && item.isChanged;
     const showRevertButton = item.isChanged;
     const hasActions = locatable || showRevertButton;
+    const primaryRecordLabel = this._primaryRecordLabel(item);
     // Diff data ships with every changed row via PendingItem::$diff.
     // Empty for unchanged rows or rows the diff service couldn't
     // resolve (broken FAL refs, etc.) — in which case we just skip
@@ -1091,7 +1094,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // Compact 3-row layout per item:
     //  Row 1: title (full width)  +  actions on right (discard, eye)
     //  Row 2: status pill          +  table label · type label
-    //  Row 3: "N changes" trigger  (opens diff modal)
+    //  Row 3: History trigger       (opens diff/history modal)
     //
     // The checkbox is visually hidden (.visually-hidden CSS) but kept
     // in the DOM and focusable, so screen-reader users still get a
@@ -1117,6 +1120,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
               </span>`
             : nothing}
           <span class="wew-list__body">
+            ${primaryRecordLabel
+              ? html`<span class="wew-list__primary-kicker">${primaryRecordLabel}</span>`
+              : nothing}
             <span class="wew-list__head">
               <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
               ${hasActions
@@ -1143,7 +1149,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
             </span>
             ${item.isChanged && ENDPOINTS.diff && changeRecords.length > 0
               ? html`<span class="wew-list__change-actions">
-                  ${changeRecords.map((record) => this._renderChangeAction(record))}
+                  ${this._renderChangeAction(changeRecords[0])}
                 </span>`
               : nothing}
           </span>
@@ -1164,6 +1170,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
         `)}
       </span>
     `;
+  }
+
+  _primaryRecordLabel(item) {
+    if (!item?.isPrimary) return '';
+    if (item.table === 'pages') {
+      return this._label('record.pageRecord');
+    }
+    if (item.table === 'tx_news_domain_model_news') {
+      return this._label('record.newsRecord');
+    }
+    return '';
   }
 
   _changeRecordsForItem(item) {
@@ -1191,29 +1208,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
         @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._openDiffModal(record); }}
       >
         <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-        <span class="wew-list__diff-trigger-label">${this._diffTriggerLabel(record, diff)}</span>
+        <span class="wew-list__diff-trigger-label">${this._diffTriggerLabel()}</span>
       </button>
     `;
   }
 
-  _diffTriggerLabel(item, diff) {
-    if (item.kindKey === 'new') {
-      const historyDiffCount = Number.isInteger(item.historyDiffCount) ? item.historyDiffCount : 0;
-      if (historyDiffCount > 0) {
-        return this._label('diff.fieldsChanged', { count: historyDiffCount });
-      }
-      return this._label('diff.viewDetails');
-    }
-    if (item.kindKey === 'delete') {
-      return this._label('diff.viewRemoval');
-    }
-    if (item.kindKey === 'move') {
-      return this._label('diff.viewMove');
-    }
-    if (diff.length === 0) {
-      return this._label('diff.viewHistory');
-    }
-    return this._label('diff.fieldsChanged', { count: diff.length });
+  _diffTriggerLabel() {
+    return this._label('diff.viewHistory');
   }
 
   _diffTriggerTitle(item, hasDiff) {
@@ -2088,7 +2089,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       this.items = [];
       this.itemGroups = [];
       this.changedItemGroups = [];
-      this.workspaceId = 0;
+      this.workspaceId = this._configuredWorkspaceId();
       this._updateToolbarBadge();
       this._syncToolbarVisibility();
       this._broadcastDeclineState();
@@ -2175,7 +2176,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
     if (!host) return;
     const stateKnown = this.state === 'loaded' || this.state === 'empty' || this.state === 'no-context';
     if (!stateKnown) return;
-    host.hidden = this.workspaceId <= 0 || !this.items.some((i) => i.isChanged);
+    host.hidden = this.workspaceId <= 0;
+  }
+
+  _configuredWorkspaceId() {
+    const configuredWorkspaceId = Number(this._config.activeWorkspaceId || 0);
+    return Number.isFinite(configuredWorkspaceId) ? Math.max(0, configuredWorkspaceId) : 0;
   }
 
   _toolbarHost() {

@@ -62,6 +62,8 @@ composer require webconsulting/webcon-easy-workspace
 4. Untick anything you don't want to publish yet, then hit **Publish to live**.
 
 The toolbar item is automatically hidden while you are in the live workspace.
+In a custom workspace it stays visible, even when the current page has no
+pending changes.
 
 ## What the dropdown shows
 
