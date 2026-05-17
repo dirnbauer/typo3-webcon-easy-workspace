@@ -577,7 +577,7 @@ webcon-easy-workspace-menu {
        hook. */
 }
 
-/* ---- Per-row "N changes" trigger pill ----
+/* ---- Per-row history trigger button ----
    Tiny inline button that opens a TYPO3 backend Modal with the
    record's field-level diff (server-rendered Fluid template using
    core's DiffUtility). Replaces the inline <details> accordion —
@@ -598,8 +598,8 @@ webcon-easy-workspace-menu {
     padding: .15rem .6rem .15rem .45rem;
     background: var(--typo3-component-bg, var(--bs-body-bg));
     color: var(--typo3-component-color, var(--bs-body-color));
-    border: 1px solid color-mix(in srgb, var(--typo3-component-color, var(--bs-body-color)) 35%, transparent);
-    border-radius: 999px;
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 3px;
     font-size: 10.5px;
     font-weight: 500;
     line-height: 1.45;
@@ -645,7 +645,7 @@ webcon-easy-workspace-menu {
 
 .wew-list__label {
     display: flex;
-    align-items: stretch;
+    align-items: flex-start;
     /* Consistent rhythm with the column-header above each block. */
     padding: .5rem .55rem .5rem .85rem;
     cursor: pointer;
@@ -665,11 +665,7 @@ webcon-easy-workspace-menu {
 .wew-list__head {
     display: flex;
     align-items: center;
-    gap: .5rem;
     min-width: 0;
-    /* Pull actions a hair closer to the right edge so the title
-       gets every available pixel before truncating. */
-    min-height: 22px;
 }
 .wew-list__sub {
     display: flex;
@@ -700,11 +696,13 @@ webcon-easy-workspace-menu {
 
 .wew-list__actions {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0;                /* buttons carry their own hit-area padding */
+    gap: .1rem;
     flex-shrink: 0;
-    margin-left: auto;     /* push to the right of the title row */
-    margin-right: -.15rem; /* let the rightmost icon kiss the row edge */
+    align-self: flex-start;
+    margin-left: .45rem;
+    margin-right: -.15rem; /* let the icons kiss the row edge */
 }
 
 .wew-list__locate,
@@ -905,8 +903,10 @@ webcon-easy-workspace-menu {
     font-weight: 500;
     color: var(--typo3-component-color, var(--bs-body-color));
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
     font-size: 12.5px;
     line-height: 1.3;
 }

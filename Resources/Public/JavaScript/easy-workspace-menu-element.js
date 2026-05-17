@@ -1091,10 +1091,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // the disclosure so the row reads cleanly without a "0 changes"
     // affordance to nowhere.
     const changeRecords = this._changeRecordsForItem(item);
-    // Compact 3-row layout per item:
-    //  Row 1: title (full width)  +  actions on right (discard, eye)
-    //  Row 2: status pill          +  table label · type label
-    //  Row 3: History trigger       (opens diff/history modal)
+    // Compact row layout:
+    //  Left:  title, type metadata, then History + change badges.
+    //  Right: stacked icon actions, one per row (discard, locate/edit).
     //
     // The checkbox is visually hidden (.visually-hidden CSS) but kept
     // in the DOM and focusable, so screen-reader users still get a
@@ -1125,18 +1124,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
               : nothing}
             <span class="wew-list__head">
               <span class="wew-list__title-text" title=${item.title}>${item.title}</span>
-              ${hasActions
-                ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
-                    ${showRevertButton ? this._renderRevertButton(item, canRevert) : nothing}
-                    ${locatable ? this._renderLocateButton(item) : nothing}
-                  </span>`
-                : nothing}
             </span>
             <span class="wew-list__sub">
-              ${this._renderChangeBadges(item)}
-              ${item.isHidden && this._config.enableHiddenBadge
-                ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title=${this._label('toolbar.hidden.title')}>${this._label('toolbar.hidden')}</span>`
-                : nothing}
               ${this._config.enableTypeLabels
                 ? html`<span class="wew-list__table">
                     ${item.tableLabel || this._friendlyTable(item.table)}${
@@ -1147,12 +1136,24 @@ class WebconEasyWorkspaceMenu extends LitElement {
                   </span>`
                 : nothing}
             </span>
-            ${item.isChanged && ENDPOINTS.diff && changeRecords.length > 0
+            ${item.isChanged
               ? html`<span class="wew-list__change-actions">
-                  ${this._renderChangeAction(changeRecords[0])}
+                  ${ENDPOINTS.diff && changeRecords.length > 0
+                    ? this._renderChangeAction(changeRecords[0])
+                    : nothing}
+                  ${this._renderChangeBadges(item)}
+                  ${item.isHidden && this._config.enableHiddenBadge
+                    ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title=${this._label('toolbar.hidden.title')}>${this._label('toolbar.hidden')}</span>`
+                    : nothing}
                 </span>`
               : nothing}
           </span>
+          ${hasActions
+            ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
+                ${showRevertButton ? this._renderRevertButton(item, canRevert) : nothing}
+                ${locatable ? this._renderLocateButton(item) : nothing}
+              </span>`
+            : nothing}
         </label>
       </li>
     `;
