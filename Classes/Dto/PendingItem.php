@@ -34,6 +34,9 @@ final readonly class PendingItem
         public int $historyDiffCount = 0,
         public ?int $colPos = null,
         public ?string $colPosLabel = null,
+        public ?string $locateTable = null,
+        public ?int $locateLiveUid = null,
+        public ?int $locateWorkspaceUid = null,
     ) {}
 
     /**
@@ -61,6 +64,9 @@ final readonly class PendingItem
             'historyDiffCount' => $this->historyDiffCount,
             'colPos' => $this->colPos,
             'colPosLabel' => $this->colPosLabel,
+            'locateTable' => $this->locateTable,
+            'locateLiveUid' => $this->locateLiveUid,
+            'locateWorkspaceUid' => $this->locateWorkspaceUid,
         ];
     }
 }

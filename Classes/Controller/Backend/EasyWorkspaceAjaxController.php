@@ -60,6 +60,7 @@ final readonly class EasyWorkspaceAjaxController
         $query = $request->getQueryParams();
         $newsUid = Value::int($query['newsUid'] ?? null);
         $pageUid = Value::int($query['pageUid'] ?? null);
+        $languageUid = array_key_exists('languageUid', $query) ? Value::int($query['languageUid']) : null;
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
@@ -75,13 +76,13 @@ final readonly class EasyWorkspaceAjaxController
         if ($newsUid > 0) {
             return new JsonResponse([
                 'context' => 'news',
-                ...$this->pendingItemsService->forNews($newsUid, $mode, $config),
+                ...$this->pendingItemsService->forNews($newsUid, $mode, $config, $languageUid),
             ]);
         }
         if ($pageUid > 0) {
             return new JsonResponse([
                 'context' => 'page',
-                ...$this->pendingItemsService->forPage($pageUid, $mode, $config),
+                ...$this->pendingItemsService->forPage($pageUid, $mode, $config, $languageUid),
             ]);
         }
         return new JsonResponse([

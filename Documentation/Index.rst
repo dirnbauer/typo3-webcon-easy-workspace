@@ -37,6 +37,114 @@ Features
   ``TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder``.
 * Field-level diffs and history rollback using TYPO3 backend APIs.
 * Optional Visual Editor and Viewpage iframe highlighting.
+* Language-aware page and record scoping for translated workspaces.
+* Duplicate suppression for nested inline workspace records.
+
+..  _record-scope:
+
+Record scope
+============
+
+The dropdown is scoped to three things:
+
+* the selected page or the currently edited news record,
+* the active backend workspace,
+* the selected backend page language.
+
+The toolbar JavaScript detects the page UID from TYPO3's module state
+and falls back to the current URL's ``id`` parameter. For news records it
+also checks the backend edit URL pattern
+``edit[tx_news_domain_model_news][N]=edit``.
+
+The selected language is read from TYPO3 module state first. If no
+language is available there, the JavaScript checks visible backend and
+preview-frame URL parameters such as ``language``, ``sys_language_uid``
+and ``L``. The value is sent to the
+``webcon_easy_workspace_items`` AJAX route as ``languageUid``.
+
+..  _language-aware-listing:
+
+Language-aware listing
+======================
+
+TYPO3 stores translated content records with a language field, usually
+``sys_language_uid``. The exact field can be customized through TCA, so
+Easy Workspace reads ``ctrl.languageField`` first and only falls back to
+``sys_language_uid`` when needed.
+
+When a language UID is known, ``PendingItemsService`` adds that language
+constraint to every workspace-aware listing query:
+
+* page content records,
+* inline child records such as Content Blocks collection items,
+* news records stored on the page,
+* content elements linked to news records.
+
+Translated page and news property records are resolved before the item is
+built. The service uses ``ctrl.transOrigPointerField`` and falls back to
+``l10n_parent`` to find the translated record for the selected language.
+
+If no language can be detected, no language constraint is added. This is
+intentional: non-page backend routes and custom modules should not lose
+all records just because they do not expose a language selector.
+
+..  _duplicate-suppression:
+
+Duplicate suppression
+=====================
+
+Workspace versions are stored as additional rows in the same database
+table as their live records. A modified workspace row points back to the
+live row through ``t3ver_oid``. New workspace-only records have no live
+counterpart and use their own workspace UID as their identity.
+
+Inline child records can be reachable through both parent identities. For
+example, a changed accordion item can match the live parent content
+element UID and the workspace parent content element UID. Without a final
+normalization step, that produces multiple dropdown rows for the same
+logical publishable record.
+
+The response is therefore de-duplicated server-side:
+
+* existing records are keyed by table name and live UID,
+* new workspace-only records are keyed by table name and workspace UID,
+* later duplicates are removed before JSON is returned.
+
+The toolbar count, the selected checkbox set and the publish payload all
+use the normalized list. One changed nested record is therefore counted,
+selected and published once.
+
+..  _locate-icon:
+
+Locate icon
+===========
+
+Rows that can be mapped to rendered page content show an eye icon. On
+hover, focus or click the JavaScript searches same-origin preview iframes
+in this order:
+
+1. ``#visual-editor-iframe`` from EXT:visual_editor.
+2. ``#tx_viewpage_iframe`` from EXT:viewpage.
+3. Other iframes whose id or name indicates a page preview.
+4. Any same-origin iframe with a readable document.
+
+For ordinary content elements the lookup tries the live UID and the
+workspace UID against common frontend markers such as ``#c123``,
+``[data-content-uid]`` and ``[data-typo3-record-uid]``.
+
+Inline records need a parent locate target. A Content Blocks collection
+record, for example ``accordion_items``, does not usually render its own
+frontend wrapper. The visible DOM is part of the parent ``tt_content``
+element. The server therefore adds ``locateTable``, ``locateLiveUid`` and
+``locateWorkspaceUid`` to inline child rows. The JavaScript uses those
+values to show the eye icon and to jump to the parent content element.
+
+If the icon cannot jump, the most common causes are:
+
+* no Visual Editor, Viewpage or same-origin preview iframe is open,
+* the frontend template does not expose a recognizable content marker,
+* the content element is not rendered in the selected language,
+* the record is not a content element and has no parent locate target.
 
 ..  _configuration:
 

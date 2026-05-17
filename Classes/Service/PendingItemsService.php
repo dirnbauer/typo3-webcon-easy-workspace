@@ -11,6 +11,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
 use TYPO3\CMS\Core\Localization\LanguageService;
@@ -55,20 +56,23 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config Normalized config from ConfigurationProvider.
-     * @return array{workspaceId: int, workspaceTitle: string, pageUid: int, items: list<array<string, mixed>>, hasNews: bool, mode: string}
+     * @return array{workspaceId: int, workspaceTitle: string, pageUid: int, languageUid: int|null, items: list<array<string, mixed>>, hasNews: bool, mode: string}
      */
-    public function forPage(int $pageUid, string $mode = self::MODE_CHANGED, array $config = []): array
+    public function forPage(int $pageUid, string $mode = self::MODE_CHANGED, array $config = [], ?int $languageUid = null): array
     {
         $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $pageUid <= 0) {
-            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'pageUid' => $pageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
+            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'items' => [], 'hasNews' => false, 'mode' => $mode];
         }
 
         $maxItems = Value::int($config['maxItems'] ?? 200);
         $items = [];
 
-        $pageItem = $this->resolveRecordItem('pages', $pageUid, $workspaceId, isPrimary: true, config: $config);
+        $pageRecordUid = $this->resolvePageRecordUidForLanguage($pageUid, $workspaceId, $languageUid);
+        $pageItem = $pageRecordUid > 0
+            ? $this->resolveRecordItem('pages', $pageRecordUid, $workspaceId, isPrimary: true, config: $config)
+            : null;
         // In "Changes only" mode hide the page record if it has no
         // workspace edits (it would otherwise render as a "Live"
         // row without a checkbox and confuse editors who expect the
@@ -91,13 +95,13 @@ final readonly class PendingItemsService
         // inside each column.
         $contentOrder = [['colPos', 'ASC'], ['sorting', 'ASC']];
 
-        foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder) as $row) {
+        foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder, $languageUid) as $row) {
             $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
             if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
                 $items[] = $item->toArray();
                 if (count($items) >= $maxItems) break;
             }
-            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels) as $childItem) {
+            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels, $languageUid) as $childItem) {
                 $items[] = $childItem->toArray();
                 if (count($items) >= $maxItems) break 2;
             }
@@ -106,7 +110,7 @@ final readonly class PendingItemsService
         $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
         $enableNews = !isset($config['enableNewsBundles']) || (bool)$config['enableNewsBundles'];
         if ($hasNews && $enableNews && count($items) < $maxItems) {
-            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode, $config) as $bundle) {
+            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode, $config, $languageUid) as $bundle) {
                 if (count($items) >= $maxItems) break;
                 $items[] = $bundle['news']->toArray();
                 foreach ($bundle['contentElements'] as $ceItem) {
@@ -120,7 +124,8 @@ final readonly class PendingItemsService
             'workspaceId' => $workspaceId,
             'workspaceTitle' => $workspaceTitle,
             'pageUid' => $pageUid,
-            'items' => $items,
+            'languageUid' => $languageUid,
+            'items' => $this->deduplicateItems($items),
             'hasNews' => $hasNews,
             'mode' => $mode,
         ];
@@ -128,30 +133,33 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, workspaceTitle: string, newsUid: int, items: list<array<string, mixed>>, mode: string}
+     * @return array{workspaceId: int, workspaceTitle: string, newsUid: int, languageUid: int|null, items: list<array<string, mixed>>, mode: string}
      */
-    public function forNews(int $newsUid, string $mode = self::MODE_CHANGED, array $config = []): array
+    public function forNews(int $newsUid, string $mode = self::MODE_CHANGED, array $config = [], ?int $languageUid = null): array
     {
         $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $workspaceTitle = $this->resolveWorkspaceTitle($workspaceId);
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
-            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'newsUid' => $newsUid, 'items' => [], 'mode' => $mode];
+            return ['workspaceId' => $workspaceId, 'workspaceTitle' => $workspaceTitle, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'items' => [], 'mode' => $mode];
         }
 
         $maxItems = Value::int($config['maxItems'] ?? 200);
         $items = [];
-        $newsItem = $this->resolveRecordItem('tx_news_domain_model_news', $newsUid, $workspaceId, isPrimary: true, config: $config);
+        $newsRecordUid = $this->resolveRecordUidForLanguage('tx_news_domain_model_news', $newsUid, $workspaceId, $languageUid);
+        $newsItem = $newsRecordUid > 0
+            ? $this->resolveRecordItem('tx_news_domain_model_news', $newsRecordUid, $workspaceId, isPrimary: true, config: $config)
+            : null;
         if ($newsItem !== null && ($mode === self::MODE_ALL || $newsItem->isChanged)) {
             $items[] = $newsItem->toArray();
         }
 
-        foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']]) as $row) {
+        foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']], $languageUid) as $row) {
             $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config);
             if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
                 $items[] = $item->toArray();
                 if (count($items) >= $maxItems) break;
             }
-            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config) as $childItem) {
+            foreach ($this->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, languageUid: $languageUid) as $childItem) {
                 $items[] = $childItem->toArray();
                 if (count($items) >= $maxItems) break 2;
             }
@@ -161,9 +169,118 @@ final readonly class PendingItemsService
             'workspaceId' => $workspaceId,
             'workspaceTitle' => $workspaceTitle,
             'newsUid' => $newsUid,
-            'items' => $items,
+            'languageUid' => $languageUid,
+            'items' => $this->deduplicateItems($items),
             'mode' => $mode,
         ];
+    }
+
+    /**
+     * The dropdown should show one row per conceptual workspace record.
+     * Workspace overlays and inline lookups can otherwise surface the
+     * same record more than once when both live and versioned parent ids
+     * are valid lookup anchors.
+     *
+     * @param list<array<string, mixed>> $items
+     * @return list<array<string, mixed>>
+     */
+    private function deduplicateItems(array $items): array
+    {
+        $seen = [];
+        $deduplicated = [];
+        foreach ($items as $item) {
+            $table = Value::string($item['table'] ?? null);
+            $kindKey = Value::string($item['kindKey'] ?? null);
+            $liveUid = Value::int($item['liveUid'] ?? null);
+            $workspaceUid = Value::int($item['workspaceUid'] ?? null);
+            $identityUid = $kindKey === 'new' || $liveUid <= 0 ? $workspaceUid : $liveUid;
+            if ($table === '' || $identityUid <= 0) {
+                $deduplicated[] = $item;
+                continue;
+            }
+            $key = $table . ':' . $identityUid;
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $deduplicated[] = $item;
+        }
+        return $deduplicated;
+    }
+
+    /**
+     * Resolve the concrete pages.uid that represents the chosen backend
+     * language. Content records keep the default page uid as their pid,
+     * but translated page properties are stored as their own pages row.
+     */
+    private function resolvePageRecordUidForLanguage(int $pageUid, int $workspaceId, ?int $languageUid): int
+    {
+        return $this->resolveRecordUidForLanguage('pages', $pageUid, $workspaceId, $languageUid);
+    }
+
+    private function resolveRecordUidForLanguage(string $table, int $uid, int $workspaceId, ?int $languageUid): int
+    {
+        if ($languageUid === null || $languageUid <= 0) {
+            return $uid;
+        }
+        $languageField = $this->languageField($table);
+        $translationParentField = $this->translationParentField($table);
+        if ($languageField === null || $translationParentField === null) {
+            return 0;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()
+            ->removeAll()
+            ->add(new DeletedRestriction())
+            ->add(new WorkspaceRestriction($workspaceId, false));
+        $row = $queryBuilder
+            ->select('uid')
+            ->from($table)
+            ->where(
+                $queryBuilder->expr()->eq($translationParentField, $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq($languageField, $queryBuilder->createNamedParameter($languageUid, Connection::PARAM_INT)),
+            )
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchAssociative();
+
+        return is_array($row) ? Value::int($row['uid'] ?? null) : 0;
+    }
+
+    private function languageConstraint(QueryBuilder $queryBuilder, string $table, ?int $languageUid): ?string
+    {
+        if ($languageUid === null || $languageUid < 0) {
+            return null;
+        }
+        $languageField = $this->languageField($table);
+        if ($languageField === null) {
+            return null;
+        }
+        return $queryBuilder->expr()->eq(
+            $languageField,
+            $queryBuilder->createNamedParameter($languageUid, Connection::PARAM_INT),
+        );
+    }
+
+    private function languageField(string $table): ?string
+    {
+        $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
+        $field = Value::string($ctrl['languageField'] ?? null);
+        if ($field !== '' && TcaUtility::hasColumn($table, $field)) {
+            return $field;
+        }
+        return TcaUtility::hasColumn($table, 'sys_language_uid') ? 'sys_language_uid' : null;
+    }
+
+    private function translationParentField(string $table): ?string
+    {
+        $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
+        $field = Value::string($ctrl['transOrigPointerField'] ?? null);
+        if ($field !== '' && TcaUtility::hasColumn($table, $field)) {
+            return $field;
+        }
+        return TcaUtility::hasColumn($table, 'l10n_parent') ? 'l10n_parent' : null;
     }
 
     /**
@@ -190,16 +307,16 @@ final readonly class PendingItemsService
      * @param list<array{0: string, 1: string}> $orderBy List of [column, direction] tuples.
      * @return list<array<string, mixed>>
      */
-    private function listAllRecordsOnPage(string $table, int $pageUid, int $workspaceId, array $orderBy): array
+    private function listAllRecordsOnPage(string $table, int $pageUid, int $workspaceId, array $orderBy, ?int $languageUid = null): array
     {
-        return $this->listAllRelatedRecords($table, 'pid', $pageUid, $workspaceId, $orderBy);
+        return $this->listAllRelatedRecords($table, 'pid', $pageUid, $workspaceId, $orderBy, $languageUid);
     }
 
     /**
      * @param list<array{0: string, 1: string}> $orderBy List of [column, direction] tuples.
      * @return list<array<string, mixed>>
      */
-    private function listAllRelatedRecords(string $table, string $field, int $parentUid, int $workspaceId, array $orderBy): array
+    private function listAllRelatedRecords(string $table, string $field, int $parentUid, int $workspaceId, array $orderBy, ?int $languageUid = null): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         // FrontendRestrictionContainer would filter hidden — we want
@@ -218,10 +335,18 @@ final readonly class PendingItemsService
             ->add(new DeletedRestriction())
             ->add(new WorkspaceRestriction($workspaceId, false));
 
+        $constraints = [
+            $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
+        ];
+        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+        if ($languageConstraint !== null) {
+            $constraints[] = $languageConstraint;
+        }
+
         $queryBuilder
             ->select('*')
             ->from($table)
-            ->where($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)));
+            ->where(...$constraints);
 
         foreach ($orderBy as $i => [$column, $direction]) {
             if ($i === 0) {
@@ -260,6 +385,7 @@ final readonly class PendingItemsService
         string $mode,
         array $config = [],
         array $columnLabels = [],
+        ?int $languageUid = null,
     ): array {
         $parentLiveUid = Value::int($parentRow['t3ver_oid'] ?? null) ?: Value::int($parentRow['uid'] ?? null);
         $parentWorkspaceUid = Value::int($parentRow['_ORIG_uid'] ?? $parentRow['uid'] ?? null);
@@ -270,8 +396,17 @@ final readonly class PendingItemsService
 
         $items = [];
         foreach ($this->resolveInlineChildConfigs($parentTable, $parentRow) as $inlineConfig) {
-            foreach ($this->listInlineChildRows($parentTable, $parentUids, $workspaceId, $mode, $inlineConfig) as $childRow) {
-                $item = $this->buildItem($inlineConfig['table'], $childRow, isPrimary: false, config: $config, columnLabels: $columnLabels);
+            foreach ($this->listInlineChildRows($parentTable, $parentUids, $workspaceId, $mode, $inlineConfig, $languageUid) as $childRow) {
+                $item = $this->buildItem(
+                    $inlineConfig['table'],
+                    $childRow,
+                    isPrimary: false,
+                    config: $config,
+                    columnLabels: $columnLabels,
+                    locateTable: $parentTable === 'tt_content' ? 'tt_content' : null,
+                    locateLiveUid: $parentTable === 'tt_content' ? $parentLiveUid : null,
+                    locateWorkspaceUid: $parentTable === 'tt_content' ? $parentWorkspaceUid : null,
+                );
                 if ($item !== null && ($mode === self::MODE_ALL || $item->isChanged)) {
                     $items[] = $item;
                 }
@@ -363,7 +498,7 @@ final readonly class PendingItemsService
      * @param array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>} $inlineConfig
      * @return list<array<string, mixed>>
      */
-    private function listInlineChildRows(string $parentTable, array $parentUids, int $workspaceId, string $mode, array $inlineConfig): array
+    private function listInlineChildRows(string $parentTable, array $parentUids, int $workspaceId, string $mode, array $inlineConfig, ?int $languageUid = null): array
     {
         $table = $inlineConfig['table'];
         $foreignField = $inlineConfig['foreignField'];
@@ -390,6 +525,10 @@ final readonly class PendingItemsService
         }
         foreach ($inlineConfig['foreignMatchFields'] as $field => $value) {
             $constraints[] = $queryBuilder->expr()->eq((string)$field, $queryBuilder->createNamedParameter((string)$value));
+        }
+        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+        if ($languageConstraint !== null) {
+            $constraints[] = $languageConstraint;
         }
 
         $queryBuilder
@@ -431,18 +570,25 @@ final readonly class PendingItemsService
         array $config = [],
         array $orderBy = [['sorting', 'ASC']],
         array $columnLabels = [],
+        ?int $languageUid = null,
     ): array {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
 
+        $constraints = [
+            $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+        ];
+        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+        if ($languageConstraint !== null) {
+            $constraints[] = $languageConstraint;
+        }
+
         $queryBuilder
             ->select('*')
             ->from($table)
-            ->where(
-                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            );
+            ->where(...$constraints);
         foreach ($orderBy as $i => [$column, $direction]) {
             if ($i === 0) {
                 $queryBuilder->orderBy($column, $direction);
@@ -466,21 +612,26 @@ final readonly class PendingItemsService
      * @param array<string, mixed> $config
      * @return list<array{news: PendingItem, contentElements: list<PendingItem>}>
      */
-    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode, array $config = []): array
+    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode, array $config = [], ?int $languageUid = null): array
     {
         if ($mode === self::MODE_ALL) {
-            $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, [['datetime', 'DESC'], ['uid', 'ASC']]);
+            $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, [['datetime', 'DESC'], ['uid', 'ASC']], $languageUid);
         } else {
             $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_news_domain_model_news');
             $queryBuilder->getRestrictions()->removeAll();
+            $constraints = [
+                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+            ];
+            $languageConstraint = $this->languageConstraint($queryBuilder, 'tx_news_domain_model_news', $languageUid);
+            if ($languageConstraint !== null) {
+                $constraints[] = $languageConstraint;
+            }
             $result = $queryBuilder
                 ->select('*')
                 ->from('tx_news_domain_model_news')
-                ->where(
-                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
-                    $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                    $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-                )
+                ->where(...$constraints)
                 ->executeQuery();
             $newsRows = [];
             while ($row = $result->fetchAssociative()) {
@@ -497,14 +648,14 @@ final readonly class PendingItemsService
             $liveUid = $newsItem->liveUid;
             $childItems = [];
             if ($mode === self::MODE_ALL) {
-                foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, [['sorting', 'ASC']]) as $ceRow) {
+                foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, [['sorting', 'ASC']], $languageUid) as $ceRow) {
                     $ceItem = $this->buildItem('tt_content', $ceRow, isPrimary: false, config: $config);
                     if ($ceItem !== null) {
                         $childItems[] = $ceItem;
                     }
                 }
             } else {
-                foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, $config) as $ceItem) {
+                foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, $config, languageUid: $languageUid) as $ceItem) {
                     $childItems[] = $ceItem;
                 }
             }
@@ -565,7 +716,16 @@ final readonly class PendingItemsService
      * @param array<string, mixed> $config
      * @param array<int, string> $columnLabels colPos -> name map; only consulted for tt_content rows.
      */
-    private function buildItem(string $table, array $row, bool $isPrimary, array $config = [], array $columnLabels = []): ?PendingItem
+    private function buildItem(
+        string $table,
+        array $row,
+        bool $isPrimary,
+        array $config = [],
+        array $columnLabels = [],
+        ?string $locateTable = null,
+        ?int $locateLiveUid = null,
+        ?int $locateWorkspaceUid = null,
+    ): ?PendingItem
     {
         $rawUid = Value::int($row['uid'] ?? null);
         if ($rawUid <= 0) {
@@ -657,6 +817,9 @@ final readonly class PendingItemsService
             historyDiffCount: $historyDiffCount,
             colPos: $colPos,
             colPosLabel: $colPosLabel,
+            locateTable: $locateTable,
+            locateLiveUid: $locateLiveUid,
+            locateWorkspaceUid: $locateWorkspaceUid,
         );
     }
 

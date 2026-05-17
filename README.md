@@ -63,6 +63,49 @@ composer require webconsulting/webcon-easy-workspace
 
 The toolbar item is automatically hidden while you are in the live workspace.
 
+## What the dropdown shows
+
+The dropdown is intentionally scoped to the editor's current backend context:
+the selected page or the currently edited news record, the active workspace,
+and the currently chosen backend page language.
+
+### One row per workspace record
+
+TYPO3 stores workspace versions as extra rows in the same table as the live
+record. For a modified record the workspace row points back to the live row via
+`t3ver_oid`; for a newly created workspace-only record the workspace row itself
+is the publishable record. When a page contains nested inline records, such as
+Content Blocks collection items, the same logical item can be reachable through
+both the live parent UID and the workspace parent UID.
+
+Easy Workspace now normalizes the response before it reaches the Lit dropdown:
+
+- existing records are keyed by `table + liveUid`
+- new workspace-only records are keyed by `table + workspaceUid`
+- duplicate matches from live/workspace parent lookup are dropped
+
+This means one changed accordion item is rendered once, selected once, counted
+once in the toolbar badge, and sent once to the publish endpoint.
+
+### Only the chosen language
+
+The toolbar JavaScript reads the selected backend language from TYPO3 module
+state and, as a fallback, from visible backend/iframe URL parameters such as
+`language`, `sys_language_uid` or `L`. That value is sent to the
+`webcon_easy_workspace_items` AJAX endpoint as `languageUid`.
+
+On the PHP side, `PendingItemsService` applies the language filter to every
+workspace-aware table that exposes a TCA language field (`ctrl.languageField`,
+falling back to `sys_language_uid`). This affects page content, inline child
+records and news bundles. Translated page and news records are resolved through
+their TCA translation parent field (`ctrl.transOrigPointerField`, falling back
+to `l10n_parent`) before the item is built, so page/news property changes follow
+the same selected-language rule as content elements.
+
+If no language can be detected, the request behaves like before and does not add
+a language constraint. That keeps non-page modules and unusual backend routes
+from accidentally hiding all records.
+
 ## Configuration (TSconfig)
 
 Every visible affordance is gated by a TSconfig flag — defaults ON, switch to `0` per **user / group / page** when a role doesn't need that feature. The extension ships [`Configuration/user.tsconfig`](Configuration/user.tsconfig), which TYPO3 v14 auto-loads from every active extension; no manual import.
@@ -95,7 +138,12 @@ The "Preview link" button calls `\TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder
 
 ### Eye-icon: locate CE in the rendered preview
 
-Every **content-element** row in the dropdown has an **eye icon** (TYPO3's `actions-eye`) next to the title. Hovering or focusing the eye reaches into the rendered page iframe via `iframe.contentDocument`, locates the rendered content element by its standard TYPO3 id (`#c{uid}`, with `[data-uid][data-table=tt_content]` and `[data-typo3-record-uid]` as fallbacks), and:
+Every locatable row in the dropdown has an **eye icon** (TYPO3's
+`actions-eye`) next to the title. Hovering or focusing the eye reaches into the
+rendered page iframe via `iframe.contentDocument`, locates the rendered content
+element by its standard TYPO3 id (`#c{uid}`, with
+`[data-uid][data-table=tt_content]` and `[data-typo3-record-uid]` as
+fallbacks), and:
 
 - **Scrolls the element into view** in the iframe via `scrollIntoView({ behavior: 'smooth', block: 'center' })` — great for long pages where the CE is well below the visible viewport.
 - Applies an inline outline + soft glow so the editor can immediately see *which* CE the dropdown row refers to.
@@ -104,7 +152,31 @@ Every **content-element** row in the dropdown has an **eye icon** (TYPO3's `acti
 
 **Adaptive labeling.** The tooltip reads *"Show in Visual Editor"*, *"Show in page preview"*, or *"Show in preview"* depending on which extensions are detected on the server side (`ExtensionManagementUtility::isLoaded('visual_editor')` / `'viewpage'`). The notification shown when no iframe can be located also adapts and points the editor to the right module.
 
-Both effects are reverted on `mouseleave` / `blur` and again on element disconnect. Clicking the eye triggers the same scroll-and-highlight as hovering, useful on touch devices. The eye is shown only for `tt_content` rows; the affordance can be switched off via `options.webcon_easy_workspace.enableHoverHighlight = 0`.
+Both effects are reverted on `mouseleave` / `blur` and again on element
+disconnect. Clicking the eye triggers the same scroll-and-highlight as hovering,
+useful on touch devices.
+
+Inline child rows need one extra step. A Content Blocks collection item such as
+`accordion_items` does not render its own frontend wrapper with an id like
+`#c123`; the rendered DOM belongs to the parent `tt_content` element. The server
+therefore attaches a locate target to inline child rows:
+
+- `locateTable = tt_content`
+- `locateLiveUid = <parent live uid>`
+- `locateWorkspaceUid = <parent workspace uid>`
+
+The JavaScript uses that locate target when deciding whether to show the eye and
+when searching the iframe. This is why rows for accordion items can now still
+jump to the visible accordion content element even though the row itself is not
+a `tt_content` record. The affordance can be switched off via
+`options.webcon_easy_workspace.enableHoverHighlight = 0`.
+
+If the eye appears disabled or cannot find the element, the usual causes are:
+
+- no Visual Editor/Viewpage/same-origin preview iframe is open
+- the frontend template does not expose a `#c{uid}` or equivalent data attribute
+- the content element is not rendered in the currently selected language
+- the row is a non-content record without a `tt_content` locate target
 
 ### Discard a single change
 

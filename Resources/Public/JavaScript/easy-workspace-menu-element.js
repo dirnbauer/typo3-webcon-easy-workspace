@@ -292,8 +292,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   _highlightInIframe(item, { announce = false } = {}) {
     this._clearIframeHighlight();
-    const liveUid = item?.liveUid;
-    const workspaceUid = item?.workspaceUid;
+    const target = this._locateTarget(item);
+    const liveUid = target.liveUid;
+    const workspaceUid = target.workspaceUid;
     if (!liveUid && !workspaceUid) return;
 
     // Prefer visual-editor's own <ve-content-element uid="X"> wrapper
@@ -591,7 +592,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * @returns {{ iframe: HTMLIFrameElement, doc: Document, el: HTMLElement, isVeWrapper: boolean }|null}
    */
   _locateInAnyIframe(item) {
-    const uids = [item?.liveUid, item?.workspaceUid]
+    const target = this._locateTarget(item);
+    if (target.table !== 'tt_content') return null;
+    const uids = [target.liveUid, target.workspaceUid]
       .map((n) => parseInt(n, 10))
       .filter((n) => n > 0)
       .filter((n, i, arr) => arr.indexOf(n) === i); // unique
@@ -621,6 +624,19 @@ class WebconEasyWorkspaceMenu extends LitElement {
       }
     }
     return null;
+  }
+
+  _locateTarget(item) {
+    return {
+      table: String(item?.locateTable || item?.table || ''),
+      liveUid: parseInt(item?.locateLiveUid ?? item?.liveUid ?? 0, 10) || 0,
+      workspaceUid: parseInt(item?.locateWorkspaceUid ?? item?.workspaceUid ?? 0, 10) || 0,
+    };
+  }
+
+  _isLocatable(item) {
+    const target = this._locateTarget(item);
+    return this._config.enableHoverHighlight && target.table === 'tt_content' && (target.liveUid > 0 || target.workspaceUid > 0);
   }
 
   /**
@@ -1050,7 +1066,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       item.isHidden ? 'wew-list__row--hidden' : '',
     ].filter(Boolean).join(' ');
 
-    const locatable = this._config.enableHoverHighlight && item.table === 'tt_content';
+    const locatable = this._isLocatable(item);
     // Render the discard icon on every changed row so the action
     // affordance never silently disappears between items. When the
     // admin has turned off rollback in TSconfig (enableRevert=false)
@@ -2007,6 +2023,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
     this.state = 'loading';
     const { pageUid, newsUid } = this._detectContext();
+    const languageUid = this._detectLanguageUid();
     if (!pageUid && !newsUid) {
       this.state = 'no-context';
       this.contextLabel = this._label('toolbar.context.none');
@@ -2024,6 +2041,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // switches between filters, instead of mutating each time we
     // re-query the server with a narrower scope.
     const query = pageUid ? { pageUid, mode: 'all' } : { newsUid, mode: 'all' };
+    if (languageUid !== null) {
+      query.languageUid = languageUid;
+    }
     try {
       const response = await new AjaxRequest(ENDPOINTS.items).withQueryArguments(query).get();
       const data = await response.resolve();
@@ -2173,6 +2193,83 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
 
     return { pageUid: pageUid > 0 ? pageUid : 0, newsUid };
+  }
+
+  _detectLanguageUid() {
+    const stateCandidates = [];
+    try {
+      const storage = window.top?.ModuleStateStorage || window.ModuleStateStorage;
+      if (storage && typeof storage.current === 'function') {
+        stateCandidates.push(storage.current('web'));
+        stateCandidates.push(storage.current('web_layout'));
+        stateCandidates.push(storage.current('web_layout_language'));
+      }
+    } catch {
+      // Cross-frame access errors -> URL parsing below.
+    }
+
+    for (const state of stateCandidates) {
+      const languageUid = this._extractLanguageUid(state);
+      if (languageUid !== null) return languageUid;
+    }
+
+    for (const params of this._collectSearchParams()) {
+      for (const key of ['language', 'sys_language_uid', 'L', 'siteLanguage', 'lang']) {
+        const value = params.get(key);
+        if (value === null || value === '') continue;
+        const languageUid = parseInt(value, 10);
+        if (Number.isInteger(languageUid) && languageUid >= 0) {
+          return languageUid;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  _extractLanguageUid(value) {
+    if (!value || typeof value !== 'object') return null;
+    const directKeys = ['language', 'languageUid', 'languageId', 'sys_language_uid', 'siteLanguage'];
+    for (const key of directKeys) {
+      const parsed = parseInt(String(value[key] ?? ''), 10);
+      if (Number.isInteger(parsed) && parsed >= 0) return parsed;
+    }
+    for (const nestedKey of ['settings', 'moduleData', 'data']) {
+      const nested = this._extractLanguageUid(value[nestedKey]);
+      if (nested !== null) return nested;
+    }
+    return null;
+  }
+
+  _collectSearchParams() {
+    const seen = new Set();
+    const params = [];
+    const addUrl = (url) => {
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      try {
+        params.push(new URL(url, window.location.href).searchParams);
+      } catch { /* ignore invalid/detached URLs */ }
+    };
+
+    addUrl(window.location.href);
+    try { addUrl(window.top?.location?.href); } catch { /* cross-origin */ }
+
+    const roots = [document];
+    try {
+      if (window.top?.document && window.top.document !== document) {
+        roots.push(window.top.document);
+      }
+    } catch { /* cross-origin */ }
+
+    for (const root of roots) {
+      for (const iframe of root.querySelectorAll('iframe')) {
+        addUrl(iframe.src);
+        try { addUrl(iframe.contentWindow?.location?.href); } catch { /* cross-origin */ }
+      }
+    }
+
+    return params;
   }
 
   async _publish() {
