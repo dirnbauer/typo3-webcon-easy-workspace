@@ -592,6 +592,8 @@ webcon-easy-workspace-menu {
    grey we previously used) on a slightly tinted row background
    clears WCAG 2.2 AA. Border is solid, full opacity icon. */
 .wew-list__diff-trigger {
+    --wew-history-border: var(--typo3-component-border-color, var(--bs-border-color));
+    --wew-history-border-soft: color-mix(in srgb, var(--wew-history-border) 42%, transparent);
     display: inline-flex;
     align-items: center;
     gap: .35rem;
@@ -603,20 +605,21 @@ webcon-easy-workspace-menu {
     padding: .15rem .6rem .15rem .45rem;
     background: var(--typo3-component-bg, var(--bs-body-bg));
     color: var(--typo3-component-color, var(--bs-body-color));
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border: 1px solid var(--wew-history-border);
     border-radius: 3px;
     font-size: 10.5px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.45;
     letter-spacing: 0;
     text-transform: none;
     cursor: pointer;
+    box-shadow: inset 0 0 0 1px var(--wew-history-border-soft);
     transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
 .wew-list__diff-trigger:hover {
-    background: var(--typo3-link-color, var(--bs-primary));
-    color: var(--bs-white, #fff);
-    border-color: var(--typo3-link-color, var(--bs-primary));
+    background: color-mix(in srgb, var(--wew-history-border) 12%, var(--typo3-component-bg, var(--bs-body-bg)));
+    color: var(--typo3-component-color, var(--bs-body-color));
+    border-color: var(--wew-history-border);
 }
 .wew-list__diff-trigger:hover .wew-list__diff-trigger-icon {
     opacity: 1;
@@ -629,6 +632,18 @@ webcon-easy-workspace-menu {
     font-size: 11px;
     line-height: 1;
     opacity: .9;
+}
+.wew-list__change-actions:has(.wew-state-pill--info) .wew-list__diff-trigger {
+    --wew-history-border: var(--typo3-badge-info-border-color, var(--typo3-state-info-border-color));
+}
+.wew-list__change-actions:has(.wew-state-pill--success) .wew-list__diff-trigger {
+    --wew-history-border: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+}
+.wew-list__change-actions:has(.wew-state-pill--warning) .wew-list__diff-trigger {
+    --wew-history-border: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+}
+.wew-list__change-actions:has(.wew-state-pill--danger) .wew-list__diff-trigger {
+    --wew-history-border: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
 }
 
 /* Visually hidden — the checkbox stays in the DOM and reachable
@@ -698,6 +713,67 @@ webcon-easy-workspace-menu {
 .wew-list__change-actions {
     align-self: flex-start;
 }
+.wew-list__children {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    margin-top: .15rem;
+    padding-left: .65rem;
+    border-left: 1px solid color-mix(in srgb, var(--typo3-component-border-color, var(--bs-border-color)) 70%, transparent);
+}
+.wew-list__child-change {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .4rem;
+    min-width: 0;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-list__child-thumb,
+.wew-list__child-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: color-mix(in srgb, var(--typo3-component-bg, var(--bs-body-bg)) 84%, var(--typo3-component-color, var(--bs-body-color)));
+    overflow: hidden;
+}
+.wew-list__child-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.wew-list__child-icon::before {
+    content: "";
+    display: block;
+    width: 8px;
+    height: 10px;
+    margin: 3px auto;
+    border-radius: 1px;
+    background: currentColor;
+    opacity: .55;
+}
+.wew-list__child-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.wew-list__child-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--typo3-component-color, var(--bs-body-color));
+    font-size: 11px;
+    line-height: 1.25;
+}
+.wew-list__child-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px;
+    line-height: 1.2;
+}
 
 .wew-list__actions {
     display: inline-flex;
@@ -760,6 +836,14 @@ webcon-easy-workspace-menu {
 .wew-list__locate:focus-visible .wew-list__locate-icon--eye { opacity: 0; }
 .wew-list__locate:hover .wew-list__locate-icon--pencil,
 .wew-list__locate:focus-visible .wew-list__locate-icon--pencil { opacity: 1; }
+.wew-list__locate--edit-only .wew-list__locate-icon--eye {
+    opacity: 0;
+}
+.wew-list__locate--edit-only .wew-list__locate-icon--pencil {
+    width: 14px;
+    height: 14px;
+    opacity: 1;
+}
 
 /* Hover/focus: switch to a FILLED primary button with a WHITE
    icon — earlier the tinted background with primary-on-tint icon

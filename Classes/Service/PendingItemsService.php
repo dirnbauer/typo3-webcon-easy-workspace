@@ -410,6 +410,12 @@ final readonly class PendingItemsService
         if ($incomingChanged) {
             $base['isChanged'] = true;
         }
+        $base['childChanges'] = $this->mergeChildChanges(
+            $this->listArray($base['childChanges'] ?? null),
+            $incomingChanged && Value::string($incoming['table'] ?? null) === 'sys_file_reference'
+                ? [$this->childChangeFromItem($incoming)]
+                : $this->listArray($incoming['childChanges'] ?? null),
+        );
         $base['changeBadges'] = $this->mergeChangeBadges(
             $this->listArray($base['changeBadges'] ?? null),
             $this->listArray($incoming['changeBadges'] ?? null),
@@ -424,6 +430,48 @@ final readonly class PendingItemsService
         );
 
         return $base;
+    }
+
+    /**
+     * @param list<mixed> $base
+     * @param list<mixed> $incoming
+     * @return list<array<string, mixed>>
+     */
+    private function mergeChildChanges(array $base, array $incoming): array
+    {
+        $merged = [];
+        foreach ([...$base, ...$incoming] as $child) {
+            if (!is_array($child)) {
+                continue;
+            }
+            $table = Value::string($child['table'] ?? null);
+            $workspaceUid = Value::int($child['workspaceUid'] ?? null);
+            if ($table === '' || $workspaceUid <= 0) {
+                continue;
+            }
+            $merged[$table . ':' . $workspaceUid] = Value::stringKeyArray($child);
+        }
+        return array_values($merged);
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    private function childChangeFromItem(array $item): array
+    {
+        return [
+            'table' => Value::string($item['table'] ?? null),
+            'liveUid' => Value::int($item['liveUid'] ?? null),
+            'workspaceUid' => Value::int($item['workspaceUid'] ?? null),
+            'title' => Value::string($item['title'] ?? null),
+            'kindKey' => Value::string($item['kindKey'] ?? null),
+            'kindLabel' => Value::string($item['kindLabel'] ?? null),
+            'badge' => Value::string($item['badge'] ?? null) ?: 'info',
+            'tableLabel' => Value::string($item['tableLabel'] ?? null),
+            'typeLabel' => Value::string($item['typeLabel'] ?? null),
+            'thumbnailUrl' => Value::string($item['thumbnailUrl'] ?? null),
+        ];
     }
 
     /**
@@ -956,7 +1004,22 @@ final readonly class PendingItemsService
                 continue;
             }
             $fieldConfig = Value::stringKeyArray(Value::stringKeyArray($column)['config'] ?? null);
-            if (($fieldConfig['type'] ?? null) !== 'inline') {
+            $fieldType = Value::string($fieldConfig['type'] ?? null);
+            if ($fieldType === 'file') {
+                if ($this->isWorkspaceAwareInlineChildTable('sys_file_reference')) {
+                    $inlineConfigs[] = [
+                        'field' => $fieldName,
+                        'label' => Value::string(Value::stringKeyArray($column)['label'] ?? $fieldName),
+                        'table' => 'sys_file_reference',
+                        'foreignField' => 'uid_foreign',
+                        'foreignTableField' => 'tablenames',
+                        'foreignMatchFields' => ['fieldname' => $fieldName],
+                        'orderBy' => $this->resolveChildOrderBy('sys_file_reference', ['foreign_sortby' => 'sorting_foreign']),
+                    ];
+                }
+                continue;
+            }
+            if ($fieldType !== 'inline') {
                 continue;
             }
             $foreignTable = Value::string($fieldConfig['foreign_table'] ?? null);
@@ -981,7 +1044,8 @@ final readonly class PendingItemsService
     private function isWorkspaceAwareInlineChildTable(string $table): bool
     {
         if ($table === 'sys_file_reference') {
-            return false;
+            $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
+            return !empty($ctrl['versioningWS']);
         }
         return TcaUtility::isWorkspaceAwareHiddenTable($table);
     }
@@ -1330,6 +1394,7 @@ final readonly class PendingItemsService
             contextualEditUrl: $contextualEditUrl,
             diff: $diff,
             changeBadges: $changeBadges,
+            childChanges: [],
             historyDiffCount: $historyDiffCount,
             colPos: $colPos,
             colPosLabel: $colPosLabel,
@@ -1444,6 +1509,12 @@ final readonly class PendingItemsService
      */
     private function resolveTitle(string $table, array $row): string
     {
+        if ($table === 'sys_file_reference') {
+            $fileName = $this->resolveFileReferenceTitle($row);
+            if ($fileName !== '') {
+                return $fileName;
+            }
+        }
         $title = trim((string)BackendUtility::getRecordTitle($table, $row));
         if ($title !== '' && !str_starts_with($title, '[no title]')) {
             return $title;
@@ -1459,6 +1530,22 @@ final readonly class PendingItemsService
             return $typeLabel . ' · #' . Value::int($row['uid'] ?? null);
         }
         return $table . ' #' . Value::int($row['uid'] ?? null);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function resolveFileReferenceTitle(array $row): string
+    {
+        $uidLocal = Value::int($row['uid_local'] ?? null);
+        if ($uidLocal <= 0) {
+            return '';
+        }
+        try {
+            return $this->resourceFactory->getFileObject($uidLocal)->getName();
+        } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
+            return '';
+        }
     }
 
     private function extractTextSnippet(string $raw): string
@@ -1519,6 +1606,11 @@ final readonly class PendingItemsService
 
     private function resolveThumbnailUrl(string $table, int $workspaceUid): ?string
     {
+        if ($table === 'sys_file_reference') {
+            $row = BackendUtility::getRecord('sys_file_reference', $workspaceUid, 'uid_local');
+            $fileUid = is_array($row) ? Value::int($row['uid_local'] ?? null) : 0;
+            return $fileUid > 0 ? $this->referenceToUrl($fileUid) : null;
+        }
         $fieldNamesPerTable = [
             'tt_content' => ['image', 'assets', 'media'],
             'tx_news_domain_model_news' => ['fal_media', 'fal_related_files'],

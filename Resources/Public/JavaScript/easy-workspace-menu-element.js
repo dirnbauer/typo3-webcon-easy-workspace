@@ -646,6 +646,10 @@ class WebconEasyWorkspaceMenu extends LitElement {
     return this._config.enableHoverHighlight && target.table === 'tt_content' && (target.liveUid > 0 || target.workspaceUid > 0);
   }
 
+  _isEditable(item) {
+    return Boolean(item?.contextualEditUrl || item?.editUrl);
+  }
+
   /**
    * Search every reachable document context for the Visual Editor
    * iframe. We can't always rely on `window.top` (the toolbar may be
@@ -1074,6 +1078,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     ].filter(Boolean).join(' ');
 
     const locatable = this._isLocatable(item);
+    const editable = this._isEditable(item);
     // Render the discard icon on every changed row so the action
     // affordance never silently disappears between items. When the
     // admin has turned off rollback in TSconfig (enableRevert=false)
@@ -1084,7 +1089,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // button.
     const canRevert = this._config.enableRevert && item.isChanged;
     const showRevertButton = item.isChanged;
-    const hasActions = locatable || showRevertButton;
+    const hasActions = locatable || editable || showRevertButton;
     const primaryRecordLabel = this._primaryRecordLabel(item);
     // Diff data ships with every changed row via PendingItem::$diff.
     // Empty for unchanged rows or rows the diff service couldn't
@@ -1148,11 +1153,12 @@ class WebconEasyWorkspaceMenu extends LitElement {
                     : nothing}
                 </span>`
               : nothing}
+            ${this._renderChildChanges(item)}
           </span>
           ${hasActions
             ? html`<span class="wew-list__actions" @click=${(e) => e.preventDefault()}>
                 ${showRevertButton ? this._renderRevertButton(item, canRevert) : nothing}
-                ${locatable ? this._renderLocateButton(item) : nothing}
+                ${locatable || editable ? this._renderLocateButton(item, locatable) : nothing}
               </span>`
             : nothing}
         </label>
@@ -1169,6 +1175,29 @@ class WebconEasyWorkspaceMenu extends LitElement {
       <span class="wew-list__badges">
         ${badges.map((badge) => html`
           <span class="wew-state-pill wew-state-pill--${badge.badge || 'info'} wew-state-pill--inline">${badge.kindLabel}</span>
+        `)}
+      </span>
+    `;
+  }
+
+  _renderChildChanges(item) {
+    const children = Array.isArray(item.childChanges) ? item.childChanges : [];
+    if (children.length === 0) return nothing;
+    return html`
+      <span class="wew-list__children" aria-label="Related changed records">
+        ${children.map((child) => html`
+          <span class="wew-list__child-change">
+            ${child.thumbnailUrl
+              ? html`<span class="wew-list__child-thumb"><img src=${child.thumbnailUrl} alt="" loading="lazy"></span>`
+              : html`<span class="wew-list__child-icon" aria-hidden="true"></span>`}
+            <span class="wew-list__child-body">
+              <span class="wew-list__child-title" title=${child.title || ''}>${child.title || child.tableLabel || child.table}</span>
+              <span class="wew-list__child-meta">
+                ${child.tableLabel || child.table}${child.typeLabel ? html` <span class="wew-list__sep">·</span> ${child.typeLabel}` : nothing}
+              </span>
+            </span>
+            <span class="wew-state-pill wew-state-pill--${child.badge || 'info'} wew-state-pill--inline">${child.kindLabel || ''}</span>
+          </span>
         `)}
       </span>
     `;
@@ -1439,22 +1468,25 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * actions-document-open icons (currentColor) so they automatically
    * follow the button's hover color.
    */
-  _renderLocateButton(item) {
+  _renderLocateButton(item, canHighlight = true) {
     const hasEditUrl = !!item.editUrl;
     const editPart = hasEditUrl ? this._label('edit.tooltip.part') : '';
-    const tooltip = this._config.hasVisualEditor
-      ? this._label('edit.tooltip.visualEditor', { editPart })
-      : this._label('edit.tooltip.preview', { editPart });
+    const tooltip = canHighlight
+      ? (this._config.hasVisualEditor
+          ? this._label('edit.tooltip.visualEditor', { editPart })
+          : this._label('edit.tooltip.preview', { editPart }))
+      : this._label('edit.modalTitle', { title: item.title || this._label('diff.noTitle') });
+    const className = canHighlight ? 'wew-list__locate' : 'wew-list__locate wew-list__locate--edit-only';
     return html`
       <button
         type="button"
-        class="wew-list__locate"
+        class=${className}
         title=${tooltip}
         aria-label=${tooltip}
-        @mouseenter=${(e) => { e.stopPropagation(); this._highlightInIframe(item); }}
-        @mouseleave=${() => this._clearIframeHighlight()}
-        @focus=${() => this._highlightInIframe(item)}
-        @blur=${() => this._clearIframeHighlight()}
+        @mouseenter=${canHighlight ? (e) => { e.stopPropagation(); this._highlightInIframe(item); } : null}
+        @mouseleave=${canHighlight ? () => this._clearIframeHighlight() : null}
+        @focus=${canHighlight ? () => this._highlightInIframe(item) : null}
+        @blur=${canHighlight ? () => this._clearIframeHighlight() : null}
         @click=${(e) => {
           e.preventDefault();
           e.stopPropagation();

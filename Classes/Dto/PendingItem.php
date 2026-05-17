@@ -13,6 +13,9 @@ final readonly class PendingItem
      *   the diff service couldn't compute one.
      * @param list<array{kindKey: string, kindLabel: string, badge: string}> $changeBadges
      *   Ordered, de-duplicated history action badges for the dropdown row.
+     * @param list<array<string, mixed>> $childChanges
+     *   Changed inline child records, such as versioned file references,
+     *   rendered indented inside the owning visible record.
      * @param int|null    $colPos      Column position from the page's BackendLayout. tt_content rows only; null for pages/news/etc. Used by the frontend to group rows by page column ("Hero area", "Content area", …).
      * @param string|null $colPosLabel Human-readable column name resolved via BackendLayout/usedColumns. Falls back to "Column N" when no layout is configured. Null when colPos is null.
      */
@@ -34,6 +37,7 @@ final readonly class PendingItem
         public ?string $contextualEditUrl = null,
         public array $diff = [],
         public array $changeBadges = [],
+        public array $childChanges = [],
         public int $historyDiffCount = 0,
         public ?int $colPos = null,
         public ?string $colPosLabel = null,
@@ -65,6 +69,7 @@ final readonly class PendingItem
             'contextualEditUrl' => $this->contextualEditUrl,
             'diff' => $this->diff,
             'historyDiffCount' => $this->historyDiffCount,
+            'childChanges' => $this->childChanges,
             'colPos' => $this->colPos,
             'colPosLabel' => $this->colPosLabel,
             'locateTable' => $this->locateTable,
