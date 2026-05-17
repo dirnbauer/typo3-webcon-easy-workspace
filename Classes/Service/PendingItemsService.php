@@ -18,6 +18,7 @@ use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
+use TYPO3\CMS\Core\Resource\ProcessedFile;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Schema\Exception\InvalidSchemaTypeException;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
@@ -70,15 +71,20 @@ final readonly class PendingItemsService
         $items = [];
 
         $pageRecordUid = $this->resolvePageRecordUidForLanguage($pageUid, $workspaceId, $languageUid);
-        $pageItem = $pageRecordUid > 0
-            ? $this->resolveRecordItem('pages', $pageRecordUid, $workspaceId, isPrimary: true, config: $config)
-            : null;
+        $pageRow = $pageRecordUid > 0 ? $this->resolveRecordRow('pages', $pageRecordUid, $workspaceId) : null;
+        $pageItem = $pageRow !== null ? $this->buildItem('pages', $pageRow, isPrimary: true, config: $config) : null;
         // In "Changes only" mode hide the page record if it has no
         // workspace edits (it would otherwise render as a "Live"
         // row without a checkbox and confuse editors who expect the
         // list to only contain publishable items).
-        if ($pageItem !== null && ($mode === self::MODE_ALL || $pageItem->isChanged)) {
-            $items[] = $pageItem->toArray();
+        if ($pageItem !== null) {
+            $pageItemArray = $this->withRelatedChanges(
+                $pageItem->toArray(),
+                $this->resolveInlineChildItems('pages', $pageRow, $workspaceId, $mode, $config, languageUid: $languageUid),
+            );
+            if ($mode === self::MODE_ALL || !empty($pageItemArray['isChanged'])) {
+                $items[] = $pageItemArray;
+            }
         }
 
         // Resolve column labels (e.g. "Hero area", "Content area")
@@ -95,7 +101,8 @@ final readonly class PendingItemsService
         // inside each column.
         $contentOrder = [['colPos', 'ASC'], ['sorting', 'ASC']];
 
-        foreach ($this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder, $languageUid) as $row) {
+        $contentRows = $this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, $contentOrder, $languageUid);
+        foreach ($contentRows as $row) {
             $item = $this->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
             if ($item !== null) {
                 $itemArray = $this->withRelatedChanges(
@@ -107,6 +114,19 @@ final readonly class PendingItemsService
                 }
                 if (count($items) >= $maxItems) break;
             }
+        }
+        if (count($items) < $maxItems) {
+            $items = $this->withInlineChildParents(
+                $items,
+                'tt_content',
+                $pageUid,
+                $workspaceId,
+                $mode,
+                $config,
+                $columnLabels,
+                $languageUid,
+                $maxItems,
+            );
         }
 
         $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
@@ -211,6 +231,15 @@ final readonly class PendingItemsService
         $enableNews = !isset($config['enableNewsBundles']) || (bool)$config['enableNewsBundles'];
         if (!$hasChanges && $hasNews && $enableNews) {
             $hasChanges = $this->hasChangedRowsRelated('tx_news_domain_model_news', 'pid', $pageUid, $workspaceId, $languageUid);
+        }
+
+        if (!$hasChanges && $pageRecordUid > 0) {
+            $pageRow = $this->resolveRecordRow('pages', $pageRecordUid, $workspaceId);
+            $hasChanges = $pageRow !== null && $this->hasInlineChildChangesForRows('pages', [$pageRow], $workspaceId, $languageUid);
+        }
+
+        if (!$hasChanges) {
+            $hasChanges = $this->hasChangedInlineChildrenOnPage('tt_content', $pageUid, $workspaceId, $languageUid);
         }
 
         if (!$hasChanges) {
@@ -371,6 +400,176 @@ final readonly class PendingItemsService
     }
 
     /**
+     * Attach changed inline child records to their owning record even when
+     * the owner did not make it into the first visible row pass. This
+     * covers file-only and child-record-only workspace changes on otherwise
+     * unchanged or hidden content elements.
+     *
+     * @param list<array<string, mixed>> $items
+     * @param array<string, mixed> $config
+     * @param array<int, string> $columnLabels
+     * @return list<array<string, mixed>>
+     */
+    private function withInlineChildParents(
+        array $items,
+        string $parentTable,
+        int $pageUid,
+        int $workspaceId,
+        string $mode,
+        array $config,
+        array $columnLabels,
+        ?int $languageUid,
+        int $maxItems,
+    ): array {
+        if ($workspaceId <= 0 || $pageUid <= 0) {
+            return $items;
+        }
+
+        foreach ($this->resolveChangedInlineChildItemsOnPage($parentTable, $pageUid, $workspaceId, $config, $columnLabels, $languageUid) as $parentUid => $childItems) {
+            if ($childItems === []) {
+                continue;
+            }
+            $index = $this->findItemIndexByRecordIdentity($items, $parentTable, $parentUid);
+            if ($index === null) {
+                if (count($items) >= $maxItems) {
+                    break;
+                }
+                $parentItem = $this->resolveInlineChildParentItem($parentTable, $parentUid, $workspaceId, $config, $columnLabels);
+                if (!$parentItem instanceof PendingItem) {
+                    continue;
+                }
+                $item = $parentItem->toArray();
+            } else {
+                $item = $items[$index];
+            }
+
+            $item = $this->withRelatedChanges($item, $childItems);
+            if ($mode === self::MODE_ALL || !empty($item['isChanged'])) {
+                if ($index === null) {
+                    $items[] = $item;
+                } else {
+                    $items[$index] = $item;
+                }
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    private function findItemIndexByRecordIdentity(array $items, string $table, int $uid): ?int
+    {
+        foreach ($items as $index => $item) {
+            if (
+                Value::string($item['table'] ?? null) === $table
+                && (
+                    Value::int($item['liveUid'] ?? null) === $uid
+                    || Value::int($item['workspaceUid'] ?? null) === $uid
+                )
+            ) {
+                return $index;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @param array<int, string> $columnLabels
+     * @return array<int, list<PendingItem>>
+     */
+    private function resolveChangedInlineChildItemsOnPage(
+        string $parentTable,
+        int $pageUid,
+        int $workspaceId,
+        array $config,
+        array $columnLabels,
+        ?int $languageUid,
+    ): array {
+        $itemsByParent = [];
+        foreach ($this->resolveInlineChildConfigsForTable($parentTable) as $inlineConfig) {
+            $table = $inlineConfig['table'];
+            $foreignField = $inlineConfig['foreignField'];
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+            $queryBuilder->getRestrictions()->removeAll();
+
+            $constraints = [
+                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+            ];
+            if (TcaUtility::hasColumn($table, 'deleted')) {
+                $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            }
+            if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
+                $constraints[] = $queryBuilder->expr()->eq(
+                    $inlineConfig['foreignTableField'],
+                    $queryBuilder->createNamedParameter($parentTable),
+                );
+            }
+            foreach ($inlineConfig['foreignMatchFields'] as $field => $value) {
+                $constraints[] = $queryBuilder->expr()->eq((string)$field, $queryBuilder->createNamedParameter((string)$value));
+            }
+            $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+            if ($languageConstraint !== null) {
+                $constraints[] = $languageConstraint;
+            }
+
+            $result = $queryBuilder
+                ->select('*')
+                ->from($table)
+                ->where(...$constraints)
+                ->orderBy($foreignField, 'ASC')
+                ->executeQuery();
+
+            while ($row = $result->fetchAssociative()) {
+                $row = Value::stringKeyArray($row);
+                $parentUid = Value::int($row[$foreignField] ?? null);
+                if ($parentUid <= 0) {
+                    continue;
+                }
+                $item = $this->buildItem(
+                    $table,
+                    $row,
+                    isPrimary: false,
+                    config: $config,
+                    columnLabels: $columnLabels,
+                    locateTable: $parentTable === 'tt_content' ? 'tt_content' : null,
+                    locateLiveUid: $parentUid,
+                    locateWorkspaceUid: $parentUid,
+                );
+                if ($item instanceof PendingItem) {
+                    $itemsByParent[$parentUid][] = $item;
+                }
+            }
+        }
+
+        return $itemsByParent;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @param array<int, string> $columnLabels
+     */
+    private function resolveInlineChildParentItem(string $table, int $uid, int $workspaceId, array $config, array $columnLabels): ?PendingItem
+    {
+        $row = BackendUtility::getRecord($table, $uid);
+        if (!is_array($row)) {
+            return null;
+        }
+        $row = Value::stringKeyArray($row);
+        if (Value::int($row['t3ver_wsid'] ?? null) <= 0) {
+            BackendUtility::workspaceOL($table, $row, $workspaceId);
+            if (!is_array($row)) {
+                return null;
+            }
+            $row = Value::stringKeyArray($row);
+        }
+        return $this->buildItem($table, $row, isPrimary: false, config: array_replace($config, ['showHidden' => true]), columnLabels: $columnLabels);
+    }
+
+    /**
      * @param array<string, mixed> $base
      * @param array<string, mixed> $incoming
      * @return array<string, mixed>
@@ -412,7 +611,7 @@ final readonly class PendingItemsService
         }
         $base['childChanges'] = $this->mergeChildChanges(
             $this->listArray($base['childChanges'] ?? null),
-            $incomingChanged && Value::string($incoming['table'] ?? null) === 'sys_file_reference'
+            $incomingChanged && Value::string($incoming['table'] ?? null) !== Value::string($base['table'] ?? null)
                 ? [$this->childChangeFromItem($incoming)]
                 : $this->listArray($incoming['childChanges'] ?? null),
         );
@@ -842,6 +1041,52 @@ final readonly class PendingItemsService
             ->fetchOne();
     }
 
+    private function hasChangedInlineChildrenOnPage(string $parentTable, int $pageUid, int $workspaceId, ?int $languageUid = null): bool
+    {
+        if ($pageUid <= 0 || $workspaceId <= 0) {
+            return false;
+        }
+
+        foreach ($this->resolveInlineChildConfigsForTable($parentTable) as $inlineConfig) {
+            $table = $inlineConfig['table'];
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+            $queryBuilder->getRestrictions()->removeAll();
+            $constraints = [
+                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+            ];
+            if (TcaUtility::hasColumn($table, 'deleted')) {
+                $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            }
+            if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
+                $constraints[] = $queryBuilder->expr()->eq(
+                    $inlineConfig['foreignTableField'],
+                    $queryBuilder->createNamedParameter($parentTable),
+                );
+            }
+            foreach ($inlineConfig['foreignMatchFields'] as $field => $value) {
+                $constraints[] = $queryBuilder->expr()->eq((string)$field, $queryBuilder->createNamedParameter((string)$value));
+            }
+            $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+            if ($languageConstraint !== null) {
+                $constraints[] = $languageConstraint;
+            }
+
+            if ((bool)$queryBuilder
+                ->select('uid')
+                ->from($table)
+                ->where(...$constraints)
+                ->setMaxResults(1)
+                ->executeQuery()
+                ->fetchOne()
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Reads the title field from sys_workspace; falls back to a
      * generic label for the live workspace or unknown ids.
@@ -1039,6 +1284,95 @@ final readonly class PendingItemsService
             ];
         }
         return $inlineConfigs;
+    }
+
+    /**
+     * Fallback config resolver for changed child rows whose parent was
+     * not already rendered. It cannot know the parent's concrete type,
+     * so it scans base columns and type overrides and de-duplicates by
+     * child table / foreign field / match fields.
+     *
+     * @return list<array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>}>
+     */
+    private function resolveInlineChildConfigsForTable(string $parentTable): array
+    {
+        $parentTca = TcaUtility::table($parentTable);
+        if ($parentTca === []) {
+            return [];
+        }
+
+        $columns = Value::stringKeyArray($parentTca['columns'] ?? null);
+        foreach (Value::stringKeyArray($parentTca['types'] ?? null) as $typeConfig) {
+            foreach (Value::stringKeyArray(Value::stringKeyArray($typeConfig)['columnsOverrides'] ?? null) as $fieldName => $override) {
+                $columns[$fieldName] = array_replace_recursive(
+                    Value::stringKeyArray($columns[$fieldName] ?? null),
+                    Value::stringKeyArray($override),
+                );
+            }
+        }
+
+        $configs = [];
+        $seen = [];
+        foreach ($columns as $fieldName => $column) {
+            if (!is_array($column)) {
+                continue;
+            }
+            $fieldConfig = Value::stringKeyArray(Value::stringKeyArray($column)['config'] ?? null);
+            $config = $this->inlineChildConfigFromField($parentTable, (string)$fieldName, Value::stringKeyArray($column), $fieldConfig);
+            if ($config === null) {
+                continue;
+            }
+            $key = $config['table'] . ':' . $config['foreignField'] . ':' . ($config['foreignTableField'] ?? '') . ':' . json_encode($config['foreignMatchFields']);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $configs[] = $config;
+        }
+
+        return $configs;
+    }
+
+    /**
+     * @param array<string, mixed> $column
+     * @param array<string, mixed> $fieldConfig
+     * @return array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>}|null
+     */
+    private function inlineChildConfigFromField(string $parentTable, string $fieldName, array $column, array $fieldConfig): ?array
+    {
+        $fieldType = Value::string($fieldConfig['type'] ?? null);
+        if ($fieldType === 'file') {
+            if (!$this->isWorkspaceAwareInlineChildTable('sys_file_reference')) {
+                return null;
+            }
+            return [
+                'field' => $fieldName,
+                'label' => Value::string($column['label'] ?? $fieldName),
+                'table' => 'sys_file_reference',
+                'foreignField' => 'uid_foreign',
+                'foreignTableField' => 'tablenames',
+                'foreignMatchFields' => ['fieldname' => $fieldName],
+                'orderBy' => $this->resolveChildOrderBy('sys_file_reference', ['foreign_sortby' => 'sorting_foreign']),
+            ];
+        }
+        if ($fieldType !== 'inline') {
+            return null;
+        }
+
+        $foreignTable = Value::string($fieldConfig['foreign_table'] ?? null);
+        $foreignField = Value::string($fieldConfig['foreign_field'] ?? null);
+        if ($foreignTable === '' || $foreignField === '' || !$this->isWorkspaceAwareInlineChildTable($foreignTable)) {
+            return null;
+        }
+        return [
+            'field' => $fieldName,
+            'label' => Value::string($column['label'] ?? $fieldConfig['label'] ?? $fieldName),
+            'table' => $foreignTable,
+            'foreignField' => $foreignField,
+            'foreignTableField' => isset($fieldConfig['foreign_table_field']) ? Value::string($fieldConfig['foreign_table_field']) : null,
+            'foreignMatchFields' => Value::scalarStringKeyArray($fieldConfig['foreign_match_fields'] ?? null),
+            'orderBy' => $this->resolveChildOrderBy($foreignTable, $fieldConfig),
+        ];
     }
 
     private function isWorkspaceAwareInlineChildTable(string $table): bool
@@ -1244,6 +1578,15 @@ final readonly class PendingItemsService
      */
     private function resolveRecordItem(string $table, int $liveUid, int $workspaceId, bool $isPrimary, array $config = []): ?PendingItem
     {
+        $row = $this->resolveRecordRow($table, $liveUid, $workspaceId);
+        return $row !== null ? $this->buildItem($table, $row, $isPrimary, $config) : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveRecordRow(string $table, int $liveUid, int $workspaceId): ?array
+    {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         // See listAllRelatedRecords for why $includeRowsForWorkspacePreview=false.
         $queryBuilder->getRestrictions()
@@ -1265,7 +1608,7 @@ final readonly class PendingItemsService
         if (!is_array($row)) {
             return null;
         }
-        return $this->buildItem($table, Value::stringKeyArray($row), $isPrimary, $config);
+        return Value::stringKeyArray($row);
     }
 
     /**
@@ -1659,7 +2002,9 @@ final readonly class PendingItemsService
             if (!str_starts_with($file->getMimeType(), 'image/')) {
                 return null;
             }
-            $publicUrl = $file->getPublicUrl();
+            $publicUrl = $file
+                ->process(ProcessedFile::CONTEXT_IMAGEPREVIEW, ['width' => 96, 'height' => 72])
+                ->getPublicUrl();
             return $publicUrl !== null && $publicUrl !== '' ? $publicUrl : null;
         } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
             return null;

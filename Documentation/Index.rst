@@ -39,6 +39,8 @@ Features
 * Optional Visual Editor and Viewpage iframe highlighting.
 * Language-aware page and record scoping for translated workspaces.
 * Duplicate suppression for nested inline workspace records.
+* Related file references and inline child records below their parent row.
+* TYPO3-processed preview thumbnails for image-bearing rows.
 
 ..  _record-scope:
 
@@ -113,6 +115,26 @@ The response is therefore de-duplicated server-side:
 The toolbar count, the selected checkbox set and the publish payload all
 use the normalized list. One changed nested record is therefore counted,
 selected and published once.
+
+..  _related-records:
+
+Related records and thumbnails
+==============================
+
+Changed inline records are rendered with the record that owns them. This
+includes TYPO3 file references, Content Blocks collection items and other
+workspace-aware inline child tables. If only the child changed and the parent
+record has no workspace row of its own, Easy Workspace still adds the parent
+row as context and nests the child change below it.
+
+The same relation handling is used for page properties and content elements.
+Files attached to the page record appear below the page row. Files or other
+inline records attached to a content element appear below that content element.
+
+Related child changes are included in the toolbar count, the default
+selection, publish operations and per-row discard operations. Image rows use
+TYPO3's file processing API to return small preview images for the dropdown
+instead of exposing the original file as the list thumbnail.
 
 ..  _locate-icon:
 

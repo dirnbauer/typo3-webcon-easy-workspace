@@ -63,8 +63,9 @@ All keys live below ``options.webcon_easy_workspace``.
     :type: bool
     :Default: 1
 
-    Enables first-image lookup for ``pages``, ``tt_content`` and
-    ``tx_news_domain_model_news``.
+    Enables TYPO3-processed preview thumbnails for image-bearing
+    ``pages``, ``tt_content`` and ``tx_news_domain_model_news`` rows, as
+    well as changed image file references listed below parent rows.
 
 ..  confval:: enableTypeLabels
 

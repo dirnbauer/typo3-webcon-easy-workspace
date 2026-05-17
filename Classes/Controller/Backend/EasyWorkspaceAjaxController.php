@@ -30,10 +30,9 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
 final readonly class EasyWorkspaceAjaxController
 {
     /**
-     * Tables the dropdown is allowed to operate on. Anything else is
-     * silently rejected — protects against a crafted request passing
-     * an arbitrary $TCA table (e.g. be_users, sys_log) through to
-     * DataHandler. The UI itself only ever produces these three.
+     * Primary tables the dropdown is allowed to operate on. Additional
+     * inline child tables are accepted only when TCA marks them as
+     * workspace-aware children of a workspace-aware parent.
      */
     private const ALLOWED_TABLES = [
         'pages',

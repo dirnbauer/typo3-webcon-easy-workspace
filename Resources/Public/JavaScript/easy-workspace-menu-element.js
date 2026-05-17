@@ -1124,6 +1124,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
                 </svg>
               </span>`
             : nothing}
+          ${this._renderThumbnail(item)}
           <span class="wew-list__body">
             ${primaryRecordLabel
               ? html`<span class="wew-list__primary-kicker">${primaryRecordLabel}</span>`
@@ -1180,11 +1181,20 @@ class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
+  _renderThumbnail(item) {
+    if (!item?.thumbnailUrl) return nothing;
+    return html`
+      <span class="wew-list__thumb">
+        <img src=${item.thumbnailUrl} alt="" loading="lazy">
+      </span>
+    `;
+  }
+
   _renderChildChanges(item) {
     const children = Array.isArray(item.childChanges) ? item.childChanges : [];
     if (children.length === 0) return nothing;
     return html`
-      <span class="wew-list__children" aria-label="Related changed records">
+      <span class="wew-list__children">
         ${children.map((child) => html`
           <span class="wew-list__child-change">
             ${child.thumbnailUrl

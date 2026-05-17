@@ -6,10 +6,12 @@ When an editor opens the dropdown while editing a page, they immediately see:
 
 - the page record (if it has workspace changes)
 - every changed content element on that page
+- every changed inline child record attached to the page or a content element
+- every changed file reference attached to the page or a content element
 - every changed news record stored on that page
 - for each news, every content element linked via `tx_news_related_news`
 
-Each row shows a **checkbox** (checked by default), the record **title**, a state badge (New / Modified / Will be deleted / Moved), and the first supported FAL image as a thumbnail (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
+Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, and changed `sys_file_reference` children). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
 ## Requirements
 
@@ -89,6 +91,24 @@ Easy Workspace now normalizes the response before it reaches the Lit dropdown:
 This means one changed accordion item is rendered once, selected once, counted
 once in the toolbar badge, and sent once to the publish endpoint.
 
+### Related inline records and files
+
+Changed inline records are listed with the record that owns them. This covers
+TYPO3 file references (`sys_file_reference`) and other workspace-aware inline
+child tables, for example Content Blocks collection items or custom address
+records attached to a content element.
+
+If only a child record changed and the parent content element itself has no
+workspace row, Easy Workspace still adds the parent row as context and nests the
+child change below it. The same rule applies to page properties: files or other
+inline records attached to the page record appear below the page row.
+
+Child changes are counted in the toolbar badge, included in the "Publish to
+live" selection, and can be discarded through the same per-row rollback action
+when TYPO3 allows that workspace operation. Image children render a small
+processed thumbnail so editors can identify the changed file without opening
+the full record.
+
 ### Only the chosen language
 
 The toolbar JavaScript reads the selected backend language from TYPO3 module
@@ -119,7 +139,7 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 | Header | `enablePreviewLink` | `1` | "Preview link" button (OS clipboard copy via `Workspaces\Preview\PreviewUriBuilder`). |
 | Filter | `enableFilter` | `1` | Filter chip row ("To publish" / "All on page"). |
 | Filter | `defaultMode` | `changed` | Initial mode: `changed` or `all`. |
-| Rendering | `enableThumbnails` | `1` | First-image thumbnail lookup + column. |
+| Rendering | `enableThumbnails` | `1` | TYPO3-processed image previews for rows and child rows. |
 | Rendering | `enableTypeLabels` | `1` | Second meta line ("Page · Blog Post"). |
 | Rendering | `enableHiddenBadge` | `1` | "Hidden" badge + diagonal-stripe thumbnail overlay. |
 | Rendering | `showHidden` | `1` | When `0`, hidden records are filtered out **server-side**. |
@@ -182,13 +202,26 @@ If the eye appears disabled or cannot find the element, the usual causes are:
 
 ### Discard a single change
 
-Next to the eye, every **changed** row also has a curved-arrow **discard** button (TYPO3 core's `actions-undo` SVG, rendered in the Bootstrap warning hue so the destructive intent is obvious before the user clicks). *Discard* is TYPO3's own term for this operation and maps directly to TYPO3 v14's DataHandler `discard` command, which removes the workspace version. Clicking opens a `Modal.confirm()` with `SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the toolbar POSTs to the `webcon_easy_workspace_discard` backend AJAX route (`/webcon-easy-workspace/discard`), which runs `DataHandler` with the v14 command:
+Next to the eye or edit action, every **changed** row also has a curved-arrow
+**discard** button (TYPO3 core's `actions-undo` SVG). Page-property rows,
+content elements, news records, file references and workspace-aware inline child
+records use the same affordance. *Discard* is TYPO3's own term for this
+operation and maps directly to TYPO3 v14's DataHandler `discard` command, which
+removes the workspace version. Clicking opens a `Modal.confirm()` with
+`SeverityEnum.warning` and a `btn-warning` confirm action. On confirm the
+toolbar POSTs to the `webcon_easy_workspace_discard` backend AJAX route
+(`/webcon-easy-workspace/discard`), which runs `DataHandler` with the v14
+command:
 
 ```php
 $cmd[$table][$workspaceUid]['discard'] = true;
 ```
 
-This deletes the workspace version of that record only — the **live** row stays untouched. The dropdown auto-refreshes after the discard so the row disappears (in "Changes only" mode) or its badge flips back to "Live" (in "All on page" mode).
+This deletes the workspace version of that record only — the **live** row stays
+untouched. The dropdown auto-refreshes after the discard so the row disappears
+(in "Changes only" mode) or its badge flips back to "Live" (in "All on page"
+mode). If the discarded item is a nested child, the parent context row updates
+with the remaining child changes.
 
 Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`.
 
@@ -206,7 +239,7 @@ Classes/
 ├── Configuration/ConfigurationProvider.php            # Reads & normalizes TSconfig
 ├── Controller/Backend/EasyWorkspaceAjaxController.php # Backend AJAX endpoints
 ├── Service/
-│   ├── PendingItemsService.php                       # Aggregates page + ce + news (honors config)
+│   ├── PendingItemsService.php                       # Aggregates page, CE, news + related children
 │   └── PublishSelectedService.php                    # DataHandler publish cmdmap
 └── Dto/PendingItem.php
 
