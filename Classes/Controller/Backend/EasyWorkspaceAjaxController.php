@@ -95,6 +95,37 @@ final readonly class EasyWorkspaceAjaxController
         ]);
     }
 
+    public function hasChangesAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $query = $request->getQueryParams();
+        $newsUid = Value::int($query['newsUid'] ?? null);
+        $pageUid = Value::int($query['pageUid'] ?? null);
+        $languageUid = array_key_exists('languageUid', $query) ? Value::int($query['languageUid']) : null;
+        $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
+
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
+        }
+
+        if ($newsUid > 0) {
+            return new JsonResponse([
+                'context' => 'news',
+                ...$this->pendingItemsService->hasChangesForNews($newsUid, $config, $languageUid),
+            ]);
+        }
+        if ($pageUid > 0) {
+            return new JsonResponse([
+                'context' => 'page',
+                ...$this->pendingItemsService->hasChangesForPage($pageUid, $config, $languageUid),
+            ]);
+        }
+        return new JsonResponse([
+            'context' => 'none',
+            'workspaceId' => 0,
+            'hasChanges' => false,
+        ]);
+    }
+
     /**
      * Cross-page "latest workspace changes" feed.
      *
@@ -190,6 +221,7 @@ final readonly class EasyWorkspaceAjaxController
             'timeline' => $timeline,
             'rollbackEnabled' => true,
             'labels' => [
+                'workspaceUid' => $this->localizationService->translate('diff.template.workspaceUid', ['uid' => $payload['workspaceUid']]),
                 'liveUid' => $this->localizationService->translate('diff.template.liveUid', ['uid' => $payload['liveUid']]),
                 'historyCount' => $this->localizationService->translate('history.editCount', ['count' => count($timeline)]),
                 'historyAria' => $this->localizationService->translate('history.aria'),

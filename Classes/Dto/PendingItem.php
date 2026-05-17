@@ -11,6 +11,8 @@ final readonly class PendingItem
      *   Field-level diff between this record's live and workspace
      *   versions. Empty for unchanged rows (isChanged=false) or when
      *   the diff service couldn't compute one.
+     * @param list<array{kindKey: string, kindLabel: string, badge: string}> $changeBadges
+     *   Ordered, de-duplicated history action badges for the dropdown row.
      * @param int|null    $colPos      Column position from the page's BackendLayout. tt_content rows only; null for pages/news/etc. Used by the frontend to group rows by page column ("Hero area", "Content area", …).
      * @param string|null $colPosLabel Human-readable column name resolved via BackendLayout/usedColumns. Falls back to "Column N" when no layout is configured. Null when colPos is null.
      */
@@ -31,6 +33,7 @@ final readonly class PendingItem
         public ?string $editUrl,
         public ?string $contextualEditUrl = null,
         public array $diff = [],
+        public array $changeBadges = [],
         public int $historyDiffCount = 0,
         public ?int $colPos = null,
         public ?string $colPosLabel = null,
@@ -67,11 +70,11 @@ final readonly class PendingItem
             'locateTable' => $this->locateTable,
             'locateLiveUid' => $this->locateLiveUid,
             'locateWorkspaceUid' => $this->locateWorkspaceUid,
-            'changeBadges' => $this->isChanged ? [[
+            'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,
                 'badge' => $this->badge,
-            ]] : [],
+            ]]) : [],
             'publishRecords' => $this->isChanged ? [[
                 'table' => $this->table,
                 'liveUid' => $this->liveUid,

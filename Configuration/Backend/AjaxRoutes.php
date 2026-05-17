@@ -10,6 +10,11 @@ return [
         'methods' => ['GET'],
         'target' => EasyWorkspaceAjaxController::class . '::itemsAction',
     ],
+    'webcon_easy_workspace_has_changes' => [
+        'path' => '/webcon-easy-workspace/has-changes',
+        'methods' => ['GET'],
+        'target' => EasyWorkspaceAjaxController::class . '::hasChangesAction',
+    ],
     'webcon_easy_workspace_publish' => [
         'path' => '/webcon-easy-workspace/publish',
         'methods' => ['POST'],

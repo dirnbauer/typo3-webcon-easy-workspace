@@ -22,6 +22,7 @@ import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 const ENDPOINTS = {
   items: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_items || '',
+  hasChanges: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_has_changes || '',
   publish: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_publish || '',
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
@@ -2136,16 +2137,51 @@ class WebconEasyWorkspaceMenu extends LitElement {
       window.clearTimeout(this._refreshAfterSaveTimer);
       this._refreshAfterSaveTimer = null;
     }
-    await this._refresh();
+    await this._refreshIfPersistedChangesExist();
     // The Visual Editor emits saveEnded after DataHandler returns, but
     // TYPO3 side effects such as page-tree/workspace overlays can still
-    // settle one tick later in the surrounding backend frames. Refresh
-    // once more shortly after so the badge and tab counts reflect the
-    // persisted workspace version, not the pre-save list.
+    // settle one tick later in the surrounding backend frames. Run the
+    // same cheap "has any workspace row?" check once more shortly after;
+    // only the positive path pays for the full item/detail refresh.
     this._refreshAfterSaveTimer = window.setTimeout(() => {
       this._refreshAfterSaveTimer = null;
-      this._refresh();
+      this._refreshIfPersistedChangesExist();
     }, 800);
+  }
+
+  async _refreshIfPersistedChangesExist() {
+    const currentCount = this._changedItemCount();
+    try {
+      const hasChanges = await this._hasPersistedChangesInCurrentContext();
+      if (!hasChanges && currentCount === 0) {
+        return;
+      }
+    } catch (error) {
+      console.warn('[easy-workspace] has-changes request failed; refreshing item list', error);
+    }
+    await this._refresh();
+  }
+
+  async _hasPersistedChangesInCurrentContext() {
+    if (!ENDPOINTS.hasChanges) {
+      return true;
+    }
+    const { pageUid, newsUid } = this._detectContext();
+    const languageUid = this._detectLanguageUid();
+    if (!pageUid && !newsUid) {
+      return false;
+    }
+    const query = pageUid ? { pageUid } : { newsUid };
+    if (languageUid !== null) {
+      query.languageUid = languageUid;
+    }
+    const response = await new AjaxRequest(ENDPOINTS.hasChanges).withQueryArguments(query).get();
+    const data = await response.resolve();
+    return Boolean(data?.hasChanges);
+  }
+
+  _changedItemCount() {
+    return Array.isArray(this.items) ? this.items.filter((i) => i.isChanged).length : 0;
   }
 
   /**
@@ -2160,7 +2196,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
     const count = this.workspaceId > 0 && (this.state === 'loaded' || this.state === 'empty')
-      ? this.items.filter((i) => i.isChanged).length
+      ? this._changedItemCount()
       : 0;
     badge.textContent = count > 0 ? String(count) : '';
     badge.classList.toggle('hidden', count <= 0);

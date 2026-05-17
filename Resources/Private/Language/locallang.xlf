@@ -54,6 +54,7 @@
     <unit id="diff.modal.historyTitle"><segment><source>History - {title}</source></segment></unit>
     <unit id="diff.modal.editTitle"><segment><source>Edit - {title}</source></segment></unit>
     <unit id="diff.noTitle"><segment><source>[No title]</source></segment></unit>
+    <unit id="diff.template.workspaceUid"><segment><source>ws #{uid}</source></segment></unit>
     <unit id="diff.template.liveUid"><segment><source>live #{uid}</source></segment></unit>
     <unit id="discard.button.title"><segment><source>Discard this change</source></segment></unit>
     <unit id="discard.button.disabledTitle"><segment><source>Discard is disabled by configuration (enableRevert = 0)</source></segment></unit>
@@ -137,7 +138,7 @@
     <unit id="history.action.changed"><segment><source>Changed</source></segment></unit>
     <unit id="history.user.system"><segment><source>System</source></segment></unit>
     <unit id="history.user.fallback"><segment><source>User #{uid}</source></segment></unit>
-    <unit id="history.editCount"><segment><source>{count, plural, one {# edit in this workspace} other {# edits in this workspace}}</source></segment></unit>
+    <unit id="history.editCount"><segment><source>{count, plural, one {# edit} other {# edits}}</source></segment></unit>
     <unit id="history.aria"><segment><source>Workspace edit history</source></segment></unit>
     <unit id="history.rollback.linearTitle"><segment><source>Revert this edit and every later edit on this record</source></segment></unit>
     <unit id="history.rollback.linear"><segment><source>Revert to before</source></segment></unit>

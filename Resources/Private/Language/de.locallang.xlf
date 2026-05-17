@@ -54,6 +54,7 @@
     <unit id="diff.modal.historyTitle"><segment><source>History - {title}</source><target state="translated">Historie - {title}</target></segment></unit>
     <unit id="diff.modal.editTitle"><segment><source>Edit - {title}</source><target state="translated">Bearbeiten - {title}</target></segment></unit>
     <unit id="diff.noTitle"><segment><source>[No title]</source><target state="translated">[Kein Titel]</target></segment></unit>
+    <unit id="diff.template.workspaceUid"><segment><source>ws #{uid}</source><target state="translated">ws #{uid}</target></segment></unit>
     <unit id="diff.template.liveUid"><segment><source>live #{uid}</source><target state="translated">live #{uid}</target></segment></unit>
     <unit id="discard.button.title"><segment><source>Discard this change</source><target state="translated">Diese Änderung verwerfen</target></segment></unit>
     <unit id="discard.button.disabledTitle"><segment><source>Discard is disabled by configuration (enableRevert = 0)</source><target state="translated">Verwerfen ist per Konfiguration deaktiviert (enableRevert = 0)</target></segment></unit>
@@ -137,7 +138,7 @@
     <unit id="history.action.changed"><segment><source>Changed</source><target state="translated">Geändert</target></segment></unit>
     <unit id="history.user.system"><segment><source>System</source><target state="translated">System</target></segment></unit>
     <unit id="history.user.fallback"><segment><source>User #{uid}</source><target state="translated">Benutzer #{uid}</target></segment></unit>
-    <unit id="history.editCount"><segment><source>{count, plural, one {# edit in this workspace} other {# edits in this workspace}}</source><target state="translated">{count, plural, one {# Bearbeitung in diesem Arbeitsbereich} other {# Bearbeitungen in diesem Arbeitsbereich}}</target></segment></unit>
+    <unit id="history.editCount"><segment><source>{count, plural, one {# edit} other {# edits}}</source><target state="translated">{count, plural, one {# Bearbeitung} other {# Bearbeitungen}}</target></segment></unit>
     <unit id="history.aria"><segment><source>Workspace edit history</source><target state="translated">Workspace-Bearbeitungshistorie</target></segment></unit>
     <unit id="history.rollback.linearTitle"><segment><source>Revert this edit and every later edit on this record</source><target state="translated">Diese Bearbeitung und jede spätere Bearbeitung an diesem Datensatz zurücksetzen</target></segment></unit>
     <unit id="history.rollback.linear"><segment><source>Revert to before</source><target state="translated">Auf vorher zurücksetzen</target></segment></unit>

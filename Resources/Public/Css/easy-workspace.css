@@ -244,9 +244,9 @@ webcon-easy-workspace-menu {
    metadata, not as headings. The modal still uses the bold +
    uppercase base style for primary emphasis. */
 .wew-state-pill--inline {
-    padding: .08em .5em;
+    padding: .06em .45em;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0;
     text-transform: none;
     border-radius: 999px;
@@ -254,6 +254,11 @@ webcon-easy-workspace-menu {
        the type-label so they sit on the same axis. */
     line-height: 1.4;
     flex-shrink: 0;
+}
+.wew-list__badges .wew-state-pill--inline {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    border-color: color-mix(in srgb, currentColor 24%, transparent);
+    opacity: .82;
 }
 
 /* ---- Selection bar (master checkbox) ---- */

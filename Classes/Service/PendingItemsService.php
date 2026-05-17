@@ -188,6 +188,71 @@ final readonly class PendingItemsService
     }
 
     /**
+     * Cheap guard used after Visual Editor saves. It only answers
+     * whether a full dropdown refresh is worth doing; it deliberately
+     * does not build titles, thumbnails, diffs, history badges, or
+     * grouped row payloads.
+     *
+     * @param array<string, mixed> $config
+     * @return array{workspaceId: int, pageUid: int, languageUid: int|null, hasChanges: bool}
+     */
+    public function hasChangesForPage(int $pageUid, array $config = [], ?int $languageUid = null): array
+    {
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+        if ($workspaceId <= 0 || $pageUid <= 0) {
+            return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'hasChanges' => false];
+        }
+
+        $pageRecordUid = $this->resolvePageRecordUidForLanguage($pageUid, $workspaceId, $languageUid);
+        $hasChanges = ($pageRecordUid > 0 && $this->hasWorkspaceVersionForRecord('pages', $pageRecordUid, $workspaceId, $languageUid))
+            || $this->hasChangedRowsRelated('tt_content', 'pid', $pageUid, $workspaceId, $languageUid);
+
+        $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
+        $enableNews = !isset($config['enableNewsBundles']) || (bool)$config['enableNewsBundles'];
+        if (!$hasChanges && $hasNews && $enableNews) {
+            $hasChanges = $this->hasChangedRowsRelated('tx_news_domain_model_news', 'pid', $pageUid, $workspaceId, $languageUid);
+        }
+
+        if (!$hasChanges) {
+            $hasChanges = $this->hasInlineChildChangesForRows(
+                'tt_content',
+                $this->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, [['uid', 'ASC']], $languageUid),
+                $workspaceId,
+                $languageUid,
+            );
+        }
+
+        return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'hasChanges' => $hasChanges];
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @return array{workspaceId: int, newsUid: int, languageUid: int|null, hasChanges: bool}
+     */
+    public function hasChangesForNews(int $newsUid, array $config = [], ?int $languageUid = null): array
+    {
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+        if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
+            return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'hasChanges' => false];
+        }
+
+        $newsRecordUid = $this->resolveRecordUidForLanguage('tx_news_domain_model_news', $newsUid, $workspaceId, $languageUid);
+        $hasChanges = ($newsRecordUid > 0 && $this->hasWorkspaceVersionForRecord('tx_news_domain_model_news', $newsRecordUid, $workspaceId, $languageUid))
+            || $this->hasChangedRowsRelated('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, $languageUid);
+
+        if (!$hasChanges) {
+            $hasChanges = $this->hasInlineChildChangesForRows(
+                'tt_content',
+                $this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['uid', 'ASC']], $languageUid),
+                $workspaceId,
+                $languageUid,
+            );
+        }
+
+        return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'hasChanges' => $hasChanges];
+    }
+
+    /**
      * @param list<array<string, mixed>> $items
      * @return list<array<string, mixed>>
      */
@@ -395,17 +460,113 @@ final readonly class PendingItemsService
             if (!is_array($badge)) {
                 continue;
             }
-            $kindKey = Value::string($badge['kindKey'] ?? null);
-            if ($kindKey === '' || isset($merged[$kindKey])) {
+            $kindKey = $this->normalizeChangeBadgeKey(Value::string($badge['kindKey'] ?? null));
+            $kindLabel = Value::string($badge['kindLabel'] ?? null);
+            $identity = $kindKey !== '' ? $kindKey : mb_strtolower($kindLabel);
+            if ($kindKey === '' || $identity === '' || isset($merged[$identity])) {
                 continue;
             }
-            $merged[$kindKey] = [
+            $merged[$identity] = [
                 'kindKey' => $kindKey,
-                'kindLabel' => Value::string($badge['kindLabel'] ?? null),
+                'kindLabel' => $kindLabel,
                 'badge' => Value::string($badge['badge'] ?? null) ?: 'info',
             ];
         }
         return array_values($merged);
+    }
+
+    private function normalizeChangeBadgeKey(string $kindKey): string
+    {
+        return match ($kindKey) {
+            'changed' => 'modified',
+            'move' => 'moved',
+            'new' => 'created',
+            'delete' => 'deleted',
+            default => $kindKey,
+        };
+    }
+
+    /**
+     * @param list<array{actionKey: string}> $timeline
+     * @return list<array{kindKey: string, kindLabel: string, badge: string}>
+     */
+    private function changeBadgesFromTimeline(array $timeline, string $fallbackKindKey, string $fallbackKindLabel, string $fallbackBadge): array
+    {
+        $badges = [];
+        foreach ($timeline as $entry) {
+            $kindKey = $this->normalizeChangeBadgeKey(Value::string($entry['actionKey'] ?? null));
+            if ($kindKey === '' || isset($badges[$kindKey])) {
+                continue;
+            }
+            $badges[$kindKey] = $this->changeBadgeForKind($kindKey);
+        }
+
+        if ($badges === []) {
+            $kindKey = $this->normalizeChangeBadgeKey($fallbackKindKey);
+            if ($kindKey !== '') {
+                $badges[$kindKey] = in_array($kindKey, ['created', 'modified', 'moved', 'deleted'], true)
+                    ? $this->changeBadgeForKind($kindKey)
+                    : [
+                        'kindKey' => $kindKey,
+                        'kindLabel' => $fallbackKindLabel,
+                        'badge' => $fallbackBadge ?: 'info',
+                    ];
+            }
+        }
+
+        return array_values($badges);
+    }
+
+    /**
+     * @return array{kindKey: string, kindLabel: string, badge: string}
+     */
+    private function changeBadgeForKind(string $kindKey): array
+    {
+        return match ($kindKey) {
+            'created' => [
+                'kindKey' => 'created',
+                'kindLabel' => $this->localizationService->translate('history.action.created'),
+                'badge' => 'success',
+            ],
+            'moved' => [
+                'kindKey' => 'moved',
+                'kindLabel' => $this->localizationService->translate('history.action.moved'),
+                'badge' => 'warning',
+            ],
+            'deleted' => [
+                'kindKey' => 'deleted',
+                'kindLabel' => $this->localizationService->translate('history.action.deleted'),
+                'badge' => 'danger',
+            ],
+            default => [
+                'kindKey' => 'modified',
+                'kindLabel' => $this->localizationService->translate('history.action.modified'),
+                'badge' => 'info',
+            ],
+        };
+    }
+
+    /**
+     * @param list<array{actionKey: string, diffs: list<array{field: string}>}> $timeline
+     */
+    private function countModifiedFieldsInTimeline(array $timeline): int
+    {
+        $fields = [];
+        foreach ($timeline as $entry) {
+            if (Value::string($entry['actionKey'] ?? null) !== 'modified') {
+                continue;
+            }
+            foreach ($this->listArray($entry['diffs'] ?? null) as $diff) {
+                if (!is_array($diff)) {
+                    continue;
+                }
+                $field = Value::string($diff['field'] ?? null);
+                if ($field !== '') {
+                    $fields[$field] = true;
+                }
+            }
+        }
+        return count($fields);
     }
 
     /**
@@ -503,6 +664,134 @@ final readonly class PendingItemsService
             return $field;
         }
         return TcaUtility::hasColumn($table, 'l10n_parent') ? 'l10n_parent' : null;
+    }
+
+    private function hasWorkspaceVersionForRecord(string $table, int $liveUid, int $workspaceId, ?int $languageUid = null): bool
+    {
+        if ($liveUid <= 0 || $workspaceId <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return false;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+        if ($languageConstraint !== null) {
+            $constraints[] = $languageConstraint;
+        }
+
+        return (bool)$queryBuilder
+            ->select('uid')
+            ->from($table)
+            ->where(...$constraints)
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchOne();
+    }
+
+    /**
+     * @param int|list<int> $parentUid
+     */
+    private function hasChangedRowsRelated(string $table, string $field, int|array $parentUid, int $workspaceId, ?int $languageUid = null): bool
+    {
+        $parentUids = is_array($parentUid) ? array_values(array_filter($parentUid, static fn (int $uid): bool => $uid > 0)) : [$parentUid];
+        if ($parentUids === [] || $workspaceId <= 0 || !TcaUtility::hasColumn($table, $field) || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return false;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            count($parentUids) === 1
+                ? $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUids[0], Connection::PARAM_INT))
+                : $queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+        if ($languageConstraint !== null) {
+            $constraints[] = $languageConstraint;
+        }
+
+        return (bool)$queryBuilder
+            ->select('uid')
+            ->from($table)
+            ->where(...$constraints)
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchOne();
+    }
+
+    /**
+     * @param list<array<string, mixed>> $parentRows
+     */
+    private function hasInlineChildChangesForRows(string $parentTable, array $parentRows, int $workspaceId, ?int $languageUid = null): bool
+    {
+        foreach ($parentRows as $parentRow) {
+            $parentLiveUid = Value::int($parentRow['t3ver_oid'] ?? null) ?: Value::int($parentRow['uid'] ?? null);
+            $parentWorkspaceUid = Value::int($parentRow['_ORIG_uid'] ?? $parentRow['uid'] ?? null);
+            $parentUids = array_values(array_unique(array_filter([$parentLiveUid, $parentWorkspaceUid], static fn(int $uid): bool => $uid > 0)));
+            if ($parentUids === []) {
+                continue;
+            }
+            foreach ($this->resolveInlineChildConfigs($parentTable, $parentRow) as $inlineConfig) {
+                if ($this->hasChangedInlineChildRows($parentTable, $parentUids, $workspaceId, $inlineConfig, $languageUid)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param list<int> $parentUids
+     * @param array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>} $inlineConfig
+     */
+    private function hasChangedInlineChildRows(string $parentTable, array $parentUids, int $workspaceId, array $inlineConfig, ?int $languageUid = null): bool
+    {
+        $table = $inlineConfig['table'];
+        $foreignField = $inlineConfig['foreignField'];
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+
+        $constraints = [
+            count($parentUids) === 1
+                ? $queryBuilder->expr()->eq($foreignField, $queryBuilder->createNamedParameter($parentUids[0], Connection::PARAM_INT))
+                : $queryBuilder->expr()->in($foreignField, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+        if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
+            $constraints[] = $queryBuilder->expr()->eq(
+                $inlineConfig['foreignTableField'],
+                $queryBuilder->createNamedParameter($parentTable),
+            );
+        }
+        foreach ($inlineConfig['foreignMatchFields'] as $field => $value) {
+            $constraints[] = $queryBuilder->expr()->eq((string)$field, $queryBuilder->createNamedParameter((string)$value));
+        }
+        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
+        if ($languageConstraint !== null) {
+            $constraints[] = $languageConstraint;
+        }
+
+        return (bool)$queryBuilder
+            ->select('uid')
+            ->from($table)
+            ->where(...$constraints)
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchOne();
     }
 
     /**
@@ -1002,8 +1291,12 @@ final readonly class PendingItemsService
         // expand to show *what* changed. Only computed for actual
         // workspace versions; live rows have nothing to diff.
         $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
+        $timeline = $isChanged ? $this->historyTimelineService->build($table, $workspaceUid) : [];
+        $changeBadges = $isChanged
+            ? $this->changeBadgesFromTimeline($timeline, $kindKey, $kindLabel, $badge)
+            : [];
         $historyDiffCount = $isChanged && $state === VersionState::NEW_PLACEHOLDER
-            ? $this->historyTimelineService->countModifiedFields($table, $workspaceUid)
+            ? $this->countModifiedFieldsInTimeline($timeline)
             : 0;
 
         // Resolve colPos info for tt_content rows so the frontend
@@ -1036,6 +1329,7 @@ final readonly class PendingItemsService
             editUrl: $editUrl,
             contextualEditUrl: $contextualEditUrl,
             diff: $diff,
+            changeBadges: $changeBadges,
             historyDiffCount: $historyDiffCount,
             colPos: $colPos,
             colPosLabel: $colPosLabel,
