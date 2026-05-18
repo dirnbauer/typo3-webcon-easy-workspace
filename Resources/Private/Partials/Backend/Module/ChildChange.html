@@ -1,0 +1,31 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<f:variable name="childTitle" value="{child.title}" />
+<f:if condition="{childTitle} == ''"><f:variable name="childTitle" value="{child.tableLabel}" /></f:if>
+<f:if condition="{childTitle} == ''"><f:variable name="childTitle" value="{child.table}" /></f:if>
+
+<f:variable name="childTableLabel" value="{child.tableLabel}" />
+<f:if condition="{childTableLabel} == ''"><f:variable name="childTableLabel" value="{child.table}" /></f:if>
+
+<f:variable name="childBadgeTone" value="{child.badge}" />
+<f:if condition="{childBadgeTone} == ''"><f:variable name="childBadgeTone" value="info" /></f:if>
+
+<span class="wew-list__child-change">
+    <f:if condition="{child.thumbnailUrl}">
+        <f:then>
+            <span class="wew-list__child-thumb"><img src="{child.thumbnailUrl}" alt="" loading="lazy" /></span>
+        </f:then>
+        <f:else>
+            <span class="wew-list__child-icon" aria-hidden="true"></span>
+        </f:else>
+    </f:if>
+    <span class="wew-list__child-body">
+        <span class="wew-list__child-title" title="{child.title}">{childTitle}</span>
+        <span class="wew-list__child-meta">
+            {childTableLabel}<f:if condition="{child.typeLabel}"> <span class="wew-list__sep">·</span> {child.typeLabel}</f:if>
+        </span>
+    </span>
+    <span class="wew-state-pill wew-state-pill--{childBadgeTone} wew-state-pill--inline">{child.kindLabel}</span>
+</span>
+
+</html>

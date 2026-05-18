@@ -1,0 +1,88 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<section class="wew-section wew-section--dashboard" aria-labelledby="wew-section-dashboard-title">
+    <header class="wew-section__head">
+        <div class="wew-section__heading">
+            <p class="wew-section__eyebrow">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.title" />
+            </p>
+            <h2 class="wew-section__title" id="wew-section-dashboard-title">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.dashboard" />
+            </h2>
+            <p class="wew-section__subtitle">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.subtitle" />
+            </p>
+        </div>
+    </header>
+
+    <div class="wew-section__body">
+        <div class="wew-hero" role="status">
+            <div class="wew-hero__body">
+                <span class="wew-hero__eyebrow">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.heroTitle" />
+                </span>
+                <p class="wew-hero__count"><strong>{data.changedCount}</strong></p>
+                <p class="wew-hero__hint">
+                    <f:if condition="{data.changedCount} > 0">
+                        <f:then>
+                            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.heroHint.has"
+                                         arguments="{0: data.changedCount}" />
+                        </f:then>
+                        <f:else>
+                            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.heroHint.none" />
+                        </f:else>
+                    </f:if>
+                </p>
+            </div>
+            <div class="wew-hero__decoration" aria-hidden="true">
+                <core:icon identifier="module-workspaces" size="large" />
+            </div>
+        </div>
+
+        <div class="wew-stats">
+            <f:render partial="Backend/Module/StatCard" arguments="{
+                tone: 'pending',
+                value: data.changedCount,
+                label: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.statPending.label\')}',
+                hint: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.statPending.hint\')}'
+            }" />
+            <f:render partial="Backend/Module/StatCard" arguments="{
+                tone: 'total',
+                value: data.totalCount,
+                label: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.statTotal.label\')}',
+                hint: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.statTotal.hint\')}'
+            }" />
+            <f:render partial="Backend/Module/StatCard" arguments="{
+                tone: 'selected',
+                value: '{data.workspaceTitle}',
+                label: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.workspace\')}',
+                hint: ''
+            }" />
+        </div>
+
+        <div class="wew-quick-actions">
+            <f:render partial="Backend/Module/QuickAction" arguments="{
+                url: '{sectionUrls.pending}',
+                iconIdentifier: 'actions-document-save',
+                title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.cta.review\')}',
+                meta: '{data.changedCount} {f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending\')}'
+            }" />
+            <f:render partial="Backend/Module/QuickAction" arguments="{
+                url: '{sectionUrls.all}',
+                iconIdentifier: 'actions-list',
+                title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.cta.allRecords\')}',
+                meta: '{data.totalCount} {f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.total\')}'
+            }" />
+            <f:render partial="Backend/Module/QuickAction" arguments="{
+                url: '{sectionUrls.activity}',
+                iconIdentifier: 'actions-clock',
+                title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.cta.activity\')}',
+                meta: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.title\')}'
+            }" />
+        </div>
+    </div>
+</section>
+
+</html>

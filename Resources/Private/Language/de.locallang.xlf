@@ -37,6 +37,40 @@
     <unit id="module.total"><segment><source>total</source><target state="translated">gesamt</target></segment></unit>
     <unit id="module.disabledBySettings"><segment><source>Easy Workspace is disabled in your user settings or by administrator configuration.</source><target state="translated">Easy Workspace ist in Ihren Benutzereinstellungen oder durch die Administrationskonfiguration deaktiviert.</target></segment></unit>
     <unit id="module.liveWorkspace"><segment><source>Switch to a workspace to use Easy Workspace.</source><target state="translated">Wechseln Sie in einen Arbeitsbereich, um Easy Workspace zu verwenden.</target></segment></unit>
+    <unit id="module.nav.aria"><segment><source>Easy Workspace sections</source><target state="translated">Easy-Workspace-Bereiche</target></segment></unit>
+    <unit id="module.nav.eyebrow"><segment><source>Workspace</source><target state="translated">Arbeitsbereich</target></segment></unit>
+    <unit id="module.section.dashboard"><segment><source>Dashboard</source><target state="translated">Übersicht</target></segment></unit>
+    <unit id="module.section.pending"><segment><source>Pending changes</source><target state="translated">Offene Änderungen</target></segment></unit>
+    <unit id="module.section.all"><segment><source>All records</source><target state="translated">Alle Datensätze</target></segment></unit>
+    <unit id="module.section.activity"><segment><source>Recent activity</source><target state="translated">Letzte Aktivität</target></segment></unit>
+    <unit id="module.dashboard.subtitle"><segment><source>Workspace overview at a glance.</source><target state="translated">Workspace-Übersicht auf einen Blick.</target></segment></unit>
+    <unit id="module.dashboard.heroTitle"><segment><source>Ready to publish</source><target state="translated">Bereit zur Veröffentlichung</target></segment></unit>
+    <unit id="module.dashboard.heroHint.has"><segment><source>{count, plural, one {# record is waiting for you} other {# records are waiting for you}}. Review and publish them now.</source><target state="translated">{count, plural, one {# Datensatz wartet} other {# Datensätze warten}} auf Sie. Jetzt prüfen und veröffentlichen.</target></segment></unit>
+    <unit id="module.dashboard.heroHint.none"><segment><source>Nothing pending on this page — your workspace is in sync with live.</source><target state="translated">Auf dieser Seite ist nichts offen — Ihr Arbeitsbereich ist mit live synchron.</target></segment></unit>
+    <unit id="module.dashboard.statPending.label"><segment><source>Pending</source><target state="translated">Offen</target></segment></unit>
+    <unit id="module.dashboard.statPending.hint"><segment><source>changes ready to publish</source><target state="translated">Änderungen bereit zur Veröffentlichung</target></segment></unit>
+    <unit id="module.dashboard.statTotal.label"><segment><source>On this page</source><target state="translated">Auf dieser Seite</target></segment></unit>
+    <unit id="module.dashboard.statTotal.hint"><segment><source>records in scope</source><target state="translated">Datensätze im Geltungsbereich</target></segment></unit>
+    <unit id="module.dashboard.statSelected.label"><segment><source>Selected</source><target state="translated">Ausgewählt</target></segment></unit>
+    <unit id="module.dashboard.statSelected.hint"><segment><source>queued for the next publish</source><target state="translated">für die nächste Veröffentlichung vorgemerkt</target></segment></unit>
+    <unit id="module.dashboard.cta.review"><segment><source>Review pending changes</source><target state="translated">Offene Änderungen prüfen</target></segment></unit>
+    <unit id="module.dashboard.cta.allRecords"><segment><source>Browse all records on this page</source><target state="translated">Alle Datensätze auf der Seite anzeigen</target></segment></unit>
+    <unit id="module.dashboard.cta.activity"><segment><source>See latest workspace activity</source><target state="translated">Letzte Workspace-Aktivität ansehen</target></segment></unit>
+    <unit id="module.dashboard.context"><segment><source>Context</source><target state="translated">Kontext</target></segment></unit>
+    <unit id="module.dashboard.workspace"><segment><source>Active workspace</source><target state="translated">Aktiver Arbeitsbereich</target></segment></unit>
+    <unit id="module.pending.subtitle"><segment><source>Workspace changes ready for the live site.</source><target state="translated">Workspace-Änderungen bereit für die Live-Seite.</target></segment></unit>
+    <unit id="module.pending.empty"><segment><source>Nothing pending on this page yet.</source><target state="translated">Auf dieser Seite ist noch nichts offen.</target></segment></unit>
+    <unit id="module.pending.emptyHint"><segment><source>Edits made anywhere on this page will appear here, ready to publish.</source><target state="translated">Bearbeitungen auf dieser Seite erscheinen hier zur Veröffentlichung.</target></segment></unit>
+    <unit id="module.all.subtitle"><segment><source>Every record visible on this page — workspace state included.</source><target state="translated">Alle Datensätze dieser Seite — inklusive Workspace-Status.</target></segment></unit>
+    <unit id="module.all.empty"><segment><source>This page has no records yet.</source><target state="translated">Diese Seite enthält noch keine Datensätze.</target></segment></unit>
+    <unit id="module.all.emptyHint"><segment><source>Add content elements to populate this list.</source><target state="translated">Fügen Sie Inhaltselemente hinzu, um diese Liste zu füllen.</target></segment></unit>
+    <unit id="module.activity.subtitle"><segment><source>Recent workspace edits with field-level diffs.</source><target state="translated">Letzte Workspace-Bearbeitungen mit Feld-Diffs.</target></segment></unit>
+    <unit id="module.activity.refresh"><segment><source>Refresh</source><target state="translated">Aktualisieren</target></segment></unit>
+    <unit id="module.activity.refreshing"><segment><source>Refreshing...</source><target state="translated">Wird aktualisiert...</target></segment></unit>
+    <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source><target state="translated">{count, plural, one {# Datensatz ausgewählt} other {# Datensätze ausgewählt}}</target></segment></unit>
+    <unit id="module.publishBar.deselect"><segment><source>Deselect</source><target state="translated">Auswahl aufheben</target></segment></unit>
+    <unit id="module.publishBar.unselected"><segment><source>Select changed records to publish them.</source><target state="translated">Wählen Sie geänderte Datensätze, um sie zu veröffentlichen.</target></segment></unit>
+    <unit id="module.headerActions.preview"><segment><source>Preview</source><target state="translated">Vorschau</target></segment></unit>
     <unit id="userSettings.tab"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
     <unit id="userSettings.enabled"><segment><source>Use Easy Workspace</source><target state="translated">Easy Workspace verwenden</target></segment></unit>
     <unit id="userSettings.showSubelementsToolbar"><segment><source>Show subelements in the toolbar</source><target state="translated">Unterelemente im Toolbar-Menü anzeigen</target></segment></unit>

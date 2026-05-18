@@ -145,9 +145,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
     // Refresh on dropdown open (covers cases where the URL changed
     // via History API without a state-storage event).
-    const dropdownHost = this._isModuleVariant()
-      ? null
-      : (this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]') || this.closest('.toolbar-item'));
+    const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
+      || this.closest('.toolbar-item');
     if (dropdownHost) {
       dropdownHost.addEventListener('shown.bs.dropdown', () => {
         this._refresh();
@@ -782,9 +781,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   render() {
-    if (this._isModuleVariant()) {
-      return this._renderModule();
-    }
     return html`
       <div class="wew-menu">
         <header class="wew-menu__head">
@@ -811,53 +807,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this._renderFooter()}
         ${this._renderLatestAccordion()}
         ${this._renderContextFootnote()}
-      </div>
-    `;
-  }
-
-  _renderModule() {
-    const changedCount = this._changedItemCount();
-    const totalCount = Array.isArray(this.items) ? this.items.length : 0;
-    const selectedCount = this.selection.size;
-    return html`
-      <div class="wew-module">
-        <section class="wew-module__overview" aria-live="polite">
-          <div class="wew-module__overview-copy">
-            <span class="wew-module__eyebrow">${this._label('toolbar.title')}</span>
-            <p>${this.contextLabel || this._label('toolbar.loading')}</p>
-            ${this.workspaceTitle
-              ? html`<span class="wew-menu__ws-chip" title=${this._label('toolbar.activeWorkspace')}>${this.workspaceTitle}</span>`
-              : nothing}
-          </div>
-          <div class="wew-module__stats" aria-live="polite">
-            <span class="wew-module__stat">
-              <strong>${changedCount}</strong>
-              <span>${this._label('module.pending')}</span>
-            </span>
-            <span class="wew-module__stat">
-              <strong>${totalCount}</strong>
-              <span>${this._label('module.total')}</span>
-            </span>
-            <span class="wew-module__stat">
-              <strong>${selectedCount}</strong>
-              <span>${this._label('toolbar.selected')}</span>
-            </span>
-          </div>
-        </section>
-        <div class="wew-module__layout">
-          <section class="wew-module__main" aria-label=${this._label('module.title')}>
-            ${this._renderFilter()}
-            ${this._renderBody()}
-            ${this._renderFooter()}
-          </section>
-          <aside class="wew-module__side">
-            <div class="wew-module__side-actions">
-              ${this._renderPreviewButton()}
-            </div>
-            ${this._renderLatestAccordion()}
-            ${this._renderContextFootnote()}
-          </aside>
-        </div>
       </div>
     `;
   }
@@ -2295,7 +2244,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * changes.
    */
   _updateToolbarBadge() {
-    if (this._isModuleVariant()) return;
     const host = this._toolbarHost();
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
@@ -2313,7 +2261,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _syncToolbarVisibility() {
-    if (this._isModuleVariant()) return;
     const host = this._toolbarHost();
     if (!host) return;
     const stateKnown = this.state === 'loaded' || this.state === 'empty' || this.state === 'no-context';
@@ -2327,7 +2274,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _toolbarHost() {
-    if (this._isModuleVariant()) return null;
     return this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item')
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
@@ -2418,14 +2364,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     return { pageUid: pageUid > 0 ? pageUid : 0, newsUid };
   }
 
-  _isModuleVariant() {
-    return this.variant === 'module';
-  }
-
   _shouldShowSubelements() {
-    return this._isModuleVariant()
-      ? this._config.showSubelementsInModule !== false
-      : this._config.showSubelementsInToolbar !== false;
+    return this._config.showSubelementsInToolbar !== false;
   }
 
   _detectLanguageUid() {

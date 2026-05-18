@@ -33,8 +33,10 @@ options.webcon_easy_workspace {
 
     # Default for the personal "Show subelements in the toolbar"
     # user setting. When disabled, related child records are hidden
-    # in the top-right toolbar only; publish still includes them. (1)
-    showSubelementsInToolbar = 1
+    # in the top-right toolbar only; publish still includes them.
+    # OFF by default — the toolbar dropdown stays compact; editors
+    # who want subelements there can opt in via User Settings. (0)
+    showSubelementsInToolbar = 0
 
     # Default for the personal "Show subelements in the Easy
     # Workspace module" user setting. When disabled, related child

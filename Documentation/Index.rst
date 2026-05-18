@@ -56,16 +56,35 @@ Features
 Toolbar and module
 ==================
 
-The toolbar dropdown is optimized for quick publishing from the current
-backend context. The Easy Workspace backend module uses the same AJAX API
-and selection model, but renders the list in a wider TYPO3 backend layout.
-It follows the selected page from the page tree and exposes document-header
-actions for showing the page and editing page properties.
+The toolbar dropdown is a compact Lit web component optimized for quick
+publishing from the current backend context. The Easy Workspace backend
+module is fully server-rendered with Fluid templates and the TYPO3 backend
+styleguide; the underlying service layer is shared with the toolbar so both
+entry points see exactly the same workspace records.
 
-The module body also renders those orientation controls visibly: a breadcrumb
-path, TYPO3-style page action buttons and the module title appear above the
-workspace review UI. The review area then splits into a main publish list and a
-side area for preview-link, latest-changes and current-scope information.
+The module shows the standard TYPO3 doc header (breadcrumb, page title and
+the "show page" / "edit page properties" buttons registered on the module
+template's button bar). Inside the body, a sticky **left navigation rail**
+switches between four content panes:
+
+* **Dashboard** — workspace hero, three stat cards (pending, on this page,
+  active workspace) and quick jumps to the other panes.
+* **Pending changes** — the changed-only list with thumbnails, state badges,
+  history, discard, locate / edit and subelement rows. The sticky publish
+  bar submits the selection as a standard ``<form method="post">``; the
+  controller publishes through ``DataHandler`` and redirects back with a
+  TYPO3 flash message.
+* **All records** — every record on the page (read-only inventory view).
+* **Recent activity** — cross-page latest workspace changes with field-level
+  diffs, rendered server-side without an accordion.
+
+Navigation between panes uses plain ``?section=…`` URLs produced by
+``BackendUriBuilder``, so the browser back button and page reloads work as
+expected. A small companion JavaScript file
+(``easy-workspace-module.js``) only wires the rendered DOM into TYPO3
+Core's ``Modal``, ``AjaxRequest`` and ``Notification`` modules for the
+discard, edit, diff and preview-link interactions — no client-side
+rendering.
 
 The module does not depend on Apache Solr or any third-party indexing
 extension. Optional integrations, such as EXT:news and Visual Editor, are

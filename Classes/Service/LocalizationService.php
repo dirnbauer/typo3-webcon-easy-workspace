@@ -44,9 +44,10 @@ final readonly class LocalizationService
         'toolbar.context.recordsPending',
         'toolbar.context.pending',
         'toolbar.context.none',
-        'module.title',
-        'module.pending',
-        'module.total',
+        // `module.*` labels are server-rendered by Fluid in the
+        // backend module template; they no longer need to be pushed
+        // into JS via `_config.labels`. Only labels still consumed
+        // by the toolbar Lit element stay below.
         'context.page',
         'context.news',
         'record.pageRecord',

@@ -1,0 +1,19 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<f:variable name="severityClass" value="info" />
+<f:switch expression="{flashMessage.severity}">
+    <f:case value="0"><f:variable name="severityClass" value="success" /></f:case>
+    <f:case value="1"><f:variable name="severityClass" value="warning" /></f:case>
+    <f:case value="2"><f:variable name="severityClass" value="danger" /></f:case>
+    <f:case value="-1"><f:variable name="severityClass" value="info" /></f:case>
+    <f:case value="-2"><f:variable name="severityClass" value="notice" /></f:case>
+</f:switch>
+
+<div class="alert alert-{severityClass}" role="alert">
+    <f:if condition="{flashMessage.title}">
+        <strong>{flashMessage.title}</strong>
+    </f:if>
+    {flashMessage.message}
+</div>
+
+</html>

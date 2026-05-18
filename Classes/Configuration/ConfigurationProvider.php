@@ -24,7 +24,7 @@ final readonly class ConfigurationProvider
         'enabled' => true,
         // Per-user defaults
         'userEnabledDefault' => true,
-        'showSubelementsInToolbar' => true,
+        'showSubelementsInToolbar' => false,
         'showSubelementsInModule' => true,
         // Header
         'enableWorkspaceChip' => true,

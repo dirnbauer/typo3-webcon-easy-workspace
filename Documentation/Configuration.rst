@@ -24,10 +24,11 @@ The personal switches apply to both entry points: the top-right toolbar
 dropdown and the Easy Workspace backend module below the TYPO3 Workspaces
 publish module.
 
-The module and toolbar share the same API and feature flags. The module uses a
-wider presentation with visible breadcrumbs, page actions, overview counters,
-the main publish list and a side area for latest changes; the configuration
-still controls the underlying behavior in the same way.
+The module and toolbar share the same service layer and configuration flags.
+The module is server-rendered with Fluid and a sticky left rail that switches
+between a dashboard, the pending list, an inventory of all records on the page
+and a recent-activity feed. Per-pane behaviour is still controlled by the same
+TSconfig keys.
 
 ..  _configuration-options:
 
@@ -54,11 +55,13 @@ All keys live below ``options.webcon_easy_workspace``.
 ..  confval:: showSubelementsInToolbar
 
     :type: bool
-    :Default: 1
+    :Default: 0
 
     Default for showing related child records in the top-right toolbar.
-    Disabling this only hides the detail rows; publishing still includes
-    the related records collected by the server.
+    **Off** by default so the compact toolbar dropdown stays readable;
+    editors who want subelements visible there opt in through their User
+    Settings. Disabling this only hides the detail rows; publishing still
+    includes the related records collected by the server.
 
 ..  confval:: showSubelementsInModule
 

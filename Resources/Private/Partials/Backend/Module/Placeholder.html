@@ -1,0 +1,19 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<f:variable name="placeholderTone" value="{f:if(condition: tone, then: tone, else: 'empty')}" />
+
+<div class="wew-placeholder wew-placeholder--{placeholderTone}">
+    <f:if condition="{iconIdentifier}">
+        <div class="wew-placeholder__icon" aria-hidden="true">
+            <core:icon identifier="{iconIdentifier}" size="large" />
+        </div>
+    </f:if>
+    <p class="wew-placeholder__title">{title}</p>
+    <f:if condition="{hint}">
+        <p class="wew-placeholder__hint">{hint}</p>
+    </f:if>
+</div>
+
+</html>

@@ -1,0 +1,35 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<div class="wew-publishbar"
+     data-wew-publishbar=""
+     data-wew-total="{changedCount}"
+     aria-live="polite">
+    <div class="wew-publishbar__info">
+        <span class="wew-publishbar__count">
+            <strong data-wew-selected-count="">{changedCount}</strong><span aria-hidden="true"> / </span>{changedCount}
+        </span>
+        <span class="wew-publishbar__summary" data-wew-publishbar-summary="">
+            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.publishBar.summary"
+                         arguments="{0: changedCount}" />
+        </span>
+    </div>
+    <div class="wew-publishbar__actions">
+        <button type="button"
+                class="btn btn-link wew-publishbar__deselect"
+                data-wew-deselect-all="">
+            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.publishBar.deselect" />
+        </button>
+        <button type="submit"
+                class="btn btn-primary wew-publishbar__publish"
+                data-wew-publish-submit="">
+            <core:icon identifier="actions-rocket" size="small" />
+            <span data-wew-publish-label="">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.publishToLive" />
+            </span>
+        </button>
+    </div>
+</div>
+
+</html>

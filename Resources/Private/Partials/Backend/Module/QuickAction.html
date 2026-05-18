@@ -1,0 +1,20 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<a href="{url}" class="wew-quick-action">
+    <span class="wew-quick-action__icon" aria-hidden="true">
+        <core:icon identifier="{iconIdentifier}" size="medium" />
+    </span>
+    <span class="wew-quick-action__body">
+        <span class="wew-quick-action__title">{title}</span>
+        <f:if condition="{meta}">
+            <span class="wew-quick-action__meta">{meta}</span>
+        </f:if>
+    </span>
+    <span class="wew-quick-action__chev" aria-hidden="true">
+        <core:icon identifier="actions-chevron-right" size="small" />
+    </span>
+</a>
+
+</html>

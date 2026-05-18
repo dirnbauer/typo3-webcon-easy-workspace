@@ -51,7 +51,7 @@ ExtensionManagementUtility::addUserSetting(
         'config' => [
             'type' => 'check',
             'renderType' => 'checkboxToggle',
-            'default' => 1,
+            'default' => 0,
         ],
     ],
     'after:webconEasyWorkspaceEnabled',

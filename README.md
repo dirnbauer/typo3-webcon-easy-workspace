@@ -15,7 +15,7 @@ When an editor opens the toolbar dropdown or the Easy Workspace module while edi
 
 Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
-The backend module lives in the left TYPO3 navigation below the workspace publish module. It uses the same API and publish flow as the toolbar, but has a wider TYPO3-style layout with visible page breadcrumbs, "show page" and "edit page properties" actions, a module title area, larger record rows, and responsive light/dark mode styling.
+The backend module lives in the left TYPO3 navigation below the workspace publish module. It is fully server-rendered with **Fluid templates** and the TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, `<f:form>`), with a sticky left rail that switches between four panes (**Dashboard**, **Pending changes**, **All records**, **Recent activity**). A small companion JS file (`easy-workspace-module.js`) only wires the rendered DOM into TYPO3 Core's `Modal` / `AjaxRequest` / `Notification` APIs — no client-side rendering. The same service layer powers the toolbar and the module.
 
 ## Requirements
 
@@ -78,26 +78,32 @@ selection and publish behavior as page content.
 
 ### Backend module layout
 
-The **Easy Workspace** backend module is the spacious view for editors who need
-to review more than a compact toolbar dropdown can comfortably show. The module
-body starts with a visible breadcrumb path so editors can see where they are in
-the page tree, followed by TYPO3-style actions for opening the page preview and
-editing page properties. The title area then identifies the module and selected
-page.
+The **Easy Workspace** backend module is the spacious, server-rendered view for
+editors who need to review more than a compact toolbar dropdown can comfortably
+show. The doc header carries the standard TYPO3 page breadcrumb, the page-title
+strip and the "show page" / "edit page properties" buttons (registered via the
+``ModuleTemplate`` button bar).
 
-Below that header, the module renders the same Easy Workspace feature set in a
-wide layout:
+Inside the module body, a sticky **left navigation rail** switches between four
+content panes — every link is a plain ``?section=…`` URL produced by
+``BackendUriBuilder``, so reloading the page lands on the same pane and the
+back button works:
 
-- an overview strip with pending, total and selected record counts
-- the full publish list with filter tabs, thumbnails, state badges, history,
-  discard, locate/edit and subelement rows
-- the publish footer with the same selection semantics as the toolbar
-- a side area for the preview-link action, latest workspace changes and current
-  page/news scope
+- **Dashboard** — workspace hero, three stat cards (pending / on this page /
+  active workspace) and quick jumps to the other panes.
+- **Pending changes** — the changed-only list with thumbnails, state badges,
+  history, discard, locate/edit and subelement rows. A sticky publish bar at
+  the bottom submits the selection as a standard ``<form method="post">`` and
+  the controller redirects back with a TYPO3 flash message.
+- **All records** — every record on the page, with the same row UI; selection
+  is disabled here (read-only inventory view).
+- **Recent activity** — cross-page latest workspace changes with field-level
+  diffs, rendered server-side (no accordion).
 
-The module intentionally uses TYPO3 backend buttons, Bootstrap classes and
-TYPO3 CSS variables so it follows the backend styleguide, dark/light mode and
-responsive breakpoints. It does not depend on Solr or any search extension.
+The module uses TYPO3's icon API (``<core:icon>``), Bootstrap classes,
+``--typo3-*`` design tokens and a CSS container query, so it follows the
+backend styleguide and dark/light mode without custom theming. It does not
+depend on Solr or any search extension.
 
 ### Personal user settings
 
@@ -105,11 +111,12 @@ Backend users get an **Easy Workspace** section in TYPO3's **User Settings**
 module:
 
 - **Use Easy Workspace** switches the toolbar and module off for that user even
-  when the administrator TSconfig master switch is enabled.
+  when the administrator TSconfig master switch is enabled. *(default on)*
 - **Show related records in toolbar** hides or shows child detail rows in the
-  top-right dropdown.
+  top-right dropdown. *(default off — the toolbar stays compact unless the
+  editor opts in)*
 - **Show related records in module** hides or shows child detail rows in the
-  full backend module.
+  full backend module. *(default on)*
 
 The two related-record switches only affect visibility. The server still
 collects related child records, and the publish payload still includes them
@@ -228,7 +235,7 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 | Rendering | `maxItems` | `200` | Hard cap on rows per request. |
 | Scope | `enableNewsBundles` | `1` | Also list news on the page + their linked content elements. |
 | User settings | `userEnabledDefault` | `1` | Default for the personal "Use Easy Workspace" switch. |
-| User settings | `showSubelementsInToolbar` | `1` | Default for showing related child rows in the top-right dropdown. |
+| User settings | `showSubelementsInToolbar` | `0` | Default for showing related child rows in the top-right dropdown. **Off** by default so the toolbar stays compact; editors opt in via User Settings. |
 | User settings | `showSubelementsInModule` | `1` | Default for showing related child rows in the backend module. |
 | Per-row | `enableHoverHighlight` | `1` | Eye icon → scroll + outline the CE in Visual Editor, Viewpage, or another same-origin preview iframe. |
 | Per-row | `enableRevert` | `1` | Discard button using TYPO3 v14's DataHandler `discard` cmd. |
@@ -315,12 +322,13 @@ Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`
 
 ### Latest changes, diff and history
 
-The toolbar dropdown and backend module also include a **Latest changes**
-accordion. It lazy-loads the most recent records in the active workspace
-through the `webcon_easy_workspace_latest` backend AJAX route
+The toolbar dropdown includes a lazy-loaded **Latest changes** accordion. It
+fetches the most recent records in the active workspace through the
+`webcon_easy_workspace_latest` backend AJAX route
 (`/webcon-easy-workspace/latest`), scoped to the backend user's current
-workspace and capped at 50 rows server-side. In the module this lives in the
-side area so the publish list can use the full main column.
+workspace and capped at 50 rows server-side. The backend module has a
+dedicated **Recent activity** pane that server-renders the same feed (no
+accordion) — call the same service directly.
 
 Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed.
 
@@ -330,13 +338,14 @@ Changed rows can open a server-rendered diff/history modal through the `webcon_e
 Classes/
 ├── Backend/ToolbarItem/EasyWorkspaceToolbarItem.php   # Toolbar registration + config injection
 ├── Configuration/ConfigurationProvider.php            # Reads & normalizes TSconfig
-├── Controller/Backend/EasyWorkspaceModuleController.php # Backend module controller
-├── Controller/Backend/EasyWorkspaceAjaxController.php # Backend AJAX endpoints
+├── Controller/Backend/EasyWorkspaceModuleController.php # Backend module: Fluid render + publish/discard POST
+├── Controller/Backend/EasyWorkspaceAjaxController.php # Backend AJAX endpoints (toolbar + module modals)
 ├── EventListener/IgnoreMissingWorkspaceDependencyReference.php
 │                                                          # Drops stale workspace dependency refs
 ├── Service/
 │   ├── PendingItemsService.php                       # Aggregates page, CE, news + related children
-│   └── PublishSelectedService.php                    # DataHandler publish cmdmap
+│   ├── PublishSelectedService.php                    # DataHandler publish cmdmap + discard
+│   └── LatestChangesService.php                      # Cross-page latest workspace edits
 └── Dto/PendingItem.php
 
 Configuration/
@@ -350,17 +359,28 @@ Configuration/
 
 Resources/
 ├── Private/Language/Modules/                         # Backend module labels
-├── Private/Templates/Backend/EasyWorkspace/          # Breadcrumbs, actions, title + module shell
-├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (JSON config attr)
+├── Private/Templates/Backend/EasyWorkspace/Index.html # Module shell template
+├── Private/Partials/Backend/Module/                  # Server-rendered module pieces:
+│   ├── Nav.html                                      #   left rail nav
+│   ├── SectionHeader.html                            #   reusable section header
+│   ├── StatCard.html / QuickAction.html              #   dashboard cards
+│   ├── Placeholder.html / FlashMessage.html          #   empty / message states
+│   ├── RecordRow.html / ChildChange.html             #   list row + child rows
+│   ├── PublishBar.html                               #   sticky publish form bar
+│   └── Section/{Dashboard,Pending,All,Activity}.html #   one partial per nav target
+├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (Lit element)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
-└── Public/JavaScript/                                # Lit toolbar/module menu + eye/decline helpers
+└── Public/JavaScript/
+    ├── easy-workspace-menu-element.js                # Toolbar dropdown (Lit element)
+    ├── easy-workspace-module.js                      # Module: small vanilla JS for Modal/AjaxRequest/Notification
+    └── visual-editor-decline-button.js               # FE-iframe discard helper
 
 Build/
 ├── Scripts/runTests.sh                               # Local quality runner
 └── phpstan/phpstan.neon                              # TYPO3 PHPStan config at level max
 ```
 
-The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`, `ModuleTemplate`, `PreviewUriBuilder`). The toolbar dropdown and backend module reuse one `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.
+The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`, `ModuleTemplate`, `FlashMessageService`, `BackendUriBuilder`, `PreviewUriBuilder`). The **toolbar** dropdown uses one `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically. The **backend module** is fully server-rendered with Fluid partials and the TYPO3 icon API; its only JS (~270 lines, no framework) wires the DOM to Core's `Modal`, `AjaxRequest` and `Notification` modules.
 
 ### Template boundary
 

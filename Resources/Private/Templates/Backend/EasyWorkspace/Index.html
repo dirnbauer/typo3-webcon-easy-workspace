@@ -1,44 +1,49 @@
-<div class="wew-backend-module">
-    <f:if condition="{breadcrumbItems}">
-        <nav class="wew-backend-module__breadcrumb" aria-label="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.path')}">
-            <ol class="breadcrumb">
-                <f:for each="{breadcrumbItems}" as="breadcrumbItem">
-                    <li class="breadcrumb-item{f:if(condition: breadcrumbItem.current, then: ' active')}">
-                        <f:if condition="{breadcrumbItem.current}">
-                            <f:then>{breadcrumbItem.title}</f:then>
-                            <f:else>
-                                <a href="{f:be.uri(route: 'webcon_easy_workspace', parameters: '{id: breadcrumbItem.uid}')}">{breadcrumbItem.title}</a>
-                            </f:else>
-                        </f:if>
-                    </li>
-                </f:for>
-            </ol>
-        </nav>
-    </f:if>
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
 
-    <f:if condition="{pageActionButtons}">
-        <div class="wew-backend-module__actions">
-            <f:for each="{pageActionButtons}" as="pageActionButton">
-                <f:format.raw>{pageActionButton}</f:format.raw>
+<div class="wew-backend-module">
+    <f:if condition="{flashMessages}">
+        <div class="wew-backend-module__messages">
+            <f:for each="{flashMessages}" as="flashMessage">
+                <f:render partial="Backend/Module/FlashMessage" arguments="{flashMessage: flashMessage}" />
             </f:for>
         </div>
     </f:if>
 
-    <header class="wew-backend-module__header">
-        <h1>{moduleTitle}</h1>
-        <f:if condition="{pageTitle}">
-            <p>{pageTitle}</p>
-        </f:if>
-    </header>
-
     <f:if condition="{canRenderEasyWorkspace}">
         <f:then>
-            <webcon-easy-workspace-menu variant="module" config="{configJson -> f:format.htmlspecialchars()}"></webcon-easy-workspace-menu>
+            <div class="wew-app"
+                 data-wew-module=""
+                 data-wew-preview-url="{previewLinkUrl}"
+                 data-wew-diff-url="{diffUrl}"
+                 data-wew-labels="{jsLabelsJson -> f:format.htmlspecialchars()}">
+                <f:render partial="Backend/Module/Nav" arguments="{sections: sections, pageUid: pageUid, newsUid: newsUid, formAction: formAction, data: data, hasContext: hasContext, config: config, section: section}" />
+                <main class="wew-app__main">
+                    <f:if condition="{hasContext}">
+                        <f:then>
+                            <f:render partial="Backend/Module/Section/{section -> f:format.case(mode: 'capital')}" arguments="{_all}" />
+                        </f:then>
+                        <f:else>
+                            <f:render partial="Backend/Module/Placeholder" arguments="{
+                                tone: 'info',
+                                iconIdentifier: 'apps-pagetree-page-default',
+                                title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.noContext\')}'
+                            }" />
+                        </f:else>
+                    </f:if>
+                </main>
+            </div>
         </f:then>
         <f:else>
-            <div class="alert alert-info" role="status">
-                {disabledMessage}
+            <div class="callout callout-info wew-backend-module__callout" role="status">
+                <div class="callout-content">
+                    <div class="callout-title">{moduleTitle}</div>
+                    <div class="callout-body">{disabledMessage}</div>
+                </div>
             </div>
         </f:else>
     </f:if>
 </div>
+
+</html>
