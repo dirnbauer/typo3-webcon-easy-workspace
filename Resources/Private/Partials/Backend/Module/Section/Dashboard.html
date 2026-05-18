@@ -2,7 +2,7 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<section class="wew-section" aria-labelledby="wew-section-dashboard-title">
+<section aria-labelledby="wew-section-dashboard-title">
     <h2 class="visually-hidden" id="wew-section-dashboard-title">
         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.dashboard" />
     </h2>
@@ -37,7 +37,7 @@
             </table>
         </div>
         <div class="card-footer">
-            <div class="btn-group">
+            <div class="d-flex flex-wrap gap-2">
                 <a href="{moduleUrls.pending}" class="btn btn-default">
                     <core:icon identifier="actions-document-save" size="small" />
                     <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.dashboard.cta.review" />

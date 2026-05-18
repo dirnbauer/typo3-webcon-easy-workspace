@@ -2,24 +2,26 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<div class="wew-backend-module">
+<f:layout name="Module" />
+
+<f:section name="Content">
+<div>
     <f:if condition="{flashMessages}">
-        <div class="wew-backend-module__messages">
+        <div>
             <f:for each="{flashMessages}" as="flashMessage">
                 <f:render partial="Backend/Module/FlashMessage" arguments="{flashMessage: flashMessage}" />
             </f:for>
         </div>
     </f:if>
 
-    <header class="wew-module-header">
+    <header class="mb-4">
         <h1>{moduleTitle}</h1>
-        <p>{moduleDescription}</p>
+        <p class="mb-0">{moduleDescription}</p>
     </header>
 
     <f:if condition="{canRenderEasyWorkspace}">
         <f:then>
-            <div class="wew-app"
-                 data-wew-module=""
+            <div data-wew-module=""
                  data-wew-preview-url="{previewLinkUrl}"
                  data-wew-diff-url="{diffUrl}"
                  data-wew-labels="{jsLabelsJson -> f:format.htmlspecialchars()}">
@@ -38,7 +40,7 @@
             </div>
         </f:then>
         <f:else>
-            <div class="callout callout-info wew-backend-module__callout" role="status">
+            <div class="callout callout-info" role="status">
                 <div class="callout-content">
                     <div class="callout-title">{moduleTitle}</div>
                     <div class="callout-body">{disabledMessage}</div>
@@ -47,5 +49,6 @@
         </f:else>
     </f:if>
 </div>
+</f:section>
 
 </html>

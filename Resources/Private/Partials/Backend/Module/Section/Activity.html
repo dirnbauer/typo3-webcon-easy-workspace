@@ -2,7 +2,7 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<section class="wew-section" aria-labelledby="wew-section-activity-title">
+<section aria-labelledby="wew-section-activity-title">
     <h2 class="visually-hidden" id="wew-section-activity-title">
         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.activity" />
     </h2>
@@ -19,7 +19,7 @@
 
         <f:if condition="{data.latestItems -> f:count()} > 0">
             <f:then>
-                <ul class="list-group list-group-flush wew-activity-list" role="list">
+                <ul class="list-group list-group-flush" role="list">
                     <f:for each="{data.latestItems}" as="entry">
                         <f:render partial="Backend/Module/Activity/Entry" arguments="{entry: entry}" />
                     </f:for>

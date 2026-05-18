@@ -128,7 +128,8 @@ navigation uses TYPO3 backend module routes such as
 through route parameters. There is no extra top-left navigation inside the
 module body. The module uses TYPO3's icon API (``<core:icon>``), Bootstrap 5
 tables, list groups, button groups, badges and ``--typo3-*`` design tokens so
-it follows the backend styleguide and dark/light mode without custom theming.
+it follows the backend styleguide and dark/light mode without custom layout
+classes or custom theming in the module body.
 It does not depend on Solr or any search extension.
 
 ### Personal user settings
@@ -411,7 +412,8 @@ into light DOM so backend Bootstrap / styleguide tokens apply automatically.
 The **backend module** is fully server-rendered with Fluid partials, TYPO3
 submodule routes, the TYPO3 icon API and Bootstrap 5 markup; its only JS
 (~270 lines, no framework) wires the DOM and doc-header preview action to
-Core's `Modal`, `AjaxRequest` and `Notification` modules.
+Core's `Modal`, `AjaxRequest` and `Notification` modules. Extension-specific
+CSS remains scoped to the toolbar dropdown, not to the backend module layout.
 
 ### Template boundary
 

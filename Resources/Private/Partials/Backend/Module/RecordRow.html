@@ -12,8 +12,8 @@
     </f:if>
 </f:if>
 
-<tr class="{f:if(condition: item.isChanged, then: 'table-active')}">
-    <td class="wew-module-table__check">
+<tr>
+    <td class="text-center">
         <f:if condition="{item.isChanged} && {selectable}">
             <input type="checkbox"
                    name="selections[]"
@@ -24,11 +24,11 @@
                    checked="checked" />
         </f:if>
     </td>
-    <td class="wew-module-table__record">
+    <td>
         <div class="d-flex align-items-start gap-2">
             <f:if condition="{config.enableThumbnails} && {item.thumbnailUrl}">
-                <span class="wew-module-thumb">
-                    <img src="{item.thumbnailUrl}" alt="" loading="lazy" />
+                <span>
+                    <img class="img-thumbnail" src="{item.thumbnailUrl}" width="48" height="36" alt="" loading="lazy" />
                 </span>
             </f:if>
             <div class="min-w-0">
@@ -52,8 +52,8 @@
                 </f:if>
                 <f:if condition="{config.showSubelementsInModule} && {item.childChanges -> f:count()} > 0">
                     <f:variable name="childCount" value="{item.childChanges -> f:count()}" />
-                    <details class="wew-module-details mt-2">
-                        <summary>
+                    <details class="mt-2">
+                        <summary class="small">
                             <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedRecords"
                                          arguments="{count: childCount}" />
                         </summary>
@@ -67,7 +67,7 @@
             </div>
         </div>
     </td>
-    <td class="wew-module-table__state">
+    <td class="text-nowrap">
         <div class="d-flex flex-wrap gap-1">
             <f:for each="{item.changeBadges}" as="badge">
                 <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
@@ -80,7 +80,7 @@
             </f:if>
         </div>
     </td>
-    <td class="wew-module-table__actions">
+    <td class="text-end text-nowrap">
         <f:if condition="{item.isChanged}">
             <div class="btn-group" role="group">
                 <f:if condition="{item.changeBadges -> f:count()} > 0">

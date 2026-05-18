@@ -2,7 +2,7 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<section class="wew-section" aria-labelledby="wew-section-pending-title">
+<section aria-labelledby="wew-section-pending-title">
     <h2 class="visually-hidden" id="wew-section-pending-title">
         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.pending" />
     </h2>
@@ -14,23 +14,23 @@
             <span class="badge badge-info">{data.changedCount}</span>
         </div>
 
-        <form method="post" action="{formAction}" class="wew-section__form" data-wew-publish-form="">
+        <form method="post" action="{formAction}" data-wew-publish-form="">
             <input type="hidden" name="_action" value="publish" />
 
             <f:if condition="{data.changedCount} > 0">
                 <f:then>
                     <div class="table-fit">
-                        <table class="table table-striped table-hover wew-module-table">
+                        <table class="table table-striped table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th class="wew-module-table__check" scope="col"></th>
+                                    <th class="text-center" scope="col"></th>
                                     <th scope="col">
                                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.column.record" />
                                     </th>
-                                    <th class="wew-module-table__state" scope="col">
+                                    <th class="text-nowrap" scope="col">
                                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.column.state" />
                                     </th>
-                                    <th class="wew-module-table__actions" scope="col">
+                                    <th class="text-end text-nowrap" scope="col">
                                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.column.actions" />
                                     </th>
                                 </tr>

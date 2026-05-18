@@ -2,27 +2,27 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<div class="wew-publishbar"
+<div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2"
      data-wew-publishbar=""
      data-wew-total="{changedCount}"
      aria-live="polite">
-    <div class="wew-publishbar__info">
-        <span class="wew-publishbar__count">
+    <div>
+        <div>
             <strong data-wew-selected-count="">{changedCount}</strong><span aria-hidden="true"> / </span>{changedCount}
-        </span>
-        <span class="wew-publishbar__summary" data-wew-publishbar-summary="">
+        </div>
+        <div class="text-muted small" data-wew-publishbar-summary="">
             <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.publishBar.summary"
                          arguments="{0: changedCount}" />
-        </span>
+        </div>
     </div>
-    <div class="wew-publishbar__actions">
+    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
         <button type="button"
-                class="btn btn-link wew-publishbar__deselect"
+                class="btn btn-link"
                 data-wew-deselect-all="">
             <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.publishBar.deselect" />
         </button>
         <button type="submit"
-                class="btn btn-primary wew-publishbar__publish"
+                class="btn btn-primary"
                 data-wew-publish-submit="">
             <core:icon identifier="actions-rocket" size="small" />
             <span data-wew-publish-label="">
