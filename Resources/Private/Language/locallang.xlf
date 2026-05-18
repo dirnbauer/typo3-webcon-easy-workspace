@@ -59,6 +59,11 @@
     <unit id="module.dashboard.cta.activity"><segment><source>See latest workspace activity</source></segment></unit>
     <unit id="module.dashboard.context"><segment><source>Context</source></segment></unit>
     <unit id="module.dashboard.workspace"><segment><source>Active workspace</source></segment></unit>
+    <unit id="module.kpi.openChanges"><segment><source>Open changes</source></segment></unit>
+    <unit id="module.kpi.contentElements"><segment><source>All content elements</source></segment></unit>
+    <unit id="module.kpi.contentElements.hint"><segment><source>Content elements on this page.</source></segment></unit>
+    <unit id="module.kpi.lastChanged"><segment><source>Last changed on page</source></segment></unit>
+    <unit id="module.kpi.lastChanged.hint"><segment><source>Newest workspace change in this queue.</source></segment></unit>
     <unit id="module.pending.subtitle"><segment><source>Workspace changes ready for the live site.</source></segment></unit>
     <unit id="module.pending.empty"><segment><source>Nothing pending on this page yet.</source></segment></unit>
     <unit id="module.pending.emptyHint"><segment><source>Edits made anywhere on this page will appear here, ready to publish.</source></segment></unit>

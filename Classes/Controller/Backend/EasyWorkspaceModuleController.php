@@ -239,6 +239,9 @@ final readonly class EasyWorkspaceModuleController
             'totalCount' => 0,
             'workspaceTitle' => '',
             'workspaceId' => 0,
+            'contentElementCount' => 0,
+            'lastChangedAt' => 0,
+            'lastChangedAtFormatted' => '',
             'items' => [],
             'itemGroups' => [],
             'changedItemGroups' => [],
@@ -267,9 +270,36 @@ final readonly class EasyWorkspaceModuleController
         $payload['itemGroups'] = $items['itemGroups'] ?? [];
         $payload['changedItemGroups'] = $items['changedItemGroups'] ?? [];
         $payload['totalCount'] = count($itemList);
+        $payload['contentElementCount'] = count(array_filter($itemList, static fn(array $i): bool => ($i['table'] ?? '') === 'tt_content'));
         $payload['changedCount'] = count(array_filter($itemList, static fn(array $i): bool => (bool)($i['isChanged'] ?? false)));
+        $payload['lastChangedAt'] = $this->extractLatestChangedTimestamp($itemList);
+        $payload['lastChangedAtFormatted'] = $payload['lastChangedAt'] > 0 ? BackendUtility::datetime($payload['lastChangedAt']) : '';
 
         return $payload;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    private function extractLatestChangedTimestamp(array $items): int
+    {
+        $latest = 0;
+        foreach ($items as $item) {
+            if ((bool)($item['isChanged'] ?? false)) {
+                $latest = max($latest, Value::int($item['tstamp'] ?? null));
+            }
+            $childChanges = $item['childChanges'] ?? [];
+            if (is_array($childChanges)) {
+                $children = [];
+                foreach ($childChanges as $childChange) {
+                    if (is_array($childChange)) {
+                        $children[] = Value::stringKeyArray($childChange);
+                    }
+                }
+                $latest = max($latest, $this->extractLatestChangedTimestamp($children));
+            }
+        }
+        return $latest;
     }
 
     /**

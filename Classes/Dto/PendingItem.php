@@ -44,6 +44,7 @@ final readonly class PendingItem
         public ?string $locateTable = null,
         public ?int $locateLiveUid = null,
         public ?int $locateWorkspaceUid = null,
+        public int $tstamp = 0,
     ) {}
 
     /**
@@ -75,6 +76,7 @@ final readonly class PendingItem
             'locateTable' => $this->locateTable,
             'locateLiveUid' => $this->locateLiveUid,
             'locateWorkspaceUid' => $this->locateWorkspaceUid,
+            'tstamp' => $this->tstamp,
             'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,

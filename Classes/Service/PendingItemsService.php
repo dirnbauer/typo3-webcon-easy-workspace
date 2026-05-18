@@ -1842,6 +1842,7 @@ final readonly class PendingItemsService
             locateTable: $locateTable,
             locateLiveUid: $locateLiveUid,
             locateWorkspaceUid: $locateWorkspaceUid,
+            tstamp: Value::int($row['tstamp'] ?? null),
         );
     }
 

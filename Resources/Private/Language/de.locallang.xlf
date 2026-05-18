@@ -59,6 +59,11 @@
     <unit id="module.dashboard.cta.activity"><segment><source>See latest workspace activity</source><target state="translated">Letzte Workspace-Aktivität ansehen</target></segment></unit>
     <unit id="module.dashboard.context"><segment><source>Context</source><target state="translated">Kontext</target></segment></unit>
     <unit id="module.dashboard.workspace"><segment><source>Active workspace</source><target state="translated">Aktiver Arbeitsbereich</target></segment></unit>
+    <unit id="module.kpi.openChanges"><segment><source>Open changes</source><target state="translated">Offene Änderungen</target></segment></unit>
+    <unit id="module.kpi.contentElements"><segment><source>All content elements</source><target state="translated">Alle Inhaltselemente</target></segment></unit>
+    <unit id="module.kpi.contentElements.hint"><segment><source>Content elements on this page.</source><target state="translated">Inhaltselemente auf dieser Seite.</target></segment></unit>
+    <unit id="module.kpi.lastChanged"><segment><source>Last changed on page</source><target state="translated">Zuletzt geändert auf der Seite</target></segment></unit>
+    <unit id="module.kpi.lastChanged.hint"><segment><source>Newest workspace change in this queue.</source><target state="translated">Neueste Workspace-Änderung in dieser Liste.</target></segment></unit>
     <unit id="module.pending.subtitle"><segment><source>Workspace changes ready for the live site.</source><target state="translated">Workspace-Änderungen bereit für die Live-Seite.</target></segment></unit>
     <unit id="module.pending.empty"><segment><source>Nothing pending on this page yet.</source><target state="translated">Auf dieser Seite ist noch nichts offen.</target></segment></unit>
     <unit id="module.pending.emptyHint"><segment><source>Edits made anywhere on this page will appear here, ready to publish.</source><target state="translated">Bearbeitungen auf dieser Seite erscheinen hier zur Veröffentlichung.</target></segment></unit>
