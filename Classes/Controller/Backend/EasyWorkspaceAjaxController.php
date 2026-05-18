@@ -18,7 +18,6 @@ use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
-use Webconsulting\WebconEasyWorkspace\Service\LatestChangesService;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
@@ -46,7 +45,6 @@ final readonly class EasyWorkspaceAjaxController
         private PublishSelectedService $publishService,
         private PreviewUriBuilder $previewUriBuilder,
         private ConfigurationProvider $configurationProvider,
-        private LatestChangesService $latestChangesService,
         private RecordDiffService $recordDiffService,
         private ViewFactoryInterface $viewFactory,
         private BackendUriBuilder $backendUriBuilder,
@@ -127,34 +125,6 @@ final readonly class EasyWorkspaceAjaxController
     }
 
     /**
-     * Cross-page "latest workspace changes" feed.
-     *
-     * Powers the lazy-loaded accordion at the bottom of the toolbar
-     * dropdown — only invoked when the editor expands it, so the
-     * common case (dropdown opened, accordion stays closed) costs
-     * zero database round-trips.
-     *
-     * No page/news context is needed — the result is always scoped
-     * to the editor's current workspace.
-     */
-    public function latestAction(ServerRequestInterface $request): ResponseInterface
-    {
-        $config = $this->configurationProvider->get(null);
-        if (!$config['enabled']) {
-            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
-        }
-
-        $query = $request->getQueryParams();
-        $requestedLimit = Value::int($query['limit'] ?? LatestChangesService::DEFAULT_LIMIT);
-        // Clamp to a sane range. 1 keeps degenerate ?limit=0 calls
-        // from returning the entire workspace, 50 caps the response
-        // size for the dropdown UI.
-        $limit = max(1, min(50, $requestedLimit));
-
-        return new JsonResponse($this->latestChangesService->list($limit, $config));
-    }
-
-    /**
      * Renders the field-level diff for a single workspace record as
      * a Fluid template and returns it as plain HTML. Consumed by
      * the dropdown's per-row "N changes" pill, which opens it inside
@@ -189,6 +159,7 @@ final readonly class EasyWorkspaceAjaxController
         }
 
         $payload = $this->recordDiffService->diffWithHtml($table, Value::stringKeyArray($row));
+        $returnUrl = Value::string($request->getServerParams()['HTTP_REFERER'] ?? null);
         $editUrl = null;
         $liveUid = $payload['liveUid'] ?: $workspaceUid;
         if ($liveUid > 0) {
@@ -197,7 +168,7 @@ final readonly class EasyWorkspaceAjaxController
                     'record_edit',
                     [
                         'edit' => [$table => [$liveUid => 'edit']],
-                        'returnUrl' => Value::string($request->getServerParams()['HTTP_REFERER'] ?? null),
+                        'returnUrl' => $returnUrl,
                     ],
                     RouterInterface::ABSOLUTE_URL,
                 );
@@ -206,10 +177,9 @@ final readonly class EasyWorkspaceAjaxController
             }
         }
 
-        // Per-record edit timeline from sys_history. Rendered as a
-        // second tab in the modal so editors can scrub through every
-        // workspace edit and roll back to any point. Empty list is
-        // fine — the template handles it.
+        // Keep the lightweight timeline only for the edit count in
+        // the modal header. The actual history views below use TYPO3
+        // core's native record_history module inside the tab frames.
         $timeline = $this->historyTimelineService->build($table, $workspaceUid);
 
         $view = $this->viewFactory->create(new ViewFactoryData(
@@ -219,11 +189,16 @@ final readonly class EasyWorkspaceAjaxController
         $view->assignMultiple($payload + [
             'editUrl' => $editUrl,
             'timeline' => $timeline,
+            'historyTabs' => $this->buildHistoryTabs($table, Value::stringKeyArray($row), $payload, $returnUrl),
             'rollbackEnabled' => true,
             'labels' => [
                 'workspaceUid' => $this->localizationService->translate('diff.template.workspaceUid', ['uid' => $payload['workspaceUid']]),
                 'liveUid' => $this->localizationService->translate('diff.template.liveUid', ['uid' => $payload['liveUid']]),
                 'historyCount' => $this->localizationService->translate('history.editCount', ['count' => count($timeline)]),
+                'recordHistoryTab' => $this->localizationService->translate($table === 'tt_content' ? 'history.tab.contentElement' : 'history.tab.record'),
+                'pageHistoryTab' => $this->localizationService->translate('history.tab.page'),
+                'recordHistoryFrameTitle' => $this->localizationService->translate('history.frame.record'),
+                'pageHistoryFrameTitle' => $this->localizationService->translate('history.frame.page'),
                 'historyAria' => $this->localizationService->translate('history.aria'),
                 'rollbackLinearTitle' => $this->localizationService->translate('history.rollback.linearTitle'),
                 'rollbackLinear' => $this->localizationService->translate('history.rollback.linear'),
@@ -235,6 +210,77 @@ final readonly class EasyWorkspaceAjaxController
         ]);
 
         return new HtmlResponse($view->render());
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param array{workspaceUid: int, liveUid: int} $payload
+     * @return array{
+     *   record: array{url: string},
+     *   page: array{url: string, uid: int}|null
+     * }
+     */
+    private function buildHistoryTabs(string $table, array $row, array $payload, string $returnUrl): array
+    {
+        $workspaceUid = Value::int($payload['workspaceUid'] ?? null);
+        $pageUid = $table === 'pages'
+            ? 0
+            : $this->resolvePageHistoryUid($table, $row, Value::int($payload['liveUid'] ?? null));
+
+        return [
+            'record' => [
+                'url' => $this->buildRecordHistoryUrl($table, $workspaceUid, $returnUrl),
+            ],
+            'page' => $pageUid > 0
+                ? [
+                    'url' => $this->buildRecordHistoryUrl('pages', $pageUid, $returnUrl),
+                    'uid' => $pageUid,
+                ]
+                : null,
+        ];
+    }
+
+    private function buildRecordHistoryUrl(string $table, int $uid, string $returnUrl): string
+    {
+        $params = [
+            'element' => sprintf('%s:%d', $table, $uid),
+            'historyEntry' => '',
+        ];
+        if ($returnUrl !== '') {
+            $params['returnUrl'] = $returnUrl;
+        }
+
+        try {
+            return (string)$this->backendUriBuilder->buildUriFromRoute('record_history', $params);
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function resolvePageHistoryUid(string $table, array $row, int $liveUid): int
+    {
+        if ($table === 'pages') {
+            return $liveUid > 0 ? $liveUid : Value::int($row['uid'] ?? null);
+        }
+
+        $pid = Value::int($row['pid'] ?? null);
+        if ($pid > 0) {
+            return $pid;
+        }
+
+        if ($liveUid <= 0) {
+            return 0;
+        }
+
+        $liveRow = BackendUtility::getRecord($table, $liveUid, 'pid');
+        if (!is_array($liveRow)) {
+            return 0;
+        }
+
+        return max(0, Value::int($liveRow['pid'] ?? null));
     }
 
     /**

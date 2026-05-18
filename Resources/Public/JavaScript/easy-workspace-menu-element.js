@@ -26,7 +26,6 @@ const ENDPOINTS = {
   publish: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_publish || '',
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
-  latest: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_latest || '',
   diff: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_diff || '',
   historyRollback: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '',
 };
@@ -90,10 +89,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
     mode: { state: true },
     copyingPreview: { state: true },
     previewJustCopied: { state: true },
-    // Latest-changes accordion (cross-page feed). Idle until the
-    // editor first opens it — then transitions to loading → loaded.
-    latestState: { state: true },
-    latestItems: { state: true },
   };
 
   createRenderRoot() {
@@ -114,8 +109,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.publishing = false;
     this.copyingPreview = false;
     this.previewJustCopied = false;
-    this.latestState = 'idle';
-    this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
     this.variant = 'toolbar';
@@ -805,7 +798,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this._renderFilter()}
         ${this._renderBody()}
         ${this._renderFooter()}
-        ${this._renderLatestAccordion()}
         ${this._renderContextFootnote()}
       </div>
     `;
@@ -1453,7 +1445,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
             // discarded workspace version) is rendered.
             await this._refresh();
             this._reloadPreviewIframes();
-            this._invalidateLatest();
           } else {
             const errors = failed.flatMap((result) => Array.isArray(result?.errors) && result.errors.length
               ? result.errors
@@ -1612,7 +1603,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
       if (!saved) return;
       await this._refresh();
       this._reloadPreviewIframes();
-      this._invalidateLatest();
       Notification.success(
         this._label('edit.saved.title'),
         savedTitle ? this._label('edit.saved.messageWithTitle', { title: savedTitle }) : this._label('edit.saved.message'),
@@ -1740,192 +1730,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   /**
-   * Renders the lazy-loaded "Latest workspace changes" accordion.
-   *
-   * Uses the native <details>/<summary> disclosure widget so the
-   * toggle, keyboard handling and ARIA semantics come for free.
-   * Body content is built per state — `idle` shows just the hint
-   * "Open to load…", `loading` a spinner, etc. The actual fetch is
-   * deferred to the first `toggle` event with `details.open === true`.
-   *
-   * Rendered after the footer so the primary publish action stays
-   * the visual center of gravity — the accordion is a peripheral
-   * "what's going on elsewhere" view, deliberately deprioritized.
-   */
-  _renderLatestAccordion() {
-    if (!ENDPOINTS.latest) return nothing;
-    if (this.state === 'loading') return nothing;
-    return html`
-      <details
-        class="wew-menu__latest"
-        @toggle=${(e) => this._onLatestToggle(e)}
-      >
-        <summary class="wew-menu__latest-summary">
-          <span class="wew-menu__latest-summary-label">${this._label('latest.title')}</span>
-          ${this.latestState === 'loaded' && this.latestItems.length > 0
-            ? html`<span class="wew-menu__chip-count" aria-label=${this._label('toolbar.records', { count: this.latestItems.length })}>${this.latestItems.length}</span>`
-            : nothing}
-        </summary>
-        <div class="wew-menu__latest-body">
-          ${this._renderLatestBody()}
-        </div>
-      </details>
-    `;
-  }
-
-  _renderLatestBody() {
-    if (this.latestState === 'idle') {
-      // The native disclosure widget keeps this hidden until the
-      // editor expands the accordion, so the placeholder is just a
-      // belt-and-braces "in case CSS doesn't" affordance — won't
-      // normally be seen.
-      return html`<p class="wew-menu__latest-hint">${this._label('latest.openHint')}</p>`;
-    }
-    if (this.latestState === 'loading') {
-      return html`
-        <div class="wew-menu__loading">
-          <typo3-backend-spinner size="default"></typo3-backend-spinner>
-          <span>${this._label('latest.loading')}</span>
-        </div>
-      `;
-    }
-    if (this.latestState === 'error') {
-      return html`<div class="alert alert-danger wew-menu__alert">${this._label('latest.loadError')}</div>`;
-    }
-    if (this.latestState === 'empty') {
-      return html`<p class="wew-menu__latest-hint">${this._label('latest.empty')}</p>`;
-    }
-    return html`
-      <ul class="wew-changelog">
-        ${this.latestItems.map((item) => this._renderLatestItem(item))}
-      </ul>
-    `;
-  }
-
-  /**
-   * One card per record in the "Latest workspace changes" accordion.
-   * Header row mirrors the publish list (icon · title · meta · pill);
-   * the body lists every field that differs between the live record
-   * and its workspace version, with old → new value chips so editors
-   * can see *what* changed without leaving the dropdown.
-   *
-   * For "New" or "Will be deleted" placeholders the diff payload
-   * still lists field values (added or removed respectively); the
-   * `kind` field on each diff entry switches the rendering between
-   * those three cases.
-   */
-  _renderLatestItem(item) {
-    const editHref = item.editUrl || null;
-    const tableLabel = item.tableLabel || item.table;
-    const kindBadge = this._renderChangeBadges(item);
-    const diff = Array.isArray(item.diff) ? item.diff : [];
-
-    const headerInner = html`
-      <div class="wew-changelog__heading">
-        <span class="wew-changelog__title">${item.title || this._label('diff.noTitle')}</span>
-        <span class="wew-changelog__meta">${tableLabel} · #${item.workspaceUid}</span>
-      </div>
-      ${kindBadge}
-    `;
-    const header = editHref
-      ? html`<a class="wew-changelog__header wew-changelog__header--link" href=${editHref}>${headerInner}</a>`
-      : html`<div class="wew-changelog__header">${headerInner}</div>`;
-
-    return html`
-      <li class="wew-changelog__item">
-        ${header}
-        ${diff.length > 0
-          ? html`<ul class="wew-changelog__fields">
-              ${diff.map((d) => this._renderDiffEntry(d))}
-            </ul>`
-          : html`<p class="wew-changelog__nodiff">${this._label('latest.noDiff')}</p>`}
-      </li>
-    `;
-  }
-
-  /**
-   * Renders one row of the per-record diff list.
-   *
-   *  - kind === 'changed': before → after (both chips)
-   *  - kind === 'added'  : just the after chip, marked "new"
-   *  - kind === 'removed': just the before chip, marked "removed"
-   *
-   * Empty before/after values render as a faint "empty" placeholder
-   * rather than nothing — otherwise an edit that *cleared* a field
-   * would render as a baffling single chip with no arrow target.
-   */
-  _renderDiffEntry(d) {
-    const kind = d.kind || 'changed';
-    const beforeChip = (val) => html`<span
-      class="wew-changelog__chip wew-changelog__chip--before"
-      title=${d.beforeFull || val || ''}
-    >${val ? val : html`<em class="wew-changelog__chip-empty">${this._label('latest.diff.empty')}</em>`}</span>`;
-    const afterChip = (val) => html`<span
-      class="wew-changelog__chip wew-changelog__chip--after"
-      title=${d.afterFull || val || ''}
-    >${val ? val : html`<em class="wew-changelog__chip-empty">${this._label('latest.diff.empty')}</em>`}</span>`;
-
-    let body;
-    if (kind === 'added') {
-      body = html`<span class="wew-changelog__kind">${this._label('latest.diff.added')}</span>${afterChip(d.after)}`;
-    } else if (kind === 'removed') {
-      body = html`<span class="wew-changelog__kind">${this._label('latest.diff.removed')}</span>${beforeChip(d.before)}`;
-    } else {
-      body = html`${beforeChip(d.before)}<span class="wew-changelog__arrow" aria-hidden="true">→</span>${afterChip(d.after)}`;
-    }
-    return html`
-      <li class="wew-changelog__field wew-changelog__field--${kind}">
-        <span class="wew-changelog__label">${d.label}</span>
-        <span class="wew-changelog__values">${body}</span>
-      </li>
-    `;
-  }
-
-  _onLatestToggle(event) {
-    if (!event.target.open) return;
-    // Lazy: fetch only the first time the editor expands the panel
-    // (or after explicit reset on a context change — see _refresh).
-    if (this.latestState !== 'idle' && this.latestState !== 'error') return;
-    this._loadLatestChanges();
-  }
-
-  /**
-   * Resets the accordion to its idle state so the next time the
-   * editor expands it, the latest list is re-fetched. Called after
-   * publish/discard since those mutations change which records are
-   * still pending in the workspace.
-   *
-   * The accordion's `open` state is preserved by the DOM, so when
-   * we reset to 'idle' while it's still expanded, the `toggle`
-   * event won't fire — we have to invoke the loader directly.
-   */
-  _invalidateLatest() {
-    const wasOpen = this.querySelector('.wew-menu__latest')?.open === true;
-    this.latestState = 'idle';
-    this.latestItems = [];
-    if (wasOpen) {
-      this._loadLatestChanges();
-    }
-  }
-
-  async _loadLatestChanges() {
-    if (!ENDPOINTS.latest) {
-      this.latestState = 'error';
-      return;
-    }
-    this.latestState = 'loading';
-    try {
-      const response = await new AjaxRequest(ENDPOINTS.latest).get();
-      const data = await response.resolve();
-      this.latestItems = Array.isArray(data.items) ? data.items : [];
-      this.latestState = this.latestItems.length === 0 ? 'empty' : 'loaded';
-    } catch (error) {
-      console.error('[easy-workspace] latest-changes request failed', error);
-      this.latestState = 'error';
-    }
-  }
-
-  /**
    * Open a TYPO3 backend Modal with the field-level diff of the
    * given record. Content is fetched via the
    * /webcon-easy-workspace/diff AJAX endpoint, which renders a
@@ -1945,13 +1749,14 @@ class WebconEasyWorkspaceMenu extends LitElement {
       title: this._label('diff.modal.historyTitle', { title: recordTitle }),
       type: ModalTypes.ajax,
       content: url,
-      size: ModalSizes.large,
+      size: ModalSizes.expand,
       additionalCssClasses: ['wew-diff-modal-shell'],
       // ajaxCallback fires once the Fluid-rendered HTML is in the
       // modal body. Wire interactive bits that the template can't
       // express declaratively: rollback buttons and the "Open in
       // form editor" pivot.
       ajaxCallback: (m) => {
+        this._wireHistoryTabs(m);
         this._wireRollbackButtons(m, item);
         const editBtn = m.querySelector('.wew-diff-modal__edit');
         if (editBtn) {
@@ -1986,6 +1791,51 @@ class WebconEasyWorkspaceMenu extends LitElement {
     return modal;
   }
 
+  _wireHistoryTabs(modal) {
+    const tabsRoot = modal.querySelector('[data-wew-history-tabs]');
+    if (!tabsRoot) return;
+
+    const tabs = Array.from(tabsRoot.querySelectorAll('[data-wew-history-tab]'));
+    const panels = Array.from(tabsRoot.querySelectorAll('[data-wew-history-panel]'));
+    if (tabs.length === 0 || panels.length === 0) return;
+
+    const activate = (name, focus = false) => {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.wewHistoryTab === name;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+        if (active && focus) {
+          tab.focus();
+        }
+      });
+
+      panels.forEach((panel) => {
+        const active = panel.dataset.wewHistoryPanel === name;
+        panel.hidden = !active;
+        if (active) {
+          const frame = panel.querySelector('iframe[data-src]');
+          if (frame && (!frame.getAttribute('src') || frame.getAttribute('src') === 'about:blank')) {
+            frame.setAttribute('src', frame.dataset.src || 'about:blank');
+          }
+        }
+      });
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'record'));
+      tab.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const nextIndex = (index + direction + tabs.length) % tabs.length;
+        activate(tabs[nextIndex].dataset.wewHistoryTab || 'record', true);
+      });
+    });
+
+    activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'record');
+  }
+
   /**
    * Wire the per-entry "Revert to before" and per-field "↻" buttons
    * inside the History panel. Two modes — both hit the same endpoint:
@@ -2017,7 +1867,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const historyUid = parseInt(btn.dataset.historyUid || '0', 10);
       const field = btn.dataset.field || '';
       if ((mode !== 'linear' && mode !== 'field') || !Number.isFinite(historyUid) || historyUid <= 0) {
-        Notification.error(this._label('rollback.failedTitle'), this._label('rollback.missingData', { mode: mode || this._label('latest.diff.empty'), historyUid: btn.dataset.historyUid || this._label('latest.diff.empty') }));
+        Notification.error(this._label('rollback.failedTitle'), this._label('rollback.missingData', { mode: mode || '-', historyUid: btn.dataset.historyUid || '-' }));
         return;
       }
       if (mode === 'field' && field === '') {
@@ -2048,7 +1898,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
           modal.hideModal();
           await this._refresh();
           this._reloadPreviewIframes();
-          this._invalidateLatest();
         } else {
           Notification.error(this._label('rollback.errorTitle'), result?.error || this._label('error.unknown'));
           btn.disabled = false;
@@ -2466,7 +2315,6 @@ class WebconEasyWorkspaceMenu extends LitElement {
           this._label('publish.success.message', { count: Number(result.published || 0) }),
         );
         await this._refresh();
-        this._invalidateLatest();
       } else {
         const errors = Array.isArray(result?.errors) && result.errors.length
           ? result.errors.join(' / ')

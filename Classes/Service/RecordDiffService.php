@@ -18,21 +18,18 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  * Field-level diff between a workspace-version row and its live
  * counterpart. Produces a small list of changes
  *   [{field, label, before, after, type, kind}]
- * that the toolbar dropdown's "Latest workspace changes" accordion
- * renders inline under each record.
+ * for compact row badges and the server-rendered diff/history modal.
  *
  * What this is NOT
  * ────────────────
  * This is intentionally simpler than TYPO3 core's
  * `\TYPO3\CMS\Workspaces\Service\GridDataService::getRowDetails()`:
- *  - No stage/comment/history hydration (Latest accordion only needs
- *    what changed, not the workflow context)
+ *  - No stage/comment/history hydration; Easy Workspace only needs
+ *    the editorial field changes for the current row.
  *  - No HTML diff rendering — we ship plain before/after strings and
- *    let the frontend display them as side-by-side chips. The
- *    accordion is a dropdown, not a full diff view; word-by-word
- *    inline markup doesn't fit the space and would have to be
- *    sanitized for XSS anyway.
- *  - No event dispatching. Latest is read-only and one-shot.
+ *    let the row UI display them as side-by-side chips. The full
+ *    modal uses ::diffWithHtml() for TYPO3's word-level inline diff.
+ *  - No event dispatching. Diff generation is read-only.
  *
  * Field exclusions match what TYPO3 admins expect in a diff:
  * primary key, parent, ordering, soft-delete and version metadata

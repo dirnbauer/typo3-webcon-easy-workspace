@@ -41,9 +41,8 @@
     <unit id="module.nav.aria"><segment><source>Easy Workspace sections</source><target state="translated">Easy-Workspace-Bereiche</target></segment></unit>
     <unit id="module.nav.eyebrow"><segment><source>Workspace</source><target state="translated">Arbeitsbereich</target></segment></unit>
     <unit id="module.section.dashboard"><segment><source>Dashboard</source><target state="translated">Übersicht</target></segment></unit>
-    <unit id="module.section.pending"><segment><source>Pending changes</source><target state="translated">Offene Änderungen</target></segment></unit>
+    <unit id="module.section.pending"><segment><source>Ready to publish</source><target state="translated">Zur Veröffentlichung bereit</target></segment></unit>
     <unit id="module.section.all"><segment><source>All records</source><target state="translated">Alle Datensätze</target></segment></unit>
-    <unit id="module.section.activity"><segment><source>Recent activity</source><target state="translated">Letzte Aktivität</target></segment></unit>
     <unit id="module.dashboard.subtitle"><segment><source>Workspace overview at a glance.</source><target state="translated">Workspace-Übersicht auf einen Blick.</target></segment></unit>
     <unit id="module.dashboard.heroTitle"><segment><source>Ready to publish</source><target state="translated">Bereit zur Veröffentlichung</target></segment></unit>
     <unit id="module.dashboard.heroHint.has"><segment><source>{count, plural, one {# record is waiting for you} other {# records are waiting for you}}. Review and publish them now.</source><target state="translated">{count, plural, one {# Datensatz wartet} other {# Datensätze warten}} auf Sie. Jetzt prüfen und veröffentlichen.</target></segment></unit>
@@ -56,23 +55,21 @@
     <unit id="module.dashboard.statSelected.hint"><segment><source>queued for the next publish</source><target state="translated">für die nächste Veröffentlichung vorgemerkt</target></segment></unit>
     <unit id="module.dashboard.cta.review"><segment><source>Review pending changes</source><target state="translated">Offene Änderungen prüfen</target></segment></unit>
     <unit id="module.dashboard.cta.allRecords"><segment><source>Browse all records on this page</source><target state="translated">Alle Datensätze auf der Seite anzeigen</target></segment></unit>
-    <unit id="module.dashboard.cta.activity"><segment><source>See latest workspace activity</source><target state="translated">Letzte Workspace-Aktivität ansehen</target></segment></unit>
     <unit id="module.dashboard.context"><segment><source>Context</source><target state="translated">Kontext</target></segment></unit>
     <unit id="module.dashboard.workspace"><segment><source>Active workspace</source><target state="translated">Aktiver Arbeitsbereich</target></segment></unit>
-    <unit id="module.kpi.openChanges"><segment><source>Open changes</source><target state="translated">Offene Änderungen</target></segment></unit>
-    <unit id="module.kpi.contentElements"><segment><source>All content elements</source><target state="translated">Alle Inhaltselemente</target></segment></unit>
-    <unit id="module.kpi.contentElements.hint"><segment><source>Content elements on this page.</source><target state="translated">Inhaltselemente auf dieser Seite.</target></segment></unit>
+    <unit id="module.kpi.openChanges"><segment><source>Ready to publish</source><target state="translated">Zur Veröffentlichung bereit</target></segment></unit>
+    <unit id="module.kpi.contentElements"><segment><source>Content element count</source><target state="translated">Anzahl Inhaltselemente</target></segment></unit>
+    <unit id="module.kpi.contentElements.hint"><segment><source>Elements on this page.</source><target state="translated">Elemente auf dieser Seite.</target></segment></unit>
     <unit id="module.kpi.lastChanged"><segment><source>Last changed on page</source><target state="translated">Zuletzt geändert auf der Seite</target></segment></unit>
     <unit id="module.kpi.lastChanged.hint"><segment><source>Newest workspace change in this queue.</source><target state="translated">Neueste Workspace-Änderung in dieser Liste.</target></segment></unit>
-    <unit id="module.pending.subtitle"><segment><source>Workspace changes ready for the live site.</source><target state="translated">Workspace-Änderungen bereit für die Live-Seite.</target></segment></unit>
+    <unit id="module.kpi.recordsInScope"><segment><source>Records in scope</source><target state="translated">Datensätze im Prüfbereich</target></segment></unit>
+    <unit id="module.kpi.recordsInScope.hint"><segment><source>Records checked on this page.</source><target state="translated">Geprüfte Datensätze auf dieser Seite.</target></segment></unit>
+    <unit id="module.pending.subtitle"><segment><source>Workspace changes can be published to the live version.</source><target state="translated">Workspace-Änderungen können in die Live-Version übernommen werden.</target></segment></unit>
     <unit id="module.pending.empty"><segment><source>Nothing pending on this page yet.</source><target state="translated">Auf dieser Seite ist noch nichts offen.</target></segment></unit>
     <unit id="module.pending.emptyHint"><segment><source>Edits made anywhere on this page will appear here, ready to publish.</source><target state="translated">Bearbeitungen auf dieser Seite erscheinen hier zur Veröffentlichung.</target></segment></unit>
     <unit id="module.all.subtitle"><segment><source>Every record visible on this page — workspace state included.</source><target state="translated">Alle Datensätze dieser Seite — inklusive Workspace-Status.</target></segment></unit>
     <unit id="module.all.empty"><segment><source>This page has no records yet.</source><target state="translated">Diese Seite enthält noch keine Datensätze.</target></segment></unit>
     <unit id="module.all.emptyHint"><segment><source>Add content elements to populate this list.</source><target state="translated">Fügen Sie Inhaltselemente hinzu, um diese Liste zu füllen.</target></segment></unit>
-    <unit id="module.activity.subtitle"><segment><source>Recent workspace edits with field-level diffs.</source><target state="translated">Letzte Workspace-Bearbeitungen mit Feld-Diffs.</target></segment></unit>
-    <unit id="module.activity.refresh"><segment><source>Refresh</source><target state="translated">Aktualisieren</target></segment></unit>
-    <unit id="module.activity.refreshing"><segment><source>Refreshing...</source><target state="translated">Wird aktualisiert...</target></segment></unit>
     <unit id="module.column.record"><segment><source>Record</source><target state="translated">Datensatz</target></segment></unit>
     <unit id="module.column.state"><segment><source>Changes</source><target state="translated">Änderungen</target></segment></unit>
     <unit id="module.column.actions"><segment><source>Actions</source><target state="translated">Aktionen</target></segment></unit>
@@ -149,15 +146,6 @@
     <unit id="edit.saved.title"><segment><source>Record saved</source><target state="translated">Datensatz gespeichert</target></segment></unit>
     <unit id="edit.saved.messageWithTitle"><segment><source>"{title}" was updated.</source><target state="translated">"{title}" wurde aktualisiert.</target></segment></unit>
     <unit id="edit.saved.message"><segment><source>Record was updated.</source><target state="translated">Datensatz wurde aktualisiert.</target></segment></unit>
-    <unit id="latest.title"><segment><source>Latest workspace changes</source><target state="translated">Neueste Workspace-Änderungen</target></segment></unit>
-    <unit id="latest.openHint"><segment><source>Open to load.</source><target state="translated">Zum Laden öffnen.</target></segment></unit>
-    <unit id="latest.loading"><segment><source>Loading latest changes...</source><target state="translated">Neueste Änderungen werden geladen...</target></segment></unit>
-    <unit id="latest.loadError"><segment><source>Could not load latest changes.</source><target state="translated">Neueste Änderungen konnten nicht geladen werden.</target></segment></unit>
-    <unit id="latest.empty"><segment><source>No pending changes in this workspace yet.</source><target state="translated">In diesem Arbeitsbereich gibt es noch keine ausstehenden Änderungen.</target></segment></unit>
-    <unit id="latest.noDiff"><segment><source>No field-level differences resolved for this record.</source><target state="translated">Für diesen Datensatz wurden keine Unterschiede auf Feldebene ermittelt.</target></segment></unit>
-    <unit id="latest.diff.empty"><segment><source>empty</source><target state="translated">leer</target></segment></unit>
-    <unit id="latest.diff.added"><segment><source>Added</source><target state="translated">Hinzugefügt</target></segment></unit>
-    <unit id="latest.diff.removed"><segment><source>Removed</source><target state="translated">Entfernt</target></segment></unit>
     <unit id="rollback.failedTitle"><segment><source>Revert failed</source><target state="translated">Zurücksetzen fehlgeschlagen</target></segment></unit>
     <unit id="rollback.missingData"><segment><source>Missing data on the revert button (mode={mode}, historyUid={historyUid}).</source><target state="translated">Fehlende Daten am Zurücksetzen-Button (mode={mode}, historyUid={historyUid}).</target></segment></unit>
     <unit id="rollback.noField"><segment><source>No field name on the revert button.</source><target state="translated">Kein Feldname am Zurücksetzen-Button.</target></segment></unit>
@@ -198,6 +186,11 @@
     <unit id="history.user.system"><segment><source>System</source><target state="translated">System</target></segment></unit>
     <unit id="history.user.fallback"><segment><source>User #{uid}</source><target state="translated">Benutzer #{uid}</target></segment></unit>
     <unit id="history.editCount"><segment><source>{count, plural, one {# edit} other {# edits}}</source><target state="translated">{count, plural, one {# Bearbeitung} other {# Bearbeitungen}}</target></segment></unit>
+    <unit id="history.tab.contentElement"><segment><source>Content element</source><target state="translated">Inhaltselement</target></segment></unit>
+    <unit id="history.tab.record"><segment><source>Record history</source><target state="translated">Datensatzverlauf</target></segment></unit>
+    <unit id="history.tab.page"><segment><source>Page history</source><target state="translated">Seitenverlauf</target></segment></unit>
+    <unit id="history.frame.record"><segment><source>Record history</source><target state="translated">Datensatzverlauf</target></segment></unit>
+    <unit id="history.frame.page"><segment><source>Full page history</source><target state="translated">Vollständiger Seitenverlauf</target></segment></unit>
     <unit id="history.aria"><segment><source>Workspace edit history</source><target state="translated">Workspace-Bearbeitungshistorie</target></segment></unit>
     <unit id="history.rollback.linearTitle"><segment><source>Revert this edit and every later edit on this record</source><target state="translated">Diese Bearbeitung und jede spätere Bearbeitung an diesem Datensatz zurücksetzen</target></segment></unit>
     <unit id="history.rollback.linear"><segment><source>Revert to before</source><target state="translated">Auf vorher zurücksetzen</target></segment></unit>

@@ -184,9 +184,57 @@ function onDiff(btn, diffEndpoint) {
     title: formatMessage(label('diff.modal.historyTitle'), { title }),
     type: ModalTypes.ajax,
     content: url,
-    size: ModalSizes.large,
+    size: ModalSizes.expand,
     additionalCssClasses: ['wew-diff-modal-shell'],
+    ajaxCallback: (modal) => {
+      initHistoryTabs(modal);
+    },
   });
+}
+
+function initHistoryTabs(container) {
+  const tabsRoot = container.querySelector('[data-wew-history-tabs]');
+  if (!tabsRoot) return;
+
+  const tabs = Array.from(tabsRoot.querySelectorAll('[data-wew-history-tab]'));
+  const panels = Array.from(tabsRoot.querySelectorAll('[data-wew-history-panel]'));
+  if (tabs.length === 0 || panels.length === 0) return;
+
+  const activate = (name, focus = false) => {
+    tabs.forEach((tab) => {
+      const active = tab.dataset.wewHistoryTab === name;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      tab.tabIndex = active ? 0 : -1;
+      if (active && focus) {
+        tab.focus();
+      }
+    });
+
+    panels.forEach((panel) => {
+      const active = panel.dataset.wewHistoryPanel === name;
+      panel.hidden = !active;
+      if (active) {
+        const frame = panel.querySelector('iframe[data-src]');
+        if (frame && (!frame.getAttribute('src') || frame.getAttribute('src') === 'about:blank')) {
+          frame.setAttribute('src', frame.dataset.src || 'about:blank');
+        }
+      }
+    });
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'record'));
+    tab.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const direction = event.key === 'ArrowRight' ? 1 : -1;
+      const nextIndex = (index + direction + tabs.length) % tabs.length;
+      activate(tabs[nextIndex].dataset.wewHistoryTab || 'record', true);
+    });
+  });
+
+  activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'record');
 }
 
 async function onPreview(btn, endpoint) {

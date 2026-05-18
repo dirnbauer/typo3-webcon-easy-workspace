@@ -31,7 +31,6 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
-use Webconsulting\WebconEasyWorkspace\Service\LatestChangesService;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
@@ -47,13 +46,12 @@ final readonly class EasyWorkspaceModuleController
         'sys_file_metadata',
     ];
 
-    private const SECTIONS = ['dashboard', 'pending', 'all', 'activity'];
+    private const SECTIONS = ['dashboard', 'pending', 'all'];
 
     private const MODULE_SECTIONS = [
         'webcon_easy_workspace_overview' => 'dashboard',
         'webcon_easy_workspace_pending' => 'pending',
         'webcon_easy_workspace_records' => 'all',
-        'webcon_easy_workspace_activity' => 'activity',
     ];
 
     public function __construct(
@@ -67,7 +65,6 @@ final readonly class EasyWorkspaceModuleController
         private ConfigurationProvider $configurationProvider,
         private LocalizationService $localizationService,
         private PendingItemsService $pendingItemsService,
-        private LatestChangesService $latestChangesService,
         private PublishSelectedService $publishService,
         private FlashMessageService $flashMessageService,
     ) {}
@@ -247,15 +244,7 @@ final readonly class EasyWorkspaceModuleController
             'items' => [],
             'itemGroups' => [],
             'changedItemGroups' => [],
-            'latestItems' => [],
         ];
-
-        if ($section === 'activity') {
-            $latest = $this->latestChangesService->list(LatestChangesService::DEFAULT_LIMIT, $config);
-            $payload['latestItems'] = $latest['items'] ?? [];
-            $payload['workspaceId'] = $latest['workspaceId'] ?? 0;
-            return $payload;
-        }
 
         $items = $newsUid > 0
             ? $this->pendingItemsService->forNews($newsUid, PendingItemsService::MODE_ALL, $config)
@@ -329,7 +318,7 @@ final readonly class EasyWorkspaceModuleController
     }
 
     /**
-     * @return array{overview: string, pending: string, all: string, activity: string}
+     * @return array{overview: string, pending: string, all: string}
      */
     private function buildModuleUrls(int $pageUid, int $newsUid): array
     {
@@ -338,7 +327,6 @@ final readonly class EasyWorkspaceModuleController
             'overview' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_overview', $parameters),
             'pending' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_pending', $parameters),
             'all' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_records', $parameters),
-            'activity' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_activity', $parameters),
         ];
     }
 

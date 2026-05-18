@@ -28,7 +28,7 @@ return [
         'appearance' => [
             'dependsOnSubmodules' => true,
         ],
-        'showSubmoduleOverview' => true,
+        'showSubmoduleOverview' => false,
     ],
     'webcon_easy_workspace_overview' => $moduleDefaults + [
         'parent' => 'webcon_easy_workspace',
@@ -58,16 +58,6 @@ return [
             'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.all',
             'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.subtitle',
             'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.subtitle',
-        ],
-    ],
-    'webcon_easy_workspace_activity' => $moduleDefaults + [
-        'parent' => 'webcon_easy_workspace',
-        'position' => ['after' => 'webcon_easy_workspace_records'],
-        'path' => '/module/content/easy-workspace/activity',
-        'labels' => [
-            'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.activity',
-            'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.activity.subtitle',
-            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.activity.subtitle',
         ],
     ],
 ];

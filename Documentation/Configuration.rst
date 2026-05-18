@@ -26,7 +26,7 @@ publish module.
 
 The module and toolbar share the same service layer and configuration flags.
 The module is server-rendered with Fluid and TYPO3 submodule routes for the
-dashboard, pending list, page-record inventory and recent-activity feed.
+dashboard, pending list and page-record inventory.
 Submodule behaviour is still controlled by the same TSconfig keys. The
 pending submodule is intentionally optimized as a dense Bootstrap 5 /
 TYPO3 styleguide publish queue: related child records are optional detail

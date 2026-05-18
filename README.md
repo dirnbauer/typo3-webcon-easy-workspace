@@ -31,10 +31,10 @@ in a single publish cmdmap.
 The backend module lives in the left TYPO3 navigation below the workspace
 publish module. It is fully server-rendered with **Fluid templates** and the
 TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, Bootstrap 5 cards,
-tables, list groups, badges and button groups), and it exposes four TYPO3
-submodules (**Dashboard**, **Pending changes**, **All records**, **Recent
-activity**) through the native module selector instead of custom in-page
-navigation. A small companion JS file (`easy-workspace-module.js`) only wires
+tables, list groups, badges and button groups), and it exposes three TYPO3
+submodules (**Dashboard**, **Pending changes**, **All records**) through the
+native module selector instead of custom in-page navigation. A small companion
+JS file (`easy-workspace-module.js`) only wires
 the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` /
 `AjaxRequest` / `Notification` APIs — no client-side rendering. The same
 service layer powers the toolbar and the module; the toolbar Easy Workspace
@@ -103,7 +103,7 @@ selection and publish behavior as page content.
 
 The **Easy Workspace** backend module is the spacious, server-rendered view for
 editors who need to review more than a compact toolbar dropdown can comfortably
-show. TYPO3 registers it as a parent module with four submodules:
+show. TYPO3 registers it as a parent module with three submodules:
 
 - **Dashboard** — a TYPO3 card with a Bootstrap table for the active workspace,
   pending count, total page count and quick jumps to the other submodules.
@@ -116,9 +116,6 @@ show. TYPO3 registers it as a parent module with four submodules:
   the controller redirects back with a TYPO3 flash message.
 - **All records** — every record on the page, with the same Bootstrap table row
   UI; selection is disabled here (read-only inventory view).
-- **Recent activity** — cross-page latest workspace changes with field-level
-  diffs, rendered server-side as a Bootstrap list group with compact
-  definition-list diffs (no accordion).
 
 The doc header carries the standard TYPO3 page breadcrumb, page title, TYPO3's
 module selector, and the "show page", "copy preview link" and "edit page
@@ -131,6 +128,12 @@ tables, list groups, button groups, badges and ``--typo3-*`` design tokens so
 it follows the backend styleguide and dark/light mode without custom layout
 classes or custom theming in the module body.
 It does not depend on Solr or any search extension.
+
+The pending table also uses TYPO3 table state tokens for multi-selection:
+checked rows render with the styleguide's selected/info table state, while
+unchecked rows are softly de-emphasized only while a selection exists. The
+selection treatment stays scoped to the Easy Workspace publish form and follows
+TYPO3's dark/light mode variables.
 
 ### Personal user settings
 
@@ -347,17 +350,9 @@ with the remaining child changes.
 
 Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`.
 
-### Latest changes, diff and history
+### Diff and history
 
-The toolbar dropdown includes a lazy-loaded **Latest changes** accordion. It
-fetches the most recent records in the active workspace through the
-`webcon_easy_workspace_latest` backend AJAX route
-(`/webcon-easy-workspace/latest`), scoped to the backend user's current
-workspace and capped at 50 rows server-side. The backend module has a
-dedicated **Recent activity** module that server-renders the same feed (no
-accordion) — call the same service directly.
-
-Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed. The recent-activity feed reads the table schema before querying, skips tables without `t3ver_wsid`, and only adds a deleted-row constraint when the TCA schema declares TYPO3's soft-delete capability.
+Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed.
 
 ## Architecture
 
@@ -371,13 +366,12 @@ Classes/
 │                                                          # Drops stale workspace dependency refs
 ├── Service/
 │   ├── PendingItemsService.php                       # Aggregates page, CE, news + related children
-│   ├── PublishSelectedService.php                    # DataHandler publish cmdmap + discard
-│   └── LatestChangesService.php                      # Cross-page latest workspace edits
+│   └── PublishSelectedService.php                    # DataHandler publish cmdmap + discard
 └── Dto/PendingItem.php
 
 Configuration/
-├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, latest, diff, rollback
-├── Backend/Modules.php                               # Parent module + Dashboard/Pending/Records/Activity submodules
+├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, diff, rollback
+├── Backend/Modules.php                               # Parent module + Dashboard/Pending/Records submodules
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
 ├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
 ├── Services.yaml                                     # DI / autowiring
@@ -391,7 +385,7 @@ Resources/
 │   ├── Placeholder.html / FlashMessage.html          #   empty / message states
 │   ├── RecordRow.html / ChildChange.html             #   table row + child list-group rows
 │   ├── PublishBar.html                               #   publish form action bar
-│   └── Section/{Dashboard,Pending,All,Activity}.html #   one partial per submodule
+│   └── Section/{Dashboard,Pending,All}.html          #   one partial per submodule
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (Lit element)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
 └── Public/JavaScript/

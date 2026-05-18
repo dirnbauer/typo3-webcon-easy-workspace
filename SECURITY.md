@@ -8,11 +8,10 @@ Please open a private security advisory on the [GitHub Security tab](https://git
 
 A focused TYPO3 v14 security review covered authorization, CSRF, input validation, SQL injection, XSS, path traversal, TSconfig bypass and workspace boundaries across:
 
-- `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (8 backend AJAX endpoints)
+- `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (7 backend AJAX endpoints)
 - `Classes/Controller/Backend/EasyWorkspaceModuleController.php` (backend module submodule routes + publish/discard POST handling)
 - `Classes/Service/PendingItemsService.php` (record collection + thumbnail / type / table resolution)
 - `Classes/Service/PublishSelectedService.php` (DataHandler publish + discard)
-- `Classes/Service/LatestChangesService.php` (cross-page recent activity feed)
 - `Classes/EventListener/IgnoreMissingWorkspaceDependencyReference.php` (stale workspace dependency references)
 - `Classes/Configuration/ConfigurationProvider.php` (TSconfig + user settings)
 - `Resources/Public/JavaScript/easy-workspace-menu-element.js` (toolbar Lit element)

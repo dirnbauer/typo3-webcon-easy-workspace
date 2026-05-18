@@ -30,11 +30,6 @@ return [
         'methods' => ['POST'],
         'target' => EasyWorkspaceAjaxController::class . '::discardAction',
     ],
-    'webcon_easy_workspace_latest' => [
-        'path' => '/webcon-easy-workspace/latest',
-        'methods' => ['GET'],
-        'target' => EasyWorkspaceAjaxController::class . '::latestAction',
-    ],
     'webcon_easy_workspace_diff' => [
         'path' => '/webcon-easy-workspace/diff',
         'methods' => ['GET'],

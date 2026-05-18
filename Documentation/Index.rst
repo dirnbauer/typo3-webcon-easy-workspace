@@ -65,7 +65,7 @@ entry points see exactly the same workspace records.
 The module shows the standard TYPO3 doc header (breadcrumb, page title,
 module menu and the "show page", "copy preview link" and "edit page
 properties" buttons registered on the module template's button bar). TYPO3
-registers Easy Workspace as a parent module with four submodules:
+registers Easy Workspace as a parent module with three submodules:
 
 * **Dashboard** — a TYPO3 card with a Bootstrap table for the active
   workspace, pending count, total page count and quick jumps to the other
@@ -79,8 +79,6 @@ registers Easy Workspace as a parent module with four submodules:
   through ``DataHandler`` and redirects back with a TYPO3 flash message.
 * **All records** — every record on the page in the same Bootstrap table row
   UI (read-only inventory view).
-* **Recent activity** — cross-page latest workspace changes with field-level
-  diffs, rendered server-side as a Bootstrap list group without an accordion.
 
 Navigation between submodules uses TYPO3's native module selector and backend
 module routes such as ``webcon_easy_workspace_pending``. The current page/news
@@ -100,6 +98,9 @@ detected through TYPO3 extension and TCA state.
 The pending list is a bulk-action screen first and a review screen second.
 The main path is selecting records and publishing them; deeper inspection
 stays available through row actions and expandable related-record details.
+Selected publish rows use TYPO3's styleguide ``selected``/info table state.
+Rows that are not selected are only softly de-emphasized while another row is
+selected, so the same table remains readable in light and dark backend modes.
 
 Record scope
 ============
@@ -301,7 +302,3 @@ Run the local checks before shipping changes:
 PHPStan runs at ``level: max`` with PHP 8.2 as the minimum supported
 runtime and ``saschaegerer/phpstan-typo3`` 3.0.1 for TYPO3 14 API
 awareness.
-
-The recent-activity feed reads each table's TCA schema before querying.
-Tables without ``t3ver_wsid`` are skipped, and the deleted-row constraint is
-only added when the schema declares TYPO3's soft-delete capability.

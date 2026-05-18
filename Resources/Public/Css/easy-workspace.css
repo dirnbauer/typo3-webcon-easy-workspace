@@ -1233,6 +1233,114 @@ webcon-easy-workspace-menu {
     cursor: not-allowed;
 }
 
+/* ---- Backend module KPI cards ---- */
+[data-wew-module] .wew-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+[data-wew-module] .wew-kpi-card {
+    min-width: 0;
+}
+
+[data-wew-module] .wew-kpi-card .card-header,
+[data-wew-module] .wew-kpi-card .card-header-body {
+    height: 100%;
+}
+
+[data-wew-module] .wew-kpi-value,
+[data-wew-module] .wew-kpi-card .card-title,
+[data-wew-module] .wew-kpi-card .card-longdesc {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1200px) {
+    [data-wew-module] .wew-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    [data-wew-module] .wew-kpi-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---- Backend module multi-selection table ----
+   TYPO3 core adds `.active` to selected multi-record rows, which
+   maps to the primary table state. For multi-selection in this
+   review table, the styleguide's `selected` / info table state is
+   the better semantic match and is already tuned for light + dark. */
+[data-wew-module] [data-wew-publish-form] .table {
+    --wew-module-row-selected-color: var(--typo3-table-info-color);
+    --wew-module-row-selected-bg: var(--typo3-table-info-bg);
+    --wew-module-row-selected-border: color-mix(in srgb, var(--typo3-table-info-bg), var(--typo3-table-info-color) 10%);
+    --wew-module-row-selected-accent: var(--typo3-table-info-border-color);
+    --wew-module-row-selected-hover-bg: color-mix(in srgb, var(--typo3-table-info-bg), var(--typo3-table-info-color) 6%);
+    --wew-module-row-inactive-bg: color-mix(in srgb, var(--typo3-component-bg, var(--bs-body-bg)), var(--typo3-component-color, var(--bs-body-color)) 3%);
+    --wew-module-row-inactive-color: color-mix(in srgb, var(--typo3-component-color, var(--bs-body-color)), transparent 34%);
+}
+
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element] {
+    transition: color .12s ease, opacity .12s ease;
+}
+
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element] > * {
+    transition: background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element].active,
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element]:has([data-wew-row-check]:checked) {
+    --typo3-table-color: var(--wew-module-row-selected-color);
+    --typo3-table-bg: var(--wew-module-row-selected-bg);
+    --typo3-table-border-color: var(--wew-module-row-selected-border);
+}
+
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element].active > *,
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element]:has([data-wew-row-check]:checked) > * {
+    --typo3-table-bg-type: var(--wew-module-row-selected-bg);
+    --typo3-table-bg-state: var(--wew-module-row-selected-bg);
+    border-color: var(--wew-module-row-selected-border);
+}
+
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element].active:hover > *,
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element]:has([data-wew-row-check]:checked):hover > * {
+    --typo3-table-bg-state: var(--wew-module-row-selected-hover-bg);
+}
+
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element].active > :first-child,
+[data-wew-module] [data-wew-publish-form] [data-multi-record-selection-element]:has([data-wew-row-check]:checked) > :first-child {
+    box-shadow:
+        inset 4px 0 0 var(--wew-module-row-selected-accent),
+        inset 0 1px 0 var(--wew-module-row-selected-border),
+        inset 0 -1px 0 var(--wew-module-row-selected-border);
+}
+
+[data-wew-module] [data-wew-publish-form]:has([data-wew-row-check]:checked) [data-multi-record-selection-element]:not(.active):not(:has([data-wew-row-check]:checked)) {
+    --typo3-table-color: var(--wew-module-row-inactive-color);
+}
+
+[data-wew-module] [data-wew-publish-form]:has([data-wew-row-check]:checked) [data-multi-record-selection-element]:not(.active):not(:has([data-wew-row-check]:checked)) > * {
+    --typo3-table-bg-state: var(--wew-module-row-inactive-bg);
+}
+
+[data-wew-module] [data-wew-publish-form]:has([data-wew-row-check]:checked) [data-multi-record-selection-element]:not(.active):not(:has([data-wew-row-check]:checked)):hover {
+    --typo3-table-color: var(--typo3-component-color, var(--bs-body-color));
+}
+
+[data-wew-module] [data-wew-publish-form]:has([data-wew-row-check]:checked) [data-multi-record-selection-element]:not(.active):not(:has([data-wew-row-check]:checked)):hover > * {
+    --typo3-table-bg-state: color-mix(in srgb, var(--typo3-table-bg-type, var(--typo3-table-bg)), var(--typo3-table-color) 6%);
+}
+
+[data-wew-module] [data-wew-row-check] {
+    accent-color: var(--wew-module-row-selected-accent, var(--typo3-state-info-border-color, var(--bs-info)));
+}
+
+[data-wew-module] [data-wew-row-check]:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--wew-module-row-selected-accent, var(--typo3-state-info-border-color, var(--bs-info))) 70%, transparent);
+}
+
 /* ---- Mobile / narrow viewport ---- */
 
 @media (max-width: 600px) {
@@ -1283,213 +1391,25 @@ webcon-easy-workspace-menu {
     }
 }
 
-/* ---- Latest workspace changes accordion (lazy-loaded feed) ---- */
-/* Sits below the publish footer as a peripheral "what's happening
-   elsewhere" view. Native <details> handles the disclosure and
-   keyboard / ARIA wiring — these styles only theme it.            */
-.wew-menu__latest {
-    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    background: var(--typo3-component-bg, var(--bs-body-bg));
-}
-.wew-menu__latest-summary {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    padding: .55rem .85rem;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    cursor: pointer;
-    list-style: none;
-    user-select: none;
-}
-/* Hide the default disclosure triangle in webkit so we can render
-   our own caret that flips on [open]. */
-.wew-menu__latest-summary::-webkit-details-marker { display: none; }
-.wew-menu__latest-summary::before {
-    content: "";
-    width: 0;
-    height: 0;
-    border-left: 5px solid currentColor;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    transition: transform .15s ease;
-    flex-shrink: 0;
-}
-.wew-menu__latest[open] > .wew-menu__latest-summary::before {
-    transform: rotate(90deg);
-}
-.wew-menu__latest-summary:hover {
-    color: var(--typo3-component-color, var(--bs-body-color));
-}
-.wew-menu__latest-summary:focus-visible {
-    outline: 2px solid var(--typo3-link-color, var(--bs-primary));
-    outline-offset: -2px;
-    border-radius: 2px;
-}
-.wew-menu__latest-summary-label {
-    flex: 1 1 auto;
-}
-.wew-menu__latest-body {
-    max-height: 18rem;
-    overflow-y: auto;
-    padding: 0 .5rem .5rem;
-}
-.wew-menu__latest-hint {
-    margin: 0;
-    padding: .5rem .85rem;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    font-size: 12px;
-    font-style: italic;
-}
+@media (max-width: 760px) {
+    [data-wew-module] [data-wew-publish-form] .table {
+        min-width: 680px;
+    }
 
-/* ---- Changelog cards (Latest workspace changes accordion) ----
-   One card per record. Header has title + meta + state pill;
-   body lists each modified field with a "before → after" pair.
-   Styled with TYPO3 v14 styleguide tokens so it adapts to light
-   and dark backends automatically. */
-.wew-changelog {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: .35rem;
-}
-.wew-changelog__item {
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    border-radius: 4px;
-    background: var(--typo3-component-bg, var(--bs-body-bg));
-    overflow: hidden;
-}
-.wew-changelog__header {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    padding: .4rem .55rem;
-    color: inherit;
-    text-decoration: none;
-    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    background: var(--typo3-surface-dim, transparent);
-}
-.wew-changelog__header--link:hover {
-    background: var(--typo3-component-hover-bg, var(--bs-tertiary-bg));
-}
-.wew-changelog__header--link:focus-visible {
-    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
-    outline-offset: -2px;
-}
-.wew-changelog__heading {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-.wew-changelog__title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--typo3-text-color-base, var(--bs-body-color));
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.wew-changelog__meta {
-    font-size: 11px;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-}
+    [data-wew-module] [data-wew-publishbar] {
+        align-items: stretch;
+    }
 
-/* Field diff list ---------------------------------------------- */
-.wew-changelog__fields {
-    list-style: none;
-    margin: 0;
-    padding: .35rem .55rem;
-    display: flex;
-    flex-direction: column;
-    gap: .3rem;
-}
-.wew-changelog__field {
-    display: flex;
-    flex-direction: column;
-    gap: .15rem;
-}
-.wew-changelog__label {
-    font-size: 10.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-}
-.wew-changelog__values {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: .35rem;
-    font-size: 12px;
-    line-height: 1.35;
-}
-.wew-changelog__arrow {
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    font-weight: 600;
-    font-size: 12px;
-    flex-shrink: 0;
-}
-.wew-changelog__kind {
-    font-size: 10.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    flex-shrink: 0;
-}
+    [data-wew-module] [data-wew-publishbar] > div:last-child {
+        width: 100%;
+        justify-content: space-between !important;
+    }
 
-/* Before / after chips — use the styleguide's danger / success
-   state tokens so red ↔ green reads correctly in both themes. */
-.wew-changelog__chip {
-    display: inline-block;
-    padding: .1rem .4rem;
-    border-radius: 3px;
-    border: 1px solid transparent;
-    max-width: 22rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    vertical-align: baseline;
-    font-family: var(--typo3-font-family-monospace, monospace);
-    font-size: 11.5px;
-}
-.wew-changelog__chip--before {
-    background: var(--typo3-state-danger-bg);
-    color: var(--typo3-state-danger-color);
-    border-color: var(--typo3-state-danger-border-color);
-    text-decoration: line-through;
-    text-decoration-thickness: 1px;
-    text-decoration-color: color-mix(in srgb, var(--typo3-state-danger-color, currentColor) 40%, transparent);
-}
-.wew-changelog__chip--after {
-    background: var(--typo3-state-success-bg);
-    color: var(--typo3-state-success-color);
-    border-color: var(--typo3-state-success-border-color);
-}
-.wew-changelog__chip-empty {
-    font-style: italic;
-    opacity: .7;
-    text-decoration: none;
-}
-.wew-changelog__field--added .wew-changelog__chip--after,
-.wew-changelog__field--removed .wew-changelog__chip--before {
-    /* On placeholder records (every field is "added" or "removed")
-       drop the strikethrough on `before` chips because nothing's
-       being replaced — the chip *is* the value being removed. */
-    text-decoration: none;
-}
-
-.wew-changelog__nodiff {
-    margin: 0;
-    padding: .4rem .65rem;
-    font-size: 11.5px;
-    font-style: italic;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    [data-wew-module] [data-wew-publishbar] [data-wew-publish-submit] {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-width: 0;
+    }
 }
 
 /* ---- Diff modal content ----
@@ -1616,6 +1536,55 @@ webcon-easy-workspace-menu {
     padding-top: .85rem;
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     text-align: right;
+}
+
+.wew-history-tabs {
+    min-height: min(72vh, 760px);
+}
+.wew-history-tabs__list {
+    display: flex;
+    align-items: flex-end;
+    gap: .25rem;
+    margin: 0 0 .75rem 0;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+.wew-history-tabs__tab {
+    appearance: none;
+    margin: 0 0 -1px 0;
+    padding: .45rem .85rem;
+    border: 1px solid transparent;
+    border-bottom-color: var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px 4px 0 0;
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.wew-history-tabs__tab:hover {
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+    background: color-mix(in srgb, var(--typo3-text-color-base, currentColor) 5%, transparent);
+}
+.wew-history-tabs__tab:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
+    outline-offset: 2px;
+}
+.wew-history-tabs__tab.active {
+    border-color: var(--typo3-component-border-color, var(--bs-border-color));
+    border-bottom-color: var(--typo3-component-bg, var(--bs-body-bg));
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
+.wew-history-tabs__panel[hidden] {
+    display: none;
+}
+.wew-history-tabs__frame {
+    display: block;
+    width: 100%;
+    min-height: min(72vh, 760px);
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px;
+    background: var(--typo3-component-bg, var(--bs-body-bg));
 }
 
 /* ---- History panel ---- */
