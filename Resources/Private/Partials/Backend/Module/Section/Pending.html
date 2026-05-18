@@ -8,10 +8,15 @@
     </h2>
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">
-                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.pending" />
-            </h3>
-            <span class="badge badge-info">{data.changedCount}</span>
+            <div class="card-header-body">
+                <div class="fs-1 fw-bold lh-1 mb-2">{data.changedCount}</div>
+                <h3 class="card-title">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.pending" />
+                </h3>
+                <p class="card-longdesc">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle" />
+                </p>
+            </div>
         </div>
 
         <form method="post" action="{formAction}" data-wew-publish-form="">
