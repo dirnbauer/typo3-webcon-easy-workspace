@@ -16,7 +16,7 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 - `Classes/Configuration/ConfigurationProvider.php` (TSconfig + user settings)
 - `Resources/Public/JavaScript/easy-workspace-menu-element.js` (Lit element)
 - `Resources/Private/Templates/ToolbarItems/EasyWorkspaceDropDown.html` (Fluid shell)
-- `Resources/Private/Templates/Backend/EasyWorkspace/Index.html` (backend module shell)
+- `Resources/Private/Templates/Backend/EasyWorkspace/Index.html` (backend module breadcrumbs, actions, title and shell)
 
 ### Findings (resolved)
 
@@ -40,6 +40,7 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 - **TSconfig and user-setting gating**: `enabled` / personal `Use Easy Workspace` / `enablePreviewLink` / `enableRevert` are enforced server-side in the matching endpoints (return `403` when off). Related-record visibility settings only hide nested rows in the UI; they do not remove related records from publish validation.
 - **Workspace boundary on items**: `PendingItemsService` consistently passes the request's workspace id from `Context` to the `WorkspaceRestriction` (with `$includeRowsForWorkspacePreview=false`) and direct inline-child lookups constrain `t3ver_wsid` to the active workspace; records from other workspaces never reach the response payload.
 - **Optional extension handling**: news support is only active when the `tx_news_domain_model_news` TCA table exists. The backend module and AJAX API do not require Solr or any search extension.
+- **Backend module actions**: the visible show-page button is built with TYPO3's `PreviewUriBuilder`, and the page-properties action uses TYPO3's contextual record edit route. Both inherit TYPO3 backend routing, route tokens, same-origin handling and page/table permission checks.
 - **Stale dependency references**: the dependency guard uses `QueryBuilder::count()` with integer parameters and does not publish, discard or modify records. It only prevents missing `sys_refindex` targets from being treated as structural workspace dependencies.
 
 ### Out of scope

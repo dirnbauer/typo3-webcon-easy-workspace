@@ -24,6 +24,11 @@ The personal switches apply to both entry points: the top-right toolbar
 dropdown and the Easy Workspace backend module below the TYPO3 Workspaces
 publish module.
 
+The module and toolbar share the same API and feature flags. The module uses a
+wider presentation with visible breadcrumbs, page actions, overview counters,
+the main publish list and a side area for latest changes; the configuration
+still controls the underlying behavior in the same way.
+
 ..  _configuration-options:
 
 Options

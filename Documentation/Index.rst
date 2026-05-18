@@ -32,8 +32,9 @@ Features
 ========
 
 * Toolbar dropdown for page, content element and news workspace records.
-* Backend module below the TYPO3 Workspaces publish module with page
-  breadcrumbs, show-page and edit-page-property actions.
+* Backend module below the TYPO3 Workspaces publish module with visible
+  page breadcrumbs, show-page and edit-page-property actions, a title area
+  and a wide review layout.
 * One-click publish through TYPO3's ``DataHandler`` publish cmdmap.
 * Per-record discard through TYPO3 14's ``discard`` command.
 * Preview-link generation through
@@ -60,6 +61,11 @@ backend context. The Easy Workspace backend module uses the same AJAX API
 and selection model, but renders the list in a wider TYPO3 backend layout.
 It follows the selected page from the page tree and exposes document-header
 actions for showing the page and editing page properties.
+
+The module body also renders those orientation controls visibly: a breadcrumb
+path, TYPO3-style page action buttons and the module title appear above the
+workspace review UI. The review area then splits into a main publish list and a
+side area for preview-link, latest-changes and current-scope information.
 
 The module does not depend on Apache Solr or any third-party indexing
 extension. Optional integrations, such as EXT:news and Visual Editor, are

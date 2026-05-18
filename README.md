@@ -15,7 +15,7 @@ When an editor opens the toolbar dropdown or the Easy Workspace module while edi
 
 Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
-The backend module lives in the left TYPO3 navigation below the workspace publish module. It uses the same API and publish flow as the toolbar, but has a wider TYPO3-style layout with page breadcrumbs, "show page" and "edit page properties" actions in the document header, larger record rows, and responsive light/dark mode styling.
+The backend module lives in the left TYPO3 navigation below the workspace publish module. It uses the same API and publish flow as the toolbar, but has a wider TYPO3-style layout with visible page breadcrumbs, "show page" and "edit page properties" actions, a module title area, larger record rows, and responsive light/dark mode styling.
 
 ## Requirements
 
@@ -76,6 +76,29 @@ opened for a news context, it can also request the existing news bundle API via
 `newsUid`, so news records and their related content elements use the same
 selection and publish behavior as page content.
 
+### Backend module layout
+
+The **Easy Workspace** backend module is the spacious view for editors who need
+to review more than a compact toolbar dropdown can comfortably show. The module
+body starts with a visible breadcrumb path so editors can see where they are in
+the page tree, followed by TYPO3-style actions for opening the page preview and
+editing page properties. The title area then identifies the module and selected
+page.
+
+Below that header, the module renders the same Easy Workspace feature set in a
+wide layout:
+
+- an overview strip with pending, total and selected record counts
+- the full publish list with filter tabs, thumbnails, state badges, history,
+  discard, locate/edit and subelement rows
+- the publish footer with the same selection semantics as the toolbar
+- a side area for the preview-link action, latest workspace changes and current
+  page/news scope
+
+The module intentionally uses TYPO3 backend buttons, Bootstrap classes and
+TYPO3 CSS variables so it follows the backend styleguide, dark/light mode and
+responsive breakpoints. It does not depend on Solr or any search extension.
+
 ### Personal user settings
 
 Backend users get an **Easy Workspace** section in TYPO3's **User Settings**
@@ -94,9 +117,10 @@ when their parent row is selected.
 
 ## What the dropdown shows
 
-The dropdown is intentionally scoped to the editor's current backend context:
-the selected page or the currently edited news record, the active workspace,
-and the currently chosen backend page language.
+The toolbar dropdown and backend module are intentionally scoped to the
+editor's current backend context: the selected page or the currently edited
+news record, the active workspace, and the currently chosen backend page
+language.
 
 Standalone file metadata is the one deliberate global addition: TYPO3 stores
 uploaded files in live FAL immediately, but the publishable workspace record is
@@ -291,7 +315,12 @@ Disable per user/group/page via `options.webcon_easy_workspace.enableRevert = 0`
 
 ### Latest changes, diff and history
 
-The dropdown also includes a **Latest changes** accordion. It lazy-loads the most recent records in the active workspace through the `webcon_easy_workspace_latest` backend AJAX route (`/webcon-easy-workspace/latest`), scoped to the backend user's current workspace and capped at 50 rows server-side.
+The toolbar dropdown and backend module also include a **Latest changes**
+accordion. It lazy-loads the most recent records in the active workspace
+through the `webcon_easy_workspace_latest` backend AJAX route
+(`/webcon-easy-workspace/latest`), scoped to the backend user's current
+workspace and capped at 50 rows server-side. In the module this lives in the
+side area so the publish list can use the full main column.
 
 Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed.
 
@@ -321,17 +350,17 @@ Configuration/
 
 Resources/
 ├── Private/Language/Modules/                         # Backend module labels
-├── Private/Templates/Backend/EasyWorkspace/          # Full backend module shell
+├── Private/Templates/Backend/EasyWorkspace/          # Breadcrumbs, actions, title + module shell
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (JSON config attr)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
-└── Public/JavaScript/                                # Lit menu + eye/decline helpers
+└── Public/JavaScript/                                # Lit toolbar/module menu + eye/decline helpers
 
 Build/
 ├── Scripts/runTests.sh                               # Local quality runner
 └── phpstan/phpstan.neon                              # TYPO3 PHPStan config at level max
 ```
 
-The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`). The dropdown is a `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.
+The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`, `ModuleTemplate`, `PreviewUriBuilder`). The toolbar dropdown and backend module reuse one `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically.
 
 ### Template boundary
 
