@@ -4,13 +4,14 @@
 
 Please open a private security advisory on the [GitHub Security tab](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new) — do not open a public issue for security reports.
 
-## Audit summary (updated 2026-05-17)
+## Audit summary (updated 2026-05-18)
 
 A focused TYPO3 v14 security review covered authorization, CSRF, input validation, SQL injection, XSS, path traversal, TSconfig bypass and workspace boundaries across:
 
 - `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (7 backend AJAX endpoints)
 - `Classes/Service/PendingItemsService.php` (record collection + thumbnail / type / table resolution)
 - `Classes/Service/PublishSelectedService.php` (DataHandler publish + discard)
+- `Classes/EventListener/IgnoreMissingWorkspaceDependencyReference.php` (stale workspace dependency references)
 - `Classes/Configuration/ConfigurationProvider.php` (TSconfig)
 - `Resources/Public/JavaScript/easy-workspace-menu-element.js` (Lit element)
 - `Resources/Private/Templates/ToolbarItems/EasyWorkspaceDropDown.html` (Fluid shell)
@@ -25,6 +26,7 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 | M4 | Low/Medium | `previewLinkAction` echoed `$e->getMessage()` from `PreviewUriBuilder` into the JSON response. | Replaced with a generic `"Could not build a preview link for this page."` — the underlying exception is logged by Core's error handler. |
 | M5 | Medium | `historyRollbackAction` returned raw exception messages, filenames and line numbers to the browser. | Replaced with a localized generic rollback failure response. |
 | M6 | Medium | Workspace discard used the legacy `version => flush` cmdmap. | Switched to TYPO3 v14's explicit DataHandler `discard` command after verifying the record belongs to the active workspace. |
+| M7 | Low/Medium | TYPO3 Workspaces dependency resolution could follow stale `sys_refindex` rows for deleted inline child records and throw `#1393960943` before publish handling returned a controlled response. | Added a PSR-14 listener that runs after Core dependency classification and clears the dependency flag only when the source or target record no longer exists. |
 
 ### Findings (no change needed)
 
@@ -35,6 +37,7 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 - **Path traversal**: the thumbnail lookup uses `ResourceFactory::getFileObject(int)` with a uid from `sys_file_reference`, then TYPO3's `ProcessedFile` handling — never a path string.
 - **TSconfig gating**: `enabled` / `enablePreviewLink` / `enableRevert` are enforced server-side in the matching endpoints (return `403` when off).
 - **Workspace boundary on items**: `PendingItemsService` consistently passes the request's workspace id from `Context` to the `WorkspaceRestriction` (with `$includeRowsForWorkspacePreview=false`) and direct inline-child lookups constrain `t3ver_wsid` to the active workspace; records from other workspaces never reach the response payload.
+- **Stale dependency references**: the dependency guard uses `QueryBuilder::count()` with integer parameters and does not publish, discard or modify records. It only prevents missing `sys_refindex` targets from being treated as structural workspace dependencies.
 
 ### Out of scope
 

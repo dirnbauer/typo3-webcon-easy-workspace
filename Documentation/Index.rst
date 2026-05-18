@@ -40,6 +40,7 @@ Features
 * Language-aware page and record scoping for translated workspaces.
 * Duplicate suppression for nested inline workspace records.
 * Related file references and inline child records below their parent row.
+* Stale workspace dependency guard for missing inline child references.
 * TYPO3-processed preview thumbnails for image-bearing rows.
 
 ..  _record-scope:
@@ -149,6 +150,30 @@ Standalone file metadata records are also included when they are pending in the
 active workspace. TYPO3 does not workspace-version the physical ``sys_file``
 row, so Easy Workspace publishes the associated ``sys_file_metadata`` version
 and displays it with the actual file name and preview thumbnail.
+
+..  _workspace-dependency-guard:
+
+Workspace dependency guard
+==========================
+
+TYPO3 Workspaces resolves publish dependencies from ``sys_refindex`` before a
+publish command is executed. Inline fields and file fields are structural
+dependencies, so Core follows those references and creates dependency elements
+for the related records.
+
+Generated inline tables, for example Content Blocks collection tables, can
+leave a stale reference behind for a short time after a child row has already
+been removed or published. If Core follows that stale reference, the Workspaces
+AJAX endpoint can fail with an exception such as
+``Element "tabs_items:50" does not exist``.
+
+Easy Workspace registers a PSR-14 listener for
+``IsReferenceConsideredForDependencyEvent``. It runs after TYPO3 Core has
+classified a reference as a workspace dependency, verifies that both referenced
+records still exist, and clears the dependency flag for missing records.
+
+Valid dependencies are not changed. They continue through TYPO3's normal
+Workspaces dependency resolver and ``DataHandler`` publish or discard flow.
 
 ..  _locate-icon:
 

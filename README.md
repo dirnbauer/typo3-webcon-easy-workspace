@@ -11,6 +11,7 @@ When an editor opens the dropdown while editing a page, they immediately see:
 - every changed news record stored on that page
 - for each news, every content element linked via `tx_news_related_news`
 - standalone file metadata records (`sys_file_metadata`) pending in the active workspace
+- protection against stale workspace dependency references such as missing Content Blocks child rows
 
 Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
@@ -115,6 +116,28 @@ live" selection, and can be discarded through the same per-row rollback action
 when TYPO3 allows that workspace operation. Image children render a small
 processed thumbnail so editors can identify the changed file without opening
 the full record.
+
+### Workspace dependency guard
+
+TYPO3 Workspaces resolves publish dependencies from `sys_refindex` before it
+executes a publish command. Inline fields and file fields are structural
+dependencies, so Core follows those references and creates `ElementEntity`
+objects for the related records.
+
+In real editor workflows, especially with generated Content Blocks collection
+tables, `sys_refindex` can temporarily contain a stale inline reference. One
+example is a dependency to `tabs_items:50` after that child row was already
+removed or published by another operation. TYPO3 then throws
+`#1393960943: Element "tabs_items:50" does not exist` during the Core
+`/typo3/ajax/workspace/dispatch` request.
+
+Easy Workspace registers a PSR-14 listener for
+`IsReferenceConsideredForDependencyEvent`. It runs after TYPO3 Core's own
+workspace dependency listener and checks that both sides of a dependency still
+exist before Core instantiates the dependent element. Missing records are
+ignored as stale references; valid inline dependencies are left untouched and
+are still published or discarded through the normal TYPO3 Workspaces and
+`DataHandler` flow.
 
 ### Only the chosen language
 
@@ -250,6 +273,8 @@ Classes/
 ├── Backend/ToolbarItem/EasyWorkspaceToolbarItem.php   # Toolbar registration + config injection
 ├── Configuration/ConfigurationProvider.php            # Reads & normalizes TSconfig
 ├── Controller/Backend/EasyWorkspaceAjaxController.php # Backend AJAX endpoints
+├── EventListener/IgnoreMissingWorkspaceDependencyReference.php
+│                                                          # Drops stale workspace dependency refs
 ├── Service/
 │   ├── PendingItemsService.php                       # Aggregates page, CE, news + related children
 │   └── PublishSelectedService.php                    # DataHandler publish cmdmap
