@@ -25,6 +25,11 @@ webcon-easy-workspace-menu {
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 
+.wew-menu__latest,
+.wew-changelog {
+    display: none !important;
+}
+
 /* Bootstrap dropdown clamps width to its parent — force the dropdown
    menu to grow to fit our element, but cap at the same width so it
    stays right-anchored within the viewport. */
