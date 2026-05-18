@@ -35,6 +35,7 @@ final readonly class LocalizationService
         'toolbar.deselectAll',
         'toolbar.selectAllChanges',
         'toolbar.deselectAllChanges',
+        'toolbar.selected',
         'toolbar.selectedOf',
         'toolbar.of',
         'toolbar.publishing',

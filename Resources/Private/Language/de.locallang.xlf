@@ -23,6 +23,7 @@
     <unit id="toolbar.deselectAll"><segment><source>Deselect all</source><target state="translated">Alle abwählen</target></segment></unit>
     <unit id="toolbar.selectAllChanges"><segment><source>Select all changes</source><target state="translated">Alle Änderungen auswählen</target></segment></unit>
     <unit id="toolbar.deselectAllChanges"><segment><source>Deselect all changes</source><target state="translated">Alle Änderungen abwählen</target></segment></unit>
+    <unit id="toolbar.selected"><segment><source>selected</source><target state="translated">ausgewählt</target></segment></unit>
     <unit id="toolbar.selectedOf"><segment><source>{selected} / {total}</source><target state="translated">{selected} / {total}</target></segment></unit>
     <unit id="toolbar.of"><segment><source>of</source><target state="translated">von</target></segment></unit>
     <unit id="toolbar.publishing"><segment><source>Publishing...</source><target state="translated">Wird veröffentlicht...</target></segment></unit>

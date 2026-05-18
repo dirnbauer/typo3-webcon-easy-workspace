@@ -56,16 +56,20 @@ final readonly class EasyWorkspaceModuleController
         }
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
         $pageRecord = $this->resolvePageRecord($pageUid);
+        $rootLine = $this->resolveRootLine($pageUid);
         $activeWorkspaceId = $this->resolveActiveWorkspaceId();
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-menu-element.js');
+        $this->pageRenderer->loadJavaScriptModule('@typo3/backend/element/contextual-record-edit-trigger.js');
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/easy-workspace.css');
 
         if ($pageRecord !== []) {
             $moduleTemplate->getDocHeaderComponent()->setPageBreadcrumb($pageRecord);
-            $this->addPageActionButtons($moduleTemplate, $request, $pageRecord, $pageUid);
         }
+        $pageActionButtons = $pageRecord !== []
+            ? $this->addPageActionButtons($moduleTemplate, $request, $pageRecord, $pageUid, $rootLine)
+            : [];
 
         $pageTitle = $newsRecord !== []
             ? BackendUtility::getRecordTitle('tx_news_domain_model_news', $newsRecord)
@@ -75,6 +79,10 @@ final readonly class EasyWorkspaceModuleController
             'canRenderEasyWorkspace' => $config['enabled'] && $activeWorkspaceId > 0,
             'disabledMessage' => $this->disabledMessage($config['enabled'], $activeWorkspaceId),
             'configJson' => json_encode($this->buildJavaScriptConfig($config, $activeWorkspaceId, $pageUid, $newsUid), JSON_THROW_ON_ERROR),
+            'moduleTitle' => $this->localizationService->translate('module.title'),
+            'pageTitle' => $pageTitle,
+            'breadcrumbItems' => $pageRecord !== [] ? $this->buildBreadcrumbItems($rootLine, $pageRecord) : [],
+            'pageActionButtons' => $pageActionButtons,
         ]);
 
         return $moduleTemplate->renderResponse('Backend/EasyWorkspace/Index');
@@ -129,22 +137,26 @@ final readonly class EasyWorkspaceModuleController
 
     /**
      * @param array<string, mixed> $pageRecord
+     * @param list<array<string, mixed>> $rootLine
+     * @return list<string>
      */
-    private function addPageActionButtons(ModuleTemplate $moduleTemplate, ServerRequestInterface $request, array $pageRecord, int $pageUid): void
+    private function addPageActionButtons(ModuleTemplate $moduleTemplate, ServerRequestInterface $request, array $pageRecord, int $pageUid, array $rootLine): array
     {
-        $rootLine = $this->resolveRootLine($pageUid);
+        $buttons = [];
+        $viewButton = $this->componentFactory->createViewButton(
+            PreviewUriBuilder::create($pageRecord)
+                ->withRootLine($rootLine)
+                ->buildDispatcherDataAttributes() ?? [],
+        );
         $moduleTemplate->addButtonToButtonBar(
-            $this->componentFactory->createViewButton(
-                PreviewUriBuilder::create($pageRecord)
-                    ->withRootLine($rootLine)
-                    ->buildDispatcherDataAttributes() ?? [],
-            ),
+            $viewButton,
             ButtonBar::BUTTON_POSITION_LEFT,
             15,
         );
+        $buttons[] = $viewButton->render();
 
         if (!$this->isPageEditable($pageRecord)) {
-            return;
+            return $buttons;
         }
 
         $editParams = [
@@ -168,6 +180,9 @@ final readonly class EasyWorkspaceModuleController
             ->setIcon($this->iconFactory->getIcon('actions-page-open', IconSize::SMALL));
 
         $moduleTemplate->addButtonToButtonBar($editButton, ButtonBar::BUTTON_POSITION_LEFT, 20);
+        $buttons[] = $editButton->render();
+
+        return $buttons;
     }
 
     /**
@@ -189,6 +204,37 @@ final readonly class EasyWorkspaceModuleController
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rootLine
+     * @param array<string, mixed> $pageRecord
+     * @return list<array{title: string, uid: int, current: bool}>
+     */
+    private function buildBreadcrumbItems(array $rootLine, array $pageRecord): array
+    {
+        if ($rootLine === []) {
+            $rootLine = [$pageRecord];
+        }
+
+        $currentPageUid = Value::int($pageRecord['uid'] ?? null);
+        if (Value::int($rootLine[0]['uid'] ?? null) === $currentPageUid) {
+            $rootLine = array_reverse($rootLine);
+        }
+
+        $items = [];
+        foreach ($rootLine as $row) {
+            $uid = Value::int($row['uid'] ?? null);
+            if ($uid <= 0) {
+                continue;
+            }
+            $items[] = [
+                'title' => BackendUtility::getRecordTitle('pages', $row),
+                'uid' => $uid,
+                'current' => $uid === $currentPageUid,
+            ];
+        }
+        return $items;
     }
 
     /**

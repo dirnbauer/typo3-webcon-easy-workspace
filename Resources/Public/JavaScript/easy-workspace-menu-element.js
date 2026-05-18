@@ -818,11 +818,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
   _renderModule() {
     const changedCount = this._changedItemCount();
     const totalCount = Array.isArray(this.items) ? this.items.length : 0;
+    const selectedCount = this.selection.size;
     return html`
       <div class="wew-module">
-        <header class="wew-module__head">
-          <div class="wew-module__title-wrap">
-            <h1 class="wew-module__title">${this._label('module.title')}</h1>
+        <section class="wew-module__overview" aria-live="polite">
+          <div class="wew-module__overview-copy">
+            <span class="wew-module__eyebrow">${this._label('toolbar.title')}</span>
+            <p>${this.contextLabel || this._label('toolbar.loading')}</p>
             ${this.workspaceTitle
               ? html`<span class="wew-menu__ws-chip" title=${this._label('toolbar.activeWorkspace')}>${this.workspaceTitle}</span>`
               : nothing}
@@ -836,17 +838,25 @@ class WebconEasyWorkspaceMenu extends LitElement {
               <strong>${totalCount}</strong>
               <span>${this._label('module.total')}</span>
             </span>
+            <span class="wew-module__stat">
+              <strong>${selectedCount}</strong>
+              <span>${this._label('toolbar.selected')}</span>
+            </span>
           </div>
-          <div class="wew-module__actions">
-            ${this._renderPreviewButton()}
-          </div>
-        </header>
-        <div class="wew-module__surface">
-          ${this._renderFilter()}
-          ${this._renderBody()}
-          ${this._renderFooter()}
-          ${this._renderLatestAccordion()}
-          ${this._renderContextFootnote()}
+        </section>
+        <div class="wew-module__layout">
+          <section class="wew-module__main" aria-label=${this._label('module.title')}>
+            ${this._renderFilter()}
+            ${this._renderBody()}
+            ${this._renderFooter()}
+          </section>
+          <aside class="wew-module__side">
+            <div class="wew-module__side-actions">
+              ${this._renderPreviewButton()}
+            </div>
+            ${this._renderLatestAccordion()}
+            ${this._renderContextFootnote()}
+          </aside>
         </div>
       </div>
     `;

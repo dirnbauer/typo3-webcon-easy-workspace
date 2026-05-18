@@ -1,10 +1,44 @@
-<f:if condition="{canRenderEasyWorkspace}">
-    <f:then>
-        <webcon-easy-workspace-menu variant="module" config="{configJson -> f:format.htmlspecialchars()}"></webcon-easy-workspace-menu>
-    </f:then>
-    <f:else>
-        <div class="alert alert-info" role="status">
-            {disabledMessage}
+<div class="wew-backend-module">
+    <f:if condition="{breadcrumbItems}">
+        <nav class="wew-backend-module__breadcrumb" aria-label="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.path')}">
+            <ol class="breadcrumb">
+                <f:for each="{breadcrumbItems}" as="breadcrumbItem">
+                    <li class="breadcrumb-item{f:if(condition: breadcrumbItem.current, then: ' active')}">
+                        <f:if condition="{breadcrumbItem.current}">
+                            <f:then>{breadcrumbItem.title}</f:then>
+                            <f:else>
+                                <a href="{f:be.uri(route: 'webcon_easy_workspace', parameters: '{id: breadcrumbItem.uid}')}">{breadcrumbItem.title}</a>
+                            </f:else>
+                        </f:if>
+                    </li>
+                </f:for>
+            </ol>
+        </nav>
+    </f:if>
+
+    <f:if condition="{pageActionButtons}">
+        <div class="wew-backend-module__actions">
+            <f:for each="{pageActionButtons}" as="pageActionButton">
+                <f:format.raw>{pageActionButton}</f:format.raw>
+            </f:for>
         </div>
-    </f:else>
-</f:if>
+    </f:if>
+
+    <header class="wew-backend-module__header">
+        <h1>{moduleTitle}</h1>
+        <f:if condition="{pageTitle}">
+            <p>{pageTitle}</p>
+        </f:if>
+    </header>
+
+    <f:if condition="{canRenderEasyWorkspace}">
+        <f:then>
+            <webcon-easy-workspace-menu variant="module" config="{configJson -> f:format.htmlspecialchars()}"></webcon-easy-workspace-menu>
+        </f:then>
+        <f:else>
+            <div class="alert alert-info" role="status">
+                {disabledMessage}
+            </div>
+        </f:else>
+    </f:if>
+</div>

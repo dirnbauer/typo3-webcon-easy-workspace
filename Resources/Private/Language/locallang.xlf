@@ -23,6 +23,7 @@
     <unit id="toolbar.deselectAll"><segment><source>Deselect all</source></segment></unit>
     <unit id="toolbar.selectAllChanges"><segment><source>Select all changes</source></segment></unit>
     <unit id="toolbar.deselectAllChanges"><segment><source>Deselect all changes</source></segment></unit>
+    <unit id="toolbar.selected"><segment><source>selected</source></segment></unit>
     <unit id="toolbar.selectedOf"><segment><source>{selected} / {total}</source></segment></unit>
     <unit id="toolbar.of"><segment><source>of</source></segment></unit>
     <unit id="toolbar.publishing"><segment><source>Publishing...</source></segment></unit>
