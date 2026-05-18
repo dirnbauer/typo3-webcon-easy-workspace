@@ -1,6 +1,8 @@
 # Easy Workspace
 
-A TYPO3 v14 backend extension that adds a **toolbar dropdown** and a full **backend module** for one-click workspace publishing.
+A TYPO3 v14 backend extension that adds a **toolbar dropdown** and a
+TYPO3-module-selector based **backend module** for one-click workspace
+publishing.
 
 When an editor opens the toolbar dropdown or the Easy Workspace module while editing a page, they immediately see:
 
@@ -13,9 +15,30 @@ When an editor opens the toolbar dropdown or the Easy Workspace module while edi
 - standalone file metadata records (`sys_file_metadata`) pending in the active workspace
 - protection against stale workspace dependency references such as missing Content Blocks child rows
 
-Each pending row is optimized for bulk publishing: a **checkbox** (checked by default), record **title**, record type, workspace state, and quiet right-aligned actions. Inline children, file references and related records stay collapsed below their parent until the editor opens the detail disclosure, so the main list remains scannable. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The **"Publish to live"** action sends the selection to `DataHandler` in a single publish cmdmap.
+Each pending row is optimized for bulk publishing: a **checkbox** (checked by
+default), record **title**, record type, workspace state, and quiet
+right-aligned actions. The full backend module renders those rows as TYPO3
+styleguide / Bootstrap 5 tables inside standard cards, so long lists use the
+available width instead of becoming a custom stacked layout. Inline children,
+file references and related records stay collapsed below their parent until the
+editor opens the detail disclosure, so the main list remains scannable.
+Image-bearing rows show a small TYPO3-processed preview image (`pages.media`,
+`tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`,
+changed `sys_file_reference` children, and standalone `sys_file_metadata`
+rows). The **"Publish to live"** action sends the selection to `DataHandler`
+in a single publish cmdmap.
 
-The backend module lives in the left TYPO3 navigation below the workspace publish module. It is fully server-rendered with **Fluid templates** and the TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, `<f:form>`), and it exposes four TYPO3 submodules (**Dashboard**, **Pending changes**, **All records**, **Recent activity**) through the native module selector instead of custom in-page navigation. A small companion JS file (`easy-workspace-module.js`) only wires the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` / `AjaxRequest` / `Notification` APIs — no client-side rendering. The same service layer powers the toolbar and the module.
+The backend module lives in the left TYPO3 navigation below the workspace
+publish module. It is fully server-rendered with **Fluid templates** and the
+TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, Bootstrap 5 cards,
+tables, list groups, badges and button groups), and it exposes four TYPO3
+submodules (**Dashboard**, **Pending changes**, **All records**, **Recent
+activity**) through the native module selector instead of custom in-page
+navigation. A small companion JS file (`easy-workspace-module.js`) only wires
+the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` /
+`AjaxRequest` / `Notification` APIs — no client-side rendering. The same
+service layer powers the toolbar and the module; the toolbar Easy Workspace
+element remains a separate compact entry point.
 
 ## Requirements
 
@@ -82,28 +105,31 @@ The **Easy Workspace** backend module is the spacious, server-rendered view for
 editors who need to review more than a compact toolbar dropdown can comfortably
 show. TYPO3 registers it as a parent module with four submodules:
 
-- **Dashboard** — a TYPO3 card with the active workspace, pending count, total
-  page count and quick jumps to the other submodules.
-- **Pending changes** — the changed-only publish queue. Rows stay dense and
-  one-dimensional: select, scan title/type/state, then use the right-aligned
-  history, edit and discard actions when needed. Related child records are
-  hidden behind a disclosure instead of being spread across the list.
+- **Dashboard** — a TYPO3 card with a Bootstrap table for the active workspace,
+  pending count, total page count and quick jumps to the other submodules.
+- **Pending changes** — the changed-only publish queue. Rows are rendered in a
+  `table-fit` Bootstrap table: select, scan title/type/state, then use the
+  right-aligned history, edit and discard button group when needed. Related
+  child records are hidden behind a disclosure instead of being spread across
+  the list.
   Publishing submits the selection as a standard ``<form method="post">`` and
   the controller redirects back with a TYPO3 flash message.
-- **All records** — every record on the page, with the same row UI; selection
-  is disabled here (read-only inventory view).
+- **All records** — every record on the page, with the same Bootstrap table row
+  UI; selection is disabled here (read-only inventory view).
 - **Recent activity** — cross-page latest workspace changes with field-level
-  diffs, rendered server-side (no accordion).
+  diffs, rendered server-side as a Bootstrap list group with compact
+  definition-list diffs (no accordion).
 
 The doc header carries the standard TYPO3 page breadcrumb, page title, TYPO3's
 module selector, and the "show page", "copy preview link" and "edit page
 properties" buttons registered via the ``ModuleTemplate`` button bar. Submodule
 navigation uses TYPO3 backend module routes such as
 `webcon_easy_workspace_pending` and preserves the current page/news context
-through route parameters. The module uses TYPO3's icon API (``<core:icon>``),
-Bootstrap tables, button groups, badges and ``--typo3-*`` design tokens so it
-follows the backend styleguide and dark/light mode without custom theming. It
-does not depend on Solr or any search extension.
+through route parameters. There is no extra top-left navigation inside the
+module body. The module uses TYPO3's icon API (``<core:icon>``), Bootstrap 5
+tables, list groups, button groups, badges and ``--typo3-*`` design tokens so
+it follows the backend styleguide and dark/light mode without custom theming.
+It does not depend on Solr or any search extension.
 
 ### Personal user settings
 
@@ -362,7 +388,7 @@ Resources/
 ├── Private/Templates/Backend/EasyWorkspace/Index.html # Module shell template
 ├── Private/Partials/Backend/Module/                  # Server-rendered module pieces:
 │   ├── Placeholder.html / FlashMessage.html          #   empty / message states
-│   ├── RecordRow.html / ChildChange.html             #   list row + child rows
+│   ├── RecordRow.html / ChildChange.html             #   table row + child list-group rows
 │   ├── PublishBar.html                               #   publish form action bar
 │   └── Section/{Dashboard,Pending,All,Activity}.html #   one partial per submodule
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (Lit element)
@@ -377,7 +403,15 @@ Build/
 └── phpstan/phpstan.neon                              # TYPO3 PHPStan config at level max
 ```
 
-The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`, `ModuleTemplate`, `FlashMessageService`, `BackendUriBuilder`, `PreviewUriBuilder`). The **toolbar** dropdown uses one `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically. The **backend module** is fully server-rendered with Fluid partials, TYPO3 submodule routes and the TYPO3 icon API; its only JS (~270 lines, no framework) wires the DOM and doc-header preview action to Core's `Modal`, `AjaxRequest` and `Notification` modules.
+The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`,
+`BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`,
+`ModuleTemplate`, `FlashMessageService`, `BackendUriBuilder`,
+`PreviewUriBuilder`). The **toolbar** dropdown uses one `LitElement` rendered
+into light DOM so backend Bootstrap / styleguide tokens apply automatically.
+The **backend module** is fully server-rendered with Fluid partials, TYPO3
+submodule routes, the TYPO3 icon API and Bootstrap 5 markup; its only JS
+(~270 lines, no framework) wires the DOM and doc-header preview action to
+Core's `Modal`, `AjaxRequest` and `Notification` modules.
 
 ### Template boundary
 

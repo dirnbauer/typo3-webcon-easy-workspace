@@ -33,8 +33,8 @@ Features
 
 * Toolbar dropdown for page, content element and news workspace records.
 * Backend module below the TYPO3 Workspaces publish module with visible
-  page breadcrumbs, TYPO3 submodules, show-page, preview-link and
-  edit-page-property actions.
+  page breadcrumbs, TYPO3 submodules, TYPO3's native module selector,
+  show-page, preview-link and edit-page-property actions.
 * One-click publish through TYPO3's ``DataHandler`` publish cmdmap.
 * Per-record discard through TYPO3 14's ``discard`` command.
 * Preview-link generation through
@@ -67,23 +67,28 @@ module menu and the "show page", "copy preview link" and "edit page
 properties" buttons registered on the module template's button bar). TYPO3
 registers Easy Workspace as a parent module with four submodules:
 
-* **Dashboard** — a TYPO3 card with the active workspace, pending count,
-  total page count and quick jumps to the other submodules.
+* **Dashboard** — a TYPO3 card with a Bootstrap table for the active
+  workspace, pending count, total page count and quick jumps to the other
+  submodules.
 * **Pending changes** — the changed-only publish queue. Rows stay dense and
-  one-dimensional: select, scan title/type/state, then use the right-aligned
-  history, edit and discard actions when needed. Related child records are
-  hidden behind a disclosure instead of being spread across the list.
-  Publishing submits the selection as a standard ``<form method="post">``;
-  the controller publishes through ``DataHandler`` and redirects back with a
-  TYPO3 flash message.
-* **All records** — every record on the page (read-only inventory view).
+  one-dimensional in a ``table-fit`` Bootstrap table: select, scan
+  title/type/state, then use the right-aligned history, edit and discard
+  button group when needed. Related child records are hidden behind a
+  disclosure instead of being spread across the list. Publishing submits the
+  selection as a standard ``<form method="post">``; the controller publishes
+  through ``DataHandler`` and redirects back with a TYPO3 flash message.
+* **All records** — every record on the page in the same Bootstrap table row
+  UI (read-only inventory view).
 * **Recent activity** — cross-page latest workspace changes with field-level
-  diffs, rendered server-side without an accordion.
+  diffs, rendered server-side as a Bootstrap list group without an accordion.
 
 Navigation between submodules uses TYPO3's native module selector and backend
 module routes such as ``webcon_easy_workspace_pending``. The current page/news
-context is preserved through route parameters. A small companion JavaScript
-file (``easy-workspace-module.js``) only wires the rendered DOM and doc-header
+context is preserved through route parameters. There is no extra top-left
+navigation inside the module body. The module body uses TYPO3 styleguide and
+Bootstrap 5 elements: cards, tables, list groups, badges, button groups and
+``<core:icon>`` icons. A small companion JavaScript file
+(``easy-workspace-module.js``) only wires the rendered DOM and doc-header
 buttons into TYPO3 Core's ``Modal``, ``AjaxRequest`` and ``Notification``
 modules for the discard, edit, diff and preview-link interactions — no
 client-side rendering.

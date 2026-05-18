@@ -17,3 +17,7 @@ Suggested changes:
 - Review JavaScript HTML insertion sites for template-only/static markup or trusted modal content.
 - Keep server-generated HTML limited to Fluid-rendered diff output and TYPO3 backend modal flows.
 - Add quality commands so future security-relevant type regressions are caught by PHPStan.
+
+## Current documentation note (2026-05-18)
+
+The README, SECURITY notes and TYPO3 documentation now reflect the current Easy Workspace backend module UI: navigation uses TYPO3 native module selector/submodule routes, record-heavy views use Bootstrap 5 and TYPO3 styleguide cards, tables, list groups, badges and button groups, and the toolbar Easy Workspace element remains separate from the module layout. This note updates documentation context only; the original report findings above remain historical.

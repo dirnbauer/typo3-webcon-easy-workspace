@@ -28,11 +28,12 @@ The module and toolbar share the same service layer and configuration flags.
 The module is server-rendered with Fluid and TYPO3 submodule routes for the
 dashboard, pending list, page-record inventory and recent-activity feed.
 Submodule behaviour is still controlled by the same TSconfig keys. The
-pending submodule is intentionally optimized as a dense publish queue:
-related child records are optional detail disclosures, while publish
-eligibility is still decided by the server-side record collection. The
-doc-header preview-link button uses the same ``enablePreviewLink`` flag as
-the toolbar dropdown.
+pending submodule is intentionally optimized as a dense Bootstrap 5 /
+TYPO3 styleguide publish queue: related child records are optional detail
+disclosures, while publish eligibility is still decided by the server-side
+record collection. Submodule navigation uses TYPO3's native module selector
+instead of custom in-page navigation. The doc-header preview-link button uses
+the same ``enablePreviewLink`` flag as the toolbar dropdown.
 
 ..  _configuration-options:
 
