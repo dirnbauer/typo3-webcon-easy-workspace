@@ -722,6 +722,10 @@ final readonly class PendingItemsService
             'tableLabel' => Value::string($item['tableLabel'] ?? null),
             'typeLabel' => Value::string($item['typeLabel'] ?? null),
             'thumbnailUrl' => Value::string($item['thumbnailUrl'] ?? null),
+            'tstamp' => Value::int($item['tstamp'] ?? null),
+            'latestChangeAt' => Value::int($item['latestChangeAt'] ?? null),
+            'latestChangeUserUid' => Value::int($item['latestChangeUserUid'] ?? null),
+            'latestChangeUser' => Value::string($item['latestChangeUser'] ?? null),
         ];
     }
 
@@ -1797,6 +1801,7 @@ final readonly class PendingItemsService
         // workspace versions; live rows have nothing to diff.
         $diff = $isChanged ? $this->recordDiffService->diff($table, $row) : [];
         $timeline = $isChanged ? $this->historyTimelineService->build($table, $workspaceUid) : [];
+        $latestChange = $this->latestChangeFromTimeline($timeline, Value::int($row['tstamp'] ?? null));
         $changeBadges = $isChanged
             ? $this->changeBadgesFromTimeline($timeline, $kindKey, $kindLabel, $badge)
             : [];
@@ -1843,7 +1848,31 @@ final readonly class PendingItemsService
             locateLiveUid: $locateLiveUid,
             locateWorkspaceUid: $locateWorkspaceUid,
             tstamp: Value::int($row['tstamp'] ?? null),
+            latestChangeAt: $latestChange['tstamp'],
+            latestChangeUserUid: $latestChange['userUid'],
+            latestChangeUser: $latestChange['user'],
         );
+    }
+
+    /**
+     * @param list<array{tstamp: int, userUid: int, user: string}> $timeline
+     * @return array{tstamp: int, userUid: int, user: string}
+     */
+    private function latestChangeFromTimeline(array $timeline, int $fallbackTimestamp): array
+    {
+        $latest = ['tstamp' => $fallbackTimestamp, 'userUid' => 0, 'user' => ''];
+        foreach ($timeline as $entry) {
+            $timestamp = Value::int($entry['tstamp'] ?? null);
+            if ($timestamp <= 0 || $timestamp < $latest['tstamp']) {
+                continue;
+            }
+            $latest = [
+                'tstamp' => $timestamp,
+                'userUid' => Value::int($entry['userUid'] ?? null),
+                'user' => Value::string($entry['user'] ?? null),
+            ];
+        }
+        return $latest;
     }
 
     /**

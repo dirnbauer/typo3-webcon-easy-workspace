@@ -1,4 +1,5 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
@@ -36,12 +37,22 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-header-body">
-                    <div class="fs-4 fw-bold lh-sm mb-2">
-                        <f:if condition="{data.lastChangedAtFormatted}">
-                            <f:then>{data.lastChangedAtFormatted}</f:then>
-                            <f:else>-</f:else>
-                        </f:if>
-                    </div>
+                    <f:if condition="{data.lastChangedAtFormatted}">
+                        <f:then>
+                            <div class="fs-4 fw-bold lh-sm mb-2">{data.lastChangedAtFormatted}</div>
+                            <f:if condition="{data.lastChangedByName}">
+                                <div class="d-flex align-items-center gap-2 small text-muted mb-2">
+                                    <f:if condition="{data.lastChangedByUid}">
+                                        <be:avatar backendUser="{data.lastChangedByUid}" size="16" />
+                                    </f:if>
+                                    <span class="text-truncate">{data.lastChangedByName}</span>
+                                </div>
+                            </f:if>
+                        </f:then>
+                        <f:else>
+                            <div class="fs-4 fw-bold lh-sm mb-2">-</div>
+                        </f:else>
+                    </f:if>
                     <h3 class="card-title">
                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.kpi.lastChanged" />
                     </h3>

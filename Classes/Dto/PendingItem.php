@@ -45,6 +45,9 @@ final readonly class PendingItem
         public ?int $locateLiveUid = null,
         public ?int $locateWorkspaceUid = null,
         public int $tstamp = 0,
+        public int $latestChangeAt = 0,
+        public int $latestChangeUserUid = 0,
+        public string $latestChangeUser = '',
     ) {}
 
     /**
@@ -77,6 +80,9 @@ final readonly class PendingItem
             'locateLiveUid' => $this->locateLiveUid,
             'locateWorkspaceUid' => $this->locateWorkspaceUid,
             'tstamp' => $this->tstamp,
+            'latestChangeAt' => $this->latestChangeAt,
+            'latestChangeUserUid' => $this->latestChangeUserUid,
+            'latestChangeUser' => $this->latestChangeUser,
             'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,

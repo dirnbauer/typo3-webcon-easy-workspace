@@ -242,6 +242,8 @@ final readonly class EasyWorkspaceModuleController
             'contentElementCount' => 0,
             'lastChangedAt' => 0,
             'lastChangedAtFormatted' => '',
+            'lastChangedByUid' => 0,
+            'lastChangedByName' => '',
             'items' => [],
             'itemGroups' => [],
             'changedItemGroups' => [],
@@ -272,21 +274,29 @@ final readonly class EasyWorkspaceModuleController
         $payload['totalCount'] = count($itemList);
         $payload['contentElementCount'] = count(array_filter($itemList, static fn(array $i): bool => ($i['table'] ?? '') === 'tt_content'));
         $payload['changedCount'] = count(array_filter($itemList, static fn(array $i): bool => (bool)($i['isChanged'] ?? false)));
-        $payload['lastChangedAt'] = $this->extractLatestChangedTimestamp($itemList);
+        $latestChange = $this->extractLatestChangedSummary($itemList);
+        $payload['lastChangedAt'] = $latestChange['tstamp'];
         $payload['lastChangedAtFormatted'] = $payload['lastChangedAt'] > 0 ? BackendUtility::datetime($payload['lastChangedAt']) : '';
+        $payload['lastChangedByUid'] = $latestChange['userUid'];
+        $payload['lastChangedByName'] = $latestChange['user'];
 
         return $payload;
     }
 
     /**
      * @param list<array<string, mixed>> $items
+     * @return array{tstamp: int, userUid: int, user: string}
      */
-    private function extractLatestChangedTimestamp(array $items): int
+    private function extractLatestChangedSummary(array $items): array
     {
-        $latest = 0;
+        $latest = ['tstamp' => 0, 'userUid' => 0, 'user' => ''];
         foreach ($items as $item) {
             if ((bool)($item['isChanged'] ?? false)) {
-                $latest = max($latest, Value::int($item['tstamp'] ?? null));
+                $latest = $this->newerChangeSummary($latest, [
+                    'tstamp' => Value::int($item['latestChangeAt'] ?? null) ?: Value::int($item['tstamp'] ?? null),
+                    'userUid' => Value::int($item['latestChangeUserUid'] ?? null),
+                    'user' => Value::string($item['latestChangeUser'] ?? null),
+                ]);
             }
             $childChanges = $item['childChanges'] ?? [];
             if (is_array($childChanges)) {
@@ -296,10 +306,26 @@ final readonly class EasyWorkspaceModuleController
                         $children[] = Value::stringKeyArray($childChange);
                     }
                 }
-                $latest = max($latest, $this->extractLatestChangedTimestamp($children));
+                $latest = $this->newerChangeSummary($latest, $this->extractLatestChangedSummary($children));
             }
         }
         return $latest;
+    }
+
+    /**
+     * @param array{tstamp: int, userUid: int, user: string} $current
+     * @param array{tstamp: int, userUid: int, user: string} $candidate
+     * @return array{tstamp: int, userUid: int, user: string}
+     */
+    private function newerChangeSummary(array $current, array $candidate): array
+    {
+        if ($candidate['tstamp'] > $current['tstamp']) {
+            return $candidate;
+        }
+        if ($candidate['tstamp'] === $current['tstamp'] && $current['userUid'] <= 0 && $candidate['userUid'] > 0) {
+            return $candidate;
+        }
+        return $current;
     }
 
     /**

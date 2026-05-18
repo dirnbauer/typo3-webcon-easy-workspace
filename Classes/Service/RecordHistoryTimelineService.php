@@ -68,6 +68,7 @@ final readonly class RecordHistoryTimelineService
      *   tstampFormatted: string,
      *   action: string,
      *   actionKey: string,
+     *   userUid: int,
      *   user: string,
      *   diffs: list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
      * }>
@@ -117,13 +118,15 @@ final readonly class RecordHistoryTimelineService
             $actionType = Value::int($log['actiontype'] ?? null);
             $actionKey = $this->resolveActionKey($actionType);
             $action = $this->describeAction($actionKey);
+            $userId = Value::int($log['userid'] ?? null);
             $entries[] = [
                 'historyUid' => $historyUid,
                 'tstamp' => Value::int($log['tstamp'] ?? null),
                 'tstampFormatted' => BackendUtility::datetime(Value::int($log['tstamp'] ?? null)),
                 'action' => $action,
                 'actionKey' => $actionKey,
-                'user' => $this->resolveUser(Value::int($log['userid'] ?? null)),
+                'userUid' => $userId,
+                'user' => $this->resolveUser($userId),
                 // historyUid duplicated into each diff so the inner
                 // <f:for as="d"> doesn't have to reach back into the
                 // enclosing entry scope and so the per-field rollback
