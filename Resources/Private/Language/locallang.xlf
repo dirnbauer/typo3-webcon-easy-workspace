@@ -33,6 +33,7 @@
     <unit id="toolbar.context.pending"><segment><source>{count} pending</source></segment></unit>
     <unit id="toolbar.context.none"><segment><source>No page or news selected.</source></segment></unit>
     <unit id="module.title"><segment><source>Easy Workspace</source></segment></unit>
+    <unit id="module.description"><segment><source>Review and publish the current page's workspace changes with their related records.</source></segment></unit>
     <unit id="module.pending"><segment><source>pending</source></segment></unit>
     <unit id="module.total"><segment><source>total</source></segment></unit>
     <unit id="module.disabledBySettings"><segment><source>Easy Workspace is disabled in your user settings or by administrator configuration.</source></segment></unit>
@@ -67,6 +68,10 @@
     <unit id="module.activity.subtitle"><segment><source>Recent workspace edits with field-level diffs.</source></segment></unit>
     <unit id="module.activity.refresh"><segment><source>Refresh</source></segment></unit>
     <unit id="module.activity.refreshing"><segment><source>Refreshing...</source></segment></unit>
+    <unit id="module.column.record"><segment><source>Record</source></segment></unit>
+    <unit id="module.column.state"><segment><source>State</source></segment></unit>
+    <unit id="module.column.actions"><segment><source>Actions</source></segment></unit>
+    <unit id="module.relatedRecords"><segment><source>{count, plural, one {# related record} other {# related records}}</source></segment></unit>
     <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source></segment></unit>
     <unit id="module.publishBar.deselect"><segment><source>Deselect</source></segment></unit>
     <unit id="module.publishBar.unselected"><segment><source>Select changed records to publish them.</source></segment></unit>

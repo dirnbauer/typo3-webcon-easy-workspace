@@ -33,6 +33,7 @@
     <unit id="toolbar.context.pending"><segment><source>{count} pending</source><target state="translated">{count} ausstehend</target></segment></unit>
     <unit id="toolbar.context.none"><segment><source>No page or news selected.</source><target state="translated">Keine Seite oder News ausgewählt.</target></segment></unit>
     <unit id="module.title"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
+    <unit id="module.description"><segment><source>Review and publish the current page's workspace changes with their related records.</source><target state="translated">Workspace-Änderungen der aktuellen Seite mit zugehörigen Datensätzen prüfen und veröffentlichen.</target></segment></unit>
     <unit id="module.pending"><segment><source>pending</source><target state="translated">ausstehend</target></segment></unit>
     <unit id="module.total"><segment><source>total</source><target state="translated">gesamt</target></segment></unit>
     <unit id="module.disabledBySettings"><segment><source>Easy Workspace is disabled in your user settings or by administrator configuration.</source><target state="translated">Easy Workspace ist in Ihren Benutzereinstellungen oder durch die Administrationskonfiguration deaktiviert.</target></segment></unit>
@@ -67,6 +68,10 @@
     <unit id="module.activity.subtitle"><segment><source>Recent workspace edits with field-level diffs.</source><target state="translated">Letzte Workspace-Bearbeitungen mit Feld-Diffs.</target></segment></unit>
     <unit id="module.activity.refresh"><segment><source>Refresh</source><target state="translated">Aktualisieren</target></segment></unit>
     <unit id="module.activity.refreshing"><segment><source>Refreshing...</source><target state="translated">Wird aktualisiert...</target></segment></unit>
+    <unit id="module.column.record"><segment><source>Record</source><target state="translated">Datensatz</target></segment></unit>
+    <unit id="module.column.state"><segment><source>State</source><target state="translated">Status</target></segment></unit>
+    <unit id="module.column.actions"><segment><source>Actions</source><target state="translated">Aktionen</target></segment></unit>
+    <unit id="module.relatedRecords"><segment><source>{count, plural, one {# related record} other {# related records}}</source><target state="translated">{count, plural, one {# zugehöriger Datensatz} other {# zugehörige Datensätze}}</target></segment></unit>
     <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source><target state="translated">{count, plural, one {# Datensatz ausgewählt} other {# Datensätze ausgewählt}}</target></segment></unit>
     <unit id="module.publishBar.deselect"><segment><source>Deselect</source><target state="translated">Auswahl aufheben</target></segment></unit>
     <unit id="module.publishBar.unselected"><segment><source>Select changed records to publish them.</source><target state="translated">Wählen Sie geänderte Datensätze, um sie zu veröffentlichen.</target></segment></unit>

@@ -128,6 +128,7 @@ final readonly class EasyWorkspaceModuleController
 
         $viewData = [
             'moduleTitle' => $this->localizationService->translate('module.title'),
+            'moduleDescription' => $this->localizationService->translate('module.description'),
             'pageTitle' => $pageTitle,
             'canRenderEasyWorkspace' => $canRender,
             'disabledMessage' => $disabledMessage,

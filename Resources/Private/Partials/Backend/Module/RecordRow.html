@@ -2,14 +2,6 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<f:variable name="rowClasses" value="wew-list__row" />
-<f:if condition="{item.isPrimary}"><f:variable name="rowClasses" value="{rowClasses} wew-list__row--primary" /></f:if>
-<f:if condition="{item.isChanged}">
-    <f:then><f:variable name="rowClasses" value="{rowClasses} wew-list__row--changed" /></f:then>
-    <f:else><f:variable name="rowClasses" value="{rowClasses} wew-list__row--unchanged" /></f:else>
-</f:if>
-<f:if condition="{item.isHidden}"><f:variable name="rowClasses" value="{rowClasses} wew-list__row--hidden" /></f:if>
-
 <f:variable name="primaryKicker" value="" />
 <f:if condition="{item.isPrimary}">
     <f:if condition="{item.table} == 'pages'">
@@ -20,92 +12,93 @@
     </f:if>
 </f:if>
 
-<li class="{rowClasses}" data-table="{item.table}">
-    <label class="wew-list__label" for="wew-{item.table}-{item.workspaceUid}">
+<tr class="{f:if(condition: item.isChanged, then: 'table-active')}">
+    <td class="wew-module-table__check">
         <f:if condition="{item.isChanged} && {selectable}">
             <input type="checkbox"
                    name="selections[]"
                    value="{item.table}:{item.workspaceUid}"
                    id="wew-{item.table}-{item.workspaceUid}"
-                   class="form-check-input wew-list__check visually-hidden"
+                   class="form-check-input"
                    data-wew-row-check=""
                    checked="checked" />
-            <span class="wew-list__mark" aria-hidden="true">
-                <core:icon identifier="actions-check" size="small" />
-            </span>
         </f:if>
-
-        <f:if condition="{config.enableThumbnails} && {item.thumbnailUrl}">
-            <span class="wew-list__thumb">
-                <img src="{item.thumbnailUrl}" alt="" loading="lazy" />
-            </span>
-        </f:if>
-
-        <span class="wew-list__body">
-            <f:if condition="{primaryKicker}">
-                <span class="wew-list__primary-kicker">{primaryKicker}</span>
+    </td>
+    <td class="wew-module-table__record">
+        <div class="d-flex align-items-start gap-2">
+            <f:if condition="{config.enableThumbnails} && {item.thumbnailUrl}">
+                <span class="wew-module-thumb">
+                    <img src="{item.thumbnailUrl}" alt="" loading="lazy" />
+                </span>
             </f:if>
-
-            <span class="wew-list__head">
-                <span class="wew-list__title-text" title="{item.title}">{item.title}</span>
-            </span>
-
-            <f:if condition="{config.enableTypeLabels}">
-                <span class="wew-list__sub">
-                    <span class="wew-list__table">
-                        {item.tableLabel}<f:if condition="{item.typeLabel} && '{item.typeLabel}' != '{item.tableLabel}'">
-                            <span class="wew-list__sep">·</span> {item.typeLabel}
-                        </f:if>
+            <div class="min-w-0">
+                <f:if condition="{primaryKicker}">
+                    <span class="d-block text-muted small">{primaryKicker}</span>
+                </f:if>
+                <f:if condition="{item.isChanged} && {selectable}">
+                    <f:then>
+                        <label class="fw-semibold text-truncate d-block mb-0" for="wew-{item.table}-{item.workspaceUid}" title="{item.title}">
+                            {item.title}
+                        </label>
+                    </f:then>
+                    <f:else>
+                        <span class="fw-semibold text-truncate d-block" title="{item.title}">{item.title}</span>
+                    </f:else>
+                </f:if>
+                <f:if condition="{config.enableTypeLabels}">
+                    <span class="d-block text-muted small">
+                        {item.tableLabel}<f:if condition="{item.typeLabel} && '{item.typeLabel}' != '{item.tableLabel}'"> · {item.typeLabel}</f:if>
                     </span>
+                </f:if>
+                <f:if condition="{config.showSubelementsInModule} && {item.childChanges -> f:count()} > 0">
+                    <f:variable name="childCount" value="{item.childChanges -> f:count()}" />
+                    <details class="wew-module-details mt-2">
+                        <summary>
+                            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedRecords"
+                                         arguments="{count: childCount}" />
+                        </summary>
+                        <ul class="list-group list-group-flush mt-2">
+                            <f:for each="{item.childChanges}" as="child">
+                                <f:render partial="Backend/Module/ChildChange" arguments="{child: child}" />
+                            </f:for>
+                        </ul>
+                    </details>
+                </f:if>
+            </div>
+        </div>
+    </td>
+    <td class="wew-module-table__state">
+        <div class="d-flex flex-wrap gap-1">
+            <f:for each="{item.changeBadges}" as="badge">
+                <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
+            </f:for>
+            <f:if condition="{item.isHidden} && {config.enableHiddenBadge}">
+                <span class="badge badge-secondary"
+                      title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden.title')}">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden" />
                 </span>
             </f:if>
-
-            <f:if condition="{item.isChanged}">
-                <span class="wew-list__change-actions">
-                    <f:if condition="{item.changeBadges -> f:count()} > 0">
-                        <button type="button"
-                                class="wew-list__diff-trigger"
-                                data-wew-diff=""
-                                data-wew-table="{item.table}"
-                                data-wew-workspace-uid="{item.workspaceUid}"
-                                data-wew-title="{item.title}">
-                            <span class="wew-list__diff-trigger-icon" aria-hidden="true">⇄</span>
-                            <span class="wew-list__diff-trigger-label">
-                                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.viewHistory" />
-                            </span>
-                        </button>
-                    </f:if>
-
-                    <span class="wew-list__badges">
-                        <f:for each="{item.changeBadges}" as="badge">
-                            <span class="wew-state-pill wew-state-pill--{badge.badge} wew-state-pill--inline">{badge.kindLabel}</span>
-                        </f:for>
-                    </span>
-
-                    <f:if condition="{item.isHidden} && {config.enableHiddenBadge}">
-                        <span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline"
-                              title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden.title')}">
-                            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden" />
-                        </span>
-                    </f:if>
-                </span>
-            </f:if>
-
-            <f:if condition="{config.showSubelementsInModule} && {item.childChanges -> f:count()} > 0">
-                <span class="wew-list__children">
-                    <f:for each="{item.childChanges}" as="child">
-                        <f:render partial="Backend/Module/ChildChange" arguments="{child: child}" />
-                    </f:for>
-                </span>
-            </f:if>
-        </span>
-
+        </div>
+    </td>
+    <td class="wew-module-table__actions">
         <f:if condition="{item.isChanged}">
-            <span class="wew-list__actions" data-wew-actions="">
+            <div class="btn-group" role="group">
+                <f:if condition="{item.changeBadges -> f:count()} > 0">
+                    <button type="button"
+                            class="btn btn-default btn-sm"
+                            data-wew-diff=""
+                            data-wew-table="{item.table}"
+                            data-wew-workspace-uid="{item.workspaceUid}"
+                            data-wew-title="{item.title}"
+                            title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.viewHistory')}">
+                        <core:icon identifier="actions-document-history-open" size="small" />
+                    </button>
+                </f:if>
+
                 <f:if condition="{config.enableRevert}">
                     <f:then>
                         <button type="button"
-                                class="wew-list__discard"
+                                class="btn btn-default btn-sm"
                                 data-wew-discard=""
                                 data-wew-table="{item.table}"
                                 data-wew-workspace-uid="{item.workspaceUid}"
@@ -117,7 +110,7 @@
                     </f:then>
                     <f:else>
                         <button type="button"
-                                class="wew-list__discard wew-list__discard--disabled"
+                                class="btn btn-default btn-sm"
                                 disabled="disabled"
                                 title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:discard.button.disabledTitle')}"
                                 aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:discard.button.disabledAria')}">
@@ -128,19 +121,19 @@
 
                 <f:if condition="{item.contextualEditUrl} || {item.editUrl}">
                     <button type="button"
-                            class="wew-list__locate wew-list__locate--edit-only"
+                            class="btn btn-default btn-sm"
                             data-wew-edit=""
                             data-wew-edit-url="{item.contextualEditUrl ?: item.editUrl}"
                             data-wew-contextual="{f:if(condition: item.contextualEditUrl, then: '1', else: '0')}"
                             data-wew-title="{item.title}"
-                            title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{0: item.title}')}"
-                            aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{0: item.title}')}">
+                            title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{title: item.title}')}"
+                            aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{title: item.title}')}">
                         <core:icon identifier="actions-open" size="small" />
                     </button>
                 </f:if>
-            </span>
+            </div>
         </f:if>
-    </label>
-</li>
+    </td>
+</tr>
 
 </html>

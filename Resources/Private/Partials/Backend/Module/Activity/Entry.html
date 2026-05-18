@@ -1,55 +1,54 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
 
-<li class="wew-changelog__item">
-    <f:variable name="headerInner">
-        <div class="wew-changelog__heading">
-            <span class="wew-changelog__title">
-                <f:if condition="{entry.title}">
-                    <f:then>{entry.title}</f:then>
-                    <f:else><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.noTitle" /></f:else>
-                </f:if>
-            </span>
-            <span class="wew-changelog__meta">{entry.tableLabel} · #{entry.workspaceUid}</span>
+<li class="list-group-item">
+    <div class="d-flex align-items-start justify-content-between gap-2">
+        <div class="min-w-0">
+            <f:if condition="{entry.editUrl}">
+                <f:then>
+                    <a class="fw-semibold text-truncate d-block" href="{entry.editUrl}" title="{entry.title}">
+                        <f:if condition="{entry.title}">
+                            <f:then>{entry.title}</f:then>
+                            <f:else><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.noTitle" /></f:else>
+                        </f:if>
+                    </a>
+                </f:then>
+                <f:else>
+                    <span class="fw-semibold text-truncate d-block" title="{entry.title}">
+                        <f:if condition="{entry.title}">
+                            <f:then>{entry.title}</f:then>
+                            <f:else><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.noTitle" /></f:else>
+                        </f:if>
+                    </span>
+                </f:else>
+            </f:if>
+            <span class="text-muted small">{entry.tableLabel} · #{entry.workspaceUid}</span>
         </div>
-        <span class="wew-list__badges">
+        <div class="d-flex flex-wrap justify-content-end gap-1">
             <f:for each="{entry.changeBadges}" as="badge">
-                <span class="wew-state-pill wew-state-pill--{badge.badge} wew-state-pill--inline">{badge.kindLabel}</span>
+                <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
             </f:for>
-        </span>
-    </f:variable>
-
-    <f:if condition="{entry.editUrl}">
-        <f:then>
-            <a class="wew-changelog__header wew-changelog__header--link" href="{entry.editUrl}">
-                <f:format.raw>{headerInner}</f:format.raw>
-            </a>
-        </f:then>
-        <f:else>
-            <div class="wew-changelog__header">
-                <f:format.raw>{headerInner}</f:format.raw>
-            </div>
-        </f:else>
-    </f:if>
+        </div>
+    </div>
 
     <f:if condition="{entry.diff -> f:count()} > 0">
         <f:then>
-            <ul class="wew-changelog__fields">
+            <dl class="wew-activity-diff mt-2 mb-0">
                 <f:for each="{entry.diff}" as="diffEntry">
                     <f:variable name="diffKind" value="{diffEntry.kind}" />
                     <f:if condition="{diffKind} == ''"><f:variable name="diffKind" value="changed" /></f:if>
-                    <li class="wew-changelog__field wew-changelog__field--{diffKind}">
-                        <span class="wew-changelog__label">{diffEntry.label}</span>
-                        <span class="wew-changelog__values">
+                    <div class="wew-activity-diff__row">
+                        <dt class="text-muted small">{diffEntry.label}</dt>
+                        <dd class="mb-0">
                             <f:switch expression="{diffKind}">
                                 <f:case value="added">
-                                    <span class="wew-changelog__kind">
+                                    <span class="badge badge-success">
                                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.diff.added" />
                                     </span>
-                                    <span class="wew-changelog__chip wew-changelog__chip--after" title="{diffEntry.afterFull}">
+                                    <span class="wew-activity-diff__value" title="{diffEntry.afterFull}">
                                         <f:if condition="{diffEntry.after}">
                                             <f:then>{diffEntry.after}</f:then>
                                             <f:else>
-                                                <em class="wew-changelog__chip-empty">
+                                                <em class="text-muted">
                                                     <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.diff.empty" />
                                                 </em>
                                             </f:else>
@@ -57,14 +56,14 @@
                                     </span>
                                 </f:case>
                                 <f:case value="removed">
-                                    <span class="wew-changelog__kind">
+                                    <span class="badge badge-danger">
                                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.diff.removed" />
                                     </span>
-                                    <span class="wew-changelog__chip wew-changelog__chip--before" title="{diffEntry.beforeFull}">
+                                    <span class="wew-activity-diff__value" title="{diffEntry.beforeFull}">
                                         <f:if condition="{diffEntry.before}">
                                             <f:then>{diffEntry.before}</f:then>
                                             <f:else>
-                                                <em class="wew-changelog__chip-empty">
+                                                <em class="text-muted">
                                                     <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.diff.empty" />
                                                 </em>
                                             </f:else>
@@ -72,22 +71,22 @@
                                     </span>
                                 </f:case>
                                 <f:defaultCase>
-                                    <span class="wew-changelog__chip wew-changelog__chip--before" title="{diffEntry.beforeFull}">
+                                    <span class="wew-activity-diff__value" title="{diffEntry.beforeFull}">
                                         <f:if condition="{diffEntry.before}">
                                             <f:then>{diffEntry.before}</f:then>
                                             <f:else>
-                                                <em class="wew-changelog__chip-empty">
+                                                <em class="text-muted">
                                                     <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.diff.empty" />
                                                 </em>
                                             </f:else>
                                         </f:if>
                                     </span>
-                                    <span class="wew-changelog__arrow" aria-hidden="true">→</span>
-                                    <span class="wew-changelog__chip wew-changelog__chip--after" title="{diffEntry.afterFull}">
+                                    <span class="text-muted" aria-hidden="true">-&gt;</span>
+                                    <span class="wew-activity-diff__value" title="{diffEntry.afterFull}">
                                         <f:if condition="{diffEntry.after}">
                                             <f:then>{diffEntry.after}</f:then>
                                             <f:else>
-                                                <em class="wew-changelog__chip-empty">
+                                                <em class="text-muted">
                                                     <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.diff.empty" />
                                                 </em>
                                             </f:else>
@@ -95,13 +94,13 @@
                                     </span>
                                 </f:defaultCase>
                             </f:switch>
-                        </span>
-                    </li>
+                        </dd>
+                    </div>
                 </f:for>
-            </ul>
+            </dl>
         </f:then>
         <f:else>
-            <p class="wew-changelog__nodiff">
+            <p class="text-muted small mb-0 mt-2">
                 <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:latest.noDiff" />
             </p>
         </f:else>

@@ -10,22 +10,19 @@
 <f:variable name="childBadgeTone" value="{child.badge}" />
 <f:if condition="{childBadgeTone} == ''"><f:variable name="childBadgeTone" value="info" /></f:if>
 
-<span class="wew-list__child-change">
+<li class="list-group-item d-flex align-items-center gap-2">
     <f:if condition="{child.thumbnailUrl}">
-        <f:then>
-            <span class="wew-list__child-thumb"><img src="{child.thumbnailUrl}" alt="" loading="lazy" /></span>
-        </f:then>
-        <f:else>
-            <span class="wew-list__child-icon" aria-hidden="true"></span>
-        </f:else>
+        <span class="wew-module-thumb wew-module-thumb--small">
+            <img src="{child.thumbnailUrl}" alt="" loading="lazy" />
+        </span>
     </f:if>
-    <span class="wew-list__child-body">
-        <span class="wew-list__child-title" title="{child.title}">{childTitle}</span>
-        <span class="wew-list__child-meta">
-            {childTableLabel}<f:if condition="{child.typeLabel}"> <span class="wew-list__sep">·</span> {child.typeLabel}</f:if>
+    <span class="min-w-0 flex-grow-1">
+        <span class="d-block text-truncate fw-semibold" title="{child.title}">{childTitle}</span>
+        <span class="d-block text-muted small">
+            {childTableLabel}<f:if condition="{child.typeLabel}"> · {child.typeLabel}</f:if>
         </span>
     </span>
-    <span class="wew-state-pill wew-state-pill--{childBadgeTone} wew-state-pill--inline">{child.kindLabel}</span>
-</span>
+    <span class="badge badge-{childBadgeTone}">{child.kindLabel}</span>
+</li>
 
 </html>

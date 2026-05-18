@@ -41,16 +41,10 @@ webcon-easy-workspace-menu {
 }
 
 /* ===== Backend module ============================================
-   The module renders as a two-pane layout: a sticky left rail
-   (`.wew-app__nav`) that holds section tabs + the workspace chrome,
-   and a scrolling content pane (`.wew-app__main`) that hosts the
-   active section. Below 960 px the rail collapses to a horizontal
-   chip strip above the main pane so editors on narrow screens still
-   reach every section without scrolling.
-
-   All tokens are TYPO3 styleguide variables (`--typo3-*`, `--bs-*`)
-   so the rail, cards and pills follow the editor's light/dark theme
-   automatically through `light-dark()`.
+   The module uses TYPO3's doc header module selector for navigation.
+   Its body is rendered with Bootstrap 5 / TYPO3 styleguide cards,
+   tables, badges, list groups and buttons; extension CSS only handles
+   widths, truncation and compact thumbnails.
    ===================================================================*/
 
 .wew-backend-module {
@@ -856,6 +850,19 @@ webcon-easy-workspace-menu[variant="module"] {
 
 /* ---- Backend module styleguide alignment ---- */
 
+.wew-module-header {
+    margin-bottom: 1.5rem;
+}
+
+.wew-module-header h1 {
+    margin-bottom: .5rem;
+}
+
+.wew-module-header p {
+    margin-bottom: 0;
+    max-width: 72rem;
+}
+
 .wew-app {
     display: block;
     min-width: 0;
@@ -885,6 +892,111 @@ webcon-easy-workspace-menu[variant="module"] {
     margin: 0;
 }
 
+.wew-section__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+
+.wew-section__toolbar:empty {
+    display: none;
+}
+
+.wew-module-table {
+    margin-bottom: 0;
+    table-layout: fixed;
+}
+
+.wew-module-table th,
+.wew-module-table td {
+    vertical-align: middle;
+}
+
+.wew-module-table__check {
+    width: 3rem;
+    text-align: center;
+}
+
+.wew-module-table__record {
+    min-width: 0;
+}
+
+.wew-module-table__state {
+    width: 14rem;
+}
+
+.wew-module-table__actions {
+    width: 11rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.wew-module-table__record .min-w-0,
+.wew-activity-list .min-w-0 {
+    min-width: 0;
+}
+
+.wew-module-thumb {
+    width: 48px;
+    height: 36px;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 2px;
+    background: var(--typo3-component-secondary-bg, var(--bs-tertiary-bg));
+}
+
+.wew-module-thumb--small {
+    width: 36px;
+    height: 28px;
+}
+
+.wew-module-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wew-module-details > summary {
+    cursor: pointer;
+    color: var(--typo3-link-color, var(--bs-link-color));
+    font-size: .8125rem;
+}
+
+.wew-module-details > summary:hover {
+    text-decoration: underline;
+}
+
+.wew-activity-list {
+    margin: 0;
+}
+
+.wew-activity-diff {
+    display: grid;
+    gap: .25rem;
+}
+
+.wew-activity-diff__row {
+    display: grid;
+    grid-template-columns: minmax(9rem, 18%) minmax(0, 1fr);
+    gap: .75rem;
+    padding-top: .5rem;
+    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+
+.wew-activity-diff__value {
+    display: inline-block;
+    max-width: min(32rem, 100%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
+
 .wew-list--module {
     max-height: none;
     padding: 0;
@@ -908,6 +1020,22 @@ webcon-easy-workspace-menu[variant="module"] {
     background: var(--typo3-component-secondary-bg, var(--bs-tertiary-bg));
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+}
+
+@container (max-width: 720px) {
+    .wew-module-table {
+        table-layout: auto;
+    }
+
+    .wew-module-table__state,
+    .wew-module-table__actions {
+        width: auto;
+    }
+
+    .wew-activity-diff__row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .25rem;
+    }
 }
 
 /* ---- Header ---- */
