@@ -33,8 +33,8 @@ Features
 
 * Toolbar dropdown for page, content element and news workspace records.
 * Backend module below the TYPO3 Workspaces publish module with visible
-  page breadcrumbs, show-page and edit-page-property actions, a title area
-  and a wide review layout.
+  page breadcrumbs, TYPO3 submodules, show-page, preview-link and
+  edit-page-property actions, a title area and a wide review layout.
 * One-click publish through TYPO3's ``DataHandler`` publish cmdmap.
 * Per-record discard through TYPO3 14's ``discard`` command.
 * Preview-link generation through
@@ -62,13 +62,13 @@ module is fully server-rendered with Fluid templates and the TYPO3 backend
 styleguide; the underlying service layer is shared with the toolbar so both
 entry points see exactly the same workspace records.
 
-The module shows the standard TYPO3 doc header (breadcrumb, page title and
-the "show page" / "edit page properties" buttons registered on the module
-template's button bar). Inside the body, a sticky **left navigation rail**
-switches between four content panes:
+The module shows the standard TYPO3 doc header (breadcrumb, page title,
+module menu and the "show page", "copy preview link" and "edit page
+properties" buttons registered on the module template's button bar). TYPO3
+registers Easy Workspace as a parent module with four submodules:
 
-* **Dashboard** — workspace hero, three stat cards (pending, on this page,
-  active workspace) and quick jumps to the other panes.
+* **Dashboard** — a TYPO3 card with the active workspace, pending count,
+  total page count and quick jumps to the other submodules.
 * **Pending changes** — the changed-only list with thumbnails, state badges,
   history, discard, locate / edit and subelement rows. The sticky publish
   bar submits the selection as a standard ``<form method="post">``; the
@@ -78,17 +78,23 @@ switches between four content panes:
 * **Recent activity** — cross-page latest workspace changes with field-level
   diffs, rendered server-side without an accordion.
 
-Navigation between panes uses plain ``?section=…`` URLs produced by
-``BackendUriBuilder``, so the browser back button and page reloads work as
-expected. A small companion JavaScript file
-(``easy-workspace-module.js``) only wires the rendered DOM into TYPO3
-Core's ``Modal``, ``AjaxRequest`` and ``Notification`` modules for the
-discard, edit, diff and preview-link interactions — no client-side
-rendering.
+Navigation between submodules uses TYPO3 backend module routes such as
+``webcon_easy_workspace_pending`` and preserves the current page/news
+context through route parameters. A small companion JavaScript file
+(``easy-workspace-module.js``) only wires the rendered DOM and doc-header
+buttons into TYPO3 Core's ``Modal``, ``AjaxRequest`` and
+``Notification`` modules for the discard, edit, diff and preview-link
+interactions — no client-side rendering.
 
 The module does not depend on Apache Solr or any third-party indexing
 extension. Optional integrations, such as EXT:news and Visual Editor, are
 detected through TYPO3 extension and TCA state.
+
+Changed rows keep the row actions stable: the **History** button uses a
+neutral component border in every row, while the compact change badges use
+TYPO3's badge/state border tokens for their specific change type. This keeps
+the action visually more important than the metadata badges without encoding
+the row's change type twice.
 
 Record scope
 ============
@@ -290,3 +296,7 @@ Run the local checks before shipping changes:
 PHPStan runs at ``level: max`` with PHP 8.2 as the minimum supported
 runtime and ``saschaegerer/phpstan-typo3`` 3.0.1 for TYPO3 14 API
 awareness.
+
+The recent-activity feed reads each table's TCA schema before querying.
+Tables without ``t3ver_wsid`` are skipped, and the deleted-row constraint is
+only added when the schema declares TYPO3's soft-delete capability.

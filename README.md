@@ -13,9 +13,9 @@ When an editor opens the toolbar dropdown or the Easy Workspace module while edi
 - standalone file metadata records (`sys_file_metadata`) pending in the active workspace
 - protection against stale workspace dependency references such as missing Content Blocks child rows
 
-Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
+Each row shows a **checkbox** (checked by default), the record **title**, the record type, a neutral **History** button, and de-duplicated change badges in the same order as the history modal. The badges use TYPO3's own badge/state border tokens for the change type, while the History button keeps the same neutral visual weight on every row. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
-The backend module lives in the left TYPO3 navigation below the workspace publish module. It is fully server-rendered with **Fluid templates** and the TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, `<f:form>`), with a sticky left rail that switches between four panes (**Dashboard**, **Pending changes**, **All records**, **Recent activity**). A small companion JS file (`easy-workspace-module.js`) only wires the rendered DOM into TYPO3 Core's `Modal` / `AjaxRequest` / `Notification` APIs — no client-side rendering. The same service layer powers the toolbar and the module.
+The backend module lives in the left TYPO3 navigation below the workspace publish module. It is fully server-rendered with **Fluid templates** and the TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, `<f:form>`), and it exposes four TYPO3 submodules (**Dashboard**, **Pending changes**, **All records**, **Recent activity**) instead of a custom in-page navigation. A small companion JS file (`easy-workspace-module.js`) only wires the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` / `AjaxRequest` / `Notification` APIs — no client-side rendering. The same service layer powers the toolbar and the module.
 
 ## Requirements
 
@@ -80,17 +80,10 @@ selection and publish behavior as page content.
 
 The **Easy Workspace** backend module is the spacious, server-rendered view for
 editors who need to review more than a compact toolbar dropdown can comfortably
-show. The doc header carries the standard TYPO3 page breadcrumb, the page-title
-strip and the "show page" / "edit page properties" buttons (registered via the
-``ModuleTemplate`` button bar).
+show. TYPO3 registers it as a parent module with four submodules:
 
-Inside the module body, a sticky **left navigation rail** switches between four
-content panes — every link is a plain ``?section=…`` URL produced by
-``BackendUriBuilder``, so reloading the page lands on the same pane and the
-back button works:
-
-- **Dashboard** — workspace hero, three stat cards (pending / on this page /
-  active workspace) and quick jumps to the other panes.
+- **Dashboard** — a TYPO3 card with the active workspace, pending count, total
+  page count and quick jumps to the other submodules.
 - **Pending changes** — the changed-only list with thumbnails, state badges,
   history, discard, locate/edit and subelement rows. A sticky publish bar at
   the bottom submits the selection as a standard ``<form method="post">`` and
@@ -100,10 +93,15 @@ back button works:
 - **Recent activity** — cross-page latest workspace changes with field-level
   diffs, rendered server-side (no accordion).
 
-The module uses TYPO3's icon API (``<core:icon>``), Bootstrap classes,
-``--typo3-*`` design tokens and a CSS container query, so it follows the
-backend styleguide and dark/light mode without custom theming. It does not
-depend on Solr or any search extension.
+The doc header carries the standard TYPO3 page breadcrumb, page title, TYPO3's
+module menu, and the "show page", "copy preview link" and "edit page
+properties" buttons registered via the ``ModuleTemplate`` button bar. Submodule
+navigation uses TYPO3 backend module routes such as
+`webcon_easy_workspace_pending` and preserves the current page/news context
+through route parameters. The module uses TYPO3's icon API (``<core:icon>``),
+Bootstrap card/table/button classes, ``--typo3-*`` design tokens and a CSS
+container query, so it follows the backend styleguide and dark/light mode
+without custom theming. It does not depend on Solr or any search extension.
 
 ### Personal user settings
 
@@ -330,7 +328,7 @@ workspace and capped at 50 rows server-side. The backend module has a
 dedicated **Recent activity** pane that server-renders the same feed (no
 accordion) — call the same service directly.
 
-Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed.
+Changed rows can open a server-rendered diff/history modal through the `webcon_easy_workspace_diff` backend AJAX route (`/webcon-easy-workspace/diff`). The modal shows the record's workspace diff and recent `sys_history` entries. Its rollback buttons post to `webcon_easy_workspace_history_rollback` (`/webcon-easy-workspace/history-rollback`); TYPO3's own DataHandler and backend permission checks still decide whether a rollback is allowed. The recent-activity feed reads the table schema before querying, skips tables without `t3ver_wsid`, and only adds a deleted-row constraint when the TCA schema declares TYPO3's soft-delete capability.
 
 ## Architecture
 
@@ -350,7 +348,7 @@ Classes/
 
 Configuration/
 ├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, latest, diff, rollback
-├── Backend/Modules.php                               # Easy Workspace backend module registration
+├── Backend/Modules.php                               # Parent module + Dashboard/Pending/Records/Activity submodules
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
 ├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
 ├── Services.yaml                                     # DI / autowiring
@@ -361,13 +359,10 @@ Resources/
 ├── Private/Language/Modules/                         # Backend module labels
 ├── Private/Templates/Backend/EasyWorkspace/Index.html # Module shell template
 ├── Private/Partials/Backend/Module/                  # Server-rendered module pieces:
-│   ├── Nav.html                                      #   left rail nav
-│   ├── SectionHeader.html                            #   reusable section header
-│   ├── StatCard.html / QuickAction.html              #   dashboard cards
 │   ├── Placeholder.html / FlashMessage.html          #   empty / message states
 │   ├── RecordRow.html / ChildChange.html             #   list row + child rows
 │   ├── PublishBar.html                               #   sticky publish form bar
-│   └── Section/{Dashboard,Pending,All,Activity}.html #   one partial per nav target
+│   └── Section/{Dashboard,Pending,All,Activity}.html #   one partial per submodule
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (Lit element)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
 └── Public/JavaScript/
@@ -380,7 +375,7 @@ Build/
 └── phpstan/phpstan.neon                              # TYPO3 PHPStan config at level max
 ```
 
-The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`, `ModuleTemplate`, `FlashMessageService`, `BackendUriBuilder`, `PreviewUriBuilder`). The **toolbar** dropdown uses one `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically. The **backend module** is fully server-rendered with Fluid partials and the TYPO3 icon API; its only JS (~270 lines, no framework) wires the DOM to Core's `Modal`, `AjaxRequest` and `Notification` modules.
+The PHP side uses only public TYPO3 v14 APIs (`ConnectionPool`, `BackendUtility`, `DataHandler`, `ResourceFactory`, `TcaSchemaFactory`, `ModuleTemplate`, `FlashMessageService`, `BackendUriBuilder`, `PreviewUriBuilder`). The **toolbar** dropdown uses one `LitElement` rendered into light DOM so backend Bootstrap / styleguide tokens apply automatically. The **backend module** is fully server-rendered with Fluid partials, TYPO3 submodule routes and the TYPO3 icon API; its only JS (~270 lines, no framework) wires the DOM and doc-header preview action to Core's `Modal`, `AjaxRequest` and `Notification` modules.
 
 ### Template boundary
 

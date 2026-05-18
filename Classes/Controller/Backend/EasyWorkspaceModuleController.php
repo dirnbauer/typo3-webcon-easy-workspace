@@ -7,6 +7,7 @@ namespace Webconsulting\WebconEasyWorkspace\Controller\Backend;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
+use TYPO3\CMS\Backend\Module\ModuleInterface;
 use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
@@ -48,6 +49,13 @@ final readonly class EasyWorkspaceModuleController
 
     private const SECTIONS = ['dashboard', 'pending', 'all', 'activity'];
 
+    private const MODULE_SECTIONS = [
+        'webcon_easy_workspace_overview' => 'dashboard',
+        'webcon_easy_workspace_pending' => 'pending',
+        'webcon_easy_workspace_records' => 'all',
+        'webcon_easy_workspace_activity' => 'activity',
+    ];
+
     public function __construct(
         private ModuleTemplateFactory $moduleTemplateFactory,
         private PageRenderer $pageRenderer,
@@ -68,7 +76,8 @@ final readonly class EasyWorkspaceModuleController
     {
         $method = strtoupper($request->getMethod());
         if ($method === 'POST') {
-            $action = Value::string(($request->getParsedBody()['_action'] ?? null));
+            $parsed = $this->parsedBody($request);
+            $action = Value::string(($parsed['_action'] ?? null));
             if ($action === 'publish') {
                 return $this->handlePublish($request);
             }
@@ -84,7 +93,7 @@ final readonly class EasyWorkspaceModuleController
         $queryParams = $request->getQueryParams();
         $pageUid = Value::int($queryParams['id'] ?? null);
         $newsUid = Value::int($queryParams['newsUid'] ?? null);
-        $section = $this->resolveSection(Value::string($queryParams['section'] ?? null));
+        $section = $this->resolveSection($request);
 
         $newsRecord = $this->resolveNewsRecord($newsUid);
         if ($pageUid <= 0 && $newsRecord !== []) {
@@ -101,6 +110,8 @@ final readonly class EasyWorkspaceModuleController
         $this->pageRenderer->loadJavaScriptModule('@typo3/backend/element/contextual-record-edit-trigger.js');
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/easy-workspace.css');
 
+        $moduleTemplate->makeDocHeaderModuleMenu($this->buildModuleMenuParameters($pageUid, $newsUid));
+
         if ($pageRecord !== []) {
             $moduleTemplate->getDocHeaderComponent()->setPageBreadcrumb($pageRecord);
             $this->addPageActionButtons($moduleTemplate, $request, $pageRecord, $pageUid, $rootLine);
@@ -115,27 +126,20 @@ final readonly class EasyWorkspaceModuleController
         $disabledMessage = $this->disabledMessage($config['enabled'], $activeWorkspaceId);
         $hasContext = $pageUid > 0 || $newsUid > 0;
 
-        $sections = $this->buildSectionNav($section, $request, $pageUid, $newsUid);
-        $sectionUrls = [];
-        foreach ($sections as $navEntry) {
-            $sectionUrls[$navEntry['key']] = $navEntry['url'];
-        }
-
         $viewData = [
             'moduleTitle' => $this->localizationService->translate('module.title'),
             'pageTitle' => $pageTitle,
             'canRenderEasyWorkspace' => $canRender,
             'disabledMessage' => $disabledMessage,
             'section' => $section,
-            'sections' => $sections,
-            'sectionUrls' => $sectionUrls,
+            'moduleUrls' => $this->buildModuleUrls($pageUid, $newsUid),
             'flashMessages' => $this->flushFlashMessages($moduleTemplate),
             'config' => $config,
             'hasContext' => $hasContext,
             'pageUid' => $pageUid,
             'newsUid' => $newsUid,
             'activeWorkspaceId' => $activeWorkspaceId,
-            'formAction' => $this->buildSelfUrl($request, ['section' => $section]),
+            'formAction' => $this->buildSelfUrl($request),
             'previewLinkUrl' => (string)$this->backendUriBuilder->buildUriFromRoute('ajax_webcon_easy_workspace_preview_link'),
             'diffUrl' => (string)$this->backendUriBuilder->buildUriFromRoute('ajax_webcon_easy_workspace_diff'),
             'jsLabelsJson' => json_encode($this->buildJsLabelMap(), JSON_THROW_ON_ERROR),
@@ -152,7 +156,7 @@ final readonly class EasyWorkspaceModuleController
 
     private function handlePublish(ServerRequestInterface $request): ResponseInterface
     {
-        $parsed = $request->getParsedBody();
+        $parsed = $this->parsedBody($request);
         $rawSelections = is_array($parsed['selections'] ?? null) ? $parsed['selections'] : [];
         $config = $this->configurationProvider->get();
         if (!$config['enabled']) {
@@ -191,7 +195,7 @@ final readonly class EasyWorkspaceModuleController
 
     private function handleDiscard(ServerRequestInterface $request): ResponseInterface
     {
-        $parsed = $request->getParsedBody();
+        $parsed = $this->parsedBody($request);
         $table = Value::string($parsed['table'] ?? null);
         $workspaceUid = Value::int($parsed['workspaceUid'] ?? null);
         $config = $this->configurationProvider->get();
@@ -224,6 +228,7 @@ final readonly class EasyWorkspaceModuleController
     }
 
     /**
+     * @param array<string, mixed> $config
      * @return array<string, mixed>
      */
     private function buildSectionPayload(string $section, int $pageUid, int $newsUid, array $config): array
@@ -267,44 +272,27 @@ final readonly class EasyWorkspaceModuleController
     }
 
     /**
-     * @return list<array{key: string, label: string, badge: int|null, badgeTone: string, url: string, current: bool, iconIdentifier: string}>
+     * @return array{overview: string, pending: string, all: string, activity: string}
      */
-    private function buildSectionNav(string $activeSection, ServerRequestInterface $request, int $pageUid, int $newsUid): array
+    private function buildModuleUrls(int $pageUid, int $newsUid): array
     {
-        $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
-        $changedCount = null;
-        $totalCount = null;
-        if ($config['enabled'] && ($pageUid > 0 || $newsUid > 0)) {
-            $items = $newsUid > 0
-                ? $this->pendingItemsService->forNews($newsUid, PendingItemsService::MODE_ALL, $config)
-                : $this->pendingItemsService->forPage($pageUid, PendingItemsService::MODE_ALL, $config);
-            $list = $items['items'] ?? [];
-            $totalCount = count($list);
-            $changedCount = count(array_filter($list, static fn(array $i): bool => (bool)($i['isChanged'] ?? false)));
-        }
-
-        $build = function (string $key, string $labelKey, ?int $badge, string $badgeTone, string $iconIdentifier) use ($request, $activeSection): array {
-            return [
-                'key' => $key,
-                'label' => $this->localizationService->translate($labelKey),
-                'badge' => $badge,
-                'badgeTone' => $badgeTone,
-                'iconIdentifier' => $iconIdentifier,
-                'url' => $this->buildSelfUrl($request, ['section' => $key]),
-                'current' => $activeSection === $key,
-            ];
-        };
-
+        $parameters = $this->buildModuleMenuParameters($pageUid, $newsUid);
         return [
-            $build('dashboard', 'module.section.dashboard', null, 'default', 'actions-dashboard'),
-            $build('pending', 'module.section.pending', $changedCount, 'primary', 'actions-document-save'),
-            $build('all', 'module.section.all', $totalCount, 'default', 'actions-list'),
-            $build('activity', 'module.section.activity', null, 'default', 'actions-clock'),
+            'overview' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_overview', $parameters),
+            'pending' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_pending', $parameters),
+            'all' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_records', $parameters),
+            'activity' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_activity', $parameters),
         ];
     }
 
-    private function resolveSection(string $candidate): string
+    private function resolveSection(ServerRequestInterface $request): string
     {
+        $module = $request->getAttribute('module');
+        if ($module instanceof ModuleInterface) {
+            return self::MODULE_SECTIONS[$module->getIdentifier()] ?? 'dashboard';
+        }
+
+        $candidate = Value::string($request->getQueryParams()['section'] ?? null);
         return in_array($candidate, self::SECTIONS, true) ? $candidate : 'dashboard';
     }
 
@@ -338,20 +326,58 @@ final readonly class EasyWorkspaceModuleController
         return $map;
     }
 
-    private function buildSelfUrl(ServerRequestInterface $request, array $parameters): string
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    private function buildSelfUrl(ServerRequestInterface $request, array $parameters = []): string
     {
         $query = $request->getQueryParams();
         unset($query['_action']);
+        unset($query['section']);
         $merged = array_replace($query, $parameters);
-        return (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace', $merged);
+        return (string)$this->backendUriBuilder->buildUriFromRoute($this->currentModuleIdentifier($request), $merged);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function parsedBody(ServerRequestInterface $request): array
+    {
+        $parsedBody = $request->getParsedBody();
+        return is_array($parsedBody) ? Value::stringKeyArray($parsedBody) : [];
     }
 
     private function redirectBack(ServerRequestInterface $request): ResponseInterface
     {
         $query = $request->getQueryParams();
         unset($query['_action']);
-        $url = (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace', $query);
+        unset($query['section']);
+        $url = (string)$this->backendUriBuilder->buildUriFromRoute($this->currentModuleIdentifier($request), $query);
         return new RedirectResponse($url, 303);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function buildModuleMenuParameters(int $pageUid, int $newsUid): array
+    {
+        return array_filter(
+            [
+                'id' => $pageUid,
+                'newsUid' => $newsUid,
+            ],
+            static fn(int $value): bool => $value > 0,
+        );
+    }
+
+    private function currentModuleIdentifier(ServerRequestInterface $request): string
+    {
+        $module = $request->getAttribute('module');
+        if ($module instanceof ModuleInterface && $module->getIdentifier() !== 'webcon_easy_workspace') {
+            return $module->getIdentifier();
+        }
+
+        return 'webcon_easy_workspace_overview';
     }
 
     private function enqueueFlash(string $message, ContextualFeedbackSeverity $severity, string $title = ''): void
@@ -429,6 +455,23 @@ final readonly class EasyWorkspaceModuleController
             ButtonBar::BUTTON_POSITION_LEFT,
             15,
         );
+
+        $config = $this->configurationProvider->get($pageUid);
+        if ($config['enablePreviewLink']) {
+            $previewButton = $this->componentFactory->createGenericButton()
+                ->setTag('button')
+                ->setAttributes([
+                    'type' => 'button',
+                    'data-wew-preview-trigger' => '',
+                    'data-wew-preview-page-uid' => (string)$pageUid,
+                ])
+                ->setLabel($this->localizationService->translate('preview.button.preview'))
+                ->setTitle($this->localizationService->translate('preview.button.title'))
+                ->setShowLabelText(true)
+                ->setIcon($this->iconFactory->getIcon('actions-link', IconSize::SMALL));
+
+            $moduleTemplate->addButtonToButtonBar($previewButton, ButtonBar::BUTTON_POSITION_LEFT, 16);
+        }
 
         if (!$this->isPageEditable($pageRecord)) {
             return;

@@ -7,6 +7,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
@@ -152,14 +153,25 @@ final readonly class LatestChangesService
         // versions in the feed (they're still pending changes). We
         // do exclude soft-deleted rows.
         $queryBuilder->getRestrictions()->removeAll();
+        $schema = $this->tcaSchemaFactory->get($table);
+        if (!$schema->hasField('t3ver_wsid')) {
+            return [];
+        }
+
+        $constraints = [
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+        ];
+        if ($schema->hasCapability(TcaSchemaCapability::SoftDelete)) {
+            $deletedField = $schema->getCapability(TcaSchemaCapability::SoftDelete)->getFieldName();
+            if ($deletedField !== '' && $schema->hasField($deletedField)) {
+                $constraints[] = $queryBuilder->expr()->eq($deletedField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            }
+        }
 
         $queryBuilder
             ->select('*')
             ->from($table)
-            ->where(
-                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            )
+            ->where(...$constraints)
             ->orderBy('tstamp', 'DESC')
             ->setMaxResults($limit);
 

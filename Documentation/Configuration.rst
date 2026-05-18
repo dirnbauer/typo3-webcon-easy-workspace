@@ -25,10 +25,11 @@ dropdown and the Easy Workspace backend module below the TYPO3 Workspaces
 publish module.
 
 The module and toolbar share the same service layer and configuration flags.
-The module is server-rendered with Fluid and a sticky left rail that switches
-between a dashboard, the pending list, an inventory of all records on the page
-and a recent-activity feed. Per-pane behaviour is still controlled by the same
-TSconfig keys.
+The module is server-rendered with Fluid and TYPO3 submodule routes for the
+dashboard, pending list, page-record inventory and recent-activity feed.
+Submodule behaviour is still controlled by the same TSconfig keys, and the
+doc-header preview-link button uses the same ``enablePreviewLink`` flag as
+the toolbar dropdown.
 
 ..  _configuration-options:
 
@@ -85,7 +86,8 @@ All keys live below ``options.webcon_easy_workspace``.
     :Default: 1
 
     Shows the preview-link button. The server endpoint also checks
-    this flag.
+    this flag. In the backend module the button is registered in the
+    TYPO3 doc-header button bar and handled by the module JavaScript.
 
 ..  confval:: enableFilter
 

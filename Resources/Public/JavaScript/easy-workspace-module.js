@@ -25,6 +25,7 @@ const LABELS = parseLabelMap(root);
 
 if (root) {
   init(root);
+  initDocHeader(root);
 }
 
 function parseLabelMap(container) {
@@ -38,7 +39,6 @@ function parseLabelMap(container) {
 }
 
 function init(container) {
-  const previewUrl = container.dataset.wewPreviewUrl || '';
   const diffUrl = container.dataset.wewDiffUrl || '';
 
   // Discard — one click, one confirm modal, one POST, one reload.
@@ -64,13 +64,6 @@ function init(container) {
       return;
     }
 
-    const previewBtn = event.target.closest('[data-wew-preview-trigger]');
-    if (previewBtn && previewUrl) {
-      event.preventDefault();
-      onPreview(previewBtn, previewUrl);
-      return;
-    }
-
     const deselectBtn = event.target.closest('[data-wew-deselect-all]');
     if (deselectBtn) {
       event.preventDefault();
@@ -87,6 +80,18 @@ function init(container) {
   });
 
   updateSelectionSummary(container);
+}
+
+function initDocHeader(container) {
+  const previewUrl = container.dataset.wewPreviewUrl || '';
+  document.addEventListener('click', (event) => {
+    const previewBtn = event.target.closest('[data-wew-preview-trigger]');
+    if (!previewBtn || !previewUrl) {
+      return;
+    }
+    event.preventDefault();
+    onPreview(previewBtn, previewUrl);
+  });
 }
 
 function onDiscard(btn) {

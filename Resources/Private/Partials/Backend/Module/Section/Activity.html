@@ -2,30 +2,23 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<section class="wew-section wew-section--activity" aria-labelledby="wew-section-activity-title">
-    <header class="wew-section__head">
-        <div class="wew-section__heading">
-            <p class="wew-section__eyebrow">
-                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.title" />
-            </p>
-            <h2 class="wew-section__title" id="wew-section-activity-title">
+<section class="wew-section" aria-labelledby="wew-section-activity-title">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title" id="wew-section-activity-title">
                 <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.activity" />
             </h2>
-            <p class="wew-section__subtitle">
+            <a href="{moduleUrls.activity}" class="btn btn-default btn-sm">
+                <core:icon identifier="actions-refresh" size="small" />
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.activity.refresh" />
+            </a>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
                 <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.activity.subtitle" />
             </p>
         </div>
-        <div class="wew-section__head-actions">
-            <a href="{sectionUrls.activity}" class="btn btn-default wew-section__refresh">
-                <core:icon identifier="actions-refresh" size="small" />
-                <span>
-                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.activity.refresh" />
-                </span>
-            </a>
-        </div>
-    </header>
 
-    <div class="wew-activity">
         <f:if condition="{data.latestItems -> f:count()} > 0">
             <f:then>
                 <ul class="wew-changelog wew-changelog--module" role="list">

@@ -9,7 +9,7 @@ Please open a private security advisory on the [GitHub Security tab](https://git
 A focused TYPO3 v14 security review covered authorization, CSRF, input validation, SQL injection, XSS, path traversal, TSconfig bypass and workspace boundaries across:
 
 - `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (8 backend AJAX endpoints)
-- `Classes/Controller/Backend/EasyWorkspaceModuleController.php` (backend module entry point + publish/discard POST handling)
+- `Classes/Controller/Backend/EasyWorkspaceModuleController.php` (backend module submodule routes + publish/discard POST handling)
 - `Classes/Service/PendingItemsService.php` (record collection + thumbnail / type / table resolution)
 - `Classes/Service/PublishSelectedService.php` (DataHandler publish + discard)
 - `Classes/Service/LatestChangesService.php` (cross-page recent activity feed)
@@ -18,7 +18,7 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 - `Resources/Public/JavaScript/easy-workspace-menu-element.js` (toolbar Lit element)
 - `Resources/Public/JavaScript/easy-workspace-module.js` (module enhancer: Modal / AjaxRequest / Notification glue)
 - `Resources/Private/Templates/ToolbarItems/EasyWorkspaceDropDown.html` (toolbar Fluid shell)
-- `Resources/Private/Templates/Backend/EasyWorkspace/Index.html` and `Resources/Private/Partials/Backend/Module/**` (server-rendered backend module shell, nav, sections and record rows)
+- `Resources/Private/Templates/Backend/EasyWorkspace/Index.html` and `Resources/Private/Partials/Backend/Module/**` (server-rendered backend module shell, sections and record rows)
 
 ### Findings (resolved)
 
@@ -42,8 +42,8 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 - **TSconfig and user-setting gating**: `enabled` / personal `Use Easy Workspace` / `enablePreviewLink` / `enableRevert` are enforced server-side in the matching endpoints (return `403` when off). Related-record visibility settings only hide nested rows in the UI; they do not remove related records from publish validation.
 - **Workspace boundary on items**: `PendingItemsService` consistently passes the request's workspace id from `Context` to the `WorkspaceRestriction` (with `$includeRowsForWorkspacePreview=false`) and direct inline-child lookups constrain `t3ver_wsid` to the active workspace; records from other workspaces never reach the response payload.
 - **Optional extension handling**: news support is only active when the `tx_news_domain_model_news` TCA table exists. The backend module and AJAX API do not require Solr or any search extension.
-- **Backend module actions**: the visible show-page button is built with TYPO3's `PreviewUriBuilder`, and the page-properties action uses TYPO3's contextual record edit route. Both inherit TYPO3 backend routing, route tokens, same-origin handling and page/table permission checks.
-- **Backend module form POSTs**: the publish and discard actions in the backend module are plain HTML forms posted to the module's own route. The route lives under `/typo3/module/...` and therefore passes through `BackendUserAuthenticator` and TYPO3 backend route tokens just like the AJAX endpoints. The controller validates the `table` against the same allow-list used by the AJAX endpoints, gates on `$config['enabled']` / `$config['enableRevert']`, and lets `PublishSelectedService::publish()` / `discard()` re-verify `t3ver_wsid` before any `DataHandler` cmdmap is built.
+- **Backend module actions**: the visible show-page button is built with TYPO3's `PreviewUriBuilder`, the preview-link button calls the existing route-token-protected AJAX endpoint, and the page-properties action uses TYPO3's contextual record edit route. These actions inherit TYPO3 backend routing, route tokens, same-origin handling and page/table permission checks.
+- **Backend module form POSTs**: the publish and discard actions in the backend module are plain HTML forms posted to the active Easy Workspace submodule route. The routes live under `/typo3/module/...` and therefore pass through `BackendUserAuthenticator` and TYPO3 backend route tokens just like the AJAX endpoints. The controller validates the `table` against the same allow-list used by the AJAX endpoints, gates on `$config['enabled']` / `$config['enableRevert']`, and lets `PublishSelectedService::publish()` / `discard()` re-verify `t3ver_wsid` before any `DataHandler` cmdmap is built.
 - **Stale dependency references**: the dependency guard uses `QueryBuilder::count()` with integer parameters and does not publish, discard or modify records. It only prevents missing `sys_refindex` targets from being treated as structural workspace dependencies.
 
 ### Out of scope

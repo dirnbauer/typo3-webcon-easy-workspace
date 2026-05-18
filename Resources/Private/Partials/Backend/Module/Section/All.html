@@ -1,49 +1,46 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
 
-<section class="wew-section wew-section--list" aria-labelledby="wew-section-all-title">
-    <header class="wew-section__head">
-        <div class="wew-section__heading">
-            <p class="wew-section__eyebrow">
-                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.title" />
-            </p>
-            <h2 class="wew-section__title" id="wew-section-all-title">
+<section class="wew-section" aria-labelledby="wew-section-all-title">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title" id="wew-section-all-title">
                 <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.all" />
             </h2>
-            <p class="wew-section__subtitle">
+            <span class="badge badge-secondary">{data.totalCount}</span>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
                 <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.subtitle" />
             </p>
         </div>
-        <div class="wew-section__head-meta">
-            <span class="wew-state-pill wew-state-pill--secondary wew-state-pill--large">{data.totalCount}</span>
-        </div>
-    </header>
 
-    <f:if condition="{data.totalCount} > 0">
-        <f:then>
-            <ul class="wew-list wew-list--module" role="list">
-                <f:for each="{data.itemGroups}" as="group">
-                    <f:if condition="{group.items -> f:count()} > 0">
-                        <f:if condition="{group.label}">
-                            <li class="wew-list__colheader" role="presentation">
-                                <span class="wew-list__colheader-label">{group.label}</span>
-                            </li>
+        <f:if condition="{data.totalCount} > 0">
+            <f:then>
+                <ul class="wew-list wew-list--module" role="list">
+                    <f:for each="{data.itemGroups}" as="group">
+                        <f:if condition="{group.items -> f:count()} > 0">
+                            <f:if condition="{group.label}">
+                                <li class="wew-list__colheader" role="presentation">
+                                    <span class="wew-list__colheader-label">{group.label}</span>
+                                </li>
+                            </f:if>
+                            <f:for each="{group.items}" as="item">
+                                <f:render partial="Backend/Module/RecordRow" arguments="{item: item, config: config, selectable: 0}" />
+                            </f:for>
                         </f:if>
-                        <f:for each="{group.items}" as="item">
-                            <f:render partial="Backend/Module/RecordRow" arguments="{item: item, config: config, selectable: 0}" />
-                        </f:for>
-                    </f:if>
-                </f:for>
-            </ul>
-        </f:then>
-        <f:else>
-            <f:render partial="Backend/Module/Placeholder" arguments="{
-                tone: 'empty',
-                iconIdentifier: 'actions-document-empty',
-                title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.empty\')}',
-                hint: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.emptyHint\')}'
-            }" />
-        </f:else>
-    </f:if>
+                    </f:for>
+                </ul>
+            </f:then>
+            <f:else>
+                <f:render partial="Backend/Module/Placeholder" arguments="{
+                    tone: 'empty',
+                    iconIdentifier: 'actions-document-empty',
+                    title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.empty\')}',
+                    hint: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.emptyHint\')}'
+                }" />
+            </f:else>
+        </f:if>
+    </div>
 </section>
 
 </html>

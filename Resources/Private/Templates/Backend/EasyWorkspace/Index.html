@@ -18,21 +18,18 @@
                  data-wew-preview-url="{previewLinkUrl}"
                  data-wew-diff-url="{diffUrl}"
                  data-wew-labels="{jsLabelsJson -> f:format.htmlspecialchars()}">
-                <f:render partial="Backend/Module/Nav" arguments="{sections: sections, pageUid: pageUid, newsUid: newsUid, formAction: formAction, data: data, hasContext: hasContext, config: config, section: section}" />
-                <main class="wew-app__main">
-                    <f:if condition="{hasContext}">
-                        <f:then>
-                            <f:render partial="Backend/Module/Section/{section -> f:format.case(mode: 'capital')}" arguments="{_all}" />
-                        </f:then>
-                        <f:else>
-                            <f:render partial="Backend/Module/Placeholder" arguments="{
-                                tone: 'info',
-                                iconIdentifier: 'apps-pagetree-page-default',
-                                title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.noContext\')}'
-                            }" />
-                        </f:else>
-                    </f:if>
-                </main>
+                <f:if condition="{hasContext}">
+                    <f:then>
+                        <f:render partial="Backend/Module/Section/{section -> f:format.case(mode: 'capital')}" arguments="{_all}" />
+                    </f:then>
+                    <f:else>
+                        <f:render partial="Backend/Module/Placeholder" arguments="{
+                            tone: 'info',
+                            iconIdentifier: 'apps-pagetree-page-default',
+                            title: '{f:translate(key: \'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.noContext\')}'
+                        }" />
+                    </f:else>
+                </f:if>
             </div>
         </f:then>
         <f:else>
