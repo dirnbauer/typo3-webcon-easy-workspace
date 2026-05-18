@@ -72,7 +72,7 @@
             </div>
         </div>
 
-        <form method="post" action="{formAction}" data-wew-publish-form="">
+        <form method="post" action="{formAction}" data-wew-publish-form="" data-multi-record-selection-identifier="wew-pending-selection">
             <input type="hidden" name="_action" value="publish" />
 
             <f:if condition="{data.changedCount} > 0">
@@ -81,7 +81,38 @@
                         <table class="table table-striped table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th class="text-center" scope="col"></th>
+                                    <th class="col-checkbox" scope="col">
+                                        <div class="dropdown">
+                                            <button type="button"
+                                                    class="dropdown-toggle dropdown-toggle-link t3js-multi-record-selection-check-actions-toggle"
+                                                    data-bs-toggle="dropdown"
+                                                    data-bs-boundary="window"
+                                                    aria-expanded="false"
+                                                    aria-label="{f:translate(key: 'LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.openSelectionOptions')}">
+                                                <core:icon identifier="actions-selection" size="small" />
+                                            </button>
+                                            <ul class="dropdown-menu t3js-multi-record-selection-check-actions">
+                                                <li>
+                                                    <button type="button" class="dropdown-item" disabled="disabled" data-multi-record-selection-check-action="check-all">
+                                                        <core:icon identifier="actions-selection-elements-all" size="small" />
+                                                        <f:translate key="LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.checkAll" />
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item" disabled="disabled" data-multi-record-selection-check-action="check-none">
+                                                        <core:icon identifier="actions-selection-elements-none" size="small" />
+                                                        <f:translate key="LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.uncheckAll" />
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item" disabled="disabled" data-multi-record-selection-check-action="toggle">
+                                                        <core:icon identifier="actions-selection-elements-invert" size="small" />
+                                                        <f:translate key="LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:labels.toggleSelection" />
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </th>
                                     <th scope="col">
                                         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.column.record" />
                                     </th>

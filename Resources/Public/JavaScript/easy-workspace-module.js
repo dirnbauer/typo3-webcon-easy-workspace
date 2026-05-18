@@ -19,6 +19,7 @@ import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
 import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPositions } from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
+import '@typo3/backend/multi-record-selection.js';
 
 const root = document.querySelector('[data-wew-module]');
 const LABELS = parseLabelMap(root);
@@ -210,9 +211,17 @@ async function onPreview(btn, endpoint) {
 
 function onDeselectAll(container) {
   container.querySelectorAll('[data-wew-row-check]').forEach((input) => {
-    input.checked = false;
+    setRowCheckState(input, false);
   });
   updateSelectionSummary(container);
+}
+
+function setRowCheckState(input, checked) {
+  if (input.checked === checked) {
+    return;
+  }
+  input.checked = checked;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function initRelatedChangeControls(container) {

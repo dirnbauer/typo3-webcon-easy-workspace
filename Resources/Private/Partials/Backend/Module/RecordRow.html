@@ -12,16 +12,18 @@
     </f:if>
 </f:if>
 
-<tr>
-    <td class="text-center">
+<tr data-multi-record-selection-element="" data-multi-record-selection-identifier="wew-pending-selection">
+    <td class="col-checkbox">
         <f:if condition="{item.isChanged} && {selectable}">
-            <input type="checkbox"
-                   name="selections[]"
-                   value="{item.table}:{item.workspaceUid}"
-                   id="wew-{item.table}-{item.workspaceUid}"
-                   class="form-check-input"
-                   data-wew-row-check=""
-                   checked="checked" />
+            <span class="form-check form-check-type-toggle">
+                <input type="checkbox"
+                       name="selections[]"
+                       value="{item.table}:{item.workspaceUid}"
+                       id="wew-{item.table}-{item.workspaceUid}"
+                       class="form-check-input t3js-multi-record-selection-check"
+                       data-wew-row-check=""
+                       checked="checked" />
+            </span>
         </f:if>
     </td>
     <td>
