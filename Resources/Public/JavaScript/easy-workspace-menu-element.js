@@ -1724,6 +1724,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
       case 'pages':                       return this._label('table.pages');
       case 'tt_content':                  return this._label('table.tt_content');
       case 'tx_news_domain_model_news':   return this._label('table.tx_news_domain_model_news');
+      case 'sys_file_metadata':           return this._label('table.sys_file_metadata');
       case 'tt_address':                  return this._label('table.tt_address');
       default:                            return table;
     }

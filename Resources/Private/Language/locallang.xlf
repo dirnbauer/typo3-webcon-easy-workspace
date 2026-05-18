@@ -43,6 +43,7 @@
     <unit id="table.pages"><segment><source>Page</source></segment></unit>
     <unit id="table.tt_content"><segment><source>Page Content</source></segment></unit>
     <unit id="table.tx_news_domain_model_news"><segment><source>News</source></segment></unit>
+    <unit id="table.sys_file_metadata"><segment><source>File Metadata</source></segment></unit>
     <unit id="table.tt_address"><segment><source>Address</source></segment></unit>
     <unit id="diff.viewHistory"><segment><source>History</source></segment></unit>
     <unit id="diff.title.newWithChanges"><segment><source>View changed fields and edit history for this new workspace record</source></segment></unit>

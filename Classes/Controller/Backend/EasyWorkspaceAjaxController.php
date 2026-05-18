@@ -38,6 +38,7 @@ final readonly class EasyWorkspaceAjaxController
         'pages',
         'tt_content',
         'tx_news_domain_model_news',
+        'sys_file_metadata',
     ];
 
     public function __construct(
@@ -404,7 +405,7 @@ final readonly class EasyWorkspaceAjaxController
         if (in_array($table, self::ALLOWED_TABLES, true)) {
             return true;
         }
-        if ($table === 'sys_file_reference') {
+        if ($table === 'sys_file_metadata' || $table === 'sys_file_reference') {
             $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
             return !empty($ctrl['versioningWS']);
         }

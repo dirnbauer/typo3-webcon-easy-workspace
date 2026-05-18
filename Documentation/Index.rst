@@ -53,6 +53,10 @@ The dropdown is scoped to three things:
 * the active backend workspace,
 * the selected backend page language.
 
+Standalone file metadata is the exception to the page scope: pending
+``sys_file_metadata`` rows from the active workspace are appended because they
+have no page/content parent but are still publishable workspace records.
+
 The toolbar JavaScript detects the page UID from TYPO3's module state
 and falls back to the current URL's ``id`` parameter. For news records it
 also checks the backend edit URL pattern
@@ -75,7 +79,7 @@ Easy Workspace reads ``ctrl.languageField`` first and only falls back to
 ``sys_language_uid`` when needed.
 
 When a language UID is known, ``PendingItemsService`` adds that language
-constraint to every workspace-aware listing query:
+constraint to page-bound workspace-aware listing queries:
 
 * page content records,
 * inline child records such as Content Blocks collection items,
@@ -89,6 +93,11 @@ built. The service uses ``ctrl.transOrigPointerField`` and falls back to
 If no language can be detected, no language constraint is added. This is
 intentional: non-page backend routes and custom modules should not lose
 all records just because they do not expose a language selector.
+
+Standalone ``sys_file_metadata`` rows are not filtered by the selected page
+language. TYPO3's Workspaces module also shows default-language file metadata
+while a page language is selected, and these root-level records would otherwise
+disappear from the publish selection.
 
 ..  _duplicate-suppression:
 
@@ -135,6 +144,11 @@ Related child changes are included in the toolbar count, the default
 selection, publish operations and per-row discard operations. Image rows use
 TYPO3's file processing API to return small preview images for the dropdown
 instead of exposing the original file as the list thumbnail.
+
+Standalone file metadata records are also included when they are pending in the
+active workspace. TYPO3 does not workspace-version the physical ``sys_file``
+row, so Easy Workspace publishes the associated ``sys_file_metadata`` version
+and displays it with the actual file name and preview thumbnail.
 
 ..  _locate-icon:
 

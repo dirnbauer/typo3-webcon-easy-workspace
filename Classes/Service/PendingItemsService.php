@@ -42,6 +42,18 @@ final readonly class PendingItemsService
     public const MODE_CHANGED = 'changed';
     public const MODE_ALL = 'all';
 
+    /**
+     * Root-level workspace records that have no page/content parent but
+     * still represent publishable editor work. The physical sys_file row is
+     * not workspace-versioned; sys_file_metadata is TYPO3's publishable FAL
+     * record.
+     *
+     * @var list<string>
+     */
+    private const STANDALONE_WORKSPACE_TABLES = [
+        'sys_file_metadata',
+    ];
+
     public function __construct(
         private ConnectionPool $connectionPool,
         private TcaSchemaFactory $tcaSchemaFactory,
@@ -141,6 +153,9 @@ final readonly class PendingItemsService
                 }
             }
         }
+        if (count($items) < $maxItems) {
+            $items = $this->withStandaloneWorkspaceItems($items, $workspaceId, $config, $maxItems);
+        }
 
         $items = $this->deduplicateItems($items);
 
@@ -191,6 +206,9 @@ final readonly class PendingItemsService
                 }
                 if (count($items) >= $maxItems) break;
             }
+        }
+        if (count($items) < $maxItems) {
+            $items = $this->withStandaloneWorkspaceItems($items, $workspaceId, $config, $maxItems);
         }
 
         $items = $this->deduplicateItems($items);
@@ -251,6 +269,10 @@ final readonly class PendingItemsService
             );
         }
 
+        if (!$hasChanges) {
+            $hasChanges = $this->hasStandaloneWorkspaceChanges($workspaceId);
+        }
+
         return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'hasChanges' => $hasChanges];
     }
 
@@ -276,6 +298,10 @@ final readonly class PendingItemsService
                 $workspaceId,
                 $languageUid,
             );
+        }
+
+        if (!$hasChanges) {
+            $hasChanges = $this->hasStandaloneWorkspaceChanges($workspaceId);
         }
 
         return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'hasChanges' => $hasChanges];
@@ -449,6 +475,32 @@ final readonly class PendingItemsService
                     $items[] = $item;
                 } else {
                     $items[$index] = $item;
+                }
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     * @param array<string, mixed> $config
+     * @return list<array<string, mixed>>
+     */
+    private function withStandaloneWorkspaceItems(array $items, int $workspaceId, array $config, int $maxItems): array
+    {
+        if ($workspaceId <= 0 || count($items) >= $maxItems) {
+            return $items;
+        }
+
+        foreach (self::STANDALONE_WORKSPACE_TABLES as $table) {
+            foreach ($this->listStandaloneWorkspaceRows($table, $workspaceId, $maxItems - count($items)) as $row) {
+                $item = $this->buildItem($table, $row, isPrimary: false, config: $config);
+                if ($item instanceof PendingItem) {
+                    $items[] = $item->toArray();
+                }
+                if (count($items) >= $maxItems) {
+                    break 2;
                 }
             }
         }
@@ -1087,6 +1139,19 @@ final readonly class PendingItemsService
         return false;
     }
 
+    private function hasStandaloneWorkspaceChanges(int $workspaceId): bool
+    {
+        if ($workspaceId <= 0) {
+            return false;
+        }
+        foreach (self::STANDALONE_WORKSPACE_TABLES as $table) {
+            if ($this->listStandaloneWorkspaceRows($table, $workspaceId, 1) !== []) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Reads the title field from sys_workspace; falls back to a
      * generic label for the live workspace or unknown ids.
@@ -1574,6 +1639,39 @@ final readonly class PendingItemsService
     }
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    private function listStandaloneWorkspaceRows(string $table, int $workspaceId, int $limit): array
+    {
+        if ($workspaceId <= 0 || $limit <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return [];
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+
+        $result = $queryBuilder
+            ->select('*')
+            ->from($table)
+            ->where(...$constraints)
+            ->orderBy(TcaUtility::hasColumn($table, 'tstamp') ? 'tstamp' : 'uid', 'DESC')
+            ->setMaxResults($limit)
+            ->executeQuery();
+
+        $rows = [];
+        while ($row = $result->fetchAssociative()) {
+            $rows[] = Value::stringKeyArray($row);
+        }
+        return $rows;
+    }
+
+    /**
      * @param array<string, mixed> $config
      */
     private function resolveRecordItem(string $table, int $liveUid, int $workspaceId, bool $isPrimary, array $config = []): ?PendingItem
@@ -1852,6 +1950,12 @@ final readonly class PendingItemsService
      */
     private function resolveTitle(string $table, array $row): string
     {
+        if ($table === 'sys_file_metadata') {
+            $fileName = $this->resolveFileMetadataTitle($row);
+            if ($fileName !== '') {
+                return $fileName;
+            }
+        }
         if ($table === 'sys_file_reference') {
             $fileName = $this->resolveFileReferenceTitle($row);
             if ($fileName !== '') {
@@ -1873,6 +1977,22 @@ final readonly class PendingItemsService
             return $typeLabel . ' · #' . Value::int($row['uid'] ?? null);
         }
         return $table . ' #' . Value::int($row['uid'] ?? null);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function resolveFileMetadataTitle(array $row): string
+    {
+        $fileUid = Value::int($row['file'] ?? null);
+        if ($fileUid <= 0) {
+            return '';
+        }
+        try {
+            return $this->resourceFactory->getFileObject($fileUid)->getName();
+        } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
+            return '';
+        }
     }
 
     /**
@@ -1949,6 +2069,11 @@ final readonly class PendingItemsService
 
     private function resolveThumbnailUrl(string $table, int $workspaceUid): ?string
     {
+        if ($table === 'sys_file_metadata') {
+            $row = BackendUtility::getRecord('sys_file_metadata', $workspaceUid, 'file');
+            $fileUid = is_array($row) ? Value::int($row['file'] ?? null) : 0;
+            return $fileUid > 0 ? $this->referenceToUrl($fileUid) : null;
+        }
         if ($table === 'sys_file_reference') {
             $row = BackendUtility::getRecord('sys_file_reference', $workspaceUid, 'uid_local');
             $fileUid = is_array($row) ? Value::int($row['uid_local'] ?? null) : 0;

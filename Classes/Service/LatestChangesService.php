@@ -55,6 +55,7 @@ final readonly class LatestChangesService
         'pages',
         'tt_content',
         'tx_news_domain_model_news',
+        'sys_file_metadata',
     ];
 
     public function __construct(

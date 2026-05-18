@@ -10,8 +10,9 @@ When an editor opens the dropdown while editing a page, they immediately see:
 - every changed file reference attached to the page or a content element
 - every changed news record stored on that page
 - for each news, every content element linked via `tx_news_related_news`
+- standalone file metadata records (`sys_file_metadata`) pending in the active workspace
 
-Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, and changed `sys_file_reference` children). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
+Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
 
 ## Requirements
 
@@ -73,6 +74,12 @@ The dropdown is intentionally scoped to the editor's current backend context:
 the selected page or the currently edited news record, the active workspace,
 and the currently chosen backend page language.
 
+Standalone file metadata is the one deliberate global addition: TYPO3 stores
+uploaded files in live FAL immediately, but the publishable workspace record is
+the associated `sys_file_metadata` row. These rows have no page/content parent,
+so Easy Workspace appends pending metadata records from the active workspace to
+the publish list and renders them with the underlying file name and thumbnail.
+
 ### One row per workspace record
 
 TYPO3 stores workspace versions as extra rows in the same table as the live
@@ -116,13 +123,18 @@ state and, as a fallback, from visible backend/iframe URL parameters such as
 `language`, `sys_language_uid` or `L`. That value is sent to the
 `webcon_easy_workspace_items` AJAX endpoint as `languageUid`.
 
-On the PHP side, `PendingItemsService` applies the language filter to every
-workspace-aware table that exposes a TCA language field (`ctrl.languageField`,
+On the PHP side, `PendingItemsService` applies the language filter to page-bound
+workspace-aware tables that expose a TCA language field (`ctrl.languageField`,
 falling back to `sys_language_uid`). This affects page content, inline child
 records and news bundles. Translated page and news records are resolved through
 their TCA translation parent field (`ctrl.transOrigPointerField`, falling back
 to `l10n_parent`) before the item is built, so page/news property changes follow
 the same selected-language rule as content elements.
+
+Standalone `sys_file_metadata` rows are intentionally not hidden by the selected
+page language, because TYPO3's file metadata changes are root-level workspace
+records and the Workspaces module shows default-language file metadata even when
+a page language is selected.
 
 If no language can be detected, the request behaves like before and does not add
 a language constraint. That keeps non-page modules and unusual backend routes

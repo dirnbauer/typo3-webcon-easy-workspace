@@ -43,6 +43,7 @@
     <unit id="table.pages"><segment><source>Page</source><target state="translated">Seite</target></segment></unit>
     <unit id="table.tt_content"><segment><source>Page Content</source><target state="translated">Seiteninhalt</target></segment></unit>
     <unit id="table.tx_news_domain_model_news"><segment><source>News</source><target state="translated">News</target></segment></unit>
+    <unit id="table.sys_file_metadata"><segment><source>File Metadata</source><target state="translated">Dateimetadaten</target></segment></unit>
     <unit id="table.tt_address"><segment><source>Address</source><target state="translated">Adresse</target></segment></unit>
     <unit id="diff.viewHistory"><segment><source>History</source><target state="translated">Historie</target></segment></unit>
     <unit id="diff.title.newWithChanges"><segment><source>View changed fields and edit history for this new workspace record</source><target state="translated">Geänderte Felder und Bearbeitungshistorie für diesen neuen Workspace-Datensatz anzeigen</target></segment></unit>

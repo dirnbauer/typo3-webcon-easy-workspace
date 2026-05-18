@@ -46,6 +46,7 @@ final readonly class PublishSelectedService
         'pages',
         'tx_news_domain_model_news',
         'tt_content',
+        'sys_file_metadata',
     ];
 
     /**
@@ -211,7 +212,7 @@ final readonly class PublishSelectedService
         if (in_array($table, self::TABLE_ORDER, true)) {
             return true;
         }
-        if ($table === 'sys_file_reference') {
+        if ($table === 'sys_file_metadata' || $table === 'sys_file_reference') {
             $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
             return !empty($ctrl['versioningWS']);
         }

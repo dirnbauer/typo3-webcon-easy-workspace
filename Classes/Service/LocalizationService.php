@@ -55,6 +55,7 @@ final readonly class LocalizationService
         'table.pages',
         'table.tt_content',
         'table.tx_news_domain_model_news',
+        'table.sys_file_metadata',
         'table.tt_address',
         'diff.viewHistory',
         'diff.title.newWithChanges',
