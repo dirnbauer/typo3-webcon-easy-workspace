@@ -10,7 +10,7 @@
 <f:variable name="childBadgeTone" value="{child.badge}" />
 <f:if condition="{childBadgeTone} == ''"><f:variable name="childBadgeTone" value="info" /></f:if>
 
-<li class="list-group-item d-flex align-items-center gap-2">
+<li class="list-group-item d-flex align-items-start gap-2">
     <f:if condition="{child.thumbnailUrl}">
         <span>
             <img class="img-thumbnail" src="{child.thumbnailUrl}" width="36" height="28" alt="" loading="lazy" />
@@ -22,7 +22,7 @@
             {childTableLabel}<f:if condition="{child.typeLabel}"> · {child.typeLabel}</f:if>
         </span>
     </span>
-    <span class="badge badge-{childBadgeTone}">{child.kindLabel}</span>
+    <span class="badge badge-{childBadgeTone} flex-shrink-0">{child.kindLabel}</span>
 </li>
 
 </html>

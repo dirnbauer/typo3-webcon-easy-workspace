@@ -1,15 +1,29 @@
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
 
 <section aria-labelledby="wew-section-all-title">
     <h2 class="visually-hidden" id="wew-section-all-title">
         <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.all" />
     </h2>
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.all" />
-            </h3>
-            <span class="badge badge-secondary">{data.totalCount}</span>
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="card-header-body">
+                <h3 class="card-title">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.all" />
+                </h3>
+                <span class="card-subtitle">{data.totalCount}</span>
+            </div>
+            <div class="btn-group" role="group" aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedChanges.toggleAll')}">
+                <button type="button" class="btn btn-default btn-sm" data-wew-related-open-all="">
+                    <core:icon identifier="actions-chevron-expand" size="small" />
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedChanges.showAll" />
+                </button>
+                <button type="button" class="btn btn-default btn-sm" data-wew-related-close-all="">
+                    <core:icon identifier="actions-chevron-contract" size="small" />
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedChanges.hideAll" />
+                </button>
+            </div>
         </div>
 
         <f:if condition="{data.totalCount} > 0">

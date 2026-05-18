@@ -70,6 +70,19 @@ function init(container) {
       onDeselectAll(container);
       return;
     }
+
+    const relatedOpenAllBtn = event.target.closest('[data-wew-related-open-all]');
+    if (relatedOpenAllBtn) {
+      event.preventDefault();
+      setRelatedChangesOpen(relatedOpenAllBtn, true);
+      return;
+    }
+
+    const relatedCloseAllBtn = event.target.closest('[data-wew-related-close-all]');
+    if (relatedCloseAllBtn) {
+      event.preventDefault();
+      setRelatedChangesOpen(relatedCloseAllBtn, false);
+    }
   });
 
   // Selection counter updates as the editor (de)checks rows.
@@ -80,6 +93,7 @@ function init(container) {
   });
 
   updateSelectionSummary(container);
+  initRelatedChangeControls(container);
 }
 
 function initDocHeader(container) {
@@ -199,6 +213,38 @@ function onDeselectAll(container) {
     input.checked = false;
   });
   updateSelectionSummary(container);
+}
+
+function initRelatedChangeControls(container) {
+  container.querySelectorAll('[data-wew-related-open-all], [data-wew-related-close-all]').forEach((button) => {
+    updateRelatedChangeControls(button.closest('.card') || container);
+  });
+
+  container.addEventListener('toggle', (event) => {
+    if (!event.target.closest?.('[data-wew-related-changes]')) {
+      return;
+    }
+    updateRelatedChangeControls(event.target.closest('.card') || container);
+  }, true);
+}
+
+function setRelatedChangesOpen(button, open) {
+  const scope = button.closest('.card') || button.closest('[data-wew-module]') || document;
+  scope.querySelectorAll('[data-wew-related-changes]').forEach((details) => {
+    details.open = open;
+  });
+  updateRelatedChangeControls(scope);
+}
+
+function updateRelatedChangeControls(scope) {
+  const relatedChanges = Array.from(scope.querySelectorAll('[data-wew-related-changes]'));
+  const openCount = relatedChanges.filter((details) => details.open).length;
+  scope.querySelectorAll('[data-wew-related-open-all]').forEach((button) => {
+    button.disabled = relatedChanges.length === 0 || openCount === relatedChanges.length;
+  });
+  scope.querySelectorAll('[data-wew-related-close-all]').forEach((button) => {
+    button.disabled = relatedChanges.length === 0 || openCount === 0;
+  });
 }
 
 function updateSelectionSummary(container) {

@@ -52,12 +52,19 @@
                 </f:if>
                 <f:if condition="{config.showSubelementsInModule} && {item.childChanges -> f:count()} > 0">
                     <f:variable name="childCount" value="{item.childChanges -> f:count()}" />
-                    <details class="mt-2">
-                        <summary class="small">
+                    <details class="mt-2" data-wew-related-changes="">
+                        <summary class="small fw-semibold">
+                            <span class="badge badge-secondary">{childCount}</span>
                             <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedRecords"
                                          arguments="{count: childCount}" />
                         </summary>
-                        <ul class="list-group list-group-flush mt-2">
+                        <ul class="list-group mt-2">
+                            <li class="list-group-item">
+                                <span class="d-block text-muted small">
+                                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedChanges.belongsTo" />
+                                </span>
+                                <span class="d-block fw-semibold text-truncate" title="{item.title}">{item.title}</span>
+                            </li>
                             <f:for each="{item.childChanges}" as="child">
                                 <f:render partial="Backend/Module/ChildChange" arguments="{child: child}" />
                             </f:for>

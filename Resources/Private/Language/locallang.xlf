@@ -76,7 +76,11 @@
     <unit id="module.column.record"><segment><source>Record</source></segment></unit>
     <unit id="module.column.state"><segment><source>Changes</source></segment></unit>
     <unit id="module.column.actions"><segment><source>Actions</source></segment></unit>
-    <unit id="module.relatedRecords"><segment><source>{count, plural, one {# related record} other {# related records}}</source></segment></unit>
+    <unit id="module.relatedRecords"><segment><source>{count, plural, one {related change} other {related changes}}</source></segment></unit>
+    <unit id="module.relatedChanges.belongsTo"><segment><source>Belongs to record</source></segment></unit>
+    <unit id="module.relatedChanges.toggleAll"><segment><source>Related changes</source></segment></unit>
+    <unit id="module.relatedChanges.showAll"><segment><source>Show related changes</source></segment></unit>
+    <unit id="module.relatedChanges.hideAll"><segment><source>Hide related changes</source></segment></unit>
     <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source></segment></unit>
     <unit id="module.publishBar.deselect"><segment><source>Deselect</source></segment></unit>
     <unit id="module.publishBar.unselected"><segment><source>Select changed records to publish them.</source></segment></unit>
