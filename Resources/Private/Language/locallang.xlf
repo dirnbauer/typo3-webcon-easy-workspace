@@ -74,7 +74,7 @@
     <unit id="module.activity.refresh"><segment><source>Refresh</source></segment></unit>
     <unit id="module.activity.refreshing"><segment><source>Refreshing...</source></segment></unit>
     <unit id="module.column.record"><segment><source>Record</source></segment></unit>
-    <unit id="module.column.state"><segment><source>State</source></segment></unit>
+    <unit id="module.column.state"><segment><source>Changes</source></segment></unit>
     <unit id="module.column.actions"><segment><source>Actions</source></segment></unit>
     <unit id="module.relatedRecords"><segment><source>{count, plural, one {# related record} other {# related records}}</source></segment></unit>
     <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source></segment></unit>

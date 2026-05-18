@@ -74,7 +74,7 @@
     <unit id="module.activity.refresh"><segment><source>Refresh</source><target state="translated">Aktualisieren</target></segment></unit>
     <unit id="module.activity.refreshing"><segment><source>Refreshing...</source><target state="translated">Wird aktualisiert...</target></segment></unit>
     <unit id="module.column.record"><segment><source>Record</source><target state="translated">Datensatz</target></segment></unit>
-    <unit id="module.column.state"><segment><source>State</source><target state="translated">Status</target></segment></unit>
+    <unit id="module.column.state"><segment><source>Changes</source><target state="translated">Änderungen</target></segment></unit>
     <unit id="module.column.actions"><segment><source>Actions</source><target state="translated">Aktionen</target></segment></unit>
     <unit id="module.relatedRecords"><segment><source>{count, plural, one {# related record} other {# related records}}</source><target state="translated">{count, plural, one {# zugehöriger Datensatz} other {# zugehörige Datensätze}}</target></segment></unit>
     <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source><target state="translated">{count, plural, one {# Datensatz ausgewählt} other {# Datensätze ausgewählt}}</target></segment></unit>
