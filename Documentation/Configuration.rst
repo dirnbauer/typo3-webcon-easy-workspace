@@ -27,7 +27,10 @@ publish module.
 The module and toolbar share the same service layer and configuration flags.
 The module is server-rendered with Fluid and TYPO3 submodule routes for the
 dashboard, pending list, page-record inventory and recent-activity feed.
-Submodule behaviour is still controlled by the same TSconfig keys, and the
+Submodule behaviour is still controlled by the same TSconfig keys. The
+pending submodule is intentionally optimized as a dense publish queue:
+related child records are optional detail disclosures, while publish
+eligibility is still decided by the server-side record collection. The
 doc-header preview-link button uses the same ``enablePreviewLink`` flag as
 the toolbar dropdown.
 
@@ -70,8 +73,9 @@ All keys live below ``options.webcon_easy_workspace``.
     :Default: 1
 
     Default for showing related child records in the Easy Workspace
-    backend module. Disabling this only hides the detail rows; publishing
-    still includes the related records collected by the server.
+    backend module. Disabling this removes the related-record detail
+    disclosures from the dense publish queue; publishing still includes the
+    related records collected by the server.
 
 ..  confval:: enableWorkspaceChip
 

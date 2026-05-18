@@ -34,7 +34,7 @@ Features
 * Toolbar dropdown for page, content element and news workspace records.
 * Backend module below the TYPO3 Workspaces publish module with visible
   page breadcrumbs, TYPO3 submodules, show-page, preview-link and
-  edit-page-property actions, a title area and a wide review layout.
+  edit-page-property actions.
 * One-click publish through TYPO3's ``DataHandler`` publish cmdmap.
 * Per-record discard through TYPO3 14's ``discard`` command.
 * Preview-link generation through
@@ -69,32 +69,32 @@ registers Easy Workspace as a parent module with four submodules:
 
 * **Dashboard** — a TYPO3 card with the active workspace, pending count,
   total page count and quick jumps to the other submodules.
-* **Pending changes** — the changed-only list with thumbnails, state badges,
-  history, discard, locate / edit and subelement rows. The sticky publish
-  bar submits the selection as a standard ``<form method="post">``; the
-  controller publishes through ``DataHandler`` and redirects back with a
+* **Pending changes** — the changed-only publish queue. Rows stay dense and
+  one-dimensional: select, scan title/type/state, then use the right-aligned
+  history, edit and discard actions when needed. Related child records are
+  hidden behind a disclosure instead of being spread across the list.
+  Publishing submits the selection as a standard ``<form method="post">``;
+  the controller publishes through ``DataHandler`` and redirects back with a
   TYPO3 flash message.
 * **All records** — every record on the page (read-only inventory view).
 * **Recent activity** — cross-page latest workspace changes with field-level
   diffs, rendered server-side without an accordion.
 
-Navigation between submodules uses TYPO3 backend module routes such as
-``webcon_easy_workspace_pending`` and preserves the current page/news
-context through route parameters. A small companion JavaScript file
-(``easy-workspace-module.js``) only wires the rendered DOM and doc-header
-buttons into TYPO3 Core's ``Modal``, ``AjaxRequest`` and
-``Notification`` modules for the discard, edit, diff and preview-link
-interactions — no client-side rendering.
+Navigation between submodules uses TYPO3's native module selector and backend
+module routes such as ``webcon_easy_workspace_pending``. The current page/news
+context is preserved through route parameters. A small companion JavaScript
+file (``easy-workspace-module.js``) only wires the rendered DOM and doc-header
+buttons into TYPO3 Core's ``Modal``, ``AjaxRequest`` and ``Notification``
+modules for the discard, edit, diff and preview-link interactions — no
+client-side rendering.
 
 The module does not depend on Apache Solr or any third-party indexing
 extension. Optional integrations, such as EXT:news and Visual Editor, are
 detected through TYPO3 extension and TCA state.
 
-Changed rows keep the row actions stable: the **History** button uses a
-neutral component border in every row, while the compact change badges use
-TYPO3's badge/state border tokens for their specific change type. This keeps
-the action visually more important than the metadata badges without encoding
-the row's change type twice.
+The pending list is a bulk-action screen first and a review screen second.
+The main path is selecting records and publishing them; deeper inspection
+stays available through row actions and expandable related-record details.
 
 Record scope
 ============
