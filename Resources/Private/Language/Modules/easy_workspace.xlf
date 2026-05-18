@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file source-language="en" datatype="plaintext" original="EXT:webcon_easy_workspace/Resources/Private/Language/Modules/easy_workspace.xlf">
+    <header/>
+    <body>
+      <trans-unit id="mlang_tabs_tab">
+        <source>Easy Workspace</source>
+      </trans-unit>
+      <trans-unit id="mlang_labels_tabdescr">
+        <source>Review and publish the current page's workspace changes with their related records.</source>
+      </trans-unit>
+      <trans-unit id="mlang_labels_tablabel">
+        <source>Publish page-scoped workspace changes</source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -1,0 +1,10 @@
+<f:if condition="{canRenderEasyWorkspace}">
+    <f:then>
+        <webcon-easy-workspace-menu variant="module" config="{configJson -> f:format.htmlspecialchars()}"></webcon-easy-workspace-menu>
+    </f:then>
+    <f:else>
+        <div class="alert alert-info" role="status">
+            {disabledMessage}
+        </div>
+    </f:else>
+</f:if>

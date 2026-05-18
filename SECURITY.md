@@ -8,13 +8,15 @@ Please open a private security advisory on the [GitHub Security tab](https://git
 
 A focused TYPO3 v14 security review covered authorization, CSRF, input validation, SQL injection, XSS, path traversal, TSconfig bypass and workspace boundaries across:
 
-- `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (7 backend AJAX endpoints)
+- `Classes/Controller/Backend/EasyWorkspaceAjaxController.php` (8 backend AJAX endpoints)
+- `Classes/Controller/Backend/EasyWorkspaceModuleController.php` (backend module entry point)
 - `Classes/Service/PendingItemsService.php` (record collection + thumbnail / type / table resolution)
 - `Classes/Service/PublishSelectedService.php` (DataHandler publish + discard)
 - `Classes/EventListener/IgnoreMissingWorkspaceDependencyReference.php` (stale workspace dependency references)
-- `Classes/Configuration/ConfigurationProvider.php` (TSconfig)
+- `Classes/Configuration/ConfigurationProvider.php` (TSconfig + user settings)
 - `Resources/Public/JavaScript/easy-workspace-menu-element.js` (Lit element)
 - `Resources/Private/Templates/ToolbarItems/EasyWorkspaceDropDown.html` (Fluid shell)
+- `Resources/Private/Templates/Backend/EasyWorkspace/Index.html` (backend module shell)
 
 ### Findings (resolved)
 
@@ -35,8 +37,9 @@ A focused TYPO3 v14 security review covered authorization, CSRF, input validatio
 - **SQL injection**: every `WHERE` clause uses `QueryBuilder::createNamedParameter()` with explicit `Connection::PARAM_INT` for ids. `orderBy()` columns are literals (`sorting`, `datetime`, `uid`, `sorting_foreign`) — no user input.
 - **XSS**: the dropdown shell escapes the JSON config via `f:format.htmlspecialchars()`; the Lit element renders all user-facing strings (titles, type labels, badges) through `html\`…\`` templates which Lit auto-escapes. Thumbnail URLs come from TYPO3's `ResourceFactory` and file processing API (server-resolved), not from a request parameter.
 - **Path traversal**: the thumbnail lookup uses `ResourceFactory::getFileObject(int)` with a uid from `sys_file_reference`, then TYPO3's `ProcessedFile` handling — never a path string.
-- **TSconfig gating**: `enabled` / `enablePreviewLink` / `enableRevert` are enforced server-side in the matching endpoints (return `403` when off).
+- **TSconfig and user-setting gating**: `enabled` / personal `Use Easy Workspace` / `enablePreviewLink` / `enableRevert` are enforced server-side in the matching endpoints (return `403` when off). Related-record visibility settings only hide nested rows in the UI; they do not remove related records from publish validation.
 - **Workspace boundary on items**: `PendingItemsService` consistently passes the request's workspace id from `Context` to the `WorkspaceRestriction` (with `$includeRowsForWorkspacePreview=false`) and direct inline-child lookups constrain `t3ver_wsid` to the active workspace; records from other workspaces never reach the response payload.
+- **Optional extension handling**: news support is only active when the `tx_news_domain_model_news` TCA table exists. The backend module and AJAX API do not require Solr or any search extension.
 - **Stale dependency references**: the dependency guard uses `QueryBuilder::count()` with integer parameters and does not publish, discard or modify records. It only prevents missing `sys_refindex` targets from being treated as structural workspace dependencies.
 
 ### Out of scope

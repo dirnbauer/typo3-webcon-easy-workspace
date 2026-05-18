@@ -5,7 +5,8 @@ Easy Workspace
 ==============
 
 Easy Workspace 14.0.0 is a TYPO3 14.3 LTS backend extension for
-publishing workspace changes from the backend toolbar.
+publishing workspace changes from the backend toolbar and from a full
+backend module.
 
 The extension is v14-only. It requires TYPO3 14.3, PHP 8.2-8.5 and
 the TYPO3 system extensions ``backend``, ``core``, ``fluid``,
@@ -31,6 +32,8 @@ Features
 ========
 
 * Toolbar dropdown for page, content element and news workspace records.
+* Backend module below the TYPO3 Workspaces publish module with page
+  breadcrumbs, show-page and edit-page-property actions.
 * One-click publish through TYPO3's ``DataHandler`` publish cmdmap.
 * Per-record discard through TYPO3 14's ``discard`` command.
 * Preview-link generation through
@@ -40,10 +43,27 @@ Features
 * Language-aware page and record scoping for translated workspaces.
 * Duplicate suppression for nested inline workspace records.
 * Related file references and inline child records below their parent row.
+* News bundle support through the same API when EXT:news is installed,
+  including related content elements attached to news records.
 * Stale workspace dependency guard for missing inline child references.
 * TYPO3-processed preview thumbnails for image-bearing rows.
+* Personal user settings for the global feature switch and related-record
+  visibility in toolbar and module.
 
 ..  _record-scope:
+
+Toolbar and module
+==================
+
+The toolbar dropdown is optimized for quick publishing from the current
+backend context. The Easy Workspace backend module uses the same AJAX API
+and selection model, but renders the list in a wider TYPO3 backend layout.
+It follows the selected page from the page tree and exposes document-header
+actions for showing the page and editing page properties.
+
+The module does not depend on Apache Solr or any third-party indexing
+extension. Optional integrations, such as EXT:news and Visual Editor, are
+detected through TYPO3 extension and TCA state.
 
 Record scope
 ============
@@ -58,10 +78,12 @@ Standalone file metadata is the exception to the page scope: pending
 ``sys_file_metadata`` rows from the active workspace are appended because they
 have no page/content parent but are still publishable workspace records.
 
-The toolbar JavaScript detects the page UID from TYPO3's module state
-and falls back to the current URL's ``id`` parameter. For news records it
-also checks the backend edit URL pattern
-``edit[tx_news_domain_model_news][N]=edit``.
+The JavaScript detects the page UID from TYPO3's module state and falls
+back to the current URL's ``id`` parameter. For news records it also checks
+the backend edit URL pattern ``edit[tx_news_domain_model_news][N]=edit``.
+The backend module can pass an explicit ``newsUid`` and then requests the
+existing ``forNews`` API path so news property changes and related content
+elements are shown together.
 
 The selected language is read from TYPO3 module state first. If no
 language is available there, the JavaScript checks visible backend and
@@ -214,6 +236,12 @@ Configuration
 
 All editor-facing controls are configured through User TSconfig and
 Page TSconfig.
+
+TYPO3's User Settings module also contains an Easy Workspace section.
+Editors can disable Easy Workspace for their account and independently
+hide related child rows in the toolbar dropdown or in the backend module.
+Hiding child rows is only a presentation setting: selected parent rows still
+publish the related workspace records collected by the server.
 
 ..  toctree::
     :maxdepth: 2

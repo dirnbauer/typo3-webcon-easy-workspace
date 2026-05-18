@@ -22,8 +22,25 @@ options.webcon_easy_workspace {
     # -- Master ---------------------------------------------------
 
     # 0 hides the toolbar item entirely. The AJAX endpoints also
-    # respond with 403 so the feature is gone in any context. (1)
+    # respond with 403 so the feature is gone in any context. This
+    # is the administrator master switch and wins over the user's
+    # personal toggle in User Settings. (1)
     enabled = 1
+
+    # Default for the personal "Use Easy Workspace" user setting
+    # until the backend user saves their own profile settings. (1)
+    userEnabledDefault = 1
+
+    # Default for the personal "Show subelements in the toolbar"
+    # user setting. When disabled, related child records are hidden
+    # in the top-right toolbar only; publish still includes them. (1)
+    showSubelementsInToolbar = 1
+
+    # Default for the personal "Show subelements in the Easy
+    # Workspace module" user setting. When disabled, related child
+    # records are hidden in the backend module only; publish still
+    # includes them. (1)
+    showSubelementsInModule = 1
 
     # -- Header ---------------------------------------------------
 

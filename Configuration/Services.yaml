@@ -15,3 +15,6 @@ services:
   # AJAX endpoints invoked from the dropdown's Lit element.
   Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceAjaxController:
     public: true
+
+  Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceModuleController:
+    public: true

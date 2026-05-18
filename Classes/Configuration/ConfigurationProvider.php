@@ -22,6 +22,10 @@ final readonly class ConfigurationProvider
     private const DEFAULTS = [
         // Master switch
         'enabled' => true,
+        // Per-user defaults
+        'userEnabledDefault' => true,
+        'showSubelementsInToolbar' => true,
+        'showSubelementsInModule' => true,
         // Header
         'enableWorkspaceChip' => true,
         'enablePreviewLink' => true,
@@ -51,6 +55,9 @@ final readonly class ConfigurationProvider
      *                          precedence over User TSconfig.
      * @return array{
      *     enabled: bool,
+     *     userEnabled: bool,
+     *     showSubelementsInToolbar: bool,
+     *     showSubelementsInModule: bool,
      *     enableWorkspaceChip: bool,
      *     enablePreviewLink: bool,
      *     enableFilter: bool,
@@ -80,8 +87,13 @@ final readonly class ConfigurationProvider
         }
 
         // Normalize types.
+        $tsConfigEnabled = $this->toBool($merged['enabled']);
+        $userEnabled = $this->getUserSettingBool('webconEasyWorkspaceEnabled', $this->toBool($merged['userEnabledDefault']));
         return [
-            'enabled' => $this->toBool($merged['enabled']),
+            'enabled' => $tsConfigEnabled && $userEnabled,
+            'userEnabled' => $userEnabled,
+            'showSubelementsInToolbar' => $this->getUserSettingBool('webconEasyWorkspaceShowSubelementsToolbar', $this->toBool($merged['showSubelementsInToolbar'])),
+            'showSubelementsInModule' => $this->getUserSettingBool('webconEasyWorkspaceShowSubelementsModule', $this->toBool($merged['showSubelementsInModule'])),
             'enableWorkspaceChip' => $this->toBool($merged['enableWorkspaceChip']),
             'enablePreviewLink' => $this->toBool($merged['enablePreviewLink']),
             'enableFilter' => $this->toBool($merged['enableFilter']),
@@ -130,6 +142,21 @@ final readonly class ConfigurationProvider
             return [];
         }
         return Value::stringKeyArray($backendUser->getTSConfig());
+    }
+
+    private function getUserSettingBool(string $key, bool $default): bool
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication) {
+            return $default;
+        }
+
+        $userSettings = $backendUser->getUserSettings();
+        if (!$userSettings->has($key)) {
+            return $default;
+        }
+
+        return $this->toBool($userSettings->get($key));
     }
 
     private function toBool(mixed $value): bool

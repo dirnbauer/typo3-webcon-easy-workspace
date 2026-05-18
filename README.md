@@ -1,19 +1,21 @@
 # Easy Workspace
 
-A TYPO3 v14 backend extension that adds a **toolbar dropdown** for one-click workspace publishing.
+A TYPO3 v14 backend extension that adds a **toolbar dropdown** and a full **backend module** for one-click workspace publishing.
 
-When an editor opens the dropdown while editing a page, they immediately see:
+When an editor opens the toolbar dropdown or the Easy Workspace module while editing a page, they immediately see:
 
 - the page record (if it has workspace changes)
 - every changed content element on that page
 - every changed inline child record attached to the page or a content element
 - every changed file reference attached to the page or a content element
-- every changed news record stored on that page
-- for each news, every content element linked via `tx_news_related_news`
+- every changed news record stored on that page, when EXT:news is installed
+- for each news, every linked content element, including workspace changes on those content elements
 - standalone file metadata records (`sys_file_metadata`) pending in the active workspace
 - protection against stale workspace dependency references such as missing Content Blocks child rows
 
 Each row shows a **checkbox** (checked by default), the record **title**, the record type, a **History** button, and de-duplicated change badges in the same order as the history modal. Image-bearing rows show a small TYPO3-processed preview image (`pages.media`, `tt_content.image/assets/media`, `tx_news.fal_media/fal_related_files`, changed `sys_file_reference` children, and standalone `sys_file_metadata` rows). The button at the bottom — **"Publish to live"** — sends the selection to `DataHandler` in a single publish cmdmap.
+
+The backend module lives in the left TYPO3 navigation below the workspace publish module. It uses the same API and publish flow as the toolbar, but has a wider TYPO3-style layout with page breadcrumbs, "show page" and "edit page properties" actions in the document header, larger record rows, and responsive light/dark mode styling.
 
 ## Requirements
 
@@ -62,12 +64,33 @@ composer require webconsulting/webcon-easy-workspace
 
 1. Switch into a custom workspace (sidebar workspace selector).
 2. Open a page in the **Page** or **List** module.
-3. Click the **Workspace publish** icon (paper-plane with an orange dot) in the top-right toolbar.
+3. Click the **Workspace publish** icon (paper-plane with an orange dot) in the top-right toolbar, or open **Easy Workspace** in the left backend navigation.
 4. Untick anything you don't want to publish yet, then hit **Publish to live**.
 
 The toolbar item is automatically hidden while you are in the live workspace.
 In a custom workspace it stays visible, even when the current page has no
 pending changes.
+
+The backend module follows the selected page from the page tree. If it is
+opened for a news context, it can also request the existing news bundle API via
+`newsUid`, so news records and their related content elements use the same
+selection and publish behavior as page content.
+
+### Personal user settings
+
+Backend users get an **Easy Workspace** section in TYPO3's **User Settings**
+module:
+
+- **Use Easy Workspace** switches the toolbar and module off for that user even
+  when the administrator TSconfig master switch is enabled.
+- **Show related records in toolbar** hides or shows child detail rows in the
+  top-right dropdown.
+- **Show related records in module** hides or shows child detail rows in the
+  full backend module.
+
+The two related-record switches only affect visibility. The server still
+collects related child records, and the publish payload still includes them
+when their parent row is selected.
 
 ## What the dropdown shows
 
@@ -180,10 +203,16 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 | Rendering | `showHidden` | `1` | When `0`, hidden records are filtered out **server-side**. |
 | Rendering | `maxItems` | `200` | Hard cap on rows per request. |
 | Scope | `enableNewsBundles` | `1` | Also list news on the page + their linked content elements. |
+| User settings | `userEnabledDefault` | `1` | Default for the personal "Use Easy Workspace" switch. |
+| User settings | `showSubelementsInToolbar` | `1` | Default for showing related child rows in the top-right dropdown. |
+| User settings | `showSubelementsInModule` | `1` | Default for showing related child rows in the backend module. |
 | Per-row | `enableHoverHighlight` | `1` | Eye icon → scroll + outline the CE in Visual Editor, Viewpage, or another same-origin preview iframe. |
 | Per-row | `enableRevert` | `1` | Discard button using TYPO3 v14's DataHandler `discard` cmd. |
 
 **Override precedence** (highest wins): Page TSconfig → User TSconfig on user → User TSconfig on group → defaults.
+
+Personal user settings are applied after TSconfig defaults. The administrator
+master switch `enabled = 0` still disables the feature for everyone.
 
 **Server-side enforcement.** Every boolean flag is read by `Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider` (via `BackendUserAuthentication::getTSConfig()` and `BackendUtility::getPagesTSconfig()` — public v14 APIs) and *also* checked in `EasyWorkspaceAjaxController`: e.g. when `showHidden = 0` the hidden rows never reach the response payload, and toggling `enableRevert = 0` returns `403` on the discard endpoint so DevTools can't bypass it.
 
@@ -272,6 +301,7 @@ Changed rows can open a server-rendered diff/history modal through the `webcon_e
 Classes/
 ├── Backend/ToolbarItem/EasyWorkspaceToolbarItem.php   # Toolbar registration + config injection
 ├── Configuration/ConfigurationProvider.php            # Reads & normalizes TSconfig
+├── Controller/Backend/EasyWorkspaceModuleController.php # Backend module controller
 ├── Controller/Backend/EasyWorkspaceAjaxController.php # Backend AJAX endpoints
 ├── EventListener/IgnoreMissingWorkspaceDependencyReference.php
 │                                                          # Drops stale workspace dependency refs
@@ -282,12 +312,16 @@ Classes/
 
 Configuration/
 ├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, latest, diff, rollback
+├── Backend/Modules.php                               # Easy Workspace backend module registration
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
 ├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
 ├── Services.yaml                                     # DI / autowiring
+├── TCA/Overrides/be_users.php                        # User Settings toggles
 └── user.tsconfig                                     # Auto-loaded TSconfig defaults
 
 Resources/
+├── Private/Language/Modules/                         # Backend module labels
+├── Private/Templates/Backend/EasyWorkspace/          # Full backend module shell
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (JSON config attr)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
 └── Public/JavaScript/                                # Lit menu + eye/decline helpers

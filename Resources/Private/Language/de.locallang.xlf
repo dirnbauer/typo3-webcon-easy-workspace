@@ -31,6 +31,15 @@
     <unit id="toolbar.context.recordsPending"><segment><source>{total, plural, one {# record} other {# records}}, {changed} pending</source><target state="translated">{total, plural, one {# Datensatz} other {# Datensätze}}, {changed} ausstehend</target></segment></unit>
     <unit id="toolbar.context.pending"><segment><source>{count} pending</source><target state="translated">{count} ausstehend</target></segment></unit>
     <unit id="toolbar.context.none"><segment><source>No page or news selected.</source><target state="translated">Keine Seite oder News ausgewählt.</target></segment></unit>
+    <unit id="module.title"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
+    <unit id="module.pending"><segment><source>pending</source><target state="translated">ausstehend</target></segment></unit>
+    <unit id="module.total"><segment><source>total</source><target state="translated">gesamt</target></segment></unit>
+    <unit id="module.disabledBySettings"><segment><source>Easy Workspace is disabled in your user settings or by administrator configuration.</source><target state="translated">Easy Workspace ist in Ihren Benutzereinstellungen oder durch die Administrationskonfiguration deaktiviert.</target></segment></unit>
+    <unit id="module.liveWorkspace"><segment><source>Switch to a workspace to use Easy Workspace.</source><target state="translated">Wechseln Sie in einen Arbeitsbereich, um Easy Workspace zu verwenden.</target></segment></unit>
+    <unit id="userSettings.tab"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
+    <unit id="userSettings.enabled"><segment><source>Use Easy Workspace</source><target state="translated">Easy Workspace verwenden</target></segment></unit>
+    <unit id="userSettings.showSubelementsToolbar"><segment><source>Show subelements in the toolbar</source><target state="translated">Unterelemente im Toolbar-Menü anzeigen</target></segment></unit>
+    <unit id="userSettings.showSubelementsModule"><segment><source>Show subelements in the Easy Workspace module</source><target state="translated">Unterelemente im Easy-Workspace-Modul anzeigen</target></segment></unit>
     <unit id="context.page"><segment><source>Page #{uid}</source><target state="translated">Seite #{uid}</target></segment></unit>
     <unit id="context.news"><segment><source>News #{uid}</source><target state="translated">News #{uid}</target></segment></unit>
     <unit id="record.pageRecord"><segment><source>Page record</source><target state="translated">Seitendatensatz</target></segment></unit>
@@ -115,7 +124,7 @@
     <unit id="publish.failedTitle"><segment><source>Publish failed</source><target state="translated">Veröffentlichen fehlgeschlagen</target></segment></unit>
     <unit id="error.unknown"><segment><source>Unknown error.</source><target state="translated">Unbekannter Fehler.</target></segment></unit>
     <unit id="error.unexpected"><segment><source>Unexpected error.</source><target state="translated">Unerwarteter Fehler.</target></segment></unit>
-    <unit id="error.disabled"><segment><source>Easy Workspace is disabled by TSconfig.</source><target state="translated">Easy Workspace ist per TSconfig deaktiviert.</target></segment></unit>
+    <unit id="error.disabled"><segment><source>Easy Workspace is disabled by configuration.</source><target state="translated">Easy Workspace ist per Konfiguration deaktiviert.</target></segment></unit>
     <unit id="error.invalidRecord"><segment><source>Invalid table or record id.</source><target state="translated">Ungültige Tabelle oder Datensatz-ID.</target></segment></unit>
     <unit id="error.recordNotFound"><segment><source>Record not found or not accessible in this workspace.</source><target state="translated">Datensatz wurde nicht gefunden oder ist in diesem Arbeitsbereich nicht zugänglich.</target></segment></unit>
     <unit id="error.invalidArguments"><segment><source>Invalid arguments.</source><target state="translated">Ungültige Argumente.</target></segment></unit>

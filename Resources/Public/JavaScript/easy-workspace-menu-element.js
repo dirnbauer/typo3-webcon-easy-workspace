@@ -47,9 +47,14 @@ const DEFAULT_CONFIG = Object.freeze({
   enableNewsBundles: true,
   enableHoverHighlight: true,
   enableRevert: true,
+  userEnabled: true,
+  showSubelementsInToolbar: true,
+  showSubelementsInModule: true,
   // Runtime-detected environment (NOT user-configurable). Set by
   // EasyWorkspaceToolbarItem::getDropDown() via ExtensionManagementUtility::isLoaded.
   activeWorkspaceId: 0,
+  pageUid: 0,
+  newsUid: 0,
   hasVisualEditor: false,
   hasViewpage: false,
 });
@@ -70,6 +75,7 @@ const IFRAME_HIGHLIGHT_STYLE = {
 
 class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
+    variant: { type: String, reflect: false },
     config: { type: String, reflect: false },
     state: { state: true },
     items: { state: true },
@@ -112,6 +118,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.latestItems = [];
     this._config = { ...DEFAULT_CONFIG };
     this.mode = this._config.defaultMode;
+    this.variant = 'toolbar';
     this._refreshAfterSaveTimer = null;
   }
 
@@ -138,8 +145,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
     // Refresh on dropdown open (covers cases where the URL changed
     // via History API without a state-storage event).
-    const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
-      || this.closest('.toolbar-item');
+    const dropdownHost = this._isModuleVariant()
+      ? null
+      : (this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]') || this.closest('.toolbar-item'));
     if (dropdownHost) {
       dropdownHost.addEventListener('shown.bs.dropdown', () => {
         this._refresh();
@@ -774,6 +782,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   render() {
+    if (this._isModuleVariant()) {
+      return this._renderModule();
+    }
     return html`
       <div class="wew-menu">
         <header class="wew-menu__head">
@@ -798,7 +809,45 @@ class WebconEasyWorkspaceMenu extends LitElement {
         ${this._renderFilter()}
         ${this._renderBody()}
         ${this._renderFooter()}
+        ${this._renderLatestAccordion()}
         ${this._renderContextFootnote()}
+      </div>
+    `;
+  }
+
+  _renderModule() {
+    const changedCount = this._changedItemCount();
+    const totalCount = Array.isArray(this.items) ? this.items.length : 0;
+    return html`
+      <div class="wew-module">
+        <header class="wew-module__head">
+          <div class="wew-module__title-wrap">
+            <h1 class="wew-module__title">${this._label('module.title')}</h1>
+            ${this.workspaceTitle
+              ? html`<span class="wew-menu__ws-chip" title=${this._label('toolbar.activeWorkspace')}>${this.workspaceTitle}</span>`
+              : nothing}
+          </div>
+          <div class="wew-module__stats" aria-live="polite">
+            <span class="wew-module__stat">
+              <strong>${changedCount}</strong>
+              <span>${this._label('module.pending')}</span>
+            </span>
+            <span class="wew-module__stat">
+              <strong>${totalCount}</strong>
+              <span>${this._label('module.total')}</span>
+            </span>
+          </div>
+          <div class="wew-module__actions">
+            ${this._renderPreviewButton()}
+          </div>
+        </header>
+        <div class="wew-module__surface">
+          ${this._renderFilter()}
+          ${this._renderBody()}
+          ${this._renderFooter()}
+          ${this._renderLatestAccordion()}
+          ${this._renderContextFootnote()}
+        </div>
       </div>
     `;
   }
@@ -1191,6 +1240,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _renderChildChanges(item) {
+    if (!this._shouldShowSubelements()) return nothing;
     const children = Array.isArray(item.childChanges) ? item.childChanges : [];
     if (children.length === 0) return nothing;
     return html`
@@ -2235,6 +2285,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
    * changes.
    */
   _updateToolbarBadge() {
+    if (this._isModuleVariant()) return;
     const host = this._toolbarHost();
     const badge = host?.querySelector('[data-wew-workspace-badge]');
     if (!badge) return;
@@ -2252,6 +2303,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _syncToolbarVisibility() {
+    if (this._isModuleVariant()) return;
     const host = this._toolbarHost();
     if (!host) return;
     const stateKnown = this.state === 'loaded' || this.state === 'empty' || this.state === 'no-context';
@@ -2265,6 +2317,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _toolbarHost() {
+    if (this._isModuleVariant()) return null;
     return this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item')
       || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
@@ -2306,6 +2359,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _detectContext() {
+    const configuredNewsUid = parseInt(String(this._config.newsUid || '0'), 10);
+    if (configuredNewsUid > 0) {
+      return { pageUid: 0, newsUid: configuredNewsUid };
+    }
+
+    const configuredPageUid = parseInt(String(this._config.pageUid || '0'), 10);
+    if (configuredPageUid > 0) {
+      return { pageUid: configuredPageUid, newsUid: 0 };
+    }
+
     // Primary source: v14's ModuleStateStorage tracks the currently
     // selected page in the Web module group (id stored in sessionStorage,
     // mutated whenever the page tree selection changes).
@@ -2343,6 +2406,16 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
 
     return { pageUid: pageUid > 0 ? pageUid : 0, newsUid };
+  }
+
+  _isModuleVariant() {
+    return this.variant === 'module';
+  }
+
+  _shouldShowSubelements() {
+    return this._isModuleVariant()
+      ? this._config.showSubelementsInModule !== false
+      : this._config.showSubelementsInToolbar !== false;
   }
 
   _detectLanguageUid() {
