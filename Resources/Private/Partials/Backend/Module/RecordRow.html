@@ -107,21 +107,21 @@
         </div>
     </td>
     <td class="text-end text-nowrap">
-        <f:if condition="{item.isChanged}">
-            <div class="btn-group" role="group">
-                <f:if condition="{item.changeBadges -> f:count()} > 0">
-                    <button type="button"
-                            class="btn btn-default btn-sm"
-                            data-wew-diff=""
-                            data-wew-history-url="{item.historyUrl}"
-                            data-wew-table="{item.table}"
-                            data-wew-workspace-uid="{item.workspaceUid}"
-                            data-wew-title="{item.title}"
-                            title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.viewHistory')}">
-                        <core:icon identifier="actions-document-history-open" size="small" />
-                    </button>
-                </f:if>
+        <div class="btn-group" role="group">
+            <f:if condition="{item.historyUrl}">
+                <button type="button"
+                        class="btn btn-default btn-sm"
+                        data-wew-diff=""
+                        data-wew-history-url="{item.historyUrl}"
+                        data-wew-table="{item.table}"
+                        data-wew-workspace-uid="{item.workspaceUid}"
+                        data-wew-title="{item.title}"
+                        title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:diff.viewHistory')}">
+                    <core:icon identifier="actions-document-history-open" size="small" />
+                </button>
+            </f:if>
 
+            <f:if condition="{item.isChanged}">
                 <f:if condition="{config.enableRevert}">
                     <f:then>
                         <button type="button"
@@ -145,21 +145,21 @@
                         </button>
                     </f:else>
                 </f:if>
+            </f:if>
 
-                <f:if condition="{item.contextualEditUrl} || {item.editUrl}">
-                    <button type="button"
-                            class="btn btn-default btn-sm"
-                            data-wew-edit=""
-                            data-wew-edit-url="{item.contextualEditUrl ?: item.editUrl}"
-                            data-wew-contextual="{f:if(condition: item.contextualEditUrl, then: '1', else: '0')}"
-                            data-wew-title="{item.title}"
-                            title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{title: item.title}')}"
-                            aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{title: item.title}')}">
-                        <core:icon identifier="actions-open" size="small" />
-                    </button>
-                </f:if>
-            </div>
-        </f:if>
+            <f:if condition="{item.contextualEditUrl} || {item.editUrl}">
+                <button type="button"
+                        class="btn btn-default btn-sm"
+                        data-wew-edit=""
+                        data-wew-edit-url="{item.contextualEditUrl ?: item.editUrl}"
+                        data-wew-contextual="{f:if(condition: item.contextualEditUrl, then: '1', else: '0')}"
+                        data-wew-title="{item.title}"
+                        title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{title: item.title}')}"
+                        aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:edit.modalTitle', arguments: '{title: item.title}')}">
+                    <core:icon identifier="actions-open" size="small" />
+                </button>
+            </f:if>
+        </div>
     </td>
 </tr>
 
