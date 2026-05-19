@@ -2005,6 +2005,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     // switches between filters, instead of mutating each time we
     // re-query the server with a narrower scope.
     const query = pageUid ? { pageUid, mode: 'all' } : { newsUid, mode: 'all' };
+    query._ = Date.now();
     if (languageUid !== null) {
       query.languageUid = languageUid;
     }
@@ -2306,10 +2307,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
       const uniqueSelections = Array.from(
         new Map(selections.map((selection) => [`${selection.table}:${selection.workspaceUid}`, selection])).values(),
       );
+      if (uniqueSelections.length === 0) {
+        Notification.warning(this._label('publish.warning.title'), this._label('error.noPublishableRecords'));
+        await this._refresh();
+        return;
+      }
       const response = await new AjaxRequest(ENDPOINTS.publish)
         .post({ selections: uniqueSelections }, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
       const result = await response.resolve();
-      if (result?.success) {
+      if (result?.success && Number(result.published || 0) > 0) {
         Notification.success(
           this._label('publish.success.title'),
           this._label('publish.success.message', { count: Number(result.published || 0) }),
@@ -2371,8 +2377,13 @@ class WebconEasyWorkspaceMenu extends LitElement {
    */
   async _writeToOsClipboard(text) {
     if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return;
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (error) {
+        // Fall through to the textarea copy path. Some browsers reject
+        // Clipboard API writes after an awaited AJAX call.
+      }
     }
     const textarea = document.createElement('textarea');
     textarea.value = text;

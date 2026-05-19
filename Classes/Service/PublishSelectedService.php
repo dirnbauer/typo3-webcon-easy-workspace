@@ -219,6 +219,9 @@ final readonly class PublishSelectedService
         if (!TcaUtility::isWorkspaceAwareHiddenTable($table)) {
             return false;
         }
+        if (TcaUtility::hasColumn($table, 'foreign_table_parent_uid')) {
+            return true;
+        }
         foreach (TcaUtility::tables() as $parentTca) {
             $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
             if (empty($ctrl['versioningWS'])) {

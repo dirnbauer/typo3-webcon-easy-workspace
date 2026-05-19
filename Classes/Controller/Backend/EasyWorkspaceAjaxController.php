@@ -178,8 +178,8 @@ final readonly class EasyWorkspaceAjaxController
         }
 
         // Keep the lightweight timeline only for the edit count in
-        // the modal header. The actual history views below use TYPO3
-        // core's native record_history module inside the tab frames.
+        // the modal header. The actual history view below uses TYPO3
+        // core's native record_history module for the selected record.
         $timeline = $this->historyTimelineService->build($table, $workspaceUid);
 
         $view = $this->viewFactory->create(new ViewFactoryData(
@@ -189,17 +189,13 @@ final readonly class EasyWorkspaceAjaxController
         $view->assignMultiple($payload + [
             'editUrl' => $editUrl,
             'timeline' => $timeline,
-            'historyTabs' => $this->buildHistoryTabs($table, Value::stringKeyArray($row), $payload, $returnUrl),
+            'recordHistoryUrl' => $this->buildRecordHistoryUrl($table, $workspaceUid, $returnUrl),
             'rollbackEnabled' => true,
             'labels' => [
                 'workspaceUid' => $this->localizationService->translate('diff.template.workspaceUid', ['uid' => $payload['workspaceUid']]),
                 'liveUid' => $this->localizationService->translate('diff.template.liveUid', ['uid' => $payload['liveUid']]),
                 'historyCount' => $this->localizationService->translate('history.editCount', ['count' => count($timeline)]),
-                'recordHistoryTab' => $this->localizationService->translate($table === 'tt_content' ? 'history.tab.contentElement' : 'history.tab.record'),
-                'pageHistoryTab' => $this->localizationService->translate('history.tab.page'),
                 'recordHistoryFrameTitle' => $this->localizationService->translate('history.frame.record'),
-                'pageHistoryFrameTitle' => $this->localizationService->translate('history.frame.page'),
-                'historyAria' => $this->localizationService->translate('history.aria'),
                 'rollbackLinearTitle' => $this->localizationService->translate('history.rollback.linearTitle'),
                 'rollbackLinear' => $this->localizationService->translate('history.rollback.linear'),
                 'rollbackFieldTitle' => $this->localizationService->translate('history.rollback.fieldTitle'),
@@ -210,34 +206,6 @@ final readonly class EasyWorkspaceAjaxController
         ]);
 
         return new HtmlResponse($view->render());
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     * @param array{workspaceUid: int, liveUid: int} $payload
-     * @return array{
-     *   record: array{url: string},
-     *   page: array{url: string, uid: int}|null
-     * }
-     */
-    private function buildHistoryTabs(string $table, array $row, array $payload, string $returnUrl): array
-    {
-        $workspaceUid = Value::int($payload['workspaceUid'] ?? null);
-        $pageUid = $table === 'pages'
-            ? 0
-            : $this->resolvePageHistoryUid($table, $row, Value::int($payload['liveUid'] ?? null));
-
-        return [
-            'record' => [
-                'url' => $this->buildRecordHistoryUrl($table, $workspaceUid, $returnUrl),
-            ],
-            'page' => $pageUid > 0
-                ? [
-                    'url' => $this->buildRecordHistoryUrl('pages', $pageUid, $returnUrl),
-                    'uid' => $pageUid,
-                ]
-                : null,
-        ];
     }
 
     private function buildRecordHistoryUrl(string $table, int $uid, string $returnUrl): string
@@ -255,32 +223,6 @@ final readonly class EasyWorkspaceAjaxController
         } catch (\Throwable) {
             return '';
         }
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     */
-    private function resolvePageHistoryUid(string $table, array $row, int $liveUid): int
-    {
-        if ($table === 'pages') {
-            return $liveUid > 0 ? $liveUid : Value::int($row['uid'] ?? null);
-        }
-
-        $pid = Value::int($row['pid'] ?? null);
-        if ($pid > 0) {
-            return $pid;
-        }
-
-        if ($liveUid <= 0) {
-            return 0;
-        }
-
-        $liveRow = BackendUtility::getRecord($table, $liveUid, 'pid');
-        if (!is_array($liveRow)) {
-            return 0;
-        }
-
-        return max(0, Value::int($liveRow['pid'] ?? null));
     }
 
     /**
@@ -387,6 +329,13 @@ final readonly class EasyWorkspaceAjaxController
             }
             $selections[] = ['table' => $table, 'workspaceUid' => $workspaceUid];
         }
+        if ($selections === []) {
+            return new JsonResponse([
+                'success' => false,
+                'published' => 0,
+                'errors' => [$this->localizationService->translate('error.noPublishableRecords')],
+            ]);
+        }
 
         return new JsonResponse($this->publishService->publish($selections));
     }
@@ -457,6 +406,9 @@ final readonly class EasyWorkspaceAjaxController
         }
         if (!TcaUtility::isWorkspaceAwareHiddenTable($table)) {
             return false;
+        }
+        if (TcaUtility::hasColumn($table, 'foreign_table_parent_uid')) {
+            return true;
         }
         foreach (TcaUtility::tables() as $parentTca) {
             $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);

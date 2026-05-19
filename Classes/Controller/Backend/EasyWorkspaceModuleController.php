@@ -8,7 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
 use TYPO3\CMS\Backend\Module\ModuleInterface;
-use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
+use TYPO3\CMS\Backend\Routing\PreviewUriBuilder as BackendPreviewUriBuilder;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
@@ -34,7 +34,10 @@ use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
+use Webconsulting\WebconEasyWorkspace\Service\WorkspaceDiagnosticsService;
+use Webconsulting\WebconEasyWorkspace\Service\WorkspaceTestingReportService;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
+use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder as WorkspacePreviewUriBuilder;
 
 #[AsController]
 final readonly class EasyWorkspaceModuleController
@@ -46,18 +49,19 @@ final readonly class EasyWorkspaceModuleController
         'sys_file_metadata',
     ];
 
-    private const SECTIONS = ['dashboard', 'pending', 'all'];
+    private const SECTIONS = ['pending', 'all', 'diagnostics'];
 
     private const MODULE_SECTIONS = [
-        'webcon_easy_workspace_overview' => 'dashboard',
         'webcon_easy_workspace_pending' => 'pending',
         'webcon_easy_workspace_records' => 'all',
+        'webcon_easy_workspace_diagnostics' => 'diagnostics',
     ];
 
     public function __construct(
         private ModuleTemplateFactory $moduleTemplateFactory,
         private PageRenderer $pageRenderer,
         private BackendUriBuilder $backendUriBuilder,
+        private WorkspacePreviewUriBuilder $workspacePreviewUriBuilder,
         private ComponentFactory $componentFactory,
         private IconFactory $iconFactory,
         private TcaSchemaFactory $tcaSchemaFactory,
@@ -66,6 +70,8 @@ final readonly class EasyWorkspaceModuleController
         private LocalizationService $localizationService,
         private PendingItemsService $pendingItemsService,
         private PublishSelectedService $publishService,
+        private WorkspaceDiagnosticsService $workspaceDiagnosticsService,
+        private WorkspaceTestingReportService $workspaceTestingReportService,
         private FlashMessageService $flashMessageService,
     ) {}
 
@@ -121,11 +127,13 @@ final readonly class EasyWorkspaceModuleController
 
         $canRender = $config['enabled'] && $activeWorkspaceId > 0;
         $disabledMessage = $this->disabledMessage($config['enabled'], $activeWorkspaceId);
-        $hasContext = $pageUid > 0 || $newsUid > 0;
+        $hasContext = $section === 'diagnostics' || $pageUid > 0 || $newsUid > 0;
 
         $viewData = [
             'moduleTitle' => $this->localizationService->translate('module.title'),
             'moduleDescription' => $this->localizationService->translate('module.description'),
+            'sectionTitle' => $this->localizationService->translate($this->sectionTitleKey($section)),
+            'sectionDescription' => $this->localizationService->translate($this->sectionDescriptionKey($section)),
             'pageTitle' => $pageTitle,
             'canRenderEasyWorkspace' => $canRender,
             'disabledMessage' => $disabledMessage,
@@ -231,12 +239,19 @@ final readonly class EasyWorkspaceModuleController
      */
     private function buildSectionPayload(string $section, int $pageUid, int $newsUid, array $config): array
     {
+        if ($section === 'diagnostics') {
+            $diagnostics = $this->workspaceDiagnosticsService->scan($this->resolveActiveWorkspaceId());
+            $diagnostics['testing'] = $this->workspaceTestingReportService->buildFromScan($diagnostics);
+            return $diagnostics;
+        }
+
         $payload = [
             'changedCount' => 0,
             'totalCount' => 0,
             'workspaceTitle' => '',
             'workspaceId' => 0,
             'contentElementCount' => 0,
+            'affectedTableCount' => 0,
             'lastChangedAt' => 0,
             'lastChangedAtFormatted' => '',
             'lastChangedByUid' => 0,
@@ -262,6 +277,7 @@ final readonly class EasyWorkspaceModuleController
         $payload['changedItemGroups'] = $items['changedItemGroups'] ?? [];
         $payload['totalCount'] = count($itemList);
         $payload['contentElementCount'] = count(array_filter($itemList, static fn(array $i): bool => ($i['table'] ?? '') === 'tt_content'));
+        $payload['affectedTableCount'] = count($this->extractAffectedTables($itemList));
         $payload['changedCount'] = count(array_filter($itemList, static fn(array $i): bool => (bool)($i['isChanged'] ?? false)));
         $latestChange = $this->extractLatestChangedSummary($itemList);
         $payload['lastChangedAt'] = $latestChange['tstamp'];
@@ -270,6 +286,37 @@ final readonly class EasyWorkspaceModuleController
         $payload['lastChangedByName'] = $latestChange['user'];
 
         return $payload;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     * @return array<string, true>
+     */
+    private function extractAffectedTables(array $items, bool $assumeChanged = false): array
+    {
+        $tables = [];
+        foreach ($items as $item) {
+            if ($assumeChanged || (bool)($item['isChanged'] ?? false)) {
+                $table = Value::string($item['table'] ?? null);
+                if ($table !== '') {
+                    $tables[$table] = true;
+                }
+            }
+            $childChanges = $item['childChanges'] ?? [];
+            if (is_array($childChanges)) {
+                $children = [];
+                foreach ($childChanges as $childChange) {
+                    if (is_array($childChange)) {
+                        $children[] = Value::stringKeyArray($childChange);
+                    }
+                }
+                foreach ($this->extractAffectedTables($children, true) as $table => $selected) {
+                    $tables[$table] = $selected;
+                }
+            }
+        }
+        ksort($tables);
+        return $tables;
     }
 
     /**
@@ -318,15 +365,15 @@ final readonly class EasyWorkspaceModuleController
     }
 
     /**
-     * @return array{overview: string, pending: string, all: string}
+     * @return array{pending: string, all: string, diagnostics: string}
      */
     private function buildModuleUrls(int $pageUid, int $newsUid): array
     {
         $parameters = $this->buildModuleMenuParameters($pageUid, $newsUid);
         return [
-            'overview' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_overview', $parameters),
             'pending' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_pending', $parameters),
             'all' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_records', $parameters),
+            'diagnostics' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_diagnostics', $parameters),
         ];
     }
 
@@ -334,11 +381,29 @@ final readonly class EasyWorkspaceModuleController
     {
         $module = $request->getAttribute('module');
         if ($module instanceof ModuleInterface) {
-            return self::MODULE_SECTIONS[$module->getIdentifier()] ?? 'dashboard';
+            return self::MODULE_SECTIONS[$module->getIdentifier()] ?? 'pending';
         }
 
         $candidate = Value::string($request->getQueryParams()['section'] ?? null);
-        return in_array($candidate, self::SECTIONS, true) ? $candidate : 'dashboard';
+        return in_array($candidate, self::SECTIONS, true) ? $candidate : 'pending';
+    }
+
+    private function sectionTitleKey(string $section): string
+    {
+        return match ($section) {
+            'all' => 'module.section.all',
+            'diagnostics' => 'module.section.diagnostics',
+            default => 'module.section.pending',
+        };
+    }
+
+    private function sectionDescriptionKey(string $section): string
+    {
+        return match ($section) {
+            'all' => 'module.all.subtitle',
+            'diagnostics' => 'module.diagnostics.subtitle',
+            default => 'module.pending.subtitle',
+        };
     }
 
     /**
@@ -356,6 +421,9 @@ final readonly class EasyWorkspaceModuleController
             'edit.modalTitle',
             'diff.noTitle',
             'diff.modal.historyTitle',
+            'preview.button.preview',
+            'preview.button.copying',
+            'preview.button.copied',
             'preview.link.title',
             'preview.link.noUrl',
             'preview.link.copied',
@@ -422,7 +490,7 @@ final readonly class EasyWorkspaceModuleController
             return $module->getIdentifier();
         }
 
-        return 'webcon_easy_workspace_overview';
+        return 'webcon_easy_workspace_pending';
     }
 
     private function enqueueFlash(string $message, ContextualFeedbackSeverity $severity, string $title = ''): void
@@ -491,7 +559,7 @@ final readonly class EasyWorkspaceModuleController
     private function addPageActionButtons(ModuleTemplate $moduleTemplate, ServerRequestInterface $request, array $pageRecord, int $pageUid, array $rootLine): void
     {
         $viewButton = $this->componentFactory->createViewButton(
-            PreviewUriBuilder::create($pageRecord)
+            BackendPreviewUriBuilder::create($pageRecord)
                 ->withRootLine($rootLine)
                 ->buildDispatcherDataAttributes() ?? [],
         );
@@ -503,12 +571,19 @@ final readonly class EasyWorkspaceModuleController
 
         $config = $this->configurationProvider->get($pageUid);
         if ($config['enablePreviewLink']) {
+            $previewLink = '';
+            try {
+                $previewLink = $this->workspacePreviewUriBuilder->buildUriForPage($pageUid);
+            } catch (\Throwable) {
+                // The AJAX fallback will return the localized error when clicked.
+            }
             $previewButton = $this->componentFactory->createGenericButton()
                 ->setTag('button')
                 ->setAttributes([
                     'type' => 'button',
                     'data-wew-preview-trigger' => '',
                     'data-wew-preview-page-uid' => (string)$pageUid,
+                    'data-wew-preview-link' => $previewLink,
                 ])
                 ->setLabel($this->localizationService->translate('preview.button.preview'))
                 ->setTitle($this->localizationService->translate('preview.button.title'))

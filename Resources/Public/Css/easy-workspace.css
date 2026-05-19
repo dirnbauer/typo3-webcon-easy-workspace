@@ -30,6 +30,21 @@ webcon-easy-workspace-menu {
     display: none !important;
 }
 
+.wew-module-header {
+    margin-bottom: 1.5rem;
+}
+
+.wew-module-header__title {
+    margin: 0 0 .5rem;
+}
+
+.wew-module-header__teaser {
+    max-width: 72ch;
+    margin: 0;
+    color: var(--typo3-text-muted-color, var(--bs-secondary-color));
+    font-size: 1rem;
+}
+
 /* Bootstrap dropdown clamps width to its parent — force the dropdown
    menu to grow to fit our element, but cap at the same width so it
    stays right-anchored within the viewport. */
@@ -1243,6 +1258,7 @@ webcon-easy-workspace-menu {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 [data-wew-module] .wew-kpi-card {
@@ -1258,6 +1274,88 @@ webcon-easy-workspace-menu {
 [data-wew-module] .wew-kpi-card .card-title,
 [data-wew-module] .wew-kpi-card .card-longdesc {
     overflow-wrap: anywhere;
+}
+
+[data-wew-module] .wew-records-card .card-longdesc {
+    margin-bottom: 0;
+}
+
+[data-wew-module] .wew-records-card .table > :not(caption) > * > * {
+    vertical-align: middle;
+}
+
+[data-wew-module] .wew-record-row--changed > :first-child {
+    box-shadow: inset 3px 0 0 var(--typo3-state-info-border-color, var(--bs-info));
+}
+
+[data-wew-module] .wew-record-cell {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    min-width: 0;
+}
+
+[data-wew-module] .wew-record-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px;
+    background: var(--typo3-component-secondary-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+
+[data-wew-module] .wew-record-icon--small {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+[data-wew-module] .wew-related-thread {
+    margin-top: .5rem;
+}
+
+[data-wew-module] .wew-related-thread > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    cursor: pointer;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+
+[data-wew-module] .wew-related-thread[open] > summary {
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
+
+[data-wew-module] .wew-related-thread__list {
+    margin-top: .5rem;
+    margin-left: 1rem;
+    border-left: 2px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+
+[data-wew-module] .wew-related-thread__list .list-group-item {
+    position: relative;
+    border-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+[data-wew-module] .wew-related-thread__list .list-group-item::before {
+    content: "";
+    position: absolute;
+    left: -2px;
+    top: 1.15rem;
+    width: .75rem;
+    border-top: 2px solid var(--typo3-component-border-color, var(--bs-border-color));
+}
+
+[data-wew-module] .wew-related-thread__parent {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    background: color-mix(in srgb, var(--typo3-component-bg, var(--bs-body-bg)), var(--typo3-component-color, var(--bs-body-color)) 3%);
 }
 
 @media (max-width: 1200px) {
@@ -1546,43 +1644,6 @@ webcon-easy-workspace-menu {
 .wew-history-tabs {
     min-height: min(72vh, 760px);
 }
-.wew-history-tabs__list {
-    display: flex;
-    align-items: flex-end;
-    gap: .25rem;
-    margin: 0 0 .75rem 0;
-    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-}
-.wew-history-tabs__tab {
-    appearance: none;
-    margin: 0 0 -1px 0;
-    padding: .45rem .85rem;
-    border: 1px solid transparent;
-    border-bottom-color: var(--typo3-component-border-color, var(--bs-border-color));
-    border-radius: 4px 4px 0 0;
-    background: transparent;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-}
-.wew-history-tabs__tab:hover {
-    color: var(--typo3-text-color-base, var(--bs-body-color));
-    background: color-mix(in srgb, var(--typo3-text-color-base, currentColor) 5%, transparent);
-}
-.wew-history-tabs__tab:focus-visible {
-    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
-    outline-offset: 2px;
-}
-.wew-history-tabs__tab.active {
-    border-color: var(--typo3-component-border-color, var(--bs-border-color));
-    border-bottom-color: var(--typo3-component-bg, var(--bs-body-bg));
-    background: var(--typo3-component-bg, var(--bs-body-bg));
-    color: var(--typo3-text-color-base, var(--bs-body-color));
-}
-.wew-history-tabs__panel[hidden] {
-    display: none;
-}
 .wew-history-tabs__frame {
     display: block;
     width: 100%;
@@ -1769,4 +1830,174 @@ webcon-easy-workspace-menu {
     color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
     outline: none;
     transform: scale(1.08);
+}
+
+/* ---- Testing reports ---- */
+.wew-testing {
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
+.wew-testing__heading,
+.wew-testing__group-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.wew-testing__heading h2,
+.wew-testing__group-title h3 {
+    margin: 0 0 .35rem;
+    font-family: var(--typo3-header-font-family, inherit);
+    font-weight: 700;
+    line-height: 1.25;
+}
+.wew-testing__heading p,
+.wew-testing__group-title p,
+.wew-testing__item-body p {
+    margin: 0;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-testing__heading .btn {
+    margin-top: .75rem;
+}
+.wew-testing__badges {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: .35rem;
+    flex: 0 0 auto;
+}
+.wew-testing__groups,
+.wew-testing__items,
+.wew-testing__details {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.wew-testing__groups {
+    display: grid;
+    gap: 1rem;
+}
+.wew-testing__group {
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-left-width: 4px;
+    border-radius: 4px;
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+    padding: 1rem;
+}
+.wew-testing__group--success { border-left-color: var(--typo3-state-success-border-color, var(--bs-success)); }
+.wew-testing__group--warning { border-left-color: var(--typo3-state-warning-border-color, var(--bs-warning)); }
+.wew-testing__group--danger { border-left-color: var(--typo3-state-danger-border-color, var(--bs-danger)); }
+.wew-testing__group--info { border-left-color: var(--typo3-state-info-border-color, var(--bs-info)); }
+.wew-testing__group--notice { border-left-color: var(--typo3-state-notice-border-color, var(--bs-secondary)); }
+.wew-testing__group-title {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    min-width: 0;
+}
+.wew-testing__icon,
+.wew-testing__item-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, var(--bs-body-color));
+}
+.wew-testing__items {
+    display: grid;
+    gap: .65rem;
+}
+.wew-testing__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: .75rem;
+    align-items: flex-start;
+    padding: .75rem;
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--typo3-text-color-base, currentColor) 3%, transparent);
+}
+.wew-testing__item-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: .25rem;
+}
+.wew-testing__solve {
+    margin-top: .4rem !important;
+    color: var(--typo3-text-color-base, var(--bs-body-color)) !important;
+}
+.wew-testing__details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: .45rem;
+}
+.wew-testing__details li {
+    padding: .15rem .45rem;
+    border-radius: 3px;
+    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
+    color: var(--typo3-state-default-color, var(--bs-body-color));
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+.wew-testing__status {
+    display: inline-flex;
+    align-items: center;
+    padding: .12rem .5rem;
+    border-radius: 999px;
+    border: 1px solid var(--typo3-badge-secondary-border-color, var(--typo3-state-default-border-color));
+    background: var(--typo3-badge-secondary-bg, var(--typo3-state-default-bg));
+    color: var(--typo3-badge-secondary-color, var(--typo3-state-default-color));
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+.wew-testing__status--success {
+    background: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
+    color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
+    border-color: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+}
+.wew-testing__status--warning {
+    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
+    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
+    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+}
+.wew-testing__status--danger {
+    background: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
+    color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
+    border-color: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
+}
+.wew-testing__status--info {
+    background: var(--typo3-badge-info-bg, var(--typo3-state-info-bg));
+    color: var(--typo3-badge-info-color, var(--typo3-state-info-color));
+    border-color: var(--typo3-badge-info-border-color, var(--typo3-state-info-border-color));
+}
+.wew-testing__status--notice {
+    background: var(--typo3-badge-notice-bg, var(--typo3-state-notice-bg, var(--typo3-state-default-bg)));
+    color: var(--typo3-badge-notice-color, var(--typo3-state-notice-color, var(--typo3-state-default-color)));
+    border-color: var(--typo3-badge-notice-border-color, var(--typo3-state-notice-border-color, var(--typo3-state-default-border-color)));
+}
+@media (max-width: 760px) {
+    .wew-testing__heading,
+    .wew-testing__group-head,
+    .wew-testing__item {
+        display: block;
+    }
+    .wew-testing__badges,
+    .wew-testing__item > .wew-testing__status {
+        margin-top: .75rem;
+        justify-content: flex-start;
+    }
+    .wew-testing__item-icon {
+        margin-bottom: .5rem;
+    }
 }

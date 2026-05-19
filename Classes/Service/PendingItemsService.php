@@ -1777,6 +1777,7 @@ final readonly class PendingItemsService
         // dropdown's pencil. The JS prefers this URL because this
         // extension is TYPO3 v14-only.
         $contextualEditUrl = $this->buildContextualEditUrl($table, $liveUid);
+        $historyUrl = $this->buildRecordHistoryUrl($table, $workspaceUid);
 
         // Attach the field-level diff so each row in the dropdown can
         // expand to show *what* changed. Only computed for actual
@@ -1812,6 +1813,7 @@ final readonly class PendingItemsService
             kindKey: $kindKey,
             kindLabel: $kindLabel,
             badge: $badge,
+            iconIdentifier: $this->resolveIconIdentifier($table, $row),
             thumbnailUrl: $enableThumbnails ? $this->resolveThumbnailUrl($table, $workspaceUid) : null,
             isPrimary: $isPrimary,
             isChanged: $isChanged,
@@ -1820,6 +1822,7 @@ final readonly class PendingItemsService
             typeLabel: $this->resolveTypeLabel($table, $row),
             editUrl: $editUrl,
             contextualEditUrl: $contextualEditUrl,
+            historyUrl: $historyUrl,
             diff: $diff,
             changeBadges: $changeBadges,
             childChanges: [],
@@ -1926,6 +1929,26 @@ final readonly class PendingItemsService
         try {
             return (string)$this->backendUriBuilder->buildUriFromRoute('record_edit_contextual', [
                 'edit' => [$table => [$uid => 'edit']],
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Build TYPO3 core's native record history route for the concrete
+     * workspace version. The browser-side button only navigates to
+     * this URL; the actual history UI remains owned by TYPO3.
+     */
+    private function buildRecordHistoryUrl(string $table, int $uid): ?string
+    {
+        if ($uid <= 0) {
+            return null;
+        }
+        try {
+            return (string)$this->backendUriBuilder->buildUriFromRoute('record_history', [
+                'element' => sprintf('%s:%d', $table, $uid),
+                'historyEntry' => '',
             ]);
         } catch (\Throwable) {
             return null;
@@ -2077,6 +2100,35 @@ final readonly class PendingItemsService
         }
         // Last resort — the raw value (still better than nothing).
         return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function resolveIconIdentifier(string $table, array $row): string
+    {
+        $tca = TcaUtility::table($table);
+        $ctrl = Value::stringKeyArray($tca['ctrl'] ?? null);
+        $typeIconClasses = Value::stringKeyArray($ctrl['typeicon_classes'] ?? null);
+
+        $typeField = Value::string($ctrl['type'] ?? null);
+        if ($typeField !== '') {
+            $typeValue = Value::string($row[$typeField] ?? null);
+            if ($typeValue !== '' && isset($typeIconClasses[$typeValue]) && is_string($typeIconClasses[$typeValue])) {
+                return $typeIconClasses[$typeValue];
+            }
+        }
+
+        if (isset($typeIconClasses['default']) && is_string($typeIconClasses['default']) && $typeIconClasses['default'] !== '') {
+            return $typeIconClasses['default'];
+        }
+
+        return match ($table) {
+            'pages' => 'apps-pagetree-page-default',
+            'tt_content' => 'mimetypes-x-content-text',
+            'sys_file_metadata', 'sys_file_reference' => 'mimetypes-other-other',
+            default => 'mimetypes-other-other',
+        };
     }
 
     private function resolveThumbnailUrl(string $table, int $workspaceUid): ?string

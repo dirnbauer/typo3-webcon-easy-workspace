@@ -67,10 +67,7 @@ module menu and the "show page", "copy preview link" and "edit page
 properties" buttons registered on the module template's button bar). TYPO3
 registers Easy Workspace as a parent module with three submodules:
 
-* **Dashboard** — a TYPO3 card with a Bootstrap table for the active
-  workspace, pending count, total page count and quick jumps to the other
-  submodules.
-* **Pending changes** — the changed-only publish queue. Rows stay dense and
+* **Overview** — the changed-only publish queue. Rows stay dense and
   one-dimensional in a ``table-fit`` Bootstrap table: select, scan
   title/type/state, then use the right-aligned history, edit and discard
   button group when needed. Related child records are hidden behind a
@@ -79,6 +76,11 @@ registers Easy Workspace as a parent module with three submodules:
   through ``DataHandler`` and redirects back with a TYPO3 flash message.
 * **All records** — every record on the page in the same Bootstrap table row
   UI (read-only inventory view).
+* **Diagnostics** — automatic database scans for broken, stale or risky
+  workspace records that need manual repair before publish. The same screen
+  also includes grouped health reports, in the style of TYPO3 Reports, for
+  automatic diagnostics, seed coverage, inline child publish risks and
+  manual-only failure classes.
 
 Navigation between submodules uses TYPO3's native module selector and backend
 module routes such as ``webcon_easy_workspace_pending``. The current page/news
@@ -284,6 +286,8 @@ publish the related workspace records collected by the server.
     :maxdepth: 2
 
     Configuration
+    Diagnostics
+    Testing
 
 ..  _quality:
 

@@ -32,7 +32,7 @@ The backend module lives in the left TYPO3 navigation below the workspace
 publish module. It is fully server-rendered with **Fluid templates** and the
 TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, Bootstrap 5 cards,
 tables, list groups, badges and button groups), and it exposes three TYPO3
-submodules (**Dashboard**, **Pending changes**, **All records**) through the
+submodules (**Overview**, **All records**, **Diagnostics**) through the
 native module selector instead of custom in-page navigation. A small companion
 JS file (`easy-workspace-module.js`) only wires
 the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` /
@@ -105,8 +105,8 @@ The **Easy Workspace** backend module is the spacious, server-rendered view for
 editors who need to review more than a compact toolbar dropdown can comfortably
 show. TYPO3 registers it as a parent module with three submodules:
 
-- **Dashboard** — a TYPO3 card with a Bootstrap table for the active workspace,
-  pending count, total page count and quick jumps to the other submodules.
+- **Overview** — the changed-only publish queue for the current page or news
+  record.
 - **Pending changes** — the changed-only publish queue. Rows are rendered in a
   `table-fit` Bootstrap table: select, scan title/type/state, then use the
   right-aligned history, edit and discard button group when needed. Related
@@ -371,7 +371,7 @@ Classes/
 
 Configuration/
 ├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, diff, rollback
-├── Backend/Modules.php                               # Parent module + Dashboard/Pending/Records submodules
+├── Backend/Modules.php                               # Parent module + Overview/Records/Diagnostics submodules
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
 ├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
 ├── Services.yaml                                     # DI / autowiring
@@ -385,7 +385,7 @@ Resources/
 │   ├── Placeholder.html / FlashMessage.html          #   empty / message states
 │   ├── RecordRow.html / ChildChange.html             #   table row + child list-group rows
 │   ├── PublishBar.html                               #   publish form action bar
-│   └── Section/{Dashboard,Pending,All}.html          #   one partial per submodule
+│   └── Section/{Pending,All,Diagnostics,Testing}.html #   one partial per submodule section
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (Lit element)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
 └── Public/JavaScript/

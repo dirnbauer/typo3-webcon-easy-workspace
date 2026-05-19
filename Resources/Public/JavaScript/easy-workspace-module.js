@@ -6,7 +6,8 @@
  * into TYPO3 Core's modal / notification / ajax APIs:
  *
  *   - Discard button:  Modal.confirm → POST → reload
- *   - Diff button:     Modal.advanced({type: ajax}) on the diff endpoint
+ *   - History button:  navigate to TYPO3 core's record_history route
+ *   - Diff fallback:   Modal.advanced({type: ajax}) on the diff endpoint
  *   - Edit / open:     Modal.advanced({type: iframe}, position: sheet)
  *   - Preview link:    AjaxRequest → clipboard + Notification
  *   - Publish form:    select-all sync + deselect button
@@ -55,6 +56,12 @@ function init(container) {
     if (editBtn) {
       event.preventDefault();
       onEdit(editBtn);
+      return;
+    }
+
+    const historyBtn = event.target.closest('[data-wew-history-url]');
+    if (historyBtn && onHistory(historyBtn)) {
+      event.preventDefault();
       return;
     }
 
@@ -107,6 +114,15 @@ function initDocHeader(container) {
     event.preventDefault();
     onPreview(previewBtn, previewUrl);
   });
+}
+
+function onHistory(btn) {
+  const historyUrl = btn.dataset.wewHistoryUrl || '';
+  if (!historyUrl) {
+    return false;
+  }
+  window.location.href = historyUrl;
+  return true;
 }
 
 function onDiscard(btn) {
@@ -163,7 +179,7 @@ function onEdit(btn) {
     Notification.info(label('edit.title'), label('edit.noForm'));
     return;
   }
-  Modal.advanced({
+  const modal = Modal.advanced({
     title: contextual ? '' : formatMessage(label('edit.modalTitle'), { title }),
     type: ModalTypes.iframe,
     content: editUrl,
@@ -171,6 +187,48 @@ function onEdit(btn) {
     position: ModalPositions.sheet,
     hideHeader: contextual,
     additionalCssClasses: ['wew-edit-modal-shell'],
+  });
+  if (contextual) {
+    setupContextualEditMessageHandling(modal, btn);
+  }
+}
+
+function setupContextualEditMessageHandling(modal, trigger) {
+  const messageTarget = window.top || window;
+  let closedFromIframe = false;
+  let saved = false;
+
+  const onMessage = (event) => {
+    if (event.origin !== window.location.origin) {
+      return;
+    }
+    if (event.data?.actionName === 'typo3:editform:saved') {
+      saved = true;
+    }
+    if (event.data?.actionName === 'typo3:editform:closed' || event.data?.actionName === 'typo3:editform:navigate') {
+      closedFromIframe = true;
+      modal.hideModal();
+    }
+  };
+
+  messageTarget.addEventListener('message', onMessage);
+  modal.addEventListener('typo3-modal-hide', (event) => {
+    if (closedFromIframe) {
+      return;
+    }
+    event.preventDefault();
+    modal.querySelector('iframe')?.contentWindow?.postMessage(
+      { actionName: 'typo3:editform:requestclose' },
+      window.location.origin,
+    );
+  });
+  modal.addEventListener('typo3-modal-hidden', () => {
+    messageTarget.removeEventListener('message', onMessage);
+    if (saved) {
+      window.location.reload();
+      return;
+    }
+    trigger.focus();
   });
 }
 
@@ -239,9 +297,23 @@ function initHistoryTabs(container) {
 
 async function onPreview(btn, endpoint) {
   const pageUid = parseInt(btn.dataset.wewPreviewPageUid || '0', 10);
-  if (pageUid <= 0) return;
+  const staticPreviewLink = btn.dataset.wewPreviewLink || '';
+  if (pageUid <= 0 && !staticPreviewLink) return;
   btn.disabled = true;
+  const labelElement = btn.querySelector('.btn-label');
+  const originalLabel = labelElement?.textContent || '';
+  if (labelElement) {
+    labelElement.textContent = label('preview.button.copying');
+  }
   try {
+    if (staticPreviewLink) {
+      await writeToClipboard(staticPreviewLink);
+      if (labelElement) {
+        labelElement.textContent = label('preview.button.copied');
+      }
+      Notification.success(label('preview.link.copied'), staticPreviewLink, 4);
+      return;
+    }
     const response = await new AjaxRequest(endpoint).withQueryArguments({ pageUid }).get();
     const data = await response.resolve();
     if (!data?.url) {
@@ -249,11 +321,19 @@ async function onPreview(btn, endpoint) {
       return;
     }
     await writeToClipboard(data.url);
+    if (labelElement) {
+      labelElement.textContent = label('preview.button.copied');
+    }
     Notification.success(label('preview.link.copied'), data.url, 4);
   } catch (error) {
     Notification.error(label('preview.link.title'), error?.message || label('error.unexpected'));
   } finally {
-    btn.disabled = false;
+    window.setTimeout(() => {
+      if (labelElement) {
+        labelElement.textContent = originalLabel || label('preview.button.preview');
+      }
+      btn.disabled = false;
+    }, 1200);
   }
 }
 
@@ -364,8 +444,13 @@ function formatMessage(template, vars) {
 
 async function writeToClipboard(text) {
   if (navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text);
-    return;
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (error) {
+      // Fall through to the textarea copy path. Some browsers reject
+      // Clipboard API writes after an awaited AJAX call.
+    }
   }
   const textarea = document.createElement('textarea');
   textarea.value = text;

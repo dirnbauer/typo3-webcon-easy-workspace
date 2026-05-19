@@ -1,0 +1,88 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<section class="wew-testing" aria-labelledby="wew-section-testing-title">
+    <div class="wew-testing__heading">
+        <div>
+            <h2 id="wew-section-testing-title">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.title" />
+            </h2>
+            <p>
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.subtitle" />
+            </p>
+        </div>
+        <div class="wew-testing__badges">
+            <span class="wew-testing__status wew-testing__status--{data.summary.statusClass}">
+                {data.summary.statusLabel}
+            </span>
+            <span class="badge badge-default">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.summary.statusCount" arguments="{count: data.summary.statusCount}" />
+            </span>
+            <span class="badge {f:if(condition: data.summary.issueCount, then: 'badge-warning', else: 'badge-success')}">
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.summary.issueCount" arguments="{count: data.summary.issueCount}" />
+            </span>
+        </div>
+    </div>
+
+    <ul class="wew-testing__groups">
+        <f:for each="{data.groups}" as="reportGroup">
+            <li class="wew-testing__group wew-testing__group--{reportGroup.statusClass}">
+                <div class="wew-testing__group-head">
+                    <div class="wew-testing__group-title">
+                        <span class="wew-testing__icon" aria-hidden="true">
+                            <core:icon identifier="{reportGroup.icon}" size="small" />
+                        </span>
+                        <div>
+                            <h3>{reportGroup.label}</h3>
+                            <p>{reportGroup.description}</p>
+                        </div>
+                    </div>
+                    <div class="wew-testing__badges">
+                        <span class="wew-testing__status wew-testing__status--{reportGroup.statusClass}">
+                            {reportGroup.statusLabel}
+                        </span>
+                        <span class="badge badge-default">
+                            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.group.statusCount" arguments="{count: reportGroup.statusCount}" />
+                        </span>
+                    </div>
+                </div>
+
+                <ul class="wew-testing__items">
+                    <f:for each="{reportGroup.items}" as="reportItem">
+                        <li class="wew-testing__item wew-testing__item--{reportItem.statusClass}">
+                            <span class="wew-testing__item-icon" aria-hidden="true">
+                                <core:icon identifier="{reportItem.icon}" size="small" />
+                            </span>
+                            <div class="wew-testing__item-body">
+                                <div class="wew-testing__item-title">
+                                    <strong>{reportItem.title}</strong>
+                                    <f:if condition="{reportItem.value}">
+                                        <span class="badge badge-default">{reportItem.value}</span>
+                                    </f:if>
+                                </div>
+                                <p>{reportItem.message}</p>
+                                <f:if condition="{reportItem.details}">
+                                    <ul class="wew-testing__details">
+                                        <f:for each="{reportItem.details}" as="detail">
+                                            <li>{detail}</li>
+                                        </f:for>
+                                    </ul>
+                                </f:if>
+                                <p class="wew-testing__solve">
+                                    <strong><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.solve" />:</strong>
+                                    {reportItem.solve}
+                                </p>
+                            </div>
+                            <span class="wew-testing__status wew-testing__status--{reportItem.statusClass}">
+                                {reportItem.statusLabel}
+                            </span>
+                        </li>
+                    </f:for>
+                </ul>
+            </li>
+        </f:for>
+    </ul>
+</section>
+
+</html>

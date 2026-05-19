@@ -40,18 +40,31 @@ final class TcaUtility
     public static function extractInlineFieldConfigs(array $tca): array
     {
         $configs = [];
-        foreach (Value::stringKeyArray($tca['columns'] ?? null) as $column) {
-            $fieldConfig = Value::stringKeyArray(Value::stringKeyArray($column)['config'] ?? null);
-            if (($fieldConfig['type'] ?? null) === 'inline') {
-                $configs[] = $fieldConfig;
+        $columns = Value::stringKeyArray($tca['columns'] ?? null);
+        foreach (Value::stringKeyArray($tca['types'] ?? null) as $typeConfig) {
+            foreach (Value::stringKeyArray(Value::stringKeyArray($typeConfig)['columnsOverrides'] ?? null) as $fieldName => $override) {
+                $columns[$fieldName] = array_replace_recursive(
+                    Value::stringKeyArray($columns[$fieldName] ?? null),
+                    Value::stringKeyArray($override),
+                );
             }
         }
-        foreach (Value::stringKeyArray($tca['types'] ?? null) as $typeConfig) {
-            foreach (Value::stringKeyArray(Value::stringKeyArray($typeConfig)['columnsOverrides'] ?? null) as $override) {
-                $fieldConfig = Value::stringKeyArray(Value::stringKeyArray($override)['config'] ?? null);
-                if (($fieldConfig['type'] ?? null) === 'inline') {
-                    $configs[] = $fieldConfig;
+
+        $seen = [];
+        foreach ($columns as $column) {
+            $fieldConfig = Value::stringKeyArray(Value::stringKeyArray($column)['config'] ?? null);
+            if (($fieldConfig['type'] ?? null) === 'inline') {
+                $key = json_encode([
+                    $fieldConfig['foreign_table'] ?? null,
+                    $fieldConfig['foreign_field'] ?? null,
+                    $fieldConfig['foreign_table_field'] ?? null,
+                    $fieldConfig['foreign_match_fields'] ?? null,
+                ]);
+                if (isset($seen[$key])) {
+                    continue;
                 }
+                $seen[$key] = true;
+                $configs[] = $fieldConfig;
             }
         }
         return $configs;

@@ -1,202 +1,1295 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="de">
   <file id="EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf">
-    <unit id="discardTag.title"><segment><source>Decline the changes</source><target state="translated">Änderungen verwerfen</target></segment></unit>
-    <unit id="discardTag.subtitle"><segment><source>Back to the last published version</source><target state="translated">Zurück zur zuletzt veröffentlichten Version</target></segment></unit>
-    <unit id="toolbar.title"><segment><source>Workspace</source><target state="translated">Arbeitsbereich</target></segment></unit>
-    <unit id="toolbar.activeWorkspace"><segment><source>Active workspace</source><target state="translated">Aktiver Arbeitsbereich</target></segment></unit>
-    <unit id="toolbar.filter.aria"><segment><source>Filter pending records</source><target state="translated">Ausstehende Datensätze filtern</target></segment></unit>
-    <unit id="toolbar.tab.changed"><segment><source>To publish</source><target state="translated">Zu veröffentlichen</target></segment></unit>
-    <unit id="toolbar.tab.all"><segment><source>All on page</source><target state="translated">Alle auf der Seite</target></segment></unit>
-    <unit id="toolbar.records"><segment><source>{count, plural, one {# record} other {# records}}</source><target state="translated">{count, plural, one {# Datensatz} other {# Datensätze}}</target></segment></unit>
-    <unit id="toolbar.loading"><segment><source>Loading pending changes...</source><target state="translated">Ausstehende Änderungen werden geladen...</target></segment></unit>
-    <unit id="toolbar.noContext"><segment><source>Open a page or a news record in the page tree to see what is ready to publish.</source><target state="translated">Öffnen Sie eine Seite oder einen News-Datensatz im Seitenbaum, um zu sehen, was veröffentlicht werden kann.</target></segment></unit>
-    <unit id="toolbar.empty.all"><segment><source>This page is empty (no records yet).</source><target state="translated">Diese Seite ist leer (noch keine Datensätze).</target></segment></unit>
-    <unit id="toolbar.empty.changed"><segment><source>Nothing pending on this page.</source><target state="translated">Auf dieser Seite gibt es nichts Ausstehendes.</target></segment></unit>
-    <unit id="toolbar.loadError"><segment><source>Could not load pending changes.</source><target state="translated">Ausstehende Änderungen konnten nicht geladen werden.</target></segment></unit>
-    <unit id="toolbar.column"><segment><source>Column {number}</source><target state="translated">Spalte {number}</target></segment></unit>
-    <unit id="toolbar.hidden.title"><segment><source>Record is hidden and will not show on the live site</source><target state="translated">Datensatz ist verborgen und wird auf der Live-Seite nicht angezeigt</target></segment></unit>
-    <unit id="toolbar.hidden"><segment><source>Hidden</source><target state="translated">Verborgen</target></segment></unit>
-    <unit id="toolbar.allSelected"><segment><source>All selected - click to deselect</source><target state="translated">Alle ausgewählt - klicken zum Abwählen</target></segment></unit>
-    <unit id="toolbar.someSelected"><segment><source>Some selected - click to select all</source><target state="translated">Einige ausgewählt - klicken zum Auswählen aller</target></segment></unit>
-    <unit id="toolbar.selectAll"><segment><source>Select all</source><target state="translated">Alle auswählen</target></segment></unit>
-    <unit id="toolbar.deselectAll"><segment><source>Deselect all</source><target state="translated">Alle abwählen</target></segment></unit>
-    <unit id="toolbar.selectAllChanges"><segment><source>Select all changes</source><target state="translated">Alle Änderungen auswählen</target></segment></unit>
-    <unit id="toolbar.deselectAllChanges"><segment><source>Deselect all changes</source><target state="translated">Alle Änderungen abwählen</target></segment></unit>
-    <unit id="toolbar.selected"><segment><source>selected</source><target state="translated">ausgewählt</target></segment></unit>
-    <unit id="toolbar.selectedOf"><segment><source>{selected} / {total}</source><target state="translated">{selected} / {total}</target></segment></unit>
-    <unit id="toolbar.of"><segment><source>of</source><target state="translated">von</target></segment></unit>
-    <unit id="toolbar.publishing"><segment><source>Publishing...</source><target state="translated">Wird veröffentlicht...</target></segment></unit>
-    <unit id="toolbar.publishToLive"><segment><source>Publish to live</source><target state="translated">Live veröffentlichen</target></segment></unit>
-    <unit id="toolbar.badge.pending"><segment><source>{count, plural, one {# pending workspace change on this page} other {# pending workspace changes on this page}}</source><target state="translated">{count, plural, one {# ausstehende Workspace-Änderung auf dieser Seite} other {# ausstehende Workspace-Änderungen auf dieser Seite}}</target></segment></unit>
-    <unit id="toolbar.context.recordsPending"><segment><source>{total, plural, one {# record} other {# records}}, {changed} pending</source><target state="translated">{total, plural, one {# Datensatz} other {# Datensätze}}, {changed} ausstehend</target></segment></unit>
-    <unit id="toolbar.context.pending"><segment><source>{count} pending</source><target state="translated">{count} ausstehend</target></segment></unit>
-    <unit id="toolbar.context.none"><segment><source>No page or news selected.</source><target state="translated">Keine Seite oder News ausgewählt.</target></segment></unit>
-    <unit id="module.title"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
-    <unit id="module.description"><segment><source>Review and publish the current page's workspace changes with their related records.</source><target state="translated">Workspace-Änderungen der aktuellen Seite mit zugehörigen Datensätzen prüfen und veröffentlichen.</target></segment></unit>
-    <unit id="module.pending"><segment><source>pending</source><target state="translated">ausstehend</target></segment></unit>
-    <unit id="module.total"><segment><source>total</source><target state="translated">gesamt</target></segment></unit>
-    <unit id="module.disabledBySettings"><segment><source>Easy Workspace is disabled in your user settings or by administrator configuration.</source><target state="translated">Easy Workspace ist in Ihren Benutzereinstellungen oder durch die Administrationskonfiguration deaktiviert.</target></segment></unit>
-    <unit id="module.liveWorkspace"><segment><source>Switch to a workspace to use Easy Workspace.</source><target state="translated">Wechseln Sie in einen Arbeitsbereich, um Easy Workspace zu verwenden.</target></segment></unit>
-    <unit id="module.nav.aria"><segment><source>Easy Workspace sections</source><target state="translated">Easy-Workspace-Bereiche</target></segment></unit>
-    <unit id="module.nav.eyebrow"><segment><source>Workspace</source><target state="translated">Arbeitsbereich</target></segment></unit>
-    <unit id="module.section.dashboard"><segment><source>Dashboard</source><target state="translated">Übersicht</target></segment></unit>
-    <unit id="module.section.pending"><segment><source>Ready to publish</source><target state="translated">Zur Veröffentlichung bereit</target></segment></unit>
-    <unit id="module.section.all"><segment><source>All records</source><target state="translated">Alle Datensätze</target></segment></unit>
-    <unit id="module.dashboard.subtitle"><segment><source>Workspace overview at a glance.</source><target state="translated">Workspace-Übersicht auf einen Blick.</target></segment></unit>
-    <unit id="module.dashboard.heroTitle"><segment><source>Ready to publish</source><target state="translated">Bereit zur Veröffentlichung</target></segment></unit>
-    <unit id="module.dashboard.heroHint.has"><segment><source>{count, plural, one {# record is waiting for you} other {# records are waiting for you}}. Review and publish them now.</source><target state="translated">{count, plural, one {# Datensatz wartet} other {# Datensätze warten}} auf Sie. Jetzt prüfen und veröffentlichen.</target></segment></unit>
-    <unit id="module.dashboard.heroHint.none"><segment><source>Nothing pending on this page — your workspace is in sync with live.</source><target state="translated">Auf dieser Seite ist nichts offen — Ihr Arbeitsbereich ist mit live synchron.</target></segment></unit>
-    <unit id="module.dashboard.statPending.label"><segment><source>Pending</source><target state="translated">Offen</target></segment></unit>
-    <unit id="module.dashboard.statPending.hint"><segment><source>changes ready to publish</source><target state="translated">Änderungen bereit zur Veröffentlichung</target></segment></unit>
-    <unit id="module.dashboard.statTotal.label"><segment><source>On this page</source><target state="translated">Auf dieser Seite</target></segment></unit>
-    <unit id="module.dashboard.statTotal.hint"><segment><source>records in scope</source><target state="translated">Datensätze im Geltungsbereich</target></segment></unit>
-    <unit id="module.dashboard.statSelected.label"><segment><source>Selected</source><target state="translated">Ausgewählt</target></segment></unit>
-    <unit id="module.dashboard.statSelected.hint"><segment><source>queued for the next publish</source><target state="translated">für die nächste Veröffentlichung vorgemerkt</target></segment></unit>
-    <unit id="module.dashboard.cta.review"><segment><source>Review pending changes</source><target state="translated">Offene Änderungen prüfen</target></segment></unit>
-    <unit id="module.dashboard.cta.allRecords"><segment><source>Browse all records on this page</source><target state="translated">Alle Datensätze auf der Seite anzeigen</target></segment></unit>
-    <unit id="module.dashboard.context"><segment><source>Context</source><target state="translated">Kontext</target></segment></unit>
-    <unit id="module.dashboard.workspace"><segment><source>Active workspace</source><target state="translated">Aktiver Arbeitsbereich</target></segment></unit>
-    <unit id="module.kpi.openChanges"><segment><source>Ready to publish</source><target state="translated">Zur Veröffentlichung bereit</target></segment></unit>
-    <unit id="module.kpi.contentElements"><segment><source>Content element count</source><target state="translated">Anzahl Inhaltselemente</target></segment></unit>
-    <unit id="module.kpi.contentElements.hint"><segment><source>Elements on this page.</source><target state="translated">Elemente auf dieser Seite.</target></segment></unit>
-    <unit id="module.kpi.lastChanged"><segment><source>Last changed on page</source><target state="translated">Zuletzt geändert auf der Seite</target></segment></unit>
-    <unit id="module.kpi.lastChanged.hint"><segment><source>Newest workspace change in this queue.</source><target state="translated">Neueste Workspace-Änderung in dieser Liste.</target></segment></unit>
-    <unit id="module.kpi.recordsInScope"><segment><source>Records in scope</source><target state="translated">Datensätze im Prüfbereich</target></segment></unit>
-    <unit id="module.kpi.recordsInScope.hint"><segment><source>Records checked on this page.</source><target state="translated">Geprüfte Datensätze auf dieser Seite.</target></segment></unit>
-    <unit id="module.pending.subtitle"><segment><source>Workspace changes can be published to the live version.</source><target state="translated">Workspace-Änderungen können in die Live-Version übernommen werden.</target></segment></unit>
-    <unit id="module.pending.empty"><segment><source>Nothing pending on this page yet.</source><target state="translated">Auf dieser Seite ist noch nichts offen.</target></segment></unit>
-    <unit id="module.pending.emptyHint"><segment><source>Edits made anywhere on this page will appear here, ready to publish.</source><target state="translated">Bearbeitungen auf dieser Seite erscheinen hier zur Veröffentlichung.</target></segment></unit>
-    <unit id="module.all.subtitle"><segment><source>Every record visible on this page — workspace state included.</source><target state="translated">Alle Datensätze dieser Seite — inklusive Workspace-Status.</target></segment></unit>
-    <unit id="module.all.empty"><segment><source>This page has no records yet.</source><target state="translated">Diese Seite enthält noch keine Datensätze.</target></segment></unit>
-    <unit id="module.all.emptyHint"><segment><source>Add content elements to populate this list.</source><target state="translated">Fügen Sie Inhaltselemente hinzu, um diese Liste zu füllen.</target></segment></unit>
-    <unit id="module.column.record"><segment><source>Record</source><target state="translated">Datensatz</target></segment></unit>
-    <unit id="module.column.state"><segment><source>Changes</source><target state="translated">Änderungen</target></segment></unit>
-    <unit id="module.column.actions"><segment><source>Actions</source><target state="translated">Aktionen</target></segment></unit>
-    <unit id="module.relatedRecords"><segment><source>{count, plural, one {related change} other {related changes}}</source><target state="translated">{count, plural, one {zugehörige Änderung} other {zugehörige Änderungen}}</target></segment></unit>
-    <unit id="module.relatedChanges.belongsTo"><segment><source>Belongs to record</source><target state="translated">Gehört zu Datensatz</target></segment></unit>
-    <unit id="module.relatedChanges.toggleAll"><segment><source>Related changes</source><target state="translated">Zugehörige Änderungen</target></segment></unit>
-    <unit id="module.relatedChanges.showAll"><segment><source>Show related changes</source><target state="translated">Zugehörige Änderungen anzeigen</target></segment></unit>
-    <unit id="module.relatedChanges.hideAll"><segment><source>Hide related changes</source><target state="translated">Zugehörige Änderungen ausblenden</target></segment></unit>
-    <unit id="module.publishBar.summary"><segment><source>{count, plural, one {# record selected} other {# records selected}}</source><target state="translated">{count, plural, one {# Datensatz ausgewählt} other {# Datensätze ausgewählt}}</target></segment></unit>
-    <unit id="module.publishBar.deselect"><segment><source>Deselect</source><target state="translated">Auswahl aufheben</target></segment></unit>
-    <unit id="module.publishBar.unselected"><segment><source>Select changed records to publish them.</source><target state="translated">Wählen Sie geänderte Datensätze, um sie zu veröffentlichen.</target></segment></unit>
-    <unit id="module.headerActions.preview"><segment><source>Preview</source><target state="translated">Vorschau</target></segment></unit>
-    <unit id="userSettings.tab"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
-    <unit id="userSettings.enabled"><segment><source>Use Easy Workspace</source><target state="translated">Easy Workspace verwenden</target></segment></unit>
-    <unit id="userSettings.showSubelementsToolbar"><segment><source>Show subelements in the toolbar</source><target state="translated">Unterelemente im Toolbar-Menü anzeigen</target></segment></unit>
-    <unit id="userSettings.showSubelementsModule"><segment><source>Show subelements in the Easy Workspace module</source><target state="translated">Unterelemente im Easy-Workspace-Modul anzeigen</target></segment></unit>
-    <unit id="context.page"><segment><source>Page #{uid}</source><target state="translated">Seite #{uid}</target></segment></unit>
-    <unit id="context.news"><segment><source>News #{uid}</source><target state="translated">News #{uid}</target></segment></unit>
-    <unit id="record.pageRecord"><segment><source>Page record</source><target state="translated">Seitendatensatz</target></segment></unit>
-    <unit id="record.newsRecord"><segment><source>News record</source><target state="translated">News-Datensatz</target></segment></unit>
-    <unit id="state.live"><segment><source>Live</source><target state="translated">Live</target></segment></unit>
-    <unit id="state.new"><segment><source>New</source><target state="translated">Neu</target></segment></unit>
-    <unit id="state.delete"><segment><source>Will be deleted</source><target state="translated">Wird gelöscht</target></segment></unit>
-    <unit id="state.move"><segment><source>Moved</source><target state="translated">Verschoben</target></segment></unit>
-    <unit id="state.modified"><segment><source>Modified</source><target state="translated">Geändert</target></segment></unit>
-    <unit id="table.pages"><segment><source>Page</source><target state="translated">Seite</target></segment></unit>
-    <unit id="table.tt_content"><segment><source>Page Content</source><target state="translated">Seiteninhalt</target></segment></unit>
-    <unit id="table.tx_news_domain_model_news"><segment><source>News</source><target state="translated">News</target></segment></unit>
-    <unit id="table.sys_file_metadata"><segment><source>File Metadata</source><target state="translated">Dateimetadaten</target></segment></unit>
-    <unit id="table.tt_address"><segment><source>Address</source><target state="translated">Adresse</target></segment></unit>
-    <unit id="diff.viewHistory"><segment><source>History</source><target state="translated">Historie</target></segment></unit>
-    <unit id="diff.title.newWithChanges"><segment><source>View changed fields and edit history for this new workspace record</source><target state="translated">Geänderte Felder und Bearbeitungshistorie für diesen neuen Workspace-Datensatz anzeigen</target></segment></unit>
-    <unit id="diff.title.newDetails"><segment><source>Open this new workspace record details and edit history</source><target state="translated">Details und Bearbeitungshistorie dieses neuen Workspace-Datensatzes öffnen</target></segment></unit>
-    <unit id="diff.title.removal"><segment><source>Open details and edit history for this pending removal</source><target state="translated">Details und Bearbeitungshistorie für diese ausstehende Löschung öffnen</target></segment></unit>
-    <unit id="diff.title.move"><segment><source>Open details and edit history for this pending move</source><target state="translated">Details und Bearbeitungshistorie für diese ausstehende Verschiebung öffnen</target></segment></unit>
-    <unit id="diff.title.changed"><segment><source>View which fields changed in this record (opens a dialog)</source><target state="translated">Anzeigen, welche Felder in diesem Datensatz geändert wurden (öffnet einen Dialog)</target></segment></unit>
-    <unit id="diff.title.history"><segment><source>No field-level differences right now - opens the history of this record</source><target state="translated">Aktuell keine Unterschiede auf Feldebene - öffnet die Historie dieses Datensatzes</target></segment></unit>
-    <unit id="diff.modal.historyTitle"><segment><source>History - {title}</source><target state="translated">Historie - {title}</target></segment></unit>
-    <unit id="diff.modal.editTitle"><segment><source>Edit - {title}</source><target state="translated">Bearbeiten - {title}</target></segment></unit>
-    <unit id="diff.noTitle"><segment><source>[No title]</source><target state="translated">[Kein Titel]</target></segment></unit>
-    <unit id="diff.template.workspaceUid"><segment><source>ws #{uid}</source><target state="translated">ws #{uid}</target></segment></unit>
-    <unit id="diff.template.liveUid"><segment><source>live #{uid}</source><target state="translated">live #{uid}</target></segment></unit>
-    <unit id="discard.button.title"><segment><source>Discard this change</source><target state="translated">Diese Änderung verwerfen</target></segment></unit>
-    <unit id="discard.button.disabledTitle"><segment><source>Discard is disabled by configuration (enableRevert = 0)</source><target state="translated">Verwerfen ist per Konfiguration deaktiviert (enableRevert = 0)</target></segment></unit>
-    <unit id="discard.button.aria"><segment><source>Discard this workspace change</source><target state="translated">Diese Workspace-Änderung verwerfen</target></segment></unit>
-    <unit id="discard.button.disabledAria"><segment><source>Discard disabled by configuration</source><target state="translated">Verwerfen per Konfiguration deaktiviert</target></segment></unit>
-    <unit id="discard.modal.title"><segment><source>Discard this change?</source><target state="translated">Diese Änderung verwerfen?</target></segment></unit>
-    <unit id="discard.modal.message"><segment><source>"{title}" ({table}) will lose its workspace edits. The live record stays untouched, but the staged change is gone for good. This cannot be undone.</source><target state="translated">"{title}" ({table}) verliert seine Workspace-Bearbeitungen. Der Live-Datensatz bleibt unverändert, aber die vorbereitete Änderung ist endgültig weg. Dies kann nicht rückgängig gemacht werden.</target></segment></unit>
-    <unit id="discard.modal.cancel"><segment><source>Cancel</source><target state="translated">Abbrechen</target></segment></unit>
-    <unit id="discard.modal.confirm"><segment><source>Discard</source><target state="translated">Verwerfen</target></segment></unit>
-    <unit id="discard.success.title"><segment><source>Discarded</source><target state="translated">Verworfen</target></segment></unit>
-    <unit id="discard.success.message"><segment><source>Workspace version of "{title}" discarded.</source><target state="translated">Workspace-Version von "{title}" wurde verworfen.</target></segment></unit>
-    <unit id="discard.error.title"><segment><source>Could not discard</source><target state="translated">Konnte nicht verworfen werden</target></segment></unit>
-    <unit id="discard.error.failedTitle"><segment><source>Discard failed</source><target state="translated">Verwerfen fehlgeschlagen</target></segment></unit>
-    <unit id="preview.show.title"><segment><source>Show in preview</source><target state="translated">In Vorschau zeigen</target></segment></unit>
-    <unit id="preview.noIframe.visualEditor"><segment><source>No preview iframe present. Open the page in Web &gt; Edit (Visual Editor).</source><target state="translated">Kein Vorschau-Iframe vorhanden. Öffnen Sie die Seite in Web &gt; Bearbeiten (Visual Editor).</target></segment></unit>
-    <unit id="preview.noIframe.viewpage"><segment><source>No preview iframe present. Open the page in Web &gt; View.</source><target state="translated">Kein Vorschau-Iframe vorhanden. Öffnen Sie die Seite in Web &gt; Ansicht.</target></segment></unit>
-    <unit id="preview.noIframe.install"><segment><source>No preview iframe present. Install friendsoftypo3/visual-editor or use Web &gt; View.</source><target state="translated">Kein Vorschau-Iframe vorhanden. Installieren Sie friendsoftypo3/visual-editor oder verwenden Sie Web &gt; Ansicht.</target></segment></unit>
-    <unit id="preview.loginHint"><segment><source>The Visual Editor preview is waiting for a frontend login. Click "Go to login" inside the editor panel, sign in, then reload, or use Web &gt; Layout where this works without the extra login.</source><target state="translated">Die Visual-Editor-Vorschau wartet auf eine Frontend-Anmeldung. Klicken Sie im Editor-Panel auf "Zum Login", melden Sie sich an und laden Sie neu, oder verwenden Sie Web &gt; Layout, wo dies ohne zusätzliche Anmeldung funktioniert.</target></segment></unit>
-    <unit id="preview.notFound"><segment><source>Searched {count, plural, one {# preview iframe} other {# preview iframes}} but did not find element for uid {liveUid} (workspace #{workspaceUid}). See the browser console for the preview markup.</source><target state="translated">{count, plural, one {# Vorschau-Iframe} other {# Vorschau-Iframes}} durchsucht, aber kein Element für UID {liveUid} (Workspace #{workspaceUid}) gefunden. Siehe Browser-Konsole für das Vorschau-Markup.</target></segment></unit>
-    <unit id="preview.button.title"><segment><source>Copy a shareable preview URL of this page to the clipboard</source><target state="translated">Teilbare Vorschau-URL dieser Seite in die Zwischenablage kopieren</target></segment></unit>
-    <unit id="preview.button.copying"><segment><source>Copying...</source><target state="translated">Wird kopiert...</target></segment></unit>
-    <unit id="preview.button.copied"><segment><source>Copied</source><target state="translated">Kopiert</target></segment></unit>
-    <unit id="preview.button.preview"><segment><source>Preview</source><target state="translated">Vorschau</target></segment></unit>
-    <unit id="preview.link.title"><segment><source>Preview link</source><target state="translated">Vorschau-Link</target></segment></unit>
-    <unit id="preview.link.noUrl"><segment><source>No URL returned.</source><target state="translated">Keine URL zurückgegeben.</target></segment></unit>
-    <unit id="preview.link.copied"><segment><source>Preview link copied</source><target state="translated">Vorschau-Link kopiert</target></segment></unit>
-    <unit id="edit.title"><segment><source>Edit</source><target state="translated">Bearbeiten</target></segment></unit>
-    <unit id="edit.tooltip.part"><segment><source>click to edit this element</source><target state="translated">klicken, um dieses Element zu bearbeiten</target></segment></unit>
-    <unit id="edit.tooltip.visualEditor"><segment><source>Hover to show this in the Visual Editor - {editPart}</source><target state="translated">Bewegen, um dies im Visual Editor zu zeigen - {editPart}</target></segment></unit>
-    <unit id="edit.tooltip.preview"><segment><source>Hover to locate in preview - {editPart}</source><target state="translated">Bewegen, um dies in der Vorschau zu finden - {editPart}</target></segment></unit>
-    <unit id="edit.noForm"><segment><source>No edit form available for this record.</source><target state="translated">Für diesen Datensatz ist kein Bearbeitungsformular verfügbar.</target></segment></unit>
-    <unit id="edit.modalTitle"><segment><source>Edit - {title}</source><target state="translated">Bearbeiten - {title}</target></segment></unit>
-    <unit id="edit.saved.title"><segment><source>Record saved</source><target state="translated">Datensatz gespeichert</target></segment></unit>
-    <unit id="edit.saved.messageWithTitle"><segment><source>"{title}" was updated.</source><target state="translated">"{title}" wurde aktualisiert.</target></segment></unit>
-    <unit id="edit.saved.message"><segment><source>Record was updated.</source><target state="translated">Datensatz wurde aktualisiert.</target></segment></unit>
-    <unit id="rollback.failedTitle"><segment><source>Revert failed</source><target state="translated">Zurücksetzen fehlgeschlagen</target></segment></unit>
-    <unit id="rollback.missingData"><segment><source>Missing data on the revert button (mode={mode}, historyUid={historyUid}).</source><target state="translated">Fehlende Daten am Zurücksetzen-Button (mode={mode}, historyUid={historyUid}).</target></segment></unit>
-    <unit id="rollback.noField"><segment><source>No field name on the revert button.</source><target state="translated">Kein Feldname am Zurücksetzen-Button.</target></segment></unit>
-    <unit id="rollback.confirmField"><segment><source>Revert this field change for "{title}"? Later edits to other fields are kept.</source><target state="translated">Diese Feldänderung für "{title}" zurücksetzen? Spätere Änderungen an anderen Feldern bleiben erhalten.</target></segment></unit>
-    <unit id="rollback.confirmLinear"><segment><source>Revert this edit and every later edit on "{title}"? This affects every field touched after this point.</source><target state="translated">Diese Bearbeitung und jede spätere Bearbeitung an "{title}" zurücksetzen? Dies betrifft jedes Feld, das danach geändert wurde.</target></segment></unit>
-    <unit id="rollback.successTitle"><segment><source>Reverted</source><target state="translated">Zurückgesetzt</target></segment></unit>
-    <unit id="rollback.successField"><segment><source>Field "{field}" reverted.</source><target state="translated">Feld "{field}" wurde zurückgesetzt.</target></segment></unit>
-    <unit id="rollback.successLinear"><segment><source>Edit reverted.</source><target state="translated">Bearbeitung wurde zurückgesetzt.</target></segment></unit>
-    <unit id="rollback.errorTitle"><segment><source>Could not revert</source><target state="translated">Konnte nicht zurückgesetzt werden</target></segment></unit>
-    <unit id="publish.success.title"><segment><source>Published to live</source><target state="translated">Live veröffentlicht</target></segment></unit>
-    <unit id="publish.success.message"><segment><source>{count, plural, one {# item published.} other {# items published.}}</source><target state="translated">{count, plural, one {# Element veröffentlicht.} other {# Elemente veröffentlicht.}}</target></segment></unit>
-    <unit id="publish.warning.title"><segment><source>Publish finished with errors</source><target state="translated">Veröffentlichen mit Fehlern abgeschlossen</target></segment></unit>
-    <unit id="publish.failedTitle"><segment><source>Publish failed</source><target state="translated">Veröffentlichen fehlgeschlagen</target></segment></unit>
-    <unit id="error.unknown"><segment><source>Unknown error.</source><target state="translated">Unbekannter Fehler.</target></segment></unit>
-    <unit id="error.unexpected"><segment><source>Unexpected error.</source><target state="translated">Unerwarteter Fehler.</target></segment></unit>
-    <unit id="error.disabled"><segment><source>Easy Workspace is disabled by configuration.</source><target state="translated">Easy Workspace ist per Konfiguration deaktiviert.</target></segment></unit>
-    <unit id="error.invalidRecord"><segment><source>Invalid table or record id.</source><target state="translated">Ungültige Tabelle oder Datensatz-ID.</target></segment></unit>
-    <unit id="error.recordNotFound"><segment><source>Record not found or not accessible in this workspace.</source><target state="translated">Datensatz wurde nicht gefunden oder ist in diesem Arbeitsbereich nicht zugänglich.</target></segment></unit>
-    <unit id="error.invalidArguments"><segment><source>Invalid arguments.</source><target state="translated">Ungültige Argumente.</target></segment></unit>
-    <unit id="error.unknownRollbackMode"><segment><source>Unknown rollback mode.</source><target state="translated">Unbekannter Zurücksetzen-Modus.</target></segment></unit>
-    <unit id="error.nothingToRollback"><segment><source>Nothing to roll back at this entry. The history entry may be older than the live baseline, or the diff is empty.</source><target state="translated">Bei diesem Eintrag gibt es nichts zurückzusetzen. Der Historieneintrag ist möglicherweise älter als die Live-Basis oder der Diff ist leer.</target></segment></unit>
-    <unit id="error.invalidSelections"><segment><source>Invalid selections payload.</source><target state="translated">Ungültige Auswahl-Nutzlast.</target></segment></unit>
-    <unit id="error.missingTableWorkspace"><segment><source>Missing or unsupported table / workspaceUid.</source><target state="translated">Fehlende oder nicht unterstützte Tabelle / workspaceUid.</target></segment></unit>
-    <unit id="error.revertDisabled"><segment><source>Revert is disabled by TSconfig.</source><target state="translated">Zurücksetzen ist per TSconfig deaktiviert.</target></segment></unit>
-    <unit id="error.missingPageUid"><segment><source>Missing pageUid.</source><target state="translated">pageUid fehlt.</target></segment></unit>
-    <unit id="error.previewLinkDisabled"><segment><source>Preview link is disabled by TSconfig.</source><target state="translated">Vorschau-Link ist per TSconfig deaktiviert.</target></segment></unit>
-    <unit id="error.previewLinkBuild"><segment><source>Could not build a preview link for this page.</source><target state="translated">Vorschau-Link für diese Seite konnte nicht erzeugt werden.</target></segment></unit>
-    <unit id="error.publishFromLive"><segment><source>Cannot publish from the live workspace.</source><target state="translated">Aus dem Live-Arbeitsbereich kann nicht veröffentlicht werden.</target></segment></unit>
-    <unit id="error.selectionWrongWorkspace"><segment><source>Selection contained records that do not belong to the active workspace.</source><target state="translated">Die Auswahl enthielt Datensätze, die nicht zum aktiven Arbeitsbereich gehören.</target></segment></unit>
-    <unit id="error.noPublishableRecords"><segment><source>No publishable records in selection.</source><target state="translated">Keine veröffentlichbaren Datensätze in der Auswahl.</target></segment></unit>
-    <unit id="error.discardFromLive"><segment><source>Cannot discard from the live workspace.</source><target state="translated">Im Live-Arbeitsbereich kann nicht verworfen werden.</target></segment></unit>
-    <unit id="error.recordWrongWorkspace"><segment><source>Record does not belong to the active workspace.</source><target state="translated">Datensatz gehört nicht zum aktiven Arbeitsbereich.</target></segment></unit>
-    <unit id="history.action.created"><segment><source>Created</source><target state="translated">Erstellt</target></segment></unit>
-    <unit id="history.action.modified"><segment><source>Modified</source><target state="translated">Geändert</target></segment></unit>
-    <unit id="history.action.moved"><segment><source>Moved</source><target state="translated">Verschoben</target></segment></unit>
-    <unit id="history.action.deleted"><segment><source>Deleted</source><target state="translated">Gelöscht</target></segment></unit>
-    <unit id="history.action.changed"><segment><source>Changed</source><target state="translated">Geändert</target></segment></unit>
-    <unit id="history.user.system"><segment><source>System</source><target state="translated">System</target></segment></unit>
-    <unit id="history.user.fallback"><segment><source>User #{uid}</source><target state="translated">Benutzer #{uid}</target></segment></unit>
-    <unit id="history.editCount"><segment><source>{count, plural, one {# edit} other {# edits}}</source><target state="translated">{count, plural, one {# Bearbeitung} other {# Bearbeitungen}}</target></segment></unit>
-    <unit id="history.tab.contentElement"><segment><source>Content element</source><target state="translated">Inhaltselement</target></segment></unit>
-    <unit id="history.tab.record"><segment><source>Record history</source><target state="translated">Datensatzverlauf</target></segment></unit>
-    <unit id="history.tab.page"><segment><source>Page history</source><target state="translated">Seitenverlauf</target></segment></unit>
-    <unit id="history.frame.record"><segment><source>Record history</source><target state="translated">Datensatzverlauf</target></segment></unit>
-    <unit id="history.frame.page"><segment><source>Full page history</source><target state="translated">Vollständiger Seitenverlauf</target></segment></unit>
-    <unit id="history.aria"><segment><source>Workspace edit history</source><target state="translated">Workspace-Bearbeitungshistorie</target></segment></unit>
-    <unit id="history.rollback.linearTitle"><segment><source>Revert this edit and every later edit on this record</source><target state="translated">Diese Bearbeitung und jede spätere Bearbeitung an diesem Datensatz zurücksetzen</target></segment></unit>
-    <unit id="history.rollback.linear"><segment><source>Revert to before</source><target state="translated">Auf vorher zurücksetzen</target></segment></unit>
-    <unit id="history.rollback.fieldTitle"><segment><source>Revert only this field change</source><target state="translated">Nur diese Feldänderung zurücksetzen</target></segment></unit>
-    <unit id="history.rollback.fieldAria"><segment><source>Revert</source><target state="translated">Zurücksetzen</target></segment></unit>
-    <unit id="history.empty"><segment><source>No workspace edit history recorded for this record yet.</source><target state="translated">Für diesen Datensatz wurde noch keine Workspace-Bearbeitungshistorie aufgezeichnet.</target></segment></unit>
-    <unit id="history.openEditor"><segment><source>Open in form editor</source><target state="translated">Im Formular-Editor öffnen</target></segment></unit>
+    <unit id="discardTag.title">
+      <segment>
+        <source>Decline the changes</source>
+        <target state="translated">Änderungen verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.subtitle">
+      <segment>
+        <source>Back to the last published version</source>
+        <target state="translated">Zurück zur zuletzt veröffentlichten Version</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.title">
+      <segment>
+        <source>Workspace</source>
+        <target state="translated">Arbeitsbereich</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.activeWorkspace">
+      <segment>
+        <source>Active workspace</source>
+        <target state="translated">Aktiver Arbeitsbereich</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.filter.aria">
+      <segment>
+        <source>Filter pending records</source>
+        <target state="translated">Ausstehende Datensätze filtern</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.tab.changed">
+      <segment>
+        <source>To publish</source>
+        <target state="translated">Zu veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.tab.all">
+      <segment>
+        <source>All on page</source>
+        <target state="translated">Alle auf der Seite</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.records">
+      <segment>
+        <source>{count, plural, one {# record} other {# records}}</source>
+        <target state="translated">{count, plural, one {# Datensatz} other {# Datensätze}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.loading">
+      <segment>
+        <source>Loading pending changes...</source>
+        <target state="translated">Ausstehende Änderungen werden geladen...</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.noContext">
+      <segment>
+        <source>Open a page or a news record in the page tree to see what is ready to publish.</source>
+        <target state="translated">Öffnen Sie eine Seite oder einen News-Datensatz im Seitenbaum, um zu sehen, was veröffentlicht werden kann.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.empty.all">
+      <segment>
+        <source>This page is empty (no records yet).</source>
+        <target state="translated">Diese Seite ist leer (noch keine Datensätze).</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.empty.changed">
+      <segment>
+        <source>Nothing pending on this page.</source>
+        <target state="translated">Auf dieser Seite gibt es nichts Ausstehendes.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.loadError">
+      <segment>
+        <source>Could not load pending changes.</source>
+        <target state="translated">Ausstehende Änderungen konnten nicht geladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.column">
+      <segment>
+        <source>Column {number}</source>
+        <target state="translated">Spalte {number}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.hidden.title">
+      <segment>
+        <source>Record is hidden and will not show on the live site</source>
+        <target state="translated">Datensatz ist verborgen und wird auf der Live-Seite nicht angezeigt</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.hidden">
+      <segment>
+        <source>Hidden</source>
+        <target state="translated">Verborgen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.allSelected">
+      <segment>
+        <source>All selected - click to deselect</source>
+        <target state="translated">Alle ausgewählt - klicken zum Abwählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.someSelected">
+      <segment>
+        <source>Some selected - click to select all</source>
+        <target state="translated">Einige ausgewählt - klicken zum Auswählen aller</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.selectAll">
+      <segment>
+        <source>Select all</source>
+        <target state="translated">Alle auswählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.deselectAll">
+      <segment>
+        <source>Deselect all</source>
+        <target state="translated">Alle abwählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.selectAllChanges">
+      <segment>
+        <source>Select all changes</source>
+        <target state="translated">Alle Änderungen auswählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.deselectAllChanges">
+      <segment>
+        <source>Deselect all changes</source>
+        <target state="translated">Alle Änderungen abwählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.selected">
+      <segment>
+        <source>selected</source>
+        <target state="translated">ausgewählt</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.selectedOf">
+      <segment>
+        <source>{selected} / {total}</source>
+        <target state="translated">{selected} / {total}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.of">
+      <segment>
+        <source>of</source>
+        <target state="translated">von</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.publishing">
+      <segment>
+        <source>Publishing...</source>
+        <target state="translated">Wird veröffentlicht...</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.publishToLive">
+      <segment>
+        <source>Publish to live</source>
+        <target state="translated">Live veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.badge.pending">
+      <segment>
+        <source>{count, plural, one {# pending workspace change on this page} other {# pending workspace changes on this page}}</source>
+        <target state="translated">{count, plural, one {# ausstehende Workspace-Änderung auf dieser Seite} other {# ausstehende Workspace-Änderungen auf dieser Seite}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.context.recordsPending">
+      <segment>
+        <source>{total, plural, one {# record} other {# records}}, {changed} pending</source>
+        <target state="translated">{total, plural, one {# Datensatz} other {# Datensätze}}, {changed} ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.context.pending">
+      <segment>
+        <source>{count} pending</source>
+        <target state="translated">{count} ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.context.none">
+      <segment>
+        <source>No page or news selected.</source>
+        <target state="translated">Keine Seite oder News ausgewählt.</target>
+      </segment>
+    </unit>
+    <unit id="module.title">
+      <segment>
+        <source>Easy Workspace</source>
+        <target state="translated">Easy Workspace</target>
+      </segment>
+    </unit>
+    <unit id="module.description">
+      <segment>
+        <source>Review and publish the current page's workspace changes with their related records.</source>
+        <target state="translated">Workspace-Änderungen der aktuellen Seite mit zugehörigen Datensätzen prüfen und veröffentlichen.</target>
+      </segment>
+    </unit>
+    <unit id="module.pending">
+      <segment>
+        <source>pending</source>
+        <target state="translated">ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="module.total">
+      <segment>
+        <source>total</source>
+        <target state="translated">gesamt</target>
+      </segment>
+    </unit>
+    <unit id="module.disabledBySettings">
+      <segment>
+        <source>Easy Workspace is disabled in your user settings or by administrator configuration.</source>
+        <target state="translated">Easy Workspace ist in Ihren Benutzereinstellungen oder durch die Administrationskonfiguration deaktiviert.</target>
+      </segment>
+    </unit>
+    <unit id="module.liveWorkspace">
+      <segment>
+        <source>Switch to a workspace to use Easy Workspace.</source>
+        <target state="translated">Wechseln Sie in einen Arbeitsbereich, um Easy Workspace zu verwenden.</target>
+      </segment>
+    </unit>
+    <unit id="module.nav.aria">
+      <segment>
+        <source>Easy Workspace sections</source>
+        <target state="translated">Easy-Workspace-Bereiche</target>
+      </segment>
+    </unit>
+    <unit id="module.nav.eyebrow">
+      <segment>
+        <source>Workspace</source>
+        <target state="translated">Arbeitsbereich</target>
+      </segment>
+    </unit>
+    <unit id="module.section.pending">
+      <segment>
+        <source>Overview</source>
+        <target state="translated">Übersicht</target>
+      </segment>
+    </unit>
+    <unit id="module.section.all">
+      <segment>
+        <source>All records</source>
+        <target state="translated">Alle Datensätze</target>
+      </segment>
+    </unit>
+    <unit id="module.section.diagnostics">
+      <segment>
+        <source>Diagnostics</source>
+        <target state="translated">Diagnose</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.openChanges">
+      <segment>
+        <source>Ready to publish</source>
+        <target state="translated">Zur Veröffentlichung bereit</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.contentElements">
+      <segment>
+        <source>Content element count</source>
+        <target state="translated">Anzahl Inhaltselemente</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.contentElements.hint">
+      <segment>
+        <source>Elements on this page.</source>
+        <target state="translated">Elemente auf dieser Seite.</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.lastChanged">
+      <segment>
+        <source>Last changed on page</source>
+        <target state="translated">Zuletzt geändert auf der Seite</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.lastChanged.hint">
+      <segment>
+        <source>Newest workspace change in this queue.</source>
+        <target state="translated">Neueste Workspace-Änderung in dieser Liste.</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.affectedTables">
+      <segment>
+        <source>Affected tables</source>
+        <target state="translated">Betroffene Tabellen</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.affectedTables.hint">
+      <segment>
+        <source>Tables with publishable workspace changes.</source>
+        <target state="translated">Tabellen mit veröffentlichbaren Workspace-Änderungen.</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.recordsInScope">
+      <segment>
+        <source>Records in scope</source>
+        <target state="translated">Datensätze im Prüfbereich</target>
+      </segment>
+    </unit>
+    <unit id="module.kpi.recordsInScope.hint">
+      <segment>
+        <source>Records checked on this page.</source>
+        <target state="translated">Geprüfte Datensätze auf dieser Seite.</target>
+      </segment>
+    </unit>
+    <unit id="module.pending.subtitle">
+      <segment>
+        <source>Workspace changes can be published to the live version.</source>
+        <target state="translated">Workspace-Änderungen können in die Live-Version übernommen werden.</target>
+      </segment>
+    </unit>
+    <unit id="module.pending.empty">
+      <segment>
+        <source>Nothing pending on this page yet.</source>
+        <target state="translated">Auf dieser Seite ist noch nichts offen.</target>
+      </segment>
+    </unit>
+    <unit id="module.pending.emptyHint">
+      <segment>
+        <source>Edits made anywhere on this page will appear here, ready to publish.</source>
+        <target state="translated">Bearbeitungen auf dieser Seite erscheinen hier zur Veröffentlichung.</target>
+      </segment>
+    </unit>
+    <unit id="module.all.subtitle">
+      <segment>
+        <source>Review every record on this page with its workspace state, changes and quick actions.</source>
+        <target state="translated">Prüfe alle Datensätze dieser Seite mit Workspace-Status, Änderungen und Schnellaktionen.</target>
+      </segment>
+    </unit>
+    <unit id="module.all.empty">
+      <segment>
+        <source>This page has no records yet.</source>
+        <target state="translated">Diese Seite enthält noch keine Datensätze.</target>
+      </segment>
+    </unit>
+    <unit id="module.all.emptyHint">
+      <segment>
+        <source>Add content elements to populate this list.</source>
+        <target state="translated">Fügen Sie Inhaltselemente hinzu, um diese Liste zu füllen.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.subtitle">
+      <segment>
+        <source>Find workspace records that are wrong, stalled or risky and need manual repair.</source>
+        <target state="translated">Findet Workspace-Datensätze, die falsch, blockiert oder riskant sind und manuell repariert werden müssen.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.total">
+      <segment>
+        <source>Detected issues</source>
+        <target state="translated">Gefundene Probleme</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.total.hint">
+      <segment>
+        <source>Automatic database checks for the active workspace.</source>
+        <target state="translated">Automatische Datenbankprüfungen für den aktiven Workspace.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.critical">
+      <segment>
+        <source>Critical</source>
+        <target state="translated">Kritisch</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.critical.hint">
+      <segment>
+        <source>Likely blocks publishing or corrupts overlay behavior.</source>
+        <target state="translated">Blockiert wahrscheinlich das Veröffentlichen oder beschädigt Overlays.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.warning">
+      <segment>
+        <source>Warnings</source>
+        <target state="translated">Warnungen</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.warning.hint">
+      <segment>
+        <source>Needs review before publish or cleanup.</source>
+        <target state="translated">Vor Veröffentlichung oder Bereinigung prüfen.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.tables">
+      <segment>
+        <source>Tables scanned</source>
+        <target state="translated">Geprüfte Tabellen</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.tables.hint">
+      <segment>
+        <source>Workspace-aware TCA tables checked.</source>
+        <target state="translated">Workspace-fähige TCA-Tabellen wurden geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.records">
+      <segment>
+        <source>Workspace rows checked</source>
+        <target state="translated">Geprüfte Workspace-Datensätze</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.kpi.records.hint">
+      <segment>
+        <source>{activeTables} of {tables} workspace-aware tables contain rows in this workspace.</source>
+        <target state="translated">{activeTables} von {tables} workspace-fähigen Tabellen enthalten Datensätze in diesem Workspace.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.detected">
+      <segment>
+        <source>Detected repair candidates</source>
+        <target state="translated">Gefundene Reparaturfälle</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.column.problem">
+      <segment>
+        <source>Problem</source>
+        <target state="translated">Problem</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.column.record">
+      <segment>
+        <source>Record</source>
+        <target state="translated">Datensatz</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.column.solve">
+      <segment>
+        <source>How to solve it</source>
+        <target state="translated">So wird es gelöst</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.sql">
+      <segment>
+        <source>Inspection SQL</source>
+        <target state="translated">Prüf-SQL</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.empty">
+      <segment>
+        <source>No broken workspace records found.</source>
+        <target state="translated">Keine kaputten Workspace-Datensätze gefunden.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.emptyHint">
+      <segment>
+        <source>The automatic checks are clean. Review the manual-only risks below when behavior is still wrong.</source>
+        <target state="translated">Die automatischen Prüfungen sind sauber. Prüfen Sie die manuellen Risiken unten, wenn das Verhalten trotzdem falsch ist.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual">
+      <segment>
+        <source>Manual-only failure classes</source>
+        <target state="translated">Nur manuell prüfbare Fehlerklassen</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.title">
+      <segment>
+        <source>Workspace testing reports</source>
+        <target state="translated">Workspace-Testberichte</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.subtitle">
+      <segment>
+        <source>Run workspace health checks as grouped reports with concrete repair steps.</source>
+        <target state="translated">Führt Workspace-Prüfungen als gruppierte Berichte mit konkreten Reparaturschritten aus.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.summary.statusCount">
+      <segment>
+        <source>{count, plural, one {# check} other {# checks}}</source>
+        <target state="translated">{count, plural, one {# Prüfung} other {# Prüfungen}}</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.summary.issueCount">
+      <segment>
+        <source>{count, plural, one {# needs review} other {# need review}}</source>
+        <target state="translated">{count, plural, one {# muss geprüft werden} other {# müssen geprüft werden}}</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.statusCount">
+      <segment>
+        <source>{count, plural, one {# item} other {# items}}</source>
+        <target state="translated">{count, plural, one {# Eintrag} other {# Einträge}}</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.solve">
+      <segment>
+        <source>How to solve it</source>
+        <target state="translated">So wird es gelöst</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.severity.ok">
+      <segment>
+        <source>OK</source>
+        <target state="translated">OK</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.severity.warning">
+      <segment>
+        <source>Warning</source>
+        <target state="translated">Warnung</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.severity.error">
+      <segment>
+        <source>Error</source>
+        <target state="translated">Fehler</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.severity.info">
+      <segment>
+        <source>Info</source>
+        <target state="translated">Info</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.severity.notice">
+      <segment>
+        <source>Notice</source>
+        <target state="translated">Hinweis</target>
+      </segment>
+    </unit>
+    <unit id="module.column.record">
+      <segment>
+        <source>Record</source>
+        <target state="translated">Datensatz</target>
+      </segment>
+    </unit>
+    <unit id="module.column.state">
+      <segment>
+        <source>Changes</source>
+        <target state="translated">Änderungen</target>
+      </segment>
+    </unit>
+    <unit id="module.column.actions">
+      <segment>
+        <source>Actions</source>
+        <target state="translated">Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="module.relatedRecords">
+      <segment>
+        <source>{count, plural, one {related change} other {related changes}}</source>
+        <target state="translated">{count, plural, one {zugehörige Änderung} other {zugehörige Änderungen}}</target>
+      </segment>
+    </unit>
+    <unit id="module.relatedChanges.belongsTo">
+      <segment>
+        <source>Belongs to record</source>
+        <target state="translated">Gehört zu Datensatz</target>
+      </segment>
+    </unit>
+    <unit id="module.relatedChanges.toggleAll">
+      <segment>
+        <source>Related changes</source>
+        <target state="translated">Zugehörige Änderungen</target>
+      </segment>
+    </unit>
+    <unit id="module.relatedChanges.showAll">
+      <segment>
+        <source>Show related changes</source>
+        <target state="translated">Zugehörige Änderungen anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="module.relatedChanges.hideAll">
+      <segment>
+        <source>Hide related changes</source>
+        <target state="translated">Zugehörige Änderungen ausblenden</target>
+      </segment>
+    </unit>
+    <unit id="module.publishBar.summary">
+      <segment>
+        <source>{count, plural, one {# record selected} other {# records selected}}</source>
+        <target state="translated">{count, plural, one {# Datensatz ausgewählt} other {# Datensätze ausgewählt}}</target>
+      </segment>
+    </unit>
+    <unit id="module.publishBar.deselect">
+      <segment>
+        <source>Deselect</source>
+        <target state="translated">Auswahl aufheben</target>
+      </segment>
+    </unit>
+    <unit id="module.publishBar.unselected">
+      <segment>
+        <source>Select changed records to publish them.</source>
+        <target state="translated">Wählen Sie geänderte Datensätze, um sie zu veröffentlichen.</target>
+      </segment>
+    </unit>
+    <unit id="module.headerActions.preview">
+      <segment>
+        <source>Preview</source>
+        <target state="translated">Vorschau</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.tab">
+      <segment>
+        <source>Easy Workspace</source>
+        <target state="translated">Easy Workspace</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.enabled">
+      <segment>
+        <source>Use Easy Workspace</source>
+        <target state="translated">Easy Workspace verwenden</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.showSubelementsToolbar">
+      <segment>
+        <source>Show subelements in the toolbar</source>
+        <target state="translated">Unterelemente im Toolbar-Menü anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.showSubelementsModule">
+      <segment>
+        <source>Show subelements in the Easy Workspace module</source>
+        <target state="translated">Unterelemente im Easy-Workspace-Modul anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="context.page">
+      <segment>
+        <source>Page #{uid}</source>
+        <target state="translated">Seite #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="context.news">
+      <segment>
+        <source>News #{uid}</source>
+        <target state="translated">News #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="record.pageRecord">
+      <segment>
+        <source>Page record</source>
+        <target state="translated">Seitendatensatz</target>
+      </segment>
+    </unit>
+    <unit id="record.newsRecord">
+      <segment>
+        <source>News record</source>
+        <target state="translated">News-Datensatz</target>
+      </segment>
+    </unit>
+    <unit id="state.live">
+      <segment>
+        <source>Live</source>
+        <target state="translated">Live</target>
+      </segment>
+    </unit>
+    <unit id="state.new">
+      <segment>
+        <source>New</source>
+        <target state="translated">Neu</target>
+      </segment>
+    </unit>
+    <unit id="state.delete">
+      <segment>
+        <source>Will be deleted</source>
+        <target state="translated">Wird gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="state.move">
+      <segment>
+        <source>Moved</source>
+        <target state="translated">Verschoben</target>
+      </segment>
+    </unit>
+    <unit id="state.modified">
+      <segment>
+        <source>Modified</source>
+        <target state="translated">Geändert</target>
+      </segment>
+    </unit>
+    <unit id="table.pages">
+      <segment>
+        <source>Page</source>
+        <target state="translated">Seite</target>
+      </segment>
+    </unit>
+    <unit id="table.tt_content">
+      <segment>
+        <source>Page Content</source>
+        <target state="translated">Seiteninhalt</target>
+      </segment>
+    </unit>
+    <unit id="table.tx_news_domain_model_news">
+      <segment>
+        <source>News</source>
+        <target state="translated">News</target>
+      </segment>
+    </unit>
+    <unit id="table.sys_file_metadata">
+      <segment>
+        <source>File Metadata</source>
+        <target state="translated">Dateimetadaten</target>
+      </segment>
+    </unit>
+    <unit id="table.tt_address">
+      <segment>
+        <source>Address</source>
+        <target state="translated">Adresse</target>
+      </segment>
+    </unit>
+    <unit id="diff.viewHistory">
+      <segment>
+        <source>History</source>
+        <target state="translated">Historie</target>
+      </segment>
+    </unit>
+    <unit id="diff.title.newWithChanges">
+      <segment>
+        <source>View changed fields and edit history for this new workspace record</source>
+        <target state="translated">Geänderte Felder und Bearbeitungshistorie für diesen neuen Workspace-Datensatz anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="diff.title.newDetails">
+      <segment>
+        <source>Open this new workspace record details and edit history</source>
+        <target state="translated">Details und Bearbeitungshistorie dieses neuen Workspace-Datensatzes öffnen</target>
+      </segment>
+    </unit>
+    <unit id="diff.title.removal">
+      <segment>
+        <source>Open details and edit history for this pending removal</source>
+        <target state="translated">Details und Bearbeitungshistorie für diese ausstehende Löschung öffnen</target>
+      </segment>
+    </unit>
+    <unit id="diff.title.move">
+      <segment>
+        <source>Open details and edit history for this pending move</source>
+        <target state="translated">Details und Bearbeitungshistorie für diese ausstehende Verschiebung öffnen</target>
+      </segment>
+    </unit>
+    <unit id="diff.title.changed">
+      <segment>
+        <source>View which fields changed in this record (opens a dialog)</source>
+        <target state="translated">Anzeigen, welche Felder in diesem Datensatz geändert wurden (öffnet einen Dialog)</target>
+      </segment>
+    </unit>
+    <unit id="diff.title.history">
+      <segment>
+        <source>No field-level differences right now - opens the history of this record</source>
+        <target state="translated">Aktuell keine Unterschiede auf Feldebene - öffnet die Historie dieses Datensatzes</target>
+      </segment>
+    </unit>
+    <unit id="diff.modal.historyTitle">
+      <segment>
+        <source>History - {title}</source>
+        <target state="translated">Historie - {title}</target>
+      </segment>
+    </unit>
+    <unit id="diff.modal.editTitle">
+      <segment>
+        <source>Edit - {title}</source>
+        <target state="translated">Bearbeiten - {title}</target>
+      </segment>
+    </unit>
+    <unit id="diff.noTitle">
+      <segment>
+        <source>[No title]</source>
+        <target state="translated">[Kein Titel]</target>
+      </segment>
+    </unit>
+    <unit id="diff.template.workspaceUid">
+      <segment>
+        <source>ws #{uid}</source>
+        <target state="translated">ws #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="diff.template.liveUid">
+      <segment>
+        <source>live #{uid}</source>
+        <target state="translated">live #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="discard.button.title">
+      <segment>
+        <source>Discard this change</source>
+        <target state="translated">Diese Änderung verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="discard.button.disabledTitle">
+      <segment>
+        <source>Discard is disabled by configuration (enableRevert = 0)</source>
+        <target state="translated">Verwerfen ist per Konfiguration deaktiviert (enableRevert = 0)</target>
+      </segment>
+    </unit>
+    <unit id="discard.button.aria">
+      <segment>
+        <source>Discard this workspace change</source>
+        <target state="translated">Diese Workspace-Änderung verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="discard.button.disabledAria">
+      <segment>
+        <source>Discard disabled by configuration</source>
+        <target state="translated">Verwerfen per Konfiguration deaktiviert</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.title">
+      <segment>
+        <source>Discard this change?</source>
+        <target state="translated">Diese Änderung verwerfen?</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.message">
+      <segment>
+        <source>"{title}" ({table}) will lose its workspace edits. The live record stays untouched, but the staged change is gone for good. This cannot be undone.</source>
+        <target state="translated">"{title}" ({table}) verliert seine Workspace-Bearbeitungen. Der Live-Datensatz bleibt unverändert, aber die vorbereitete Änderung ist endgültig weg. Dies kann nicht rückgängig gemacht werden.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.cancel">
+      <segment>
+        <source>Cancel</source>
+        <target state="translated">Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.confirm">
+      <segment>
+        <source>Discard</source>
+        <target state="translated">Verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="discard.success.title">
+      <segment>
+        <source>Discarded</source>
+        <target state="translated">Verworfen</target>
+      </segment>
+    </unit>
+    <unit id="discard.success.message">
+      <segment>
+        <source>Workspace version of "{title}" discarded.</source>
+        <target state="translated">Workspace-Version von "{title}" wurde verworfen.</target>
+      </segment>
+    </unit>
+    <unit id="discard.error.title">
+      <segment>
+        <source>Could not discard</source>
+        <target state="translated">Konnte nicht verworfen werden</target>
+      </segment>
+    </unit>
+    <unit id="discard.error.failedTitle">
+      <segment>
+        <source>Discard failed</source>
+        <target state="translated">Verwerfen fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="preview.show.title">
+      <segment>
+        <source>Show in preview</source>
+        <target state="translated">In Vorschau zeigen</target>
+      </segment>
+    </unit>
+    <unit id="preview.noIframe.visualEditor">
+      <segment>
+        <source>No preview iframe present. Open the page in Web &gt; Edit (Visual Editor).</source>
+        <target state="translated">Kein Vorschau-Iframe vorhanden. Öffnen Sie die Seite in Web &gt; Bearbeiten (Visual Editor).</target>
+      </segment>
+    </unit>
+    <unit id="preview.noIframe.viewpage">
+      <segment>
+        <source>No preview iframe present. Open the page in Web &gt; View.</source>
+        <target state="translated">Kein Vorschau-Iframe vorhanden. Öffnen Sie die Seite in Web &gt; Ansicht.</target>
+      </segment>
+    </unit>
+    <unit id="preview.noIframe.install">
+      <segment>
+        <source>No preview iframe present. Install friendsoftypo3/visual-editor or use Web &gt; View.</source>
+        <target state="translated">Kein Vorschau-Iframe vorhanden. Installieren Sie friendsoftypo3/visual-editor oder verwenden Sie Web &gt; Ansicht.</target>
+      </segment>
+    </unit>
+    <unit id="preview.loginHint">
+      <segment>
+        <source>The Visual Editor preview is waiting for a frontend login. Click "Go to login" inside the editor panel, sign in, then reload, or use Web &gt; Layout where this works without the extra login.</source>
+        <target state="translated">Die Visual-Editor-Vorschau wartet auf eine Frontend-Anmeldung. Klicken Sie im Editor-Panel auf "Zum Login", melden Sie sich an und laden Sie neu, oder verwenden Sie Web &gt; Layout, wo dies ohne zusätzliche Anmeldung funktioniert.</target>
+      </segment>
+    </unit>
+    <unit id="preview.notFound">
+      <segment>
+        <source>Searched {count, plural, one {# preview iframe} other {# preview iframes}} but did not find element for uid {liveUid} (workspace #{workspaceUid}). See the browser console for the preview markup.</source>
+        <target state="translated">{count, plural, one {# Vorschau-Iframe} other {# Vorschau-Iframes}} durchsucht, aber kein Element für UID {liveUid} (Workspace #{workspaceUid}) gefunden. Siehe Browser-Konsole für das Vorschau-Markup.</target>
+      </segment>
+    </unit>
+    <unit id="preview.button.title">
+      <segment>
+        <source>Copy a shareable preview URL of this page to the clipboard</source>
+        <target state="translated">Teilbare Vorschau-URL dieser Seite in die Zwischenablage kopieren</target>
+      </segment>
+    </unit>
+    <unit id="preview.button.copying">
+      <segment>
+        <source>Copying...</source>
+        <target state="translated">Wird kopiert...</target>
+      </segment>
+    </unit>
+    <unit id="preview.button.copied">
+      <segment>
+        <source>Copied</source>
+        <target state="translated">Kopiert</target>
+      </segment>
+    </unit>
+    <unit id="preview.button.preview">
+      <segment>
+        <source>Preview</source>
+        <target state="translated">Vorschau</target>
+      </segment>
+    </unit>
+    <unit id="preview.link.title">
+      <segment>
+        <source>Preview link</source>
+        <target state="translated">Vorschau-Link</target>
+      </segment>
+    </unit>
+    <unit id="preview.link.noUrl">
+      <segment>
+        <source>No URL returned.</source>
+        <target state="translated">Keine URL zurückgegeben.</target>
+      </segment>
+    </unit>
+    <unit id="preview.link.copied">
+      <segment>
+        <source>Preview link copied</source>
+        <target state="translated">Vorschau-Link kopiert</target>
+      </segment>
+    </unit>
+    <unit id="edit.title">
+      <segment>
+        <source>Edit</source>
+        <target state="translated">Bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="edit.tooltip.part">
+      <segment>
+        <source>click to edit this element</source>
+        <target state="translated">klicken, um dieses Element zu bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="edit.tooltip.visualEditor">
+      <segment>
+        <source>Hover to show this in the Visual Editor - {editPart}</source>
+        <target state="translated">Bewegen, um dies im Visual Editor zu zeigen - {editPart}</target>
+      </segment>
+    </unit>
+    <unit id="edit.tooltip.preview">
+      <segment>
+        <source>Hover to locate in preview - {editPart}</source>
+        <target state="translated">Bewegen, um dies in der Vorschau zu finden - {editPart}</target>
+      </segment>
+    </unit>
+    <unit id="edit.noForm">
+      <segment>
+        <source>No edit form available for this record.</source>
+        <target state="translated">Für diesen Datensatz ist kein Bearbeitungsformular verfügbar.</target>
+      </segment>
+    </unit>
+    <unit id="edit.modalTitle">
+      <segment>
+        <source>Edit - {title}</source>
+        <target state="translated">Bearbeiten - {title}</target>
+      </segment>
+    </unit>
+    <unit id="edit.saved.title">
+      <segment>
+        <source>Record saved</source>
+        <target state="translated">Datensatz gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="edit.saved.messageWithTitle">
+      <segment>
+        <source>"{title}" was updated.</source>
+        <target state="translated">"{title}" wurde aktualisiert.</target>
+      </segment>
+    </unit>
+    <unit id="edit.saved.message">
+      <segment>
+        <source>Record was updated.</source>
+        <target state="translated">Datensatz wurde aktualisiert.</target>
+      </segment>
+    </unit>
+    <unit id="rollback.failedTitle">
+      <segment>
+        <source>Revert failed</source>
+        <target state="translated">Zurücksetzen fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="rollback.missingData">
+      <segment>
+        <source>Missing data on the revert button (mode={mode}, historyUid={historyUid}).</source>
+        <target state="translated">Fehlende Daten am Zurücksetzen-Button (mode={mode}, historyUid={historyUid}).</target>
+      </segment>
+    </unit>
+    <unit id="rollback.noField">
+      <segment>
+        <source>No field name on the revert button.</source>
+        <target state="translated">Kein Feldname am Zurücksetzen-Button.</target>
+      </segment>
+    </unit>
+    <unit id="rollback.confirmField">
+      <segment>
+        <source>Revert this field change for "{title}"? Later edits to other fields are kept.</source>
+        <target state="translated">Diese Feldänderung für "{title}" zurücksetzen? Spätere Änderungen an anderen Feldern bleiben erhalten.</target>
+      </segment>
+    </unit>
+    <unit id="rollback.confirmLinear">
+      <segment>
+        <source>Revert this edit and every later edit on "{title}"? This affects every field touched after this point.</source>
+        <target state="translated">Diese Bearbeitung und jede spätere Bearbeitung an "{title}" zurücksetzen? Dies betrifft jedes Feld, das danach geändert wurde.</target>
+      </segment>
+    </unit>
+    <unit id="rollback.successTitle">
+      <segment>
+        <source>Reverted</source>
+        <target state="translated">Zurückgesetzt</target>
+      </segment>
+    </unit>
+    <unit id="rollback.successField">
+      <segment>
+        <source>Field "{field}" reverted.</source>
+        <target state="translated">Feld "{field}" wurde zurückgesetzt.</target>
+      </segment>
+    </unit>
+    <unit id="rollback.successLinear">
+      <segment>
+        <source>Edit reverted.</source>
+        <target state="translated">Bearbeitung wurde zurückgesetzt.</target>
+      </segment>
+    </unit>
+    <unit id="rollback.errorTitle">
+      <segment>
+        <source>Could not revert</source>
+        <target state="translated">Konnte nicht zurückgesetzt werden</target>
+      </segment>
+    </unit>
+    <unit id="publish.success.title">
+      <segment>
+        <source>Published to live</source>
+        <target state="translated">Live veröffentlicht</target>
+      </segment>
+    </unit>
+    <unit id="publish.success.message">
+      <segment>
+        <source>{count, plural, one {# item published.} other {# items published.}}</source>
+        <target state="translated">{count, plural, one {# Element veröffentlicht.} other {# Elemente veröffentlicht.}}</target>
+      </segment>
+    </unit>
+    <unit id="publish.warning.title">
+      <segment>
+        <source>Publish finished with errors</source>
+        <target state="translated">Veröffentlichen mit Fehlern abgeschlossen</target>
+      </segment>
+    </unit>
+    <unit id="publish.failedTitle">
+      <segment>
+        <source>Publish failed</source>
+        <target state="translated">Veröffentlichen fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="error.unknown">
+      <segment>
+        <source>Unknown error.</source>
+        <target state="translated">Unbekannter Fehler.</target>
+      </segment>
+    </unit>
+    <unit id="error.unexpected">
+      <segment>
+        <source>Unexpected error.</source>
+        <target state="translated">Unerwarteter Fehler.</target>
+      </segment>
+    </unit>
+    <unit id="error.disabled">
+      <segment>
+        <source>Easy Workspace is disabled by configuration.</source>
+        <target state="translated">Easy Workspace ist per Konfiguration deaktiviert.</target>
+      </segment>
+    </unit>
+    <unit id="error.invalidRecord">
+      <segment>
+        <source>Invalid table or record id.</source>
+        <target state="translated">Ungültige Tabelle oder Datensatz-ID.</target>
+      </segment>
+    </unit>
+    <unit id="error.recordNotFound">
+      <segment>
+        <source>Record not found or not accessible in this workspace.</source>
+        <target state="translated">Datensatz wurde nicht gefunden oder ist in diesem Arbeitsbereich nicht zugänglich.</target>
+      </segment>
+    </unit>
+    <unit id="error.invalidArguments">
+      <segment>
+        <source>Invalid arguments.</source>
+        <target state="translated">Ungültige Argumente.</target>
+      </segment>
+    </unit>
+    <unit id="error.unknownRollbackMode">
+      <segment>
+        <source>Unknown rollback mode.</source>
+        <target state="translated">Unbekannter Zurücksetzen-Modus.</target>
+      </segment>
+    </unit>
+    <unit id="error.nothingToRollback">
+      <segment>
+        <source>Nothing to roll back at this entry. The history entry may be older than the live baseline, or the diff is empty.</source>
+        <target state="translated">Bei diesem Eintrag gibt es nichts zurückzusetzen. Der Historieneintrag ist möglicherweise älter als die Live-Basis oder der Diff ist leer.</target>
+      </segment>
+    </unit>
+    <unit id="error.invalidSelections">
+      <segment>
+        <source>Invalid selections payload.</source>
+        <target state="translated">Ungültige Auswahl-Nutzlast.</target>
+      </segment>
+    </unit>
+    <unit id="error.missingTableWorkspace">
+      <segment>
+        <source>Missing or unsupported table / workspaceUid.</source>
+        <target state="translated">Fehlende oder nicht unterstützte Tabelle / workspaceUid.</target>
+      </segment>
+    </unit>
+    <unit id="error.revertDisabled">
+      <segment>
+        <source>Revert is disabled by TSconfig.</source>
+        <target state="translated">Zurücksetzen ist per TSconfig deaktiviert.</target>
+      </segment>
+    </unit>
+    <unit id="error.missingPageUid">
+      <segment>
+        <source>Missing pageUid.</source>
+        <target state="translated">pageUid fehlt.</target>
+      </segment>
+    </unit>
+    <unit id="error.previewLinkDisabled">
+      <segment>
+        <source>Preview link is disabled by TSconfig.</source>
+        <target state="translated">Vorschau-Link ist per TSconfig deaktiviert.</target>
+      </segment>
+    </unit>
+    <unit id="error.previewLinkBuild">
+      <segment>
+        <source>Could not build a preview link for this page.</source>
+        <target state="translated">Vorschau-Link für diese Seite konnte nicht erzeugt werden.</target>
+      </segment>
+    </unit>
+    <unit id="error.publishFromLive">
+      <segment>
+        <source>Cannot publish from the live workspace.</source>
+        <target state="translated">Aus dem Live-Arbeitsbereich kann nicht veröffentlicht werden.</target>
+      </segment>
+    </unit>
+    <unit id="error.selectionWrongWorkspace">
+      <segment>
+        <source>Selection contained records that do not belong to the active workspace.</source>
+        <target state="translated">Die Auswahl enthielt Datensätze, die nicht zum aktiven Arbeitsbereich gehören.</target>
+      </segment>
+    </unit>
+    <unit id="error.noPublishableRecords">
+      <segment>
+        <source>No publishable records in selection.</source>
+        <target state="translated">Keine veröffentlichbaren Datensätze in der Auswahl.</target>
+      </segment>
+    </unit>
+    <unit id="error.discardFromLive">
+      <segment>
+        <source>Cannot discard from the live workspace.</source>
+        <target state="translated">Im Live-Arbeitsbereich kann nicht verworfen werden.</target>
+      </segment>
+    </unit>
+    <unit id="error.recordWrongWorkspace">
+      <segment>
+        <source>Record does not belong to the active workspace.</source>
+        <target state="translated">Datensatz gehört nicht zum aktiven Arbeitsbereich.</target>
+      </segment>
+    </unit>
+    <unit id="history.action.created">
+      <segment>
+        <source>Created</source>
+        <target state="translated">Erstellt</target>
+      </segment>
+    </unit>
+    <unit id="history.action.modified">
+      <segment>
+        <source>Modified</source>
+        <target state="translated">Geändert</target>
+      </segment>
+    </unit>
+    <unit id="history.action.moved">
+      <segment>
+        <source>Moved</source>
+        <target state="translated">Verschoben</target>
+      </segment>
+    </unit>
+    <unit id="history.action.deleted">
+      <segment>
+        <source>Deleted</source>
+        <target state="translated">Gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="history.action.changed">
+      <segment>
+        <source>Changed</source>
+        <target state="translated">Geändert</target>
+      </segment>
+    </unit>
+    <unit id="history.user.system">
+      <segment>
+        <source>System</source>
+        <target state="translated">System</target>
+      </segment>
+    </unit>
+    <unit id="history.user.fallback">
+      <segment>
+        <source>User #{uid}</source>
+        <target state="translated">Benutzer #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="history.editCount">
+      <segment>
+        <source>{count, plural, one {# edit} other {# edits}}</source>
+        <target state="translated">{count, plural, one {# Bearbeitung} other {# Bearbeitungen}}</target>
+      </segment>
+    </unit>
+    <unit id="history.tab.contentElement">
+      <segment>
+        <source>Content element</source>
+        <target state="translated">Inhaltselement</target>
+      </segment>
+    </unit>
+    <unit id="history.tab.record">
+      <segment>
+        <source>Record history</source>
+        <target state="translated">Datensatzverlauf</target>
+      </segment>
+    </unit>
+    <unit id="history.tab.page">
+      <segment>
+        <source>Page history</source>
+        <target state="translated">Seitenverlauf</target>
+      </segment>
+    </unit>
+    <unit id="history.frame.record">
+      <segment>
+        <source>Record history</source>
+        <target state="translated">Datensatzverlauf</target>
+      </segment>
+    </unit>
+    <unit id="history.frame.page">
+      <segment>
+        <source>Full page history</source>
+        <target state="translated">Vollständiger Seitenverlauf</target>
+      </segment>
+    </unit>
+    <unit id="history.aria">
+      <segment>
+        <source>Workspace edit history</source>
+        <target state="translated">Workspace-Bearbeitungshistorie</target>
+      </segment>
+    </unit>
+    <unit id="history.rollback.linearTitle">
+      <segment>
+        <source>Revert this edit and every later edit on this record</source>
+        <target state="translated">Diese Bearbeitung und jede spätere Bearbeitung an diesem Datensatz zurücksetzen</target>
+      </segment>
+    </unit>
+    <unit id="history.rollback.linear">
+      <segment>
+        <source>Revert to before</source>
+        <target state="translated">Auf vorher zurücksetzen</target>
+      </segment>
+    </unit>
+    <unit id="history.rollback.fieldTitle">
+      <segment>
+        <source>Revert only this field change</source>
+        <target state="translated">Nur diese Feldänderung zurücksetzen</target>
+      </segment>
+    </unit>
+    <unit id="history.rollback.fieldAria">
+      <segment>
+        <source>Revert</source>
+        <target state="translated">Zurücksetzen</target>
+      </segment>
+    </unit>
+    <unit id="history.empty">
+      <segment>
+        <source>No workspace edit history recorded for this record yet.</source>
+        <target state="translated">Für diesen Datensatz wurde noch keine Workspace-Bearbeitungshistorie aufgezeichnet.</target>
+      </segment>
+    </unit>
+    <unit id="history.openEditor">
+      <segment>
+        <source>Open in form editor</source>
+        <target state="translated">Im Formular-Editor öffnen</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

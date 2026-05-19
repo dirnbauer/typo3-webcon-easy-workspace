@@ -12,7 +12,9 @@
     </f:if>
 </f:if>
 
-<tr data-multi-record-selection-element="" data-multi-record-selection-identifier="wew-pending-selection">
+<tr class="wew-record-row{f:if(condition: item.isChanged, then: ' wew-record-row--changed', else: ' wew-record-row--live')}"
+    data-multi-record-selection-element=""
+    data-multi-record-selection-identifier="wew-pending-selection">
     <td class="col-checkbox">
         <f:if condition="{item.isChanged} && {selectable}">
             <span class="form-check form-check-type-toggle">
@@ -27,11 +29,16 @@
         </f:if>
     </td>
     <td>
-        <div class="d-flex align-items-start gap-2">
+        <div class="wew-record-cell">
             <f:if condition="{config.enableThumbnails} && {item.thumbnailUrl}">
-                <span>
+                <f:then>
                     <img class="img-thumbnail" src="{item.thumbnailUrl}" width="48" height="36" alt="" loading="lazy" />
-                </span>
+                </f:then>
+                <f:else>
+                    <span class="wew-record-icon" aria-hidden="true">
+                        <core:icon identifier="{item.iconIdentifier}" size="small" />
+                    </span>
+                </f:else>
             </f:if>
             <div class="min-w-0">
                 <f:if condition="{primaryKicker}">
@@ -54,18 +61,23 @@
                 </f:if>
                 <f:if condition="{config.showSubelementsInModule} && {item.childChanges -> f:count()} > 0">
                     <f:variable name="childCount" value="{item.childChanges -> f:count()}" />
-                    <details class="mt-2" data-wew-related-changes="">
+                    <details class="wew-related-thread" data-wew-related-changes="">
                         <summary class="small fw-semibold">
                             <span class="badge badge-secondary">{childCount}</span>
                             <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedRecords"
                                          arguments="{count: childCount}" />
                         </summary>
-                        <ul class="list-group mt-2">
-                            <li class="list-group-item">
-                                <span class="d-block text-muted small">
-                                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedChanges.belongsTo" />
+                        <ul class="list-group wew-related-thread__list">
+                            <li class="list-group-item wew-related-thread__parent">
+                                <span class="wew-record-icon wew-record-icon--small" aria-hidden="true">
+                                    <core:icon identifier="{item.iconIdentifier}" size="small" />
                                 </span>
-                                <span class="d-block fw-semibold text-truncate" title="{item.title}">{item.title}</span>
+                                <span class="min-w-0">
+                                    <span class="d-block text-muted small">
+                                        <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.relatedChanges.belongsTo" />
+                                    </span>
+                                    <span class="d-block fw-semibold text-truncate" title="{item.title}">{item.title}</span>
+                                </span>
                             </li>
                             <f:for each="{item.childChanges}" as="child">
                                 <f:render partial="Backend/Module/ChildChange" arguments="{child: child}" />
@@ -81,6 +93,11 @@
             <f:for each="{item.changeBadges}" as="badge">
                 <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
             </f:for>
+            <f:if condition="{item.isChanged} == 0">
+                <span class="badge badge-secondary">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:state.live" />
+                </span>
+            </f:if>
             <f:if condition="{item.isHidden} && {config.enableHiddenBadge}">
                 <span class="badge badge-secondary"
                       title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden.title')}">
@@ -96,6 +113,7 @@
                     <button type="button"
                             class="btn btn-default btn-sm"
                             data-wew-diff=""
+                            data-wew-history-url="{item.historyUrl}"
                             data-wew-table="{item.table}"
                             data-wew-workspace-uid="{item.workspaceUid}"
                             data-wew-title="{item.title}"

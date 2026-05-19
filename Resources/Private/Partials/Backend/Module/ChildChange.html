@@ -1,4 +1,6 @@
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
 
 <f:variable name="childTitle" value="{child.title}" />
 <f:if condition="{childTitle} == ''"><f:variable name="childTitle" value="{child.tableLabel}" /></f:if>
@@ -9,12 +11,19 @@
 
 <f:variable name="childBadgeTone" value="{child.badge}" />
 <f:if condition="{childBadgeTone} == ''"><f:variable name="childBadgeTone" value="info" /></f:if>
+<f:variable name="childIconIdentifier" value="{child.iconIdentifier}" />
+<f:if condition="{childIconIdentifier} == ''"><f:variable name="childIconIdentifier" value="mimetypes-other-other" /></f:if>
 
-<li class="list-group-item d-flex align-items-start gap-2">
+<li class="list-group-item d-flex align-items-start gap-2 wew-related-thread__child">
     <f:if condition="{child.thumbnailUrl}">
-        <span>
+        <f:then>
             <img class="img-thumbnail" src="{child.thumbnailUrl}" width="36" height="28" alt="" loading="lazy" />
-        </span>
+        </f:then>
+        <f:else>
+            <span class="wew-record-icon wew-record-icon--small" aria-hidden="true">
+                <core:icon identifier="{childIconIdentifier}" size="small" />
+            </span>
+        </f:else>
     </f:if>
     <span class="min-w-0 flex-grow-1">
         <span class="d-block text-truncate fw-semibold" title="{child.title}">{childTitle}</span>

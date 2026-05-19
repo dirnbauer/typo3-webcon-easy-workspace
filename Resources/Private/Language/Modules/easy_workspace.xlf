@@ -1,17 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="EXT:webcon_easy_workspace/Resources/Private/Language/Modules/easy_workspace.xlf">
-    <header/>
-    <body>
-      <trans-unit id="mlang_tabs_tab">
-        <source>Easy Workspace</source>
-      </trans-unit>
-      <trans-unit id="mlang_labels_tabdescr">
-        <source>Review and publish the current page's workspace changes with their related records.</source>
-      </trans-unit>
-      <trans-unit id="mlang_labels_tablabel">
-        <source>Publish page-scoped workspace changes</source>
-      </trans-unit>
-    </body>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="en">
+  <file id="EXT:webcon_easy_workspace/Resources/Private/Language/Modules/easy_workspace.xlf">
+    <unit id="mlang_tabs_tab"><segment><source>Easy Workspace</source><target state="translated">Easy Workspace</target></segment></unit>
+    <unit id="mlang_labels_tabdescr"><segment><source>Review and publish the current page's workspace changes with their related records.</source><target state="translated">Review and publish the current page's workspace changes with their related records.</target></segment></unit>
+    <unit id="mlang_labels_tablabel"><segment><source>Publish page-scoped workspace changes</source><target state="translated">Publish page-scoped workspace changes</target></segment></unit>
   </file>
 </xliff>

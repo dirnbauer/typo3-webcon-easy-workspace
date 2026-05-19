@@ -8,12 +8,9 @@
     (no <html>/<body>) since core's Modal injects it straight into
     .modal-body.
 
-    Two tabs:
+    History:
        - record history — TYPO3 core's native record history view for
                           the selected workspace record.
-       - page history   — TYPO3 core's native record history view for
-                          the containing page, including subelements
-                          according to the editor's history settings.
 
     Variables:
         title         — record title for the header
@@ -21,7 +18,7 @@
         workspaceUid  — uid of the workspace version
         liveUid       — uid of the live counterpart (0 = new placeholder)
         kind          — changed | added | removed
-        historyTabs   — native TYPO3 record_history URLs for the tabs
+        recordHistoryUrl — native TYPO3 record_history URL
         editUrl       — backend record_edit URL (optional)
 </f:comment>
 
@@ -41,68 +38,13 @@
         </p>
     </header>
 
-    <div class="wew-history-tabs" data-wew-history-tabs>
-        <div class="wew-history-tabs__list" role="tablist" aria-label="{labels.historyAria}">
-            <button
-                type="button"
-                id="wew-history-tab-record"
-                class="wew-history-tabs__tab active"
-                role="tab"
-                aria-selected="true"
-                aria-controls="wew-history-panel-record"
-                data-wew-history-tab="record"
-            >
-                {labels.recordHistoryTab}
-            </button>
-            <f:if condition="{historyTabs.page}">
-                <button
-                    type="button"
-                    id="wew-history-tab-page"
-                    class="wew-history-tabs__tab"
-                    role="tab"
-                    aria-selected="false"
-                    aria-controls="wew-history-panel-page"
-                    data-wew-history-tab="page"
-                    tabindex="-1"
-                >
-                    {labels.pageHistoryTab}
-                </button>
-            </f:if>
-        </div>
-
-        <section
-            id="wew-history-panel-record"
-            class="wew-history-tabs__panel"
-            role="tabpanel"
-            aria-labelledby="wew-history-tab-record"
-            data-wew-history-panel="record"
-        >
-            <iframe
-                class="wew-history-tabs__frame"
-                src="{historyTabs.record.url}"
-                title="{labels.recordHistoryFrameTitle}"
-                loading="eager"
-            ></iframe>
-        </section>
-
-        <f:if condition="{historyTabs.page}">
-            <section
-                id="wew-history-panel-page"
-                class="wew-history-tabs__panel"
-                role="tabpanel"
-                aria-labelledby="wew-history-tab-page"
-                data-wew-history-panel="page"
-                hidden="hidden"
-            >
-                <iframe
-                    class="wew-history-tabs__frame"
-                    src="about:blank"
-                    data-src="{historyTabs.page.url}"
-                    title="{labels.pageHistoryFrameTitle}"
-                    loading="lazy"
-                ></iframe>
-            </section>
-        </f:if>
+    <div class="wew-history-tabs">
+        <iframe
+            class="wew-history-tabs__frame"
+            src="{recordHistoryUrl}"
+            title="{labels.recordHistoryFrameTitle}"
+            loading="eager"
+        ></iframe>
     </div>
 
     <f:if condition="{editUrl}">
