@@ -48,6 +48,7 @@ final readonly class WorkspaceDiagnosticsService
                 $this->findOrphanWorkspaceVersions($table, $workspaceId),
                 $this->findDuplicateWorkspaceVersions($table, $workspaceId),
                 $this->findBrokenInlineChildParents($table, $workspaceId),
+                $this->findBrokenFileReferenceOwners($table, $workspaceId),
             );
         }
 
@@ -314,6 +315,56 @@ final readonly class WorkspaceDiagnosticsService
                     'Restore or identify the intended parent content element, update foreign_table_parent_uid, or discard the orphan child row.',
                     'SELECT uid,pid,foreign_table_parent_uid,t3ver_oid,t3ver_wsid FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
                     'parent tt_content uid ' . $parentUid,
+                );
+            }
+        }
+        return $issues;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function findBrokenFileReferenceOwners(string $table, int $workspaceId): array
+    {
+        if ($workspaceId <= 0 || $table !== 'sys_file_reference') {
+            return [];
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $rows = $queryBuilder
+            ->select('uid', 'pid', 'uid_foreign', 'tablenames', 'fieldname')
+            ->from($table)
+            ->where(
+                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+                $queryBuilder->expr()->gt('uid_foreign', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+                $queryBuilder->expr()->neq('tablenames', $queryBuilder->createNamedParameter('', Connection::PARAM_STR)),
+            )
+            ->setMaxResults(500)
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $issues = [];
+        foreach ($rows as $row) {
+            $ownerTable = Value::string($row['tablenames'] ?? null);
+            $ownerUid = Value::int($row['uid_foreign'] ?? null);
+            if ($ownerTable === '' || $ownerUid <= 0 || TcaUtility::table($ownerTable) === []) {
+                continue;
+            }
+            if (!$this->recordExists($ownerTable, $ownerUid)) {
+                $issues[] = $this->issue(
+                    'file-reference-missing-owner',
+                    'critical',
+                    $table,
+                    Value::int($row['uid'] ?? null),
+                    $workspaceId,
+                    0,
+                    Value::int($row['pid'] ?? null),
+                    'Workspace file reference points to a missing owner record.',
+                    'The reference can appear in the publish list but cannot be applied cleanly because the owning page or content record is gone.',
+                    'Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.',
+                    'SELECT uid,pid,uid_local,uid_foreign,tablenames,fieldname,t3ver_oid,t3ver_wsid FROM sys_file_reference WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
+                    $ownerTable . ':' . $ownerUid . ' field ' . Value::string($row['fieldname'] ?? null),
                 );
             }
         }

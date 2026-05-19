@@ -53,6 +53,13 @@ final readonly class WorkspaceTestingReportService
             'severity' => 'warning',
             'solve' => 'Restore or identify the parent tt_content row, update the child relation, or discard the orphan child row.',
         ],
+        'file-reference-missing-owner' => [
+            'title' => 'Workspace file references still belong to an existing owner',
+            'ok' => 'No workspace file reference points to a missing page or content record.',
+            'fail' => 'Workspace file references point to missing owner records.',
+            'severity' => 'error',
+            'solve' => 'Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.',
+        ],
     ];
 
     public function __construct(
@@ -124,6 +131,7 @@ final readonly class WorkspaceTestingReportService
         $hiddenInlineTables = $this->hiddenWorkspaceInlineTables();
         $items = [
             $this->issueDefinitionItem('inline-child-missing-parent', $issuesByType['inline-child-missing-parent'] ?? []),
+            $this->issueDefinitionItem('file-reference-missing-owner', $issuesByType['file-reference-missing-owner'] ?? []),
             $this->item(
                 'Workspace-aware hidden inline tables are known',
                 $hiddenInlineTables === []

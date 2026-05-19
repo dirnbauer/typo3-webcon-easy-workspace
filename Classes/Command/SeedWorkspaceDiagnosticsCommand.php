@@ -50,6 +50,7 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
             'modified workspace row without live identity',
             'unsupported t3ver_state',
             'live row polluted with version fields',
+            'file reference with missing owner record',
         ];
         if (TcaUtility::table('article_grid_items') !== []) {
             $planned[] = 'inline child row with missing parent';
@@ -64,6 +65,7 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
 
         $this->deletePreviousSeeds();
         $this->seedContentRows($pageUid, $workspaceId);
+        $this->seedFileReferenceRow($pageUid, $workspaceId);
         if (TcaUtility::table('article_grid_items') !== []) {
             $this->seedArticleGridChildRow($pageUid, $workspaceId);
         }
@@ -88,6 +90,12 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
                 ['marker' => Connection::PARAM_STR],
             );
         }
+        $referenceConnection = $this->connectionPool->getConnectionForTable('sys_file_reference');
+        $referenceConnection->executeStatement(
+            'DELETE FROM sys_file_reference WHERE title LIKE :marker',
+            ['marker' => self::MARKER . '%'],
+            ['marker' => Connection::PARAM_STR],
+        );
     }
 
     private function seedContentRows(int $pageUid, int $workspaceId): void
@@ -177,5 +185,44 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
             't3ver_state' => 1,
             't3ver_stage' => 0,
         ]);
+    }
+
+    private function seedFileReferenceRow(int $pageUid, int $workspaceId): void
+    {
+        $fileUid = $this->firstFileUid();
+        if ($fileUid <= 0) {
+            return;
+        }
+
+        $now = time();
+        $connection = $this->connectionPool->getConnectionForTable('sys_file_reference');
+        $connection->insert('sys_file_reference', [
+            'pid' => $pageUid,
+            'uid_local' => $fileUid,
+            'uid_foreign' => 999999999,
+            'tablenames' => 'pages',
+            'fieldname' => 'media',
+            'title' => self::MARKER . ' missing owner file reference',
+            'sorting_foreign' => 999999,
+            'deleted' => 0,
+            'hidden' => 0,
+            'crdate' => $now,
+            'tstamp' => $now,
+            't3ver_oid' => 0,
+            't3ver_wsid' => $workspaceId,
+            't3ver_state' => 1,
+            't3ver_stage' => 0,
+        ]);
+    }
+
+    private function firstFileUid(): int
+    {
+        $connection = $this->connectionPool->getConnectionForTable('sys_file');
+        return Value::int($connection->createQueryBuilder()
+            ->select('uid')
+            ->from('sys_file')
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchOne());
     }
 }

@@ -32,12 +32,22 @@ return [
     ],
     'webcon_easy_workspace_pending' => $moduleDefaults + [
         'parent' => 'webcon_easy_workspace',
-        'position' => ['before' => '*'],
+        'position' => ['after' => 'webcon_easy_workspace_testing'],
         'path' => '/module/content/easy-workspace/pending',
         'labels' => [
             'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.pending',
             'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle',
             'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle',
+        ],
+    ],
+    'webcon_easy_workspace_testing' => $moduleDefaults + [
+        'parent' => 'webcon_easy_workspace',
+        'position' => ['before' => '*'],
+        'path' => '/module/content/easy-workspace/testing',
+        'labels' => [
+            'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.title',
+            'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.subtitle',
+            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.subtitle',
         ],
     ],
     'webcon_easy_workspace_records' => $moduleDefaults + [
