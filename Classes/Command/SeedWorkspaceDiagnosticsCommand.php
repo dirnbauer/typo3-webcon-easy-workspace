@@ -70,7 +70,7 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
             $this->seedArticleGridChildRow($pageUid, $workspaceId);
         }
 
-        $io->success('Seeded workspace diagnostic problems. Open Easy Workspace > Diagnostics or run the diagnostic scanner before repairing/discarding them.');
+        $io->success('Seeded workspace diagnostic problems. Open Easy Workspace > Tests and diagnostics or run the diagnostic scanner before repairing/discarding them.');
         return Command::SUCCESS;
     }
 

@@ -32,7 +32,7 @@ The backend module lives in the left TYPO3 navigation below the workspace
 publish module. It is fully server-rendered with **Fluid templates** and the
 TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, Bootstrap 5 cards,
 tables, list groups, badges and button groups), and it exposes three TYPO3
-submodules (**Overview**, **All records**, **Diagnostics**) through the
+submodules (**Open items**, **All records**, **Tests and diagnostics**) through the
 native module selector instead of custom in-page navigation. A small companion
 JS file (`easy-workspace-module.js`) only wires
 the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` /
@@ -105,9 +105,8 @@ The **Easy Workspace** backend module is the spacious, server-rendered view for
 editors who need to review more than a compact toolbar dropdown can comfortably
 show. TYPO3 registers it as a parent module with three submodules:
 
-- **Overview** — the changed-only publish queue for the current page or news
-  record.
-- **Pending changes** — the changed-only publish queue. Rows are rendered in a
+- **Open items** — the changed-only publish queue for the current page or news
+  record. Rows are rendered in a
   `table-fit` Bootstrap table: select, scan title/type/state, then use the
   right-aligned history, edit and discard button group when needed. Related
   child records are hidden behind a disclosure instead of being spread across
@@ -116,6 +115,8 @@ show. TYPO3 registers it as a parent module with three submodules:
   the controller redirects back with a TYPO3 flash message.
 - **All records** — every record on the page, with the same Bootstrap table row
   UI; selection is disabled here (read-only inventory view).
+- **Tests and diagnostics** — automatic database scans for broken workspace
+  records plus grouped health checks with repair guidance.
 
 The doc header carries the standard TYPO3 page breadcrumb, page title, TYPO3's
 module selector, and the "show page", "copy preview link" and "edit page
@@ -371,7 +372,7 @@ Classes/
 
 Configuration/
 ├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, diff, rollback
-├── Backend/Modules.php                               # Parent module + Overview/Records/Diagnostics submodules
+├── Backend/Modules.php                               # Parent module + Open items/Records/Tests and diagnostics submodules
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
 ├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
 ├── Services.yaml                                     # DI / autowiring
@@ -385,7 +386,7 @@ Resources/
 │   ├── Placeholder.html / FlashMessage.html          #   empty / message states
 │   ├── RecordRow.html / ChildChange.html             #   table row + child list-group rows
 │   ├── PublishBar.html                               #   publish form action bar
-│   └── Section/{Pending,All,Diagnostics,Testing}.html #   one partial per submodule section
+│   └── Section/{Pending,All,Diagnostics,Testing}.html #   section partials; Testing is embedded in Diagnostics
 ├── Private/Templates/ToolbarItems/                   # Trigger + dropdown shell (Lit element)
 ├── Private/Templates/Diff/Record.html                # Workspace diff/history modal
 └── Public/JavaScript/

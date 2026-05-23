@@ -1,20 +1,20 @@
 ..  _testing:
 
-=========================
-Workspace testing reports
-=========================
+================
+Workspace checks
+================
 
-Easy Workspace includes **Testing** reports at the bottom of the Diagnostics
-backend submodule. They use the same scanner as Diagnostics, but present the
-result like a TYPO3 Reports screen: grouped checks, status badges and
-concrete repair steps.
+Easy Workspace includes **Workspace checks** at the bottom of the
+**Tests and diagnostics** backend submodule. They use the same scanner as the
+diagnostics table, but present the result like a TYPO3 Reports screen: grouped
+checks, status badges and concrete repair steps.
 
 Use it as a fast health check before trusting a workspace publish queue:
 
 1. Switch the backend to the target workspace.
-2. Open **Content > Easy Workspace > Diagnostics**.
+2. Open **Content > Easy Workspace > Tests and diagnostics**.
 3. Review groups with warning, error, info or notice state.
-4. Use the Diagnostics tables above the reports for exact SQL and affected
+4. Use the diagnostics tables above the reports for exact SQL and affected
    records when a database check fails.
 
 Report groups
@@ -43,7 +43,7 @@ Manual-only checks
 Local failure fixture
 =====================
 
-The Testing reports are most useful together with the seed command in
+The workspace checks are most useful together with the seed command in
 disposable local data:
 
 ..  code-block:: bash
@@ -51,15 +51,15 @@ disposable local data:
     ddev typo3 webcon-easy-workspace:seed-diagnostics
     ddev typo3 webcon-easy-workspace:seed-diagnostics --execute --page=664 --workspace=1
 
-After seeding, the Testing reports should move from green checks to grouped
-warnings/errors for the seeded failure classes. The Diagnostics tables should
+After seeding, the workspace checks should move from green checks to grouped
+warnings/errors for the seeded failure classes. The diagnostics tables should
 show the same affected rows with inspection SQL. Clean the seed rows after the
 test or restore the database snapshot.
 
 Repair rule
 ===========
 
-The Testing reports are intentionally read-only. They should tell editors and
+The workspace checks are intentionally read-only. They should tell editors and
 integrators **what failed and how to solve it**, but repairs should still use
 TYPO3 APIs such as ``DataHandler`` whenever possible. Direct SQL updates are
 only appropriate for controlled repair scripts after the row identity and

@@ -4,7 +4,7 @@
 Workspace diagnostics
 =====================
 
-Easy Workspace ships a **Diagnostics** backend submodule. It is an
+Easy Workspace ships a **Tests and diagnostics** backend submodule. It is an
 operational test suite for workspace records that are wrong, stalled or
 risky enough that a publish button should not be trusted blindly.
 
@@ -92,7 +92,7 @@ before inserting a fresh set.
 After seeding:
 
 1. Switch the backend to the seeded workspace.
-2. Open **Content > Easy Workspace > Diagnostics**.
+2. Open **Content > Easy Workspace > Tests and diagnostics**.
 3. Verify each seeded bug appears with a suggested repair path.
 4. Repair or discard the seed rows before continuing editorial tests.
 

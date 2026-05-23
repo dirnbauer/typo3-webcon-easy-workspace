@@ -237,8 +237,8 @@
     </unit>
     <unit id="module.section.pending">
       <segment>
-        <source>Overview</source>
-        <target state="translated">Overview</target>
+        <source>Open items</source>
+        <target state="translated">Open items</target>
       </segment>
     </unit>
     <unit id="module.section.all">
@@ -247,10 +247,10 @@
         <target state="translated">All records</target>
       </segment>
     </unit>
-    <unit id="module.section.diagnostics">
+    <unit id="module.section.testsDiagnostics">
       <segment>
-        <source>Diagnostics</source>
-        <target state="translated">Diagnostics</target>
+        <source>Tests and diagnostics</source>
+        <target state="translated">Tests and diagnostics</target>
       </segment>
     </unit>
     <unit id="module.kpi.openChanges">
@@ -309,20 +309,20 @@
     </unit>
     <unit id="module.pending.subtitle">
       <segment>
-        <source>Workspace changes can be published to the live version.</source>
-        <target state="translated">Workspace changes can be published to the live version.</target>
+        <source>Overview of workspace changes that can be published for the selected page or news record.</source>
+        <target state="translated">Overview of workspace changes that can be published for the selected page or news record.</target>
       </segment>
     </unit>
     <unit id="module.pending.empty">
       <segment>
-        <source>Nothing pending on this page yet.</source>
-        <target state="translated">Nothing pending on this page yet.</target>
+        <source>No open workspace changes on this page.</source>
+        <target state="translated">No open workspace changes on this page.</target>
       </segment>
     </unit>
     <unit id="module.pending.emptyHint">
       <segment>
-        <source>Edits made anywhere on this page will appear here, ready to publish.</source>
-        <target state="translated">Edits made anywhere on this page will appear here, ready to publish.</target>
+        <source>New edits on this page appear here when they are ready to publish.</source>
+        <target state="translated">New edits on this page appear here when they are ready to publish.</target>
       </segment>
     </unit>
     <unit id="module.all.subtitle">
@@ -343,10 +343,16 @@
         <target state="translated">Add content elements to populate this list.</target>
       </segment>
     </unit>
+    <unit id="module.testsDiagnostics.subtitle">
+      <segment>
+        <source>Run health checks, database diagnostics and repair guidance for the active workspace.</source>
+        <target state="translated">Run health checks, database diagnostics and repair guidance for the active workspace.</target>
+      </segment>
+    </unit>
     <unit id="module.diagnostics.subtitle">
       <segment>
-        <source>Find workspace records that are wrong, stalled or risky and need manual repair.</source>
-        <target state="translated">Find workspace records that are wrong, stalled or risky and need manual repair.</target>
+        <source>Find broken, stalled or risky workspace records that need manual repair.</source>
+        <target state="translated">Find broken, stalled or risky workspace records that need manual repair.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.total">
@@ -411,8 +417,8 @@
     </unit>
     <unit id="module.diagnostics.detected">
       <segment>
-        <source>Detected repair candidates</source>
-        <target state="translated">Detected repair candidates</target>
+        <source>Repair candidates</source>
+        <target state="translated">Repair candidates</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.column.problem">
@@ -459,14 +465,14 @@
     </unit>
     <unit id="module.testing.title">
       <segment>
-        <source>Workspace testing reports</source>
-        <target state="translated">Workspace testing reports</target>
+        <source>Workspace checks</source>
+        <target state="translated">Workspace checks</target>
       </segment>
     </unit>
     <unit id="module.testing.subtitle">
       <segment>
-        <source>Run workspace health checks as grouped reports with concrete repair steps.</source>
-        <target state="translated">Run workspace health checks as grouped reports with concrete repair steps.</target>
+        <source>Grouped checks summarize workspace health and concrete repair steps.</source>
+        <target state="translated">Grouped checks summarize workspace health and concrete repair steps.</target>
       </segment>
     </unit>
     <unit id="module.testing.summary.statusCount">

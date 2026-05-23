@@ -49,11 +49,10 @@ final readonly class EasyWorkspaceModuleController
         'sys_file_metadata',
     ];
 
-    private const SECTIONS = ['testing', 'pending', 'all', 'diagnostics'];
+    private const SECTIONS = ['pending', 'all', 'diagnostics'];
 
     private const MODULE_SECTIONS = [
-        'webcon_easy_workspace' => 'testing',
-        'webcon_easy_workspace_testing' => 'testing',
+        'webcon_easy_workspace' => 'pending',
         'webcon_easy_workspace_pending' => 'pending',
         'webcon_easy_workspace_records' => 'all',
         'webcon_easy_workspace_diagnostics' => 'diagnostics',
@@ -129,7 +128,7 @@ final readonly class EasyWorkspaceModuleController
 
         $canRender = $config['enabled'] && $activeWorkspaceId > 0;
         $disabledMessage = $this->disabledMessage($config['enabled'], $activeWorkspaceId);
-        $hasContext = $section === 'testing' || $section === 'diagnostics' || $pageUid > 0 || $newsUid > 0;
+        $hasContext = $section === 'diagnostics' || $pageUid > 0 || $newsUid > 0;
 
         $viewData = [
             'moduleTitle' => $this->localizationService->translate('module.title'),
@@ -241,10 +240,6 @@ final readonly class EasyWorkspaceModuleController
      */
     private function buildSectionPayload(string $section, int $pageUid, int $newsUid, array $config): array
     {
-        if ($section === 'testing') {
-            return $this->workspaceTestingReportService->build($this->resolveActiveWorkspaceId());
-        }
-
         if ($section === 'diagnostics') {
             $diagnostics = $this->workspaceDiagnosticsService->scan($this->resolveActiveWorkspaceId());
             $diagnostics['testing'] = $this->workspaceTestingReportService->buildFromScan($diagnostics);
@@ -371,13 +366,12 @@ final readonly class EasyWorkspaceModuleController
     }
 
     /**
-     * @return array{testing: string, pending: string, all: string, diagnostics: string}
+     * @return array{pending: string, all: string, diagnostics: string}
      */
     private function buildModuleUrls(int $pageUid, int $newsUid): array
     {
         $parameters = $this->buildModuleMenuParameters($pageUid, $newsUid);
         return [
-            'testing' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_testing', $parameters),
             'pending' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_pending', $parameters),
             'all' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_records', $parameters),
             'diagnostics' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_diagnostics', $parameters),
@@ -388,7 +382,7 @@ final readonly class EasyWorkspaceModuleController
     {
         $path = rtrim($request->getUri()->getPath(), '/');
         if (str_ends_with($path, '/module/content/easy-workspace')) {
-            return 'testing';
+            return 'pending';
         }
 
         $module = $request->getAttribute('module');
@@ -403,9 +397,8 @@ final readonly class EasyWorkspaceModuleController
     private function sectionTitleKey(string $section): string
     {
         return match ($section) {
-            'testing' => 'module.testing.title',
             'all' => 'module.section.all',
-            'diagnostics' => 'module.section.diagnostics',
+            'diagnostics' => 'module.section.testsDiagnostics',
             default => 'module.section.pending',
         };
     }
@@ -413,9 +406,8 @@ final readonly class EasyWorkspaceModuleController
     private function sectionDescriptionKey(string $section): string
     {
         return match ($section) {
-            'testing' => 'module.testing.subtitle',
             'all' => 'module.all.subtitle',
-            'diagnostics' => 'module.diagnostics.subtitle',
+            'diagnostics' => 'module.testsDiagnostics.subtitle',
             default => 'module.pending.subtitle',
         };
     }
@@ -504,7 +496,7 @@ final readonly class EasyWorkspaceModuleController
             return $module->getIdentifier();
         }
 
-        return 'webcon_easy_workspace_testing';
+        return 'webcon_easy_workspace_pending';
     }
 
     private function enqueueFlash(string $message, ContextualFeedbackSeverity $severity, string $title = ''): void

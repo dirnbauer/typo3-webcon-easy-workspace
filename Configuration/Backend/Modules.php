@@ -32,22 +32,12 @@ return [
     ],
     'webcon_easy_workspace_pending' => $moduleDefaults + [
         'parent' => 'webcon_easy_workspace',
-        'position' => ['after' => 'webcon_easy_workspace_testing'],
+        'position' => ['before' => '*'],
         'path' => '/module/content/easy-workspace/pending',
         'labels' => [
             'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.pending',
             'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle',
             'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle',
-        ],
-    ],
-    'webcon_easy_workspace_testing' => $moduleDefaults + [
-        'parent' => 'webcon_easy_workspace',
-        'position' => ['before' => '*'],
-        'path' => '/module/content/easy-workspace/testing',
-        'labels' => [
-            'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.title',
-            'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.subtitle',
-            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testing.subtitle',
         ],
     ],
     'webcon_easy_workspace_records' => $moduleDefaults + [
@@ -65,9 +55,9 @@ return [
         'position' => ['after' => 'webcon_easy_workspace_records'],
         'path' => '/module/content/easy-workspace/diagnostics',
         'labels' => [
-            'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.diagnostics',
-            'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.diagnostics.subtitle',
-            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.diagnostics.subtitle',
+            'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.testsDiagnostics',
+            'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testsDiagnostics.subtitle',
+            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testsDiagnostics.subtitle',
         ],
     ],
 ];
