@@ -32,7 +32,7 @@ The backend module lives in the left TYPO3 navigation below the workspace
 publish module. It is fully server-rendered with **Fluid templates** and the
 TYPO3 backend styleguide (`<core:icon>`, `<f:translate>`, Bootstrap 5 cards,
 tables, list groups, badges and button groups), and it exposes three TYPO3
-submodules (**Open items**, **All records**, **Tests and diagnostics**) through the
+submodules (**Open items**, **All records**, **Checks and diagnostics**) through the
 native module selector instead of custom in-page navigation. A small companion
 JS file (`easy-workspace-module.js`) only wires
 the rendered DOM and doc-header buttons into TYPO3 Core's `Modal` /
@@ -115,8 +115,8 @@ show. TYPO3 registers it as a parent module with three submodules:
   the controller redirects back with a TYPO3 flash message.
 - **All records** — every record on the page, with the same Bootstrap table row
   UI; selection is disabled here (read-only inventory view).
-- **Tests and diagnostics** — automatic database scans for broken workspace
-  records plus grouped health checks with repair guidance.
+- **Checks and diagnostics** — automatic database scans for broken workspace
+  records plus grouped health checks with suggested next steps.
 
 The doc header carries the standard TYPO3 page breadcrumb, page title, TYPO3's
 module selector, and the "show page", "copy preview link" and "edit page
@@ -372,7 +372,7 @@ Classes/
 
 Configuration/
 ├── Backend/AjaxRoutes.php                            # items, publish, preview, discard, diff, rollback
-├── Backend/Modules.php                               # Parent module + Open items/Records/Tests and diagnostics submodules
+├── Backend/Modules.php                               # Parent module + Open items/Records/Checks and diagnostics submodules
 ├── JavaScriptModules.php                             # `@webconsulting/webcon-easy-workspace/` import map
 ├── RequestMiddlewares.php                            # TYPO3 backend middleware registration
 ├── Services.yaml                                     # DI / autowiring

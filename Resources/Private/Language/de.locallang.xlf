@@ -249,8 +249,8 @@
     </unit>
     <unit id="module.section.testsDiagnostics">
       <segment>
-        <source>Tests and diagnostics</source>
-        <target state="translated">Tests und Diagnose</target>
+        <source>Checks and diagnostics</source>
+        <target state="translated">Prüfungen und Diagnose</target>
       </segment>
     </unit>
     <unit id="module.kpi.openChanges">
@@ -345,14 +345,14 @@
     </unit>
     <unit id="module.testsDiagnostics.subtitle">
       <segment>
-        <source>Run health checks, database diagnostics and repair guidance for the active workspace.</source>
-        <target state="translated">Prüfungen, Datenbankdiagnose und Reparaturhinweise für den aktiven Workspace ausführen.</target>
+        <source>Check workspace health, inspect database issues, and see what needs attention before publishing.</source>
+        <target state="translated">Workspace-Status prüfen, Datenbankprobleme erkennen und sehen, was vor der Veröffentlichung Aufmerksamkeit braucht.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.subtitle">
       <segment>
-        <source>Find broken, stalled or risky workspace records that need manual repair.</source>
-        <target state="translated">Findet kaputte, blockierte oder riskante Workspace-Datensätze, die manuell repariert werden müssen.</target>
+        <source>Find broken, stalled or risky workspace records that need a closer look.</source>
+        <target state="translated">Findet kaputte, blockierte oder riskante Workspace-Datensätze, die genauer geprüft werden sollten.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.total">
@@ -417,8 +417,8 @@
     </unit>
     <unit id="module.diagnostics.detected">
       <segment>
-        <source>Repair candidates</source>
-        <target state="translated">Reparaturfälle</target>
+        <source>Issues needing attention</source>
+        <target state="translated">Probleme mit Handlungsbedarf</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.column.problem">
@@ -435,8 +435,8 @@
     </unit>
     <unit id="module.diagnostics.column.solve">
       <segment>
-        <source>How to solve it</source>
-        <target state="translated">So wird es gelöst</target>
+        <source>Next step</source>
+        <target state="translated">Nächster Schritt</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.sql">
@@ -459,20 +459,20 @@
     </unit>
     <unit id="module.diagnostics.manual">
       <segment>
-        <source>Manual-only failure classes</source>
-        <target state="translated">Nur manuell prüfbare Fehlerklassen</target>
+        <source>Manual checks</source>
+        <target state="translated">Manuelle Prüfungen</target>
       </segment>
     </unit>
     <unit id="module.testing.title">
       <segment>
-        <source>Workspace checks</source>
-        <target state="translated">Workspace-Prüfungen</target>
+        <source>Health checks</source>
+        <target state="translated">Statusprüfungen</target>
       </segment>
     </unit>
     <unit id="module.testing.subtitle">
       <segment>
-        <source>Grouped checks summarize workspace health and concrete repair steps.</source>
-        <target state="translated">Gruppierte Prüfungen zeigen Workspace-Status und konkrete Reparaturschritte.</target>
+        <source>Grouped checks show the current workspace status and suggested next steps.</source>
+        <target state="translated">Gruppierte Prüfungen zeigen den aktuellen Workspace-Status und empfohlene nächste Schritte.</target>
       </segment>
     </unit>
     <unit id="module.testing.summary.statusCount">
@@ -495,8 +495,8 @@
     </unit>
     <unit id="module.testing.solve">
       <segment>
-        <source>How to solve it</source>
-        <target state="translated">So wird es gelöst</target>
+        <source>Next step</source>
+        <target state="translated">Nächster Schritt</target>
       </segment>
     </unit>
     <unit id="module.testing.severity.ok">

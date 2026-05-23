@@ -249,8 +249,8 @@
     </unit>
     <unit id="module.section.testsDiagnostics">
       <segment>
-        <source>Tests and diagnostics</source>
-        <target state="translated">Tests and diagnostics</target>
+        <source>Checks and diagnostics</source>
+        <target state="translated">Checks and diagnostics</target>
       </segment>
     </unit>
     <unit id="module.kpi.openChanges">
@@ -345,14 +345,14 @@
     </unit>
     <unit id="module.testsDiagnostics.subtitle">
       <segment>
-        <source>Run health checks, database diagnostics and repair guidance for the active workspace.</source>
-        <target state="translated">Run health checks, database diagnostics and repair guidance for the active workspace.</target>
+        <source>Check workspace health, inspect database issues, and see what needs attention before publishing.</source>
+        <target state="translated">Check workspace health, inspect database issues, and see what needs attention before publishing.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.subtitle">
       <segment>
-        <source>Find broken, stalled or risky workspace records that need manual repair.</source>
-        <target state="translated">Find broken, stalled or risky workspace records that need manual repair.</target>
+        <source>Find broken, stalled or risky workspace records that need a closer look.</source>
+        <target state="translated">Find broken, stalled or risky workspace records that need a closer look.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.total">
@@ -417,8 +417,8 @@
     </unit>
     <unit id="module.diagnostics.detected">
       <segment>
-        <source>Repair candidates</source>
-        <target state="translated">Repair candidates</target>
+        <source>Issues needing attention</source>
+        <target state="translated">Issues needing attention</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.column.problem">
@@ -435,8 +435,8 @@
     </unit>
     <unit id="module.diagnostics.column.solve">
       <segment>
-        <source>How to solve it</source>
-        <target state="translated">How to solve it</target>
+        <source>Next step</source>
+        <target state="translated">Next step</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.sql">
@@ -459,20 +459,20 @@
     </unit>
     <unit id="module.diagnostics.manual">
       <segment>
-        <source>Manual-only failure classes</source>
-        <target state="translated">Manual-only failure classes</target>
+        <source>Manual checks</source>
+        <target state="translated">Manual checks</target>
       </segment>
     </unit>
     <unit id="module.testing.title">
       <segment>
-        <source>Workspace checks</source>
-        <target state="translated">Workspace checks</target>
+        <source>Health checks</source>
+        <target state="translated">Health checks</target>
       </segment>
     </unit>
     <unit id="module.testing.subtitle">
       <segment>
-        <source>Grouped checks summarize workspace health and concrete repair steps.</source>
-        <target state="translated">Grouped checks summarize workspace health and concrete repair steps.</target>
+        <source>Grouped checks show the current workspace status and suggested next steps.</source>
+        <target state="translated">Grouped checks show the current workspace status and suggested next steps.</target>
       </segment>
     </unit>
     <unit id="module.testing.summary.statusCount">
@@ -495,8 +495,8 @@
     </unit>
     <unit id="module.testing.solve">
       <segment>
-        <source>How to solve it</source>
-        <target state="translated">How to solve it</target>
+        <source>Next step</source>
+        <target state="translated">Next step</target>
       </segment>
     </unit>
     <unit id="module.testing.severity.ok">

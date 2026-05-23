@@ -76,7 +76,7 @@ registers Easy Workspace as a parent module with three submodules:
   through ``DataHandler`` and redirects back with a TYPO3 flash message.
 * **All records** — every record on the page in the same Bootstrap table row
   UI (read-only inventory view).
-* **Tests and diagnostics** — automatic database scans for broken, stale or
+* **Checks and diagnostics** — automatic database scans for broken, stale or
   risky workspace records that need manual repair before publish. The same
   screen also includes grouped health reports, in the style of TYPO3 Reports,
   for automatic diagnostics, seed coverage, inline child publish risks and

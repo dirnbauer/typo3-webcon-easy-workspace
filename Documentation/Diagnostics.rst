@@ -4,7 +4,7 @@
 Workspace diagnostics
 =====================
 
-Easy Workspace ships a **Tests and diagnostics** backend submodule. It is an
+Easy Workspace ships a **Checks and diagnostics** backend submodule. It is an
 operational test suite for workspace records that are wrong, stalled or
 risky enough that a publish button should not be trusted blindly.
 
@@ -18,14 +18,14 @@ Automatic checks
 ================
 
 The module scans all workspace-aware TCA tables in the active workspace.
-It currently detects these repair candidates:
+It currently detects issues that need attention:
 
 ..  list-table::
     :header-rows: 1
 
     * - Problem
       - Why it matters
-      - How to solve it
+      - Next step
     * - Live row carries workspace fields
       - A live row with ``t3ver_oid`` or ``t3ver_state`` set can be treated
         like a versioned row.
@@ -92,8 +92,8 @@ before inserting a fresh set.
 After seeding:
 
 1. Switch the backend to the seeded workspace.
-2. Open **Content > Easy Workspace > Tests and diagnostics**.
-3. Verify each seeded bug appears with a suggested repair path.
+2. Open **Content > Easy Workspace > Checks and diagnostics**.
+3. Verify each seeded bug appears with a suggested next step.
 4. Repair or discard the seed rows before continuing editorial tests.
 
 The seed command writes deliberately inconsistent rows directly to the

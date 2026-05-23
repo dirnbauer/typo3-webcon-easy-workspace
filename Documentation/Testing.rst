@@ -1,18 +1,18 @@
 ..  _testing:
 
 ================
-Workspace checks
-================
+Health checks
+=============
 
-Easy Workspace includes **Workspace checks** at the bottom of the
-**Tests and diagnostics** backend submodule. They use the same scanner as the
+Easy Workspace includes **Health checks** at the bottom of the
+**Checks and diagnostics** backend submodule. They use the same scanner as the
 diagnostics table, but present the result like a TYPO3 Reports screen: grouped
-checks, status badges and concrete repair steps.
+checks, status badges and suggested next steps.
 
 Use it as a fast health check before trusting a workspace publish queue:
 
 1. Switch the backend to the target workspace.
-2. Open **Content > Easy Workspace > Tests and diagnostics**.
+2. Open **Content > Easy Workspace > Checks and diagnostics**.
 3. Review groups with warning, error, info or notice state.
 4. Use the diagnostics tables above the reports for exact SQL and affected
    records when a database check fails.
@@ -60,7 +60,7 @@ Repair rule
 ===========
 
 The workspace checks are intentionally read-only. They should tell editors and
-integrators **what failed and how to solve it**, but repairs should still use
+integrators **what failed and what to do next**, but repairs should still use
 TYPO3 APIs such as ``DataHandler`` whenever possible. Direct SQL updates are
 only appropriate for controlled repair scripts after the row identity and
 editorial intent are known.

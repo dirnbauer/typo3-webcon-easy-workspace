@@ -174,7 +174,7 @@ final readonly class WorkspaceTestingReportService
                 : 'The seed command can create a broken inline child row for article_grid_items.',
             TcaUtility::table('article_grid_items') === []
                 ? 'Install the demo Content Block table if you want to reproduce that exact child-record failure locally.'
-                : 'Run webcon-easy-workspace:seed-diagnostics --execute in a local DDEV database, then open Tests and diagnostics.',
+                : 'Run webcon-easy-workspace:seed-diagnostics --execute in a local DDEV database, then open Checks and diagnostics.',
             TcaUtility::table('article_grid_items') === [] ? ContextualFeedbackSeverity::INFO : ContextualFeedbackSeverity::OK,
             TcaUtility::table('article_grid_items') === [] ? 'not installed' : 'available',
         );
