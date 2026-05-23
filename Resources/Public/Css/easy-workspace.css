@@ -109,10 +109,10 @@ webcon-easy-workspace-menu {
     text-transform: uppercase;
     letter-spacing: .04em;
     padding: .1rem .45rem;
-    border-radius: 999px;
-    color: var(--icon-color-accent, #ff8700);
-    background: color-mix(in srgb, var(--icon-color-accent, #ff8700) 14%, transparent);
-    border: 1px solid color-mix(in srgb, var(--icon-color-accent, #ff8700) 32%, transparent);
+    border-radius: var(--typo3-badge-border-radius, 1em);
+    color: var(--typo3-badge-primary-color);
+    background: var(--typo3-badge-primary-bg);
+    border: 1px solid var(--typo3-badge-primary-border-color);
 }
 .wew-menu__subtitle {
     margin: .15rem 0 0;
@@ -170,7 +170,7 @@ webcon-easy-workspace-menu {
     outline-offset: -2px;
     border-radius: 2px;
 }
-/* Count badge sitting next to each tab label. Uses TYPO3 state tokens
+/* Count badge sitting next to each tab label. Uses TYPO3 badge tokens
    — `default` for inactive, `primary` (brand) for the active tab so
    the badge visually attaches to the underline accent. */
 .wew-menu__chip-count {
@@ -178,10 +178,10 @@ webcon-easy-workspace-menu {
     min-width: 1.5em;
     padding: 0 .4em;
     margin-left: .35em;
-    border-radius: 999px;
-    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
-    color: var(--typo3-state-default-color, inherit);
-    border: 1px solid var(--typo3-state-default-border-color, transparent);
+    border-radius: var(--typo3-badge-border-radius, 1em);
+    background: var(--typo3-badge-default-bg);
+    color: var(--typo3-badge-default-color);
+    border: 1px solid var(--typo3-badge-default-border-color);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.4;
@@ -189,13 +189,13 @@ webcon-easy-workspace-menu {
     vertical-align: baseline;
 }
 .wew-menu__chip--active .wew-menu__chip-count {
-    background: var(--typo3-state-primary-bg, var(--bs-primary));
-    color: var(--typo3-state-primary-color, var(--bs-body-bg));
-    border-color: var(--typo3-state-primary-border-color, transparent);
+    background: var(--typo3-badge-primary-bg);
+    color: var(--typo3-badge-primary-color);
+    border-color: var(--typo3-badge-primary-border-color);
 }
 
-/* ---- Status pills (MODIFIED, NEW, MOVED, …) ----
-   Built on TYPO3 v14's `--typo3-state-{name}-*` design tokens
+/* ---- Status pills (MODIFIED, NEW, MOVED, ...) ----
+   Built on TYPO3 v14's `--typo3-badge-{name}-*` design tokens
    (cms-backend/Resources/Public/Css/backend.css). Each token triple
    (bg + color + border-color) is theme-aware via light-dark(), so
    the pill picks the right shade in both light and dark backends
@@ -209,9 +209,9 @@ webcon-easy-workspace-menu {
      Live / Hidden      → secondary
 */
 .wew-state-pill {
-    --wew-state-pill-bg: var(--typo3-badge-secondary-bg, var(--typo3-state-secondary-bg, var(--typo3-state-default-bg)));
-    --wew-state-pill-color: var(--typo3-badge-secondary-color, var(--typo3-state-secondary-color, var(--typo3-state-default-color)));
-    --wew-state-pill-border: var(--typo3-badge-secondary-border-color, var(--typo3-state-secondary-border-color, var(--typo3-state-default-border-color)));
+    --wew-state-pill-bg: var(--typo3-badge-default-bg);
+    --wew-state-pill-color: var(--typo3-badge-default-color);
+    --wew-state-pill-border: var(--typo3-badge-default-border-color);
     display: inline-block;
     padding: .1em .55em;
     border-radius: 999px;
@@ -230,38 +230,36 @@ webcon-easy-workspace-menu {
    for pill/badge components (not full-width alerts like the
    state-* tokens) and are already mode-aware via light-dark(),
    so the same declarations work in both light and dark backends
-   without an extension-side override. Falls back to the matching
-   state-* tokens on older TYPO3 versions that don't define the
-   badge variants yet. */
+   without an extension-side override. */
 .wew-state-pill--info {
-    --wew-state-pill-bg: var(--typo3-badge-info-bg, var(--typo3-state-info-bg));
-    --wew-state-pill-color: var(--typo3-badge-info-color, var(--typo3-state-info-color));
-    --wew-state-pill-border: var(--typo3-badge-info-border-color, var(--typo3-state-info-border-color));
+    --wew-state-pill-bg: var(--typo3-badge-info-bg);
+    --wew-state-pill-color: var(--typo3-badge-info-color);
+    --wew-state-pill-border: var(--typo3-badge-info-border-color);
 }
 .wew-state-pill--success {
-    --wew-state-pill-bg: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
-    --wew-state-pill-color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
-    --wew-state-pill-border: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+    --wew-state-pill-bg: var(--typo3-badge-success-bg);
+    --wew-state-pill-color: var(--typo3-badge-success-color);
+    --wew-state-pill-border: var(--typo3-badge-success-border-color);
 }
 .wew-state-pill--warning {
-    --wew-state-pill-bg: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
-    --wew-state-pill-color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
-    --wew-state-pill-border: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+    --wew-state-pill-bg: var(--typo3-badge-warning-bg);
+    --wew-state-pill-color: var(--typo3-badge-warning-color);
+    --wew-state-pill-border: var(--typo3-badge-warning-border-color);
 }
 .wew-state-pill--danger {
-    --wew-state-pill-bg: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
-    --wew-state-pill-color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
-    --wew-state-pill-border: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
+    --wew-state-pill-bg: var(--typo3-badge-danger-bg);
+    --wew-state-pill-color: var(--typo3-badge-danger-color);
+    --wew-state-pill-border: var(--typo3-badge-danger-border-color);
 }
 .wew-state-pill--secondary {
-    --wew-state-pill-bg: var(--typo3-badge-secondary-bg, var(--typo3-state-secondary-bg, var(--typo3-state-default-bg)));
-    --wew-state-pill-color: var(--typo3-badge-secondary-color, var(--typo3-state-secondary-color, var(--typo3-state-default-color)));
-    --wew-state-pill-border: var(--typo3-badge-secondary-border-color, var(--typo3-state-secondary-border-color, var(--typo3-state-default-border-color)));
+    --wew-state-pill-bg: var(--typo3-badge-secondary-bg);
+    --wew-state-pill-color: var(--typo3-badge-secondary-color);
+    --wew-state-pill-border: var(--typo3-badge-secondary-border-color);
 }
 .wew-state-pill--notice {
-    --wew-state-pill-bg: var(--typo3-badge-info-bg, var(--typo3-state-notice-bg));
-    --wew-state-pill-color: var(--typo3-badge-info-color, var(--typo3-state-notice-color));
-    --wew-state-pill-border: var(--typo3-badge-info-border-color, var(--typo3-state-notice-border-color));
+    --wew-state-pill-bg: var(--typo3-badge-notice-bg);
+    --wew-state-pill-color: var(--typo3-badge-notice-color);
+    --wew-state-pill-border: var(--typo3-badge-notice-border-color);
 }
 
 /* In-row variant — same color tokens but lighter typographic
@@ -281,9 +279,9 @@ webcon-easy-workspace-menu {
     flex-shrink: 0;
 }
 .wew-list__badges .wew-state-pill--inline {
-    background: color-mix(in srgb, currentColor 10%, transparent);
+    background: var(--wew-state-pill-bg);
+    color: var(--wew-state-pill-color);
     border-color: var(--wew-state-pill-border);
-    opacity: .82;
 }
 
 /* ---- Selection bar (master checkbox) ---- */
@@ -1031,12 +1029,6 @@ webcon-easy-workspace-menu {
     border-radius: 3px;
     line-height: 1.3;
 }
-.wew-list__meta .badge-success    { background: color-mix(in srgb, var(--bs-success)         18%, transparent); color: var(--bs-success); }
-.wew-list__meta .badge-info       { background: color-mix(in srgb, var(--bs-info)            18%, transparent); color: var(--bs-info); }
-.wew-list__meta .badge-warning    { background: color-mix(in srgb, var(--bs-warning)         18%, transparent); color: var(--bs-warning); }
-.wew-list__meta .badge-danger     { background: color-mix(in srgb, var(--bs-danger)          18%, transparent); color: var(--bs-danger); }
-.wew-list__meta .badge-secondary  { background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 14%, transparent); color: var(--bs-secondary-color, #6c757d); }
-.wew-list__meta .badge-dark       { background: color-mix(in srgb, var(--bs-body-color)      14%, transparent); color: var(--typo3-component-color, var(--bs-body-color)); }
 .wew-list__hidden-badge { letter-spacing: .03em; }
 .wew-list__table {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
@@ -1618,16 +1610,16 @@ webcon-easy-workspace-menu {
     text-decoration: none;
 }
 .wew-diff-modal__field-value ins {
-    background: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
-    color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
-    border-color: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+    background: var(--typo3-badge-success-bg);
+    color: var(--typo3-badge-success-color);
+    border-color: var(--typo3-badge-success-border-color);
 }
 .wew-diff-modal__field-value del {
-    background: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
-    color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
-    border-color: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
+    background: var(--typo3-badge-danger-bg);
+    color: var(--typo3-badge-danger-color);
+    border-color: var(--typo3-badge-danger-border-color);
     text-decoration: line-through;
-    text-decoration-color: color-mix(in srgb, var(--typo3-badge-danger-color, currentColor) 50%, transparent);
+    text-decoration-color: var(--typo3-badge-danger-color);
 }
 .wew-diff-modal__empty {
     margin: 0;
@@ -1825,9 +1817,9 @@ webcon-easy-workspace-menu {
 }
 .wew-history__rollback-field:hover,
 .wew-history__rollback-field:focus-visible {
-    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
-    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
-    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
+    background: var(--typo3-badge-warning-bg);
+    border-color: var(--typo3-badge-warning-border-color);
+    color: var(--typo3-badge-warning-color);
     outline: none;
     transform: scale(1.08);
 }
@@ -1942,10 +1934,12 @@ webcon-easy-workspace-menu {
 }
 .wew-testing__details li {
     padding: .15rem .45rem;
-    border-radius: 3px;
-    background: var(--typo3-state-default-bg, var(--bs-tertiary-bg));
-    color: var(--typo3-state-default-color, var(--bs-body-color));
+    border-radius: var(--typo3-badge-border-radius, 1em);
+    border: 1px solid var(--typo3-badge-default-border-color);
+    background: var(--typo3-badge-default-bg);
+    color: var(--typo3-badge-default-color);
     font-size: 11px;
+    font-weight: 600;
     overflow-wrap: anywhere;
 }
 .wew-testing__status {
@@ -1953,38 +1947,38 @@ webcon-easy-workspace-menu {
     align-items: center;
     padding: .12rem .5rem;
     border-radius: 999px;
-    border: 1px solid var(--typo3-badge-secondary-border-color, var(--typo3-state-default-border-color));
-    background: var(--typo3-badge-secondary-bg, var(--typo3-state-default-bg));
-    color: var(--typo3-badge-secondary-color, var(--typo3-state-default-color));
+    border: 1px solid var(--typo3-badge-default-border-color);
+    background: var(--typo3-badge-default-bg);
+    color: var(--typo3-badge-default-color);
     font-size: 11px;
     font-weight: 700;
     line-height: 1.4;
     text-transform: uppercase;
 }
 .wew-testing__status--success {
-    background: var(--typo3-badge-success-bg, var(--typo3-state-success-bg));
-    color: var(--typo3-badge-success-color, var(--typo3-state-success-color));
-    border-color: var(--typo3-badge-success-border-color, var(--typo3-state-success-border-color));
+    background: var(--typo3-badge-success-bg);
+    color: var(--typo3-badge-success-color);
+    border-color: var(--typo3-badge-success-border-color);
 }
 .wew-testing__status--warning {
-    background: var(--typo3-badge-warning-bg, var(--typo3-state-warning-bg));
-    color: var(--typo3-badge-warning-color, var(--typo3-state-warning-color));
-    border-color: var(--typo3-badge-warning-border-color, var(--typo3-state-warning-border-color));
+    background: var(--typo3-badge-warning-bg);
+    color: var(--typo3-badge-warning-color);
+    border-color: var(--typo3-badge-warning-border-color);
 }
 .wew-testing__status--danger {
-    background: var(--typo3-badge-danger-bg, var(--typo3-state-danger-bg));
-    color: var(--typo3-badge-danger-color, var(--typo3-state-danger-color));
-    border-color: var(--typo3-badge-danger-border-color, var(--typo3-state-danger-border-color));
+    background: var(--typo3-badge-danger-bg);
+    color: var(--typo3-badge-danger-color);
+    border-color: var(--typo3-badge-danger-border-color);
 }
 .wew-testing__status--info {
-    background: var(--typo3-badge-info-bg, var(--typo3-state-info-bg));
-    color: var(--typo3-badge-info-color, var(--typo3-state-info-color));
-    border-color: var(--typo3-badge-info-border-color, var(--typo3-state-info-border-color));
+    background: var(--typo3-badge-info-bg);
+    color: var(--typo3-badge-info-color);
+    border-color: var(--typo3-badge-info-border-color);
 }
 .wew-testing__status--notice {
-    background: var(--typo3-badge-notice-bg, var(--typo3-state-notice-bg, var(--typo3-state-default-bg)));
-    color: var(--typo3-badge-notice-color, var(--typo3-state-notice-color, var(--typo3-state-default-color)));
-    border-color: var(--typo3-badge-notice-border-color, var(--typo3-state-notice-border-color, var(--typo3-state-default-border-color)));
+    background: var(--typo3-badge-notice-bg);
+    color: var(--typo3-badge-notice-color);
+    border-color: var(--typo3-badge-notice-border-color);
 }
 @media (max-width: 760px) {
     .wew-testing__heading,
