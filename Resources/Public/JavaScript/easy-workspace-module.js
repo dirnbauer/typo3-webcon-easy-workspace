@@ -111,6 +111,9 @@ function initDocHeader(container) {
     if (!previewBtn || !previewUrl) {
       return;
     }
+    if (previewBtn.matches('a[href][target]') && previewBtn.dataset.wewPreviewLink) {
+      return;
+    }
     event.preventDefault();
     onPreview(previewBtn, previewUrl);
   });
@@ -299,33 +302,30 @@ async function onPreview(btn, endpoint) {
   const pageUid = parseInt(btn.dataset.wewPreviewPageUid || '0', 10);
   const staticPreviewLink = btn.dataset.wewPreviewLink || '';
   if (pageUid <= 0 && !staticPreviewLink) return;
+
+  if (staticPreviewLink) {
+    openPreviewUrl(staticPreviewLink);
+    return;
+  }
+
+  const previewWindow = openBlankPreviewWindow();
   btn.disabled = true;
   const labelElement = btn.querySelector('.btn-label');
   const originalLabel = labelElement?.textContent || '';
   if (labelElement) {
-    labelElement.textContent = label('preview.button.copying');
+    labelElement.textContent = label('preview.open.opening');
   }
   try {
-    if (staticPreviewLink) {
-      await writeToClipboard(staticPreviewLink);
-      if (labelElement) {
-        labelElement.textContent = label('preview.button.copied');
-      }
-      Notification.success(label('preview.link.copied'), staticPreviewLink, 4);
-      return;
-    }
     const response = await new AjaxRequest(endpoint).withQueryArguments({ pageUid }).get();
     const data = await response.resolve();
     if (!data?.url) {
+      closePreviewWindow(previewWindow);
       Notification.error(label('preview.link.title'), data?.error || label('preview.link.noUrl'));
       return;
     }
-    await writeToClipboard(data.url);
-    if (labelElement) {
-      labelElement.textContent = label('preview.button.copied');
-    }
-    Notification.success(label('preview.link.copied'), data.url, 4);
+    openPreviewUrl(data.url, previewWindow);
   } catch (error) {
+    closePreviewWindow(previewWindow);
     Notification.error(label('preview.link.title'), error?.message || label('error.unexpected'));
   } finally {
     window.setTimeout(() => {
@@ -334,6 +334,49 @@ async function onPreview(btn, endpoint) {
       }
       btn.disabled = false;
     }, 1200);
+  }
+}
+
+function openBlankPreviewWindow() {
+  try {
+    const opener = window.top || window;
+    const previewWindow = opener.open('about:blank', '_blank');
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = label('preview.open.opening');
+    }
+    return previewWindow;
+  } catch (error) {
+    return null;
+  }
+}
+
+function openPreviewUrl(url, previewWindow = null) {
+  if (previewWindow && !previewWindow.closed) {
+    previewWindow.location.href = url;
+    return;
+  }
+
+  try {
+    const opener = window.top || window;
+    const opened = opener.open(url, '_blank');
+    if (opened) {
+      opened.opener = null;
+      return;
+    }
+    opener.location.href = url;
+  } catch (error) {
+    try {
+      (window.top || window).location.href = url;
+    } catch (fallbackError) {
+      window.location.href = url;
+    }
+  }
+}
+
+function closePreviewWindow(previewWindow) {
+  if (previewWindow && !previewWindow.closed) {
+    previewWindow.close();
   }
 }
 
@@ -440,28 +483,4 @@ function formatMessage(template, vars) {
     out = out.replaceAll(`{${name}}`, String(value));
   }
   return out;
-}
-
-async function writeToClipboard(text) {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return;
-    } catch (error) {
-      // Fall through to the textarea copy path. Some browsers reject
-      // Clipboard API writes after an awaited AJAX call.
-    }
-  }
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.setAttribute('readonly', '');
-  textarea.style.position = 'fixed';
-  textarea.style.left = '-9999px';
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    document.execCommand('copy');
-  } finally {
-    document.body.removeChild(textarea);
-  }
 }

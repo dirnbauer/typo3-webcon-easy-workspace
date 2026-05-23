@@ -913,6 +913,18 @@
         <target state="translated">Vorschau</target>
       </segment>
     </unit>
+    <unit id="preview.open.title">
+      <segment>
+        <source>Open the workspace preview of this page in a new tab</source>
+        <target state="translated">Workspace-Vorschau dieser Seite in einem neuen Tab öffnen</target>
+      </segment>
+    </unit>
+    <unit id="preview.open.opening">
+      <segment>
+        <source>Opening preview...</source>
+        <target state="translated">Vorschau wird geöffnet...</target>
+      </segment>
+    </unit>
     <unit id="preview.link.title">
       <segment>
         <source>Preview link</source>

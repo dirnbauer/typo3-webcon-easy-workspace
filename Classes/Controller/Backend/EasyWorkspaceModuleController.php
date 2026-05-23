@@ -428,11 +428,9 @@ final readonly class EasyWorkspaceModuleController
             'diff.noTitle',
             'diff.modal.historyTitle',
             'preview.button.preview',
-            'preview.button.copying',
-            'preview.button.copied',
+            'preview.open.opening',
             'preview.link.title',
             'preview.link.noUrl',
-            'preview.link.copied',
             'error.unexpected',
             'toolbar.publishToLive',
             'module.publishBar.summary',
@@ -583,16 +581,30 @@ final readonly class EasyWorkspaceModuleController
             } catch (\Throwable) {
                 // The AJAX fallback will return the localized error when clicked.
             }
-            $previewButton = $this->componentFactory->createGenericButton()
-                ->setTag('button')
-                ->setAttributes([
-                    'type' => 'button',
-                    'data-wew-preview-trigger' => '',
-                    'data-wew-preview-page-uid' => (string)$pageUid,
-                    'data-wew-preview-link' => $previewLink,
-                ])
+            $previewButton = $this->componentFactory->createGenericButton();
+            if ($previewLink !== '') {
+                $previewButton
+                    ->setTag('a')
+                    ->setHref($previewLink);
+            } else {
+                $previewButton
+                    ->setTag('button');
+            }
+            $previewAttributes = [
+                'data-wew-preview-trigger' => '',
+                'data-wew-preview-page-uid' => (string)$pageUid,
+                'data-wew-preview-link' => $previewLink,
+            ];
+            if ($previewLink !== '') {
+                $previewAttributes['target'] = '_blank';
+                $previewAttributes['rel'] = 'noopener noreferrer';
+            } else {
+                $previewAttributes['type'] = 'button';
+            }
+            $previewButton
+                ->setAttributes($previewAttributes)
                 ->setLabel($this->localizationService->translate('preview.button.preview'))
-                ->setTitle($this->localizationService->translate('preview.button.title'))
+                ->setTitle($this->localizationService->translate('preview.open.title'))
                 ->setShowLabelText(true)
                 ->setIcon($this->iconFactory->getIcon('actions-link', IconSize::SMALL));
 
