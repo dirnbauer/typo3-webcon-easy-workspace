@@ -14,7 +14,7 @@
 
 webcon-easy-workspace-menu {
     display: block;
-    width: min(380px, calc(100vw - 24px));
+    width: min(420px, calc(100vw - 24px));
     max-width: 95vw;
     /* No content inside should ever push past the panel width.
        Without this clip, a single long unbreakable token in a
@@ -50,7 +50,7 @@ webcon-easy-workspace-menu {
    stays right-anchored within the viewport. */
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu) {
     width: auto;
-    max-width: min(380px, calc(100vw - 24px));
+    max-width: min(420px, calc(100vw - 24px));
     min-width: 320px;
     overflow-x: hidden;
 }
@@ -679,8 +679,9 @@ webcon-easy-workspace-menu {
 .wew-list__label {
     display: flex;
     align-items: flex-start;
+    gap: .65rem;
     /* Consistent rhythm with the column-header above each block. */
-    padding: .5rem .55rem .5rem .85rem;
+    padding: .62rem .75rem .62rem .95rem;
     cursor: pointer;
     margin: 0;
 }
@@ -729,23 +730,23 @@ webcon-easy-workspace-menu {
 .wew-list__children {
     display: flex;
     flex-direction: column;
-    gap: .25rem;
-    margin-top: .15rem;
-    padding-left: .65rem;
+    gap: .32rem;
+    margin-top: .25rem;
+    padding-left: .75rem;
     border-left: 1px solid color-mix(in srgb, var(--typo3-component-border-color, var(--bs-border-color)) 70%, transparent);
 }
 .wew-list__child-change {
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) auto;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
     align-items: center;
-    gap: .4rem;
+    gap: .5rem;
     min-width: 0;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
 .wew-list__child-thumb,
 .wew-list__child-icon {
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
     border-radius: 3px;
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: color-mix(in srgb, var(--typo3-component-bg, var(--bs-body-bg)) 84%, var(--typo3-component-color, var(--bs-body-color)));
@@ -762,7 +763,7 @@ webcon-easy-workspace-menu {
     display: block;
     width: 8px;
     height: 10px;
-    margin: 3px auto;
+    margin: 6px auto;
     border-radius: 1px;
     background: currentColor;
     opacity: .55;
@@ -795,7 +796,7 @@ webcon-easy-workspace-menu {
     gap: .1rem;
     flex-shrink: 0;
     align-self: flex-start;
-    margin-left: .45rem;
+    margin-left: .1rem;
     margin-right: -.15rem; /* let the icons kiss the row edge */
 }
 
@@ -1041,8 +1042,8 @@ webcon-easy-workspace-menu {
 }
 
 .wew-list__thumb {
-    width: 40px;
-    height: 30px;
+    width: 56px;
+    height: 42px;
     border-radius: 4px;
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .04));
     border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
@@ -1053,6 +1054,7 @@ webcon-easy-workspace-menu {
     flex-shrink: 0;
 }
 .wew-list__thumb img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -1453,11 +1455,10 @@ webcon-easy-workspace-menu {
     .wew-menu__filter { padding: .35rem .65rem .15rem; }
 
     .wew-list__label {
-        grid-template-columns: auto 1fr auto auto;
-        gap: .45rem;
-        padding: .45rem .65rem .45rem .8rem;
+        gap: .5rem;
+        padding: .5rem .65rem .5rem .8rem;
     }
-    .wew-list__thumb { width: 36px; height: 28px; }
+    .wew-list__thumb { width: 46px; height: 34px; }
     .wew-list__title-text { font-size: 12.5px; }
     .wew-list__meta { font-size: 10px; }
     .wew-list__meta .badge { padding: .05rem .3rem; }
