@@ -1169,11 +1169,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
   _renderChangeBadges(item) {
     if (!this._shouldShowStatePills(item)) return nothing;
-    const badgeSource = this._shouldShowSubelementDetails()
+    const badges = Array.isArray(item.changeBadges) && item.changeBadges.length > 0
       ? item.changeBadges
-      : item.ownChangeBadges;
-    const badges = Array.isArray(badgeSource) && badgeSource.length > 0
-      ? badgeSource
       : (item.kindLabel && this._shouldShowSubelementDetails()
         ? [{ kindKey: item.kindKey, kindLabel: item.kindLabel, badge: item.badge || 'info' }]
         : []);
@@ -2225,9 +2222,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _shouldShowStatePills(item) {
-    return this._shouldShowSubelementDetails()
-      || !Array.isArray(item.childChanges)
-      || item.childChanges.length === 0;
+    return this._shouldShowSubelementDetails();
   }
 
   _detectLanguageUid() {
