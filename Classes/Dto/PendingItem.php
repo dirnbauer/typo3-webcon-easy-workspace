@@ -12,7 +12,7 @@ final readonly class PendingItem
      *   versions. Empty for unchanged rows (isChanged=false) or when
      *   the diff service couldn't compute one.
      * @param list<array{kindKey: string, kindLabel: string, badge: string}> $changeBadges
-     *   Ordered, de-duplicated history action badges for the dropdown row.
+     *   Ordered, de-duplicated own history action badges for the dropdown row.
      * @param list<array<string, mixed>> $childChanges
      *   Changed inline child records, such as versioned file references,
      *   rendered indented inside the owning visible record.
@@ -87,6 +87,11 @@ final readonly class PendingItem
             'latestChangeAt' => $this->latestChangeAt,
             'latestChangeUserUid' => $this->latestChangeUserUid,
             'latestChangeUser' => $this->latestChangeUser,
+            'ownChangeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
+                'kindKey' => $this->kindKey,
+                'kindLabel' => $this->kindLabel,
+                'badge' => $this->badge,
+            ]]) : [],
             'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,

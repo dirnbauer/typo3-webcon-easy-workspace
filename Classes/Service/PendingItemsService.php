@@ -642,6 +642,7 @@ final readonly class PendingItemsService
             $replacementTable = Value::string($incoming['table'] ?? null);
             $replacementLiveUid = Value::int($incoming['liveUid'] ?? null);
             $preservedBadges = $this->listArray($base['changeBadges'] ?? null);
+            $preservedOwnBadges = $this->listArray($base['ownChangeBadges'] ?? null);
             $preservedPublishRecords = $this->withoutConceptualRecord(
                 $this->listArray($base['publishRecords'] ?? null),
                 $replacementTable,
@@ -654,6 +655,7 @@ final readonly class PendingItemsService
             );
             $base = array_replace($base, $incoming);
             $base['changeBadges'] = $preservedBadges;
+            $base['ownChangeBadges'] = $preservedOwnBadges;
             $base['publishRecords'] = $preservedPublishRecords;
             $base['changeRecords'] = $preservedChangeRecords;
         }
@@ -671,6 +673,16 @@ final readonly class PendingItemsService
             $this->listArray($base['changeBadges'] ?? null),
             $this->listArray($incoming['changeBadges'] ?? null),
         );
+        if (
+            Value::string($base['table'] ?? null) === Value::string($incoming['table'] ?? null)
+            && Value::int($base['liveUid'] ?? null) === Value::int($incoming['liveUid'] ?? null)
+            && $incomingChanged
+        ) {
+            $base['ownChangeBadges'] = $this->mergeChangeBadges(
+                $this->listArray($base['ownChangeBadges'] ?? null),
+                $this->listArray($incoming['ownChangeBadges'] ?? $incoming['changeBadges'] ?? null),
+            );
+        }
         $base['publishRecords'] = $this->mergeRecordReferences(
             $this->listArray($base['publishRecords'] ?? null),
             $this->listArray($incoming['publishRecords'] ?? null),

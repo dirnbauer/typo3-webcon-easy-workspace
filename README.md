@@ -42,7 +42,7 @@ element remains a separate compact entry point.
 
 ## Requirements
 
-- Easy Workspace 14.0.0
+- Easy Workspace 1.0.1
 - TYPO3 14.3 LTS only (`^14.3`)
 - PHP 8.2-8.5
 - `typo3/cms-workspaces`

@@ -4,7 +4,7 @@
 Easy Workspace
 ==============
 
-Easy Workspace 14.0.0 is a TYPO3 14.3 LTS backend extension for
+Easy Workspace 1.0.1 is a TYPO3 14.3 LTS backend extension for
 publishing workspace changes from the backend toolbar and from a full
 backend module.
 

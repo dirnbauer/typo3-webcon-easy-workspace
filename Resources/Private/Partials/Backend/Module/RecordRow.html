@@ -11,6 +11,14 @@
         <f:variable name="primaryKicker" value="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:record.newsRecord')}" />
     </f:if>
 </f:if>
+<f:variable name="visibleChangeBadges" value="{item.changeBadges}" />
+<f:variable name="showStatePills" value="1" />
+<f:if condition="{config.showSubelementsInModule} == 0">
+    <f:variable name="visibleChangeBadges" value="{item.ownChangeBadges}" />
+    <f:if condition="{item.childChanges -> f:count()} > 0">
+        <f:variable name="showStatePills" value="0" />
+    </f:if>
+</f:if>
 
 <tr class="wew-record-row{f:if(condition: item.isChanged, then: ' wew-record-row--changed', else: ' wew-record-row--live')}"
     data-multi-record-selection-element=""
@@ -90,19 +98,21 @@
     </td>
     <td class="text-nowrap">
         <div class="d-flex flex-wrap gap-1">
-            <f:for each="{item.changeBadges}" as="badge">
-                <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
-            </f:for>
-            <f:if condition="{item.isChanged} == 0">
-                <span class="badge badge-secondary">
-                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:state.live" />
-                </span>
-            </f:if>
-            <f:if condition="{item.isHidden} && {config.enableHiddenBadge}">
-                <span class="badge badge-secondary"
-                      title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden.title')}">
-                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden" />
-                </span>
+            <f:if condition="{showStatePills}">
+                <f:for each="{visibleChangeBadges}" as="badge">
+                    <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
+                </f:for>
+                <f:if condition="{item.isChanged} == 0">
+                    <span class="badge badge-secondary">
+                        <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:state.live" />
+                    </span>
+                </f:if>
+                <f:if condition="{item.isHidden} && {config.enableHiddenBadge}">
+                    <span class="badge badge-secondary"
+                          title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden.title')}">
+                        <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.hidden" />
+                    </span>
+                </f:if>
             </f:if>
         </div>
     </td>

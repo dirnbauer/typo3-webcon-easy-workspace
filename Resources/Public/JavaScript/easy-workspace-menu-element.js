@@ -9,7 +9,7 @@
  * Features:
  *  - Filter chips: "Changed only" / "All on page".
  *  - Copy preview link (uses TYPO3 Workspaces\Preview\PreviewUriBuilder).
- *  - Hidden state badge.
+ *  - Optional subelement detail badges.
  *  - Changed items get an accent border (no greyed-out fallback for the
  *    unchanged ones — they just render normally, no checkbox).
  */
@@ -47,7 +47,7 @@ const DEFAULT_CONFIG = Object.freeze({
   enableHoverHighlight: true,
   enableRevert: true,
   userEnabled: true,
-  showSubelementsInToolbar: true,
+  showSubelementsInToolbar: false,
   showSubelementsInModule: true,
   // Runtime-detected environment (NOT user-configurable). Set by
   // EasyWorkspaceToolbarItem::getDropDown() via ExtensionManagementUtility::isLoaded.
@@ -1149,7 +1149,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
                     ? this._renderChangeAction(changeRecords[0])
                     : nothing}
                   ${this._renderChangeBadges(item)}
-                  ${item.isHidden && this._config.enableHiddenBadge
+                  ${this._shouldShowStatePills(item) && item.isHidden && this._config.enableHiddenBadge
                     ? html`<span class="wew-state-pill wew-state-pill--secondary wew-state-pill--inline" title=${this._label('toolbar.hidden.title')}>${this._label('toolbar.hidden')}</span>`
                     : nothing}
                 </span>`
@@ -1168,9 +1168,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _renderChangeBadges(item) {
-    const badges = Array.isArray(item.changeBadges) && item.changeBadges.length > 0
+    if (!this._shouldShowStatePills(item)) return nothing;
+    const badgeSource = this._shouldShowSubelementDetails()
       ? item.changeBadges
-      : (item.kindLabel ? [{ kindKey: item.kindKey, kindLabel: item.kindLabel, badge: item.badge || 'info' }] : []);
+      : item.ownChangeBadges;
+    const badges = Array.isArray(badgeSource) && badgeSource.length > 0
+      ? badgeSource
+      : (item.kindLabel && this._shouldShowSubelementDetails()
+        ? [{ kindKey: item.kindKey, kindLabel: item.kindLabel, badge: item.badge || 'info' }]
+        : []);
     if (badges.length === 0) return nothing;
     return html`
       <span class="wew-list__badges">
@@ -1191,7 +1197,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _renderChildChanges(item) {
-    if (!this._shouldShowSubelements()) return nothing;
+    if (!this._shouldShowSubelementDetails()) return nothing;
     const children = Array.isArray(item.childChanges) ? item.childChanges : [];
     if (children.length === 0) return nothing;
     return html`
@@ -2214,8 +2220,14 @@ class WebconEasyWorkspaceMenu extends LitElement {
     return { pageUid: pageUid > 0 ? pageUid : 0, newsUid };
   }
 
-  _shouldShowSubelements() {
+  _shouldShowSubelementDetails() {
     return this._config.showSubelementsInToolbar !== false;
+  }
+
+  _shouldShowStatePills(item) {
+    return this._shouldShowSubelementDetails()
+      || !Array.isArray(item.childChanges)
+      || item.childChanges.length === 0;
   }
 
   _detectLanguageUid() {

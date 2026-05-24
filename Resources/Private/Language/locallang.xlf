@@ -1197,14 +1197,14 @@
     </unit>
     <unit id="userSettings.showSubelementsToolbar">
       <segment>
-        <source>Show subelements in the toolbar</source>
-        <target state="translated">Show subelements in the toolbar</target>
+        <source>Show subelement details in the toolbar menu</source>
+        <target state="translated">Show subelement details in the toolbar menu</target>
       </segment>
     </unit>
     <unit id="userSettings.showSubelementsModule">
       <segment>
-        <source>Show subelements in the Easy Workspace module</source>
-        <target state="translated">Show subelements in the Easy Workspace module</target>
+        <source>Show subelement details in the Easy Workspace module</source>
+        <target state="translated">Show subelement details in the Easy Workspace module</target>
       </segment>
     </unit>
     <unit id="context.page">

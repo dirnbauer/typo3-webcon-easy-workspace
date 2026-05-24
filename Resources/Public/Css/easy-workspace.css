@@ -4,7 +4,7 @@
  * variables (--typo3-* / --bs-*) so the dropdown follows the
  * editor's light / dark theme automatically.
  *
- * Compact layout: 420px wide, scrolling list, dense rows.
+ * Compact layout: 380px wide, scrolling list, dense rows.
  */
 
 /* The toolbar trigger badge uses core's `.toolbar-item-badge` /
@@ -14,7 +14,7 @@
 
 webcon-easy-workspace-menu {
     display: block;
-    width: min(420px, calc(100vw - 24px));
+    width: min(380px, calc(100vw - 24px));
     max-width: 95vw;
     /* No content inside should ever push past the panel width.
        Without this clip, a single long unbreakable token in a
@@ -50,8 +50,8 @@ webcon-easy-workspace-menu {
    stays right-anchored within the viewport. */
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu) {
     width: auto;
-    max-width: min(420px, calc(100vw - 24px));
-    min-width: 320px;
+    max-width: min(380px, calc(100vw - 24px));
+    min-width: 300px;
     overflow-x: hidden;
 }
 /* Defensive: same belt-and-braces clamp on the inner root. */

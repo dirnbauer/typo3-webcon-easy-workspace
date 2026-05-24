@@ -62,21 +62,22 @@ All keys live below ``options.webcon_easy_workspace``.
     :type: bool
     :Default: 0
 
-    Default for showing related child records in the top-right toolbar.
+    Default for showing related child records and their visual status
+    badges in the top-right toolbar.
     **Off** by default so the compact toolbar dropdown stays readable;
-    editors who want subelements visible there opt in through their User
-    Settings. Disabling this only hides the detail rows; publishing still
-    includes the related records collected by the server.
+    editors who want subelement details visible there opt in through their
+    User Settings. Disabling this only hides the details and badges;
+    publishing still includes the related records collected by the server.
 
 ..  confval:: showSubelementsInModule
 
     :type: bool
     :Default: 1
 
-    Default for showing related child records in the Easy Workspace
-    backend module. Disabling this removes the related-record detail
-    disclosures from the dense publish queue; publishing still includes the
-    related records collected by the server.
+    Default for showing related child records and their visual status
+    badges in the Easy Workspace backend module. Disabling this removes the
+    related-record details from the dense publish queue; publishing still
+    includes the related records collected by the server.
 
 ..  confval:: enableWorkspaceChip
 
