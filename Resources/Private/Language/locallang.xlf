@@ -19,6 +19,12 @@
         <target state="translated">Workspace</target>
       </segment>
     </unit>
+    <unit id="toolbar.item.title">
+      <segment>
+        <source>Workspace publish</source>
+        <target state="translated">Workspace publish</target>
+      </segment>
+    </unit>
     <unit id="toolbar.activeWorkspace">
       <segment>
         <source>Active workspace</source>
@@ -345,14 +351,14 @@
     </unit>
     <unit id="module.testsDiagnostics.subtitle">
       <segment>
-        <source>Check workspace health, inspect database issues, and see what needs attention before publishing.</source>
-        <target state="translated">Check workspace health, inspect database issues, and see what needs attention before publishing.</target>
+        <source>Check workspace health, inspect database issues, and review what needs attention before publishing.</source>
+        <target state="translated">Check workspace health, inspect database issues, and review what needs attention before publishing.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.subtitle">
       <segment>
-        <source>Find broken, stalled or risky workspace records that need a closer look.</source>
-        <target state="translated">Find broken, stalled or risky workspace records that need a closer look.</target>
+        <source>Find broken, stalled, or risky workspace records that need closer review.</source>
+        <target state="translated">Find broken, stalled, or risky workspace records that need closer review.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.total">
@@ -375,8 +381,8 @@
     </unit>
     <unit id="module.diagnostics.kpi.critical.hint">
       <segment>
-        <source>Likely blocks publishing or corrupts overlay behavior.</source>
-        <target state="translated">Likely blocks publishing or corrupts overlay behavior.</target>
+        <source>Likely blocks publishing or breaks overlay behavior.</source>
+        <target state="translated">Likely blocks publishing or breaks overlay behavior.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.warning">
@@ -387,8 +393,8 @@
     </unit>
     <unit id="module.diagnostics.kpi.warning.hint">
       <segment>
-        <source>Needs review before publish or cleanup.</source>
-        <target state="translated">Needs review before publish or cleanup.</target>
+        <source>Needs review before publishing or cleanup.</source>
+        <target state="translated">Needs review before publishing or cleanup.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.tables">
@@ -405,8 +411,8 @@
     </unit>
     <unit id="module.diagnostics.kpi.records">
       <segment>
-        <source>Workspace rows checked</source>
-        <target state="translated">Workspace rows checked</target>
+        <source>Workspace records checked</source>
+        <target state="translated">Workspace records checked</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.records.hint">
@@ -453,14 +459,266 @@
     </unit>
     <unit id="module.diagnostics.emptyHint">
       <segment>
-        <source>The automatic checks are clean. Review the manual-only risks below when behavior is still wrong.</source>
-        <target state="translated">The automatic checks are clean. Review the manual-only risks below when behavior is still wrong.</target>
+        <source>The automatic checks are clean. Review the manual-only risks below if behavior is still wrong.</source>
+        <target state="translated">The automatic checks are clean. Review the manual-only risks below if behavior is still wrong.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.manual">
       <segment>
         <source>Manual checks</source>
         <target state="translated">Manual checks</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.severity.critical">
+      <segment>
+        <source>Critical</source>
+        <target state="translated">Critical</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.severity.warning">
+      <segment>
+        <source>Warning</source>
+        <target state="translated">Warning</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.severity.info">
+      <segment>
+        <source>Information</source>
+        <target state="translated">Information</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.record.workspaceId">
+      <segment>
+        <source>Workspace #{workspaceId}</source>
+        <target state="translated">Workspace #{workspaceId}</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.record.workspaceUid">
+      <segment>
+        <source>WS ID #{uid}</source>
+        <target state="translated">WS ID #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.record.liveUid">
+      <segment>
+        <source>Live ID #{uid}</source>
+        <target state="translated">Live ID #{uid}</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.record.pid">
+      <segment>
+        <source>Page ID #{pid}</source>
+        <target state="translated">Page ID #{pid}</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.detail.parentContentElementUid">
+      <segment>
+        <source>parent tt_content uid {parentUid}</source>
+        <target state="translated">parent tt_content uid {parentUid}</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.detail.ownerField">
+      <segment>
+        <source>{ownerTable}:{ownerUid} field {fieldName}</source>
+        <target state="translated">{ownerTable}:{ownerUid} field {fieldName}</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.liveRowVersionFields.title">
+      <segment>
+        <source>Live record carries workspace version fields.</source>
+        <target state="translated">Live record carries workspace version fields.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.liveRowVersionFields.impact">
+      <segment>
+        <source>TYPO3 may treat a live row as a versioned row or skip it in workspace overlays.</source>
+        <target state="translated">TYPO3 may treat a live row as a versioned row or skip it in workspace overlays.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.liveRowVersionFields.solve">
+      <segment>
+        <source>Inspect the row and reset t3ver_oid=0 and t3ver_state=0 only after confirming that it is the real live record.</source>
+        <target state="translated">Inspect the row and reset t3ver_oid=0 and t3ver_state=0 only after confirming that it is the real live record.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.unsupportedVersionState.title">
+      <segment>
+        <source>Workspace row uses an unsupported t3ver_state.</source>
+        <target state="translated">Workspace row uses an unsupported t3ver_state.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.unsupportedVersionState.impact">
+      <segment>
+        <source>Publish, discard, and preview logic only support TYPO3 v14 states 0, 1, 2, and 4.</source>
+        <target state="translated">Publish, discard, and preview logic only support TYPO3 v14 states 0, 1, 2, and 4.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.unsupportedVersionState.solve">
+      <segment>
+        <source>Decide whether this is a modified, new, delete-placeholder, or move-placeholder row; then fix t3ver_state or discard the row through DataHandler.</source>
+        <target state="translated">Decide whether this is a modified, new, delete-placeholder, or move-placeholder row; then fix t3ver_state or discard the row through DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.workspaceRowWithoutLiveIdentity.title">
+      <segment>
+        <source>Workspace row has no live identity but is not marked as new.</source>
+        <target state="translated">Workspace row has no live identity but is not marked as new.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.workspaceRowWithoutLiveIdentity.impact">
+      <segment>
+        <source>DataHandler cannot know whether to publish this as a new record or swap an existing live record.</source>
+        <target state="translated">DataHandler cannot know whether to publish this as a new record or swap an existing live record.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.workspaceRowWithoutLiveIdentity.solve">
+      <segment>
+        <source>If it is a workspace-only new record, set t3ver_state=1 through a controlled repair. Otherwise reconnect t3ver_oid to the live uid or discard the broken workspace row.</source>
+        <target state="translated">If it is a workspace-only new record, set t3ver_state=1 through a controlled repair. Otherwise reconnect t3ver_oid to the live uid or discard the broken workspace row.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.orphanWorkspaceVersion.title">
+      <segment>
+        <source>Workspace row points to a missing live record.</source>
+        <target state="translated">Workspace row points to a missing live record.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.orphanWorkspaceVersion.impact">
+      <segment>
+        <source>Publish cannot swap into a live row that no longer exists; preview overlays may also silently lose the record.</source>
+        <target state="translated">Publish cannot swap into a live row that no longer exists; preview overlays may also silently lose the record.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.orphanWorkspaceVersion.solve">
+      <segment>
+        <source>Restore the live row from backup, reconnect t3ver_oid to the correct live uid, or discard the workspace row with DataHandler after editorial review.</source>
+        <target state="translated">Restore the live row from backup, reconnect t3ver_oid to the correct live uid, or discard the workspace row with DataHandler after editorial review.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.duplicateWorkspaceVersion.title">
+      <segment>
+        <source>Multiple workspace rows point to the same live record.</source>
+        <target state="translated">Multiple workspace rows point to the same live record.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.duplicateWorkspaceVersion.impact">
+      <segment>
+        <source>The overlay can pick a different row than the editor expects; publishing one row may leave another stale row behind.</source>
+        <target state="translated">The overlay can pick a different row than the editor expects; publishing one row may leave another stale row behind.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.duplicateWorkspaceVersion.solve">
+      <segment>
+        <source>Compare the listed workspace rows, keep the newest intended version, and discard or merge the others through DataHandler.</source>
+        <target state="translated">Compare the listed workspace rows, keep the newest intended version, and discard or merge the others through DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.inlineChildMissingParent.title">
+      <segment>
+        <source>Inline child row points to a missing parent content element.</source>
+        <target state="translated">Inline child row points to a missing parent content element.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.inlineChildMissingParent.impact">
+      <segment>
+        <source>The child can remain publishable in the database but invisible in page-scoped review screens.</source>
+        <target state="translated">The child can remain publishable in the database but invisible in page-scoped review screens.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.inlineChildMissingParent.solve">
+      <segment>
+        <source>Restore or identify the intended parent content element, update foreign_table_parent_uid, or discard the orphan child row.</source>
+        <target state="translated">Restore or identify the intended parent content element, update foreign_table_parent_uid, or discard the orphan child row.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.fileReferenceMissingOwner.title">
+      <segment>
+        <source>Workspace file reference points to a missing owner record.</source>
+        <target state="translated">Workspace file reference points to a missing owner record.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.fileReferenceMissingOwner.impact">
+      <segment>
+        <source>The reference can appear in the publish list but cannot be applied cleanly because the owning page or content record is gone.</source>
+        <target state="translated">The reference can appear in the publish list but cannot be applied cleanly because the owning page or content record is gone.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.issue.fileReferenceMissingOwner.solve">
+      <segment>
+        <source>Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.</source>
+        <target state="translated">Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.overwrittenFalFiles.title">
+      <segment>
+        <source>Overwritten FAL files</source>
+        <target state="translated">Overwritten FAL files</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.overwrittenFalFiles.risk">
+      <segment>
+        <source>TYPO3 workspaces version file references, not the physical file in storage. A replaced file can leak into live immediately.</source>
+        <target state="translated">TYPO3 workspaces version file references, not the physical file in storage. A replaced file can leak into live immediately.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.overwrittenFalFiles.solve">
+      <segment>
+        <source>Upload a new filename, restore the old file from backup if needed, and replace references through DataHandler instead of overwriting in place.</source>
+        <target state="translated">Upload a new filename, restore the old file from backup if needed, and replace references through DataHandler instead of overwriting in place.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.folderFileCollectionDrift.title">
+      <segment>
+        <source>Folder-based file collection drift</source>
+        <target state="translated">Folder-based file collection drift</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.folderFileCollectionDrift.risk">
+      <segment>
+        <source>Folder collections resolve live folder contents at runtime; there is no workspace relation row to scan.</source>
+        <target state="translated">Folder collections resolve live folder contents at runtime; there is no workspace relation row to scan.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.folderFileCollectionDrift.solve">
+      <segment>
+        <source>Use static file collections for workspace-controlled lists, or use separate folders per change set and clean old folders after publish.</source>
+        <target state="translated">Use static file collections for workspace-controlled lists, or use separate folders per change set and clean old folders after publish.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.externalCacheIndexDrift.title">
+      <segment>
+        <source>External cache or index drift</source>
+        <target state="translated">External cache or index drift</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.externalCacheIndexDrift.risk">
+      <segment>
+        <source>Search indexes, CDN caches, and rendered HTML caches can serve old or premature content even after workspace records are correct.</source>
+        <target state="translated">Search indexes, CDN caches, and rendered HTML caches can serve old or premature content even after workspace records are correct.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.externalCacheIndexDrift.solve">
+      <segment>
+        <source>Rebuild affected indexes, flush page/CDN caches, and compare rendered preview/live output after the database diagnostics are clean.</source>
+        <target state="translated">Rebuild affected indexes, flush page/CDN caches, and compare rendered preview/live output after the database diagnostics are clean.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.editorIntentConflicts.title">
+      <segment>
+        <source>Editor intent conflicts</source>
+        <target state="translated">Editor intent conflicts</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.editorIntentConflicts.risk">
+      <segment>
+        <source>A scanner can find duplicate or stale rows, but it cannot know which draft text, media, or relation is editorially correct.</source>
+        <target state="translated">A scanner can find duplicate or stale rows, but it cannot know which draft text, media, or relation is editorially correct.</target>
+      </segment>
+    </unit>
+    <unit id="module.diagnostics.manual.editorIntentConflicts.solve">
+      <segment>
+        <source>Open the row history, compare changed fields with the editor, then publish, discard, or repair only the chosen record.</source>
+        <target state="translated">Open the row history, compare changed fields with the editor, then publish, discard, or repair only the chosen record.</target>
       </segment>
     </unit>
     <unit id="module.testing.title">
@@ -527,6 +785,330 @@
       <segment>
         <source>Notice</source>
         <target state="translated">Notice</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.databaseIntegrity.title">
+      <segment>
+        <source>Database integrity checks</source>
+        <target state="translated">Database integrity checks</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.databaseIntegrity.description">
+      <segment>
+        <source>Automatic tests for version metadata, live identity, duplicate overlays, and publish-blocking workspace rows.</source>
+        <target state="translated">Automatic tests for version metadata, live identity, duplicate overlays, and publish-blocking workspace rows.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.inlinePublishing.title">
+      <segment>
+        <source>Inline child publishing checks</source>
+        <target state="translated">Inline child publishing checks</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.inlinePublishing.description">
+      <segment>
+        <source>Guards against cases where a visible parent is published but hidden Content Blocks or inline children stay pending.</source>
+        <target state="translated">Guards against cases where a visible parent is published but hidden Content Blocks or inline children stay pending.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.seedCoverage.title">
+      <segment>
+        <source>Seed fixture coverage</source>
+        <target state="translated">Seed fixture coverage</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.seedCoverage.description">
+      <segment>
+        <source>Confirms which deliberate failure cases can be generated in a local or demo system.</source>
+        <target state="translated">Confirms which deliberate failure cases can be generated in a local or demo system.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.manualOnly.title">
+      <segment>
+        <source>Manual-only checks</source>
+        <target state="translated">Manual-only checks</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.group.manualOnly.description">
+      <segment>
+        <source>Real workspace failures that cannot be proven from database metadata alone.</source>
+        <target state="translated">Real workspace failures that cannot be proven from database metadata alone.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.liveRowVersionFields.title">
+      <segment>
+        <source>Live rows have clean workspace fields</source>
+        <target state="translated">Live rows have clean workspace fields</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.liveRowVersionFields.ok">
+      <segment>
+        <source>No live rows contain workspace version metadata.</source>
+        <target state="translated">No live rows contain workspace version metadata.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.liveRowVersionFields.fail">
+      <segment>
+        <source>Live rows carry workspace version fields.</source>
+        <target state="translated">Live rows carry workspace version fields.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.liveRowVersionFields.solve">
+      <segment>
+        <source>Confirm the row is the real live record, then reset t3ver_oid=0 and t3ver_state=0 with a controlled repair.</source>
+        <target state="translated">Confirm the row is the real live record, then reset t3ver_oid=0 and t3ver_state=0 with a controlled repair.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.unsupportedVersionState.title">
+      <segment>
+        <source>Workspace rows use TYPO3 v14 version states</source>
+        <target state="translated">Workspace rows use TYPO3 v14 version states</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.unsupportedVersionState.ok">
+      <segment>
+        <source>All workspace rows use t3ver_state 0, 1, 2, or 4.</source>
+        <target state="translated">All workspace rows use t3ver_state 0, 1, 2, or 4.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.unsupportedVersionState.fail">
+      <segment>
+        <source>Workspace rows use unsupported t3ver_state values.</source>
+        <target state="translated">Workspace rows use unsupported t3ver_state values.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.unsupportedVersionState.solve">
+      <segment>
+        <source>Decide whether the row is modified, new, delete-placeholder, or move-placeholder; then fix t3ver_state or discard it through DataHandler.</source>
+        <target state="translated">Decide whether the row is modified, new, delete-placeholder, or move-placeholder; then fix t3ver_state or discard it through DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.workspaceRowWithoutLiveIdentity.title">
+      <segment>
+        <source>Workspace rows have a publishable identity</source>
+        <target state="translated">Workspace rows have a publishable identity</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.workspaceRowWithoutLiveIdentity.ok">
+      <segment>
+        <source>Workspace rows without live identity are marked as new records.</source>
+        <target state="translated">Workspace rows without live identity are marked as new records.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.workspaceRowWithoutLiveIdentity.fail">
+      <segment>
+        <source>Workspace rows have no live identity but are not marked as new.</source>
+        <target state="translated">Workspace rows have no live identity but are not marked as new.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.workspaceRowWithoutLiveIdentity.solve">
+      <segment>
+        <source>For a workspace-only new record, set t3ver_state=1; otherwise reconnect t3ver_oid to the intended live uid or discard the row.</source>
+        <target state="translated">For a workspace-only new record, set t3ver_state=1; otherwise reconnect t3ver_oid to the intended live uid or discard the row.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.orphanWorkspaceVersion.title">
+      <segment>
+        <source>Workspace versions point to existing live records</source>
+        <target state="translated">Workspace versions point to existing live records</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.orphanWorkspaceVersion.ok">
+      <segment>
+        <source>No workspace version points to a missing live row.</source>
+        <target state="translated">No workspace version points to a missing live row.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.orphanWorkspaceVersion.fail">
+      <segment>
+        <source>Workspace versions point to missing live records.</source>
+        <target state="translated">Workspace versions point to missing live records.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.orphanWorkspaceVersion.solve">
+      <segment>
+        <source>Restore the live row, reconnect t3ver_oid to the correct live uid, or discard the orphan workspace row after editorial review.</source>
+        <target state="translated">Restore the live row, reconnect t3ver_oid to the correct live uid, or discard the orphan workspace row after editorial review.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.duplicateWorkspaceVersion.title">
+      <segment>
+        <source>Only one workspace version exists per live record</source>
+        <target state="translated">Only one workspace version exists per live record</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.duplicateWorkspaceVersion.ok">
+      <segment>
+        <source>No live record has duplicate workspace versions in the active workspace.</source>
+        <target state="translated">No live record has duplicate workspace versions in the active workspace.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.duplicateWorkspaceVersion.fail">
+      <segment>
+        <source>Multiple workspace rows point to the same live record.</source>
+        <target state="translated">Multiple workspace rows point to the same live record.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.duplicateWorkspaceVersion.solve">
+      <segment>
+        <source>Compare history and changed fields, keep the intended version, then discard or merge stale workspace rows through DataHandler.</source>
+        <target state="translated">Compare history and changed fields, keep the intended version, then discard or merge stale workspace rows through DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.inlineChildMissingParent.title">
+      <segment>
+        <source>Inline child rows still belong to an existing parent</source>
+        <target state="translated">Inline child rows still belong to an existing parent</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.inlineChildMissingParent.ok">
+      <segment>
+        <source>No workspace inline child points to a missing parent content element.</source>
+        <target state="translated">No workspace inline child points to a missing parent content element.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.inlineChildMissingParent.fail">
+      <segment>
+        <source>Inline child rows point to missing parent content elements.</source>
+        <target state="translated">Inline child rows point to missing parent content elements.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.inlineChildMissingParent.solve">
+      <segment>
+        <source>Restore or identify the parent tt_content row, update the child relation, or discard the orphan child row.</source>
+        <target state="translated">Restore or identify the parent tt_content row, update the child relation, or discard the orphan child row.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.fileReferenceMissingOwner.title">
+      <segment>
+        <source>Workspace file references still belong to an existing owner</source>
+        <target state="translated">Workspace file references still belong to an existing owner</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.fileReferenceMissingOwner.ok">
+      <segment>
+        <source>No workspace file reference points to a missing page or content record.</source>
+        <target state="translated">No workspace file reference points to a missing page or content record.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.fileReferenceMissingOwner.fail">
+      <segment>
+        <source>Workspace file references point to missing owner records.</source>
+        <target state="translated">Workspace file references point to missing owner records.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.issue.fileReferenceMissingOwner.solve">
+      <segment>
+        <source>Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.</source>
+        <target state="translated">Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.hiddenInlineTables.title">
+      <segment>
+        <source>Workspace-aware hidden inline tables are known</source>
+        <target state="translated">Workspace-aware hidden inline tables are known</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.hiddenInlineTables.ok">
+      <segment>
+        <source>No hidden workspace inline tables were found in TCA.</source>
+        <target state="translated">No hidden workspace inline tables were found in TCA.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.hiddenInlineTables.found">
+      <segment>
+        <source>Hidden inline child tables are visible to the publish and diagnostics logic.</source>
+        <target state="translated">Hidden inline child tables are visible to the publish and diagnostics logic.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.hiddenInlineTables.solve.ok">
+      <segment>
+        <source>No action needed unless this project uses custom inline child tables that are not configured as TCA inline relations.</source>
+        <target state="translated">No action needed unless this project uses custom inline child tables that are not configured as TCA inline relations.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.hiddenInlineTables.solve.found">
+      <segment>
+        <source>When publishing a selected parent, keep checking that related hidden child rows are also selected or published by DataHandler.</source>
+        <target state="translated">When publishing a selected parent, keep checking that related hidden child rows are also selected or published by DataHandler.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.seed.covered">
+      <segment>
+        <source>Covered by the diagnostics seed command and by the automatic scanner.</source>
+        <target state="translated">Covered by the diagnostics seed command and by the automatic scanner.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.seed.articleGridItems.title">
+      <segment>
+        <source>Optional article_grid_items child fixture</source>
+        <target state="translated">Optional article_grid_items child fixture</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.seed.articleGridItems.notInstalled">
+      <segment>
+        <source>The optional Content Blocks demo table is not installed in this TYPO3 instance.</source>
+        <target state="translated">The optional Content Blocks demo table is not installed in this TYPO3 instance.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.seed.articleGridItems.available">
+      <segment>
+        <source>The seed command can create a broken inline child row for article_grid_items.</source>
+        <target state="translated">The seed command can create a broken inline child row for article_grid_items.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.seed.articleGridItems.solve.notInstalled">
+      <segment>
+        <source>Install the demo Content Block table if you want to reproduce that exact child-record failure locally.</source>
+        <target state="translated">Install the demo Content Block table if you want to reproduce that exact child-record failure locally.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.seed.articleGridItems.solve.available">
+      <segment>
+        <source>Run webcon-easy-workspace:seed-diagnostics --execute in a local DDEV database, then open Checks and diagnostics.</source>
+        <target state="translated">Run webcon-easy-workspace:seed-diagnostics --execute in a local DDEV database, then open Checks and diagnostics.</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.value.zeroTables">
+      <segment>
+        <source>0 tables</source>
+        <target state="translated">0 tables</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.value.notInstalled">
+      <segment>
+        <source>not installed</source>
+        <target state="translated">not installed</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.value.available">
+      <segment>
+        <source>available</source>
+        <target state="translated">available</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.value.found">
+      <segment>
+        <source>{count, plural, one {# found} other {# found}}</source>
+        <target state="translated">{count, plural, one {# found} other {# found}}</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.value.more">
+      <segment>
+        <source>+{count, plural, one {# more} other {# more}}</source>
+        <target state="translated">+{count, plural, one {# more} other {# more}}</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.detail.liveUid">
+      <segment>
+        <source>live {uid}</source>
+        <target state="translated">live {uid}</target>
+      </segment>
+    </unit>
+    <unit id="module.testing.detail.withDetail">
+      <segment>
+        <source>{record} - {detail}</source>
+        <target state="translated">{record} - {detail}</target>
       </segment>
     </unit>
     <unit id="module.column.record">

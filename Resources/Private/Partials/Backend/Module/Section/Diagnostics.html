@@ -99,7 +99,7 @@
                                         <f:variable name="badgeClass" value="info" />
                                         <f:if condition="{issue.severity} == 'critical'"><f:variable name="badgeClass" value="danger" /></f:if>
                                         <f:if condition="{issue.severity} == 'warning'"><f:variable name="badgeClass" value="warning" /></f:if>
-                                        <span class="badge badge-{badgeClass}">{issue.severity}</span>
+                                        <span class="badge badge-{badgeClass}">{issue.severityLabel}</span>
                                         <strong class="d-block mt-1">{issue.title}</strong>
                                         <span class="d-block text-muted small">{issue.impact}</span>
                                         <f:if condition="{issue.detail}">
@@ -110,10 +110,20 @@
                                         <span class="d-block fw-semibold">{issue.tableLabel}</span>
                                         <code>{issue.table}</code>
                                         <span class="d-block small">
-                                            ws #{issue.workspaceId}
-                                            <f:if condition="{issue.workspaceUid}"> · uid #{issue.workspaceUid}</f:if>
-                                            <f:if condition="{issue.liveUid}"> · live #{issue.liveUid}</f:if>
-                                            <f:if condition="{issue.pid}"> · pid #{issue.pid}</f:if>
+                                            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.diagnostics.record.workspaceId"
+                                                         arguments="{workspaceId: issue.workspaceId}" />
+                                            <f:if condition="{issue.workspaceUid}">
+                                                · <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.diagnostics.record.workspaceUid"
+                                                               arguments="{uid: issue.workspaceUid}" />
+                                            </f:if>
+                                            <f:if condition="{issue.liveUid}">
+                                                · <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.diagnostics.record.liveUid"
+                                                               arguments="{uid: issue.liveUid}" />
+                                            </f:if>
+                                            <f:if condition="{issue.pid}">
+                                                · <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.diagnostics.record.pid"
+                                                               arguments="{pid: issue.pid}" />
+                                            </f:if>
                                         </span>
                                     </td>
                                     <td>

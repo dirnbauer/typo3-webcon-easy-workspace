@@ -28,7 +28,7 @@ return [
         'appearance' => [
             'dependsOnSubmodules' => true,
         ],
-        'showSubmoduleOverview' => false,
+        'showSubmoduleOverview' => true,
     ],
     'webcon_easy_workspace_pending' => $moduleDefaults + [
         'parent' => 'webcon_easy_workspace',

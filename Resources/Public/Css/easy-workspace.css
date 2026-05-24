@@ -1916,12 +1916,24 @@ webcon-easy-workspace-menu {
     border-radius: 4px;
     background: color-mix(in srgb, var(--typo3-text-color-base, currentColor) 3%, transparent);
 }
+.wew-testing__item-body {
+    min-width: 0;
+}
 .wew-testing__item-title {
     display: flex;
     align-items: center;
     gap: .5rem;
     flex-wrap: wrap;
     margin-bottom: .25rem;
+    min-width: 0;
+}
+.wew-testing__item-title .badge {
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-align: left;
 }
 .wew-testing__solve {
     margin-top: .4rem !important;

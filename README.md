@@ -53,7 +53,7 @@ element remains a separate compact entry point.
 
 ## Installation
 
-This package is installed from this Git repository. Add it as a VCS repository in your project's `composer.json`:
+This package is installed from the GitHub release. Add it as a VCS repository in your project's `composer.json`:
 
 ```json
 {
@@ -64,7 +64,7 @@ This package is installed from this Git repository. Add it as a VCS repository i
     }
   ],
   "require": {
-    "webconsulting/webcon-easy-workspace": "dev-main"
+    "webconsulting/webcon-easy-workspace": "^14.0"
   }
 }
 ```
@@ -77,11 +77,17 @@ ddev typo3 extension:setup
 ddev typo3 cache:flush
 ```
 
-If the package is published to Packagist later, the equivalent install command is:
+If the package is available through Packagist in your project, the equivalent install command is:
 
 ```bash
-composer require webconsulting/webcon-easy-workspace
+composer require webconsulting/webcon-easy-workspace:^14.0
 ```
+
+## Documentation
+
+- Detailed TYPO3 manual: [`Documentation/Index.rst`](Documentation/Index.rst)
+- Release history: [`CHANGELOG.md`](CHANGELOG.md)
+- Issues: [github.com/dirnbauer/typo3-webcon-easy-workspace/issues](https://github.com/dirnbauer/typo3-webcon-easy-workspace/issues)
 
 ## Usage
 
