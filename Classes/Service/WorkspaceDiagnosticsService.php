@@ -8,13 +8,22 @@ use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 final readonly class WorkspaceDiagnosticsService
 {
+    private const FILE = 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:';
+
     private const VALID_VERSION_STATES = [0, 1, 2, 4];
+
+    private const SEVERITY_LABEL_KEYS = [
+        'critical' => 'module.diagnostics.severity.critical',
+        'warning' => 'module.diagnostics.severity.warning',
+        'info' => 'module.diagnostics.severity.info',
+    ];
 
     public function __construct(
         private ConnectionPool $connectionPool,
@@ -112,9 +121,7 @@ final readonly class WorkspaceDiagnosticsService
                 0,
                 Value::int($row['uid'] ?? null),
                 Value::int($row['pid'] ?? null),
-                'Live record carries workspace version fields.',
-                'TYPO3 may treat a live row as a versioned row or skip it in workspace overlays.',
-                'Inspect the row and reset t3ver_oid=0 and t3ver_state=0 only when you confirmed it is the real live record.',
+                'module.diagnostics.issue.liveRowVersionFields',
                 'SELECT uid,pid,t3ver_oid,t3ver_state FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
             );
         }
@@ -150,9 +157,7 @@ final readonly class WorkspaceDiagnosticsService
             $workspaceId,
             Value::int($row['t3ver_oid'] ?? null),
             Value::int($row['pid'] ?? null),
-            'Workspace row uses an unsupported t3ver_state.',
-            'Publish, discard and preview logic only understand TYPO3 v14 states 0, 1, 2 and 4.',
-            'Decide whether this is a modified, new, delete-placeholder or move-placeholder row; then fix t3ver_state or discard the row through DataHandler.',
+            'module.diagnostics.issue.unsupportedVersionState',
             'SELECT uid,pid,t3ver_oid,t3ver_state FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
         ), $rows);
     }
@@ -187,9 +192,7 @@ final readonly class WorkspaceDiagnosticsService
             $workspaceId,
             0,
             Value::int($row['pid'] ?? null),
-            'Workspace row has no live identity but is not marked as new.',
-            'DataHandler cannot know whether to publish this as a new record or swap an existing live record.',
-            'If it is a workspace-only new record, set t3ver_state=1 through a controlled repair. Otherwise reconnect t3ver_oid to the live uid or discard the broken workspace row.',
+            'module.diagnostics.issue.workspaceRowWithoutLiveIdentity',
             'SELECT uid,pid,t3ver_oid,t3ver_wsid,t3ver_state FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
         ), $rows);
     }
@@ -227,9 +230,7 @@ final readonly class WorkspaceDiagnosticsService
                     $workspaceId,
                     $liveUid,
                     Value::int($row['pid'] ?? null),
-                    'Workspace row points to a missing live record.',
-                    'Publish cannot swap into a live row that no longer exists; preview overlays may also silently lose the record.',
-                    'Restore the live row from backup, reconnect t3ver_oid to the correct live uid, or discard the workspace row with DataHandler after editorial review.',
+                    'module.diagnostics.issue.orphanWorkspaceVersion',
                     'SELECT uid,pid,t3ver_oid,t3ver_wsid FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
                 );
             }
@@ -269,9 +270,7 @@ final readonly class WorkspaceDiagnosticsService
             $workspaceId,
             Value::int($row['t3ver_oid'] ?? null),
             0,
-            'Multiple workspace rows point to the same live record.',
-            'The overlay can pick a different row than the one the editor expects; publishing one row may leave another stale row behind.',
-            'Compare the listed workspace rows, keep the newest intended version, and discard or merge the others through DataHandler.',
+            'module.diagnostics.issue.duplicateWorkspaceVersion',
             'SELECT uid,pid,t3ver_oid,t3ver_wsid,tstamp,crdate FROM ' . $table . ' WHERE t3ver_wsid=' . $workspaceId . ' AND t3ver_oid=' . Value::int($row['t3ver_oid'] ?? null) . ' ORDER BY uid;',
             Value::string($row['workspace_uids'] ?? null),
         ), $rows);
@@ -310,11 +309,9 @@ final readonly class WorkspaceDiagnosticsService
                     $workspaceId,
                     0,
                     Value::int($row['pid'] ?? null),
-                    'Inline child row points to a missing parent content element.',
-                    'The child can remain publishable in the database but invisible in page-scoped review screens.',
-                    'Restore or identify the intended parent content element, update foreign_table_parent_uid, or discard the orphan child row.',
+                    'module.diagnostics.issue.inlineChildMissingParent',
                     'SELECT uid,pid,foreign_table_parent_uid,t3ver_oid,t3ver_wsid FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
-                    'parent tt_content uid ' . $parentUid,
+                    $this->translate('module.diagnostics.detail.parentContentElementUid', ['parentUid' => $parentUid]),
                 );
             }
         }
@@ -360,11 +357,13 @@ final readonly class WorkspaceDiagnosticsService
                     $workspaceId,
                     0,
                     Value::int($row['pid'] ?? null),
-                    'Workspace file reference points to a missing owner record.',
-                    'The reference can appear in the publish list but cannot be applied cleanly because the owning page or content record is gone.',
-                    'Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.',
+                    'module.diagnostics.issue.fileReferenceMissingOwner',
                     'SELECT uid,pid,uid_local,uid_foreign,tablenames,fieldname,t3ver_oid,t3ver_wsid FROM sys_file_reference WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
-                    $ownerTable . ':' . $ownerUid . ' field ' . Value::string($row['fieldname'] ?? null),
+                    $this->translate('module.diagnostics.detail.ownerField', [
+                        'ownerTable' => $ownerTable,
+                        'ownerUid' => $ownerUid,
+                        'fieldName' => Value::string($row['fieldname'] ?? null),
+                    ]),
                 );
             }
         }
@@ -430,28 +429,16 @@ final readonly class WorkspaceDiagnosticsService
      */
     private function manualChecks(): array
     {
-        return [
-            [
-                'title' => 'Overwritten FAL files',
-                'risk' => 'TYPO3 workspaces version file references, not the physical file in storage. A replaced file can leak into live immediately.',
-                'solve' => 'Upload a new filename, restore the old file from backup if needed, and replace references through DataHandler instead of overwriting in place.',
-            ],
-            [
-                'title' => 'Folder-based file collection drift',
-                'risk' => 'Folder collections resolve live folder contents at runtime; there is no workspace relation row to scan.',
-                'solve' => 'Use static file collections for workspace-controlled lists, or use separate folders per change set and clean old folders after publish.',
-            ],
-            [
-                'title' => 'External cache or index drift',
-                'risk' => 'Search indexes, CDN caches and rendered HTML caches can serve old or premature content even after workspace records are correct.',
-                'solve' => 'Rebuild affected indexes, flush page/CDN caches, and compare rendered preview/live output after the database diagnostics are clean.',
-            ],
-            [
-                'title' => 'Editor intent conflicts',
-                'risk' => 'A scanner can find duplicate or stale rows, but it cannot know which draft text, media or relation is editorially correct.',
-                'solve' => 'Open the row history, compare changed fields with the editor, then publish, discard or repair the chosen record only.',
-            ],
-        ];
+        return array_map(fn (string $key): array => [
+            'title' => $this->translate('module.diagnostics.manual.' . $key . '.title'),
+            'risk' => $this->translate('module.diagnostics.manual.' . $key . '.risk'),
+            'solve' => $this->translate('module.diagnostics.manual.' . $key . '.solve'),
+        ], [
+            'overwrittenFalFiles',
+            'folderFileCollectionDrift',
+            'externalCacheIndexDrift',
+            'editorIntentConflicts',
+        ]);
     }
 
     private function tableLabel(string $table): string
@@ -461,10 +448,32 @@ final readonly class WorkspaceDiagnosticsService
         if ($title === '') {
             return $table;
         }
-        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
-        $languageService = $this->languageServiceFactory->createFromUserPreferences($backendUser);
-        $label = $languageService->sL($title);
+        $label = $this->languageService()->sL($title);
         return $label !== '' ? $label : $table;
+    }
+
+    /**
+     * @param array<string, mixed> $arguments
+     */
+    private function translate(string $key, array $arguments = []): string
+    {
+        $label = $this->languageService()->label(self::FILE . $key, $arguments);
+        if (is_string($label) || $label instanceof \Stringable) {
+            $label = (string)$label;
+            if ($label !== '') {
+                return $label;
+            }
+        }
+        return $key;
+    }
+
+    private function languageService(): LanguageService
+    {
+        if (($GLOBALS['LANG'] ?? null) instanceof LanguageService) {
+            return $GLOBALS['LANG'];
+        }
+        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
+        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 
     /**
@@ -478,9 +487,7 @@ final readonly class WorkspaceDiagnosticsService
         int $workspaceId,
         int $liveUid,
         int $pid,
-        string $title,
-        string $impact,
-        string $solve,
+        string $labelKeyPrefix,
         string $sql,
         string $detail = '',
     ): array {
@@ -495,9 +502,10 @@ final readonly class WorkspaceDiagnosticsService
             'workspaceId' => $workspaceId,
             'liveUid' => $liveUid,
             'pid' => $pid,
-            'title' => $title,
-            'impact' => $impact,
-            'solve' => $solve,
+            'severityLabel' => $this->translate(self::SEVERITY_LABEL_KEYS[$severity] ?? self::SEVERITY_LABEL_KEYS['info']),
+            'title' => $this->translate($labelKeyPrefix . '.title'),
+            'impact' => $this->translate($labelKeyPrefix . '.impact'),
+            'solve' => $this->translate($labelKeyPrefix . '.solve'),
             'sql' => $sql,
             'detail' => $detail,
         ];

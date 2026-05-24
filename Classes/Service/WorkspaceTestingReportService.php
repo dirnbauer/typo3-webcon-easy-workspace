@@ -12,53 +12,32 @@ final readonly class WorkspaceTestingReportService
 {
     private const ISSUE_DEFINITIONS = [
         'live-row-version-fields' => [
-            'title' => 'Live rows have clean workspace fields',
-            'ok' => 'No live rows carry offline version metadata.',
-            'fail' => 'Live rows carry workspace version fields.',
+            'key' => 'module.testing.issue.liveRowVersionFields',
             'severity' => 'error',
-            'solve' => 'Confirm the row is the real live record, then reset t3ver_oid=0 and t3ver_state=0 with a controlled repair.',
         ],
         'unsupported-version-state' => [
-            'title' => 'Workspace rows use TYPO3 v14 version states',
-            'ok' => 'All workspace rows use t3ver_state 0, 1, 2 or 4.',
-            'fail' => 'Workspace rows use unsupported t3ver_state values.',
+            'key' => 'module.testing.issue.unsupportedVersionState',
             'severity' => 'error',
-            'solve' => 'Decide whether the row is modified, new, delete-placeholder or move-placeholder; then fix t3ver_state or discard it through DataHandler.',
         ],
         'workspace-row-without-live-identity' => [
-            'title' => 'Workspace rows have a publishable identity',
-            'ok' => 'Workspace rows without live identity are marked as new records.',
-            'fail' => 'Workspace rows have no live identity but are not marked as new.',
+            'key' => 'module.testing.issue.workspaceRowWithoutLiveIdentity',
             'severity' => 'error',
-            'solve' => 'For a workspace-only new record set t3ver_state=1; otherwise reconnect t3ver_oid to the intended live uid or discard the row.',
         ],
         'orphan-workspace-version' => [
-            'title' => 'Workspace versions point to existing live records',
-            'ok' => 'No workspace version points to a missing live row.',
-            'fail' => 'Workspace versions point to missing live records.',
+            'key' => 'module.testing.issue.orphanWorkspaceVersion',
             'severity' => 'error',
-            'solve' => 'Restore the live row, reconnect t3ver_oid to the correct live uid, or discard the orphan workspace row after editorial review.',
         ],
         'duplicate-workspace-version' => [
-            'title' => 'Only one workspace version exists per live record',
-            'ok' => 'No live record has duplicate workspace versions in the active workspace.',
-            'fail' => 'Multiple workspace rows point to the same live record.',
+            'key' => 'module.testing.issue.duplicateWorkspaceVersion',
             'severity' => 'warning',
-            'solve' => 'Compare history and changed fields, keep the intended version, then discard or merge stale workspace rows through DataHandler.',
         ],
         'inline-child-missing-parent' => [
-            'title' => 'Inline child rows still belong to an existing parent',
-            'ok' => 'No workspace inline child points to a missing parent content element.',
-            'fail' => 'Inline child rows point to missing parent content elements.',
+            'key' => 'module.testing.issue.inlineChildMissingParent',
             'severity' => 'warning',
-            'solve' => 'Restore or identify the parent tt_content row, update the child relation, or discard the orphan child row.',
         ],
         'file-reference-missing-owner' => [
-            'title' => 'Workspace file references still belong to an existing owner',
-            'ok' => 'No workspace file reference points to a missing page or content record.',
-            'fail' => 'Workspace file references point to missing owner records.',
+            'key' => 'module.testing.issue.fileReferenceMissingOwner',
             'severity' => 'error',
-            'solve' => 'Restore the owner record, reconnect uid_foreign to the intended owner, or discard the orphan file reference through DataHandler.',
         ],
     ];
 
@@ -116,8 +95,8 @@ final readonly class WorkspaceTestingReportService
         }
 
         return $this->group(
-            'Database integrity checks',
-            'Automatic tests for version metadata, live identity, duplicate overlays and publish-blocking workspace rows.',
+            'module.testing.group.databaseIntegrity.title',
+            'module.testing.group.databaseIntegrity.description',
             $items,
         );
     }
@@ -133,21 +112,21 @@ final readonly class WorkspaceTestingReportService
             $this->issueDefinitionItem('inline-child-missing-parent', $issuesByType['inline-child-missing-parent'] ?? []),
             $this->issueDefinitionItem('file-reference-missing-owner', $issuesByType['file-reference-missing-owner'] ?? []),
             $this->item(
-                'Workspace-aware hidden inline tables are known',
+                $this->localizationService->translate('module.testing.hiddenInlineTables.title'),
                 $hiddenInlineTables === []
-                    ? 'No hidden workspace inline tables were found in TCA.'
-                    : 'Hidden inline child tables are visible to the publish and diagnostics logic.',
+                    ? $this->localizationService->translate('module.testing.hiddenInlineTables.ok')
+                    : $this->localizationService->translate('module.testing.hiddenInlineTables.found'),
                 $hiddenInlineTables === []
-                    ? 'No action needed unless this project uses custom inline child tables that are not configured as TCA inline relations.'
-                    : 'When publishing a selected parent, keep checking that related hidden child rows are also selected or published by DataHandler.',
+                    ? $this->localizationService->translate('module.testing.hiddenInlineTables.solve.ok')
+                    : $this->localizationService->translate('module.testing.hiddenInlineTables.solve.found'),
                 ContextualFeedbackSeverity::OK,
-                $hiddenInlineTables === [] ? '0 tables' : implode(', ', $hiddenInlineTables),
+                $hiddenInlineTables === [] ? $this->localizationService->translate('module.testing.value.zeroTables') : implode(', ', $hiddenInlineTables),
             ),
         ];
 
         return $this->group(
-            'Inline child publishing checks',
-            'Guards against the class of bugs where a visible parent publishes but its hidden Content Blocks or inline children stay pending.',
+            'module.testing.group.inlinePublishing.title',
+            'module.testing.group.inlinePublishing.description',
             $items,
         );
     }
@@ -159,29 +138,32 @@ final readonly class WorkspaceTestingReportService
     {
         $items = [];
         foreach (self::ISSUE_DEFINITIONS as $type => $definition) {
+            $labelKeyPrefix = Value::string($definition['key']);
             $items[] = $this->item(
-                Value::string($definition['title']),
-                'Covered by the diagnostics seed command and by the automatic scanner.',
-                Value::string($definition['solve']),
+                $this->localizationService->translate($labelKeyPrefix . '.title'),
+                $this->localizationService->translate('module.testing.seed.covered'),
+                $this->localizationService->translate($labelKeyPrefix . '.solve'),
                 ContextualFeedbackSeverity::OK,
                 $type,
             );
         }
         $items[] = $this->item(
-            'Optional article_grid_items child fixture',
+            $this->localizationService->translate('module.testing.seed.articleGridItems.title'),
             TcaUtility::table('article_grid_items') === []
-                ? 'The optional Content Blocks demo table is not installed in this TYPO3 instance.'
-                : 'The seed command can create a broken inline child row for article_grid_items.',
+                ? $this->localizationService->translate('module.testing.seed.articleGridItems.notInstalled')
+                : $this->localizationService->translate('module.testing.seed.articleGridItems.available'),
             TcaUtility::table('article_grid_items') === []
-                ? 'Install the demo Content Block table if you want to reproduce that exact child-record failure locally.'
-                : 'Run webcon-easy-workspace:seed-diagnostics --execute in a local DDEV database, then open Checks and diagnostics.',
+                ? $this->localizationService->translate('module.testing.seed.articleGridItems.solve.notInstalled')
+                : $this->localizationService->translate('module.testing.seed.articleGridItems.solve.available'),
             TcaUtility::table('article_grid_items') === [] ? ContextualFeedbackSeverity::INFO : ContextualFeedbackSeverity::OK,
-            TcaUtility::table('article_grid_items') === [] ? 'not installed' : 'available',
+            TcaUtility::table('article_grid_items') === []
+                ? $this->localizationService->translate('module.testing.value.notInstalled')
+                : $this->localizationService->translate('module.testing.value.available'),
         );
 
         return $this->group(
-            'Seed fixture coverage',
-            'Confirms which deliberate failure cases can be generated in a local or demo system.',
+            'module.testing.group.seedCoverage.title',
+            'module.testing.group.seedCoverage.description',
             $items,
         );
     }
@@ -204,8 +186,8 @@ final readonly class WorkspaceTestingReportService
         }
 
         return $this->group(
-            'Manual-only checks',
-            'Real workspace failures that cannot be proven from database metadata alone.',
+            'module.testing.group.manualOnly.title',
+            'module.testing.group.manualOnly.description',
             $items,
         );
     }
@@ -217,24 +199,25 @@ final readonly class WorkspaceTestingReportService
     private function issueDefinitionItem(string $type, array $issues): array
     {
         $definition = Value::stringKeyArray(self::ISSUE_DEFINITIONS[$type] ?? []);
+        $labelKeyPrefix = Value::string($definition['key'] ?? null);
         $count = count($issues);
         if ($count === 0) {
             return $this->item(
-                Value::string($definition['title'] ?? null),
-                Value::string($definition['ok'] ?? null),
-                Value::string($definition['solve'] ?? null),
+                $this->localizationService->translate($labelKeyPrefix . '.title'),
+                $this->localizationService->translate($labelKeyPrefix . '.ok'),
+                $this->localizationService->translate($labelKeyPrefix . '.solve'),
                 ContextualFeedbackSeverity::OK,
-                '0 found',
+                $this->localizationService->translate('module.testing.value.found', ['count' => $count]),
                 [],
             );
         }
 
         return $this->item(
-            Value::string($definition['title'] ?? null),
-            Value::string($definition['fail'] ?? null),
-            Value::string($definition['solve'] ?? null),
+            $this->localizationService->translate($labelKeyPrefix . '.title'),
+            $this->localizationService->translate($labelKeyPrefix . '.fail'),
+            $this->localizationService->translate($labelKeyPrefix . '.solve'),
             $this->severityFromName(Value::string($definition['severity'] ?? null)),
-            $count . ' found',
+            $this->localizationService->translate('module.testing.value.found', ['count' => $count]),
             $this->affectedRecords($issues),
         );
     }
@@ -251,10 +234,20 @@ final readonly class WorkspaceTestingReportService
             $workspaceUid = Value::int($issue['workspaceUid'] ?? null);
             $liveUid = Value::int($issue['liveUid'] ?? null);
             $detail = Value::string($issue['detail'] ?? null);
-            $records[] = trim($table . '#' . ($workspaceUid > 0 ? $workspaceUid : 'live ' . $liveUid) . ($detail !== '' ? ' - ' . $detail : ''));
+            $record = $table . '#' . (
+                $workspaceUid > 0
+                    ? (string)$workspaceUid
+                    : $this->localizationService->translate('module.testing.detail.liveUid', ['uid' => $liveUid])
+            );
+            $records[] = $detail === ''
+                ? $record
+                : $this->localizationService->translate('module.testing.detail.withDetail', [
+                    'record' => $record,
+                    'detail' => $detail,
+                ]);
         }
         if (count($issues) > 5) {
-            $records[] = '+' . (count($issues) - 5) . ' more';
+            $records[] = $this->localizationService->translate('module.testing.value.more', ['count' => count($issues) - 5]);
         }
         return $records;
     }
@@ -285,7 +278,7 @@ final readonly class WorkspaceTestingReportService
      * @param list<array<string, mixed>> $items
      * @return array<string, mixed>
      */
-    private function group(string $label, string $description, array $items): array
+    private function group(string $labelKey, string $descriptionKey, array $items): array
     {
         $severity = $this->highestSeverity($items);
         $issueCount = count(array_filter(
@@ -294,8 +287,8 @@ final readonly class WorkspaceTestingReportService
         ));
 
         return [
-            'label' => $label,
-            'description' => $description,
+            'label' => $this->localizationService->translate($labelKey),
+            'description' => $this->localizationService->translate($descriptionKey),
             'items' => $items,
             'statusCount' => count($items),
             'issueCount' => $issueCount,
