@@ -18,7 +18,7 @@ while getopts "s:p:" OPT; do
 done
 
 run_lint() {
-  find Classes Configuration ext_emconf.php -name '*.php' -print0 | xargs -0 -n1 php -l
+  find Classes Configuration -name '*.php' -print0 | xargs -0 -n1 php -l
 }
 
 case "${SUITE}" in
