@@ -60,7 +60,7 @@ This package is installed from the GitHub release. Add it as a VCS repository in
   "repositories": [
     {
       "type": "vcs",
-      "url": "https://github.com/webconsulting-at/typo3-webcon-easy-workspace.git"
+      "url": "https://github.com/dirnbauer/typo3-webcon-easy-workspace.git"
     }
   ],
   "require": {
@@ -87,7 +87,7 @@ composer require webconsulting/webcon-easy-workspace:^14.0
 
 - Detailed TYPO3 manual: [`Documentation/Index.rst`](Documentation/Index.rst)
 - Release history: [`CHANGELOG.md`](CHANGELOG.md)
-- Issues: [github.com/webconsulting-at/typo3-webcon-easy-workspace/issues](https://github.com/webconsulting-at/typo3-webcon-easy-workspace/issues)
+- Issues: [github.com/dirnbauer/typo3-webcon-easy-workspace/issues](https://github.com/dirnbauer/typo3-webcon-easy-workspace/issues)
 
 ## Usage
 

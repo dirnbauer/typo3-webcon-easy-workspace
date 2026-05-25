@@ -17,10 +17,10 @@
             "role": "Developer"
         }
     ],
-    "homepage": "https://github.com/webconsulting-at/typo3-webcon-easy-workspace",
+    "homepage": "https://github.com/dirnbauer/typo3-webcon-easy-workspace",
     "support": {
-        "issues": "https://github.com/webconsulting-at/typo3-webcon-easy-workspace/issues",
-        "source": "https://github.com/webconsulting-at/typo3-webcon-easy-workspace"
+        "issues": "https://github.com/dirnbauer/typo3-webcon-easy-workspace/issues",
+        "source": "https://github.com/dirnbauer/typo3-webcon-easy-workspace"
     },
     "require": {
         "php": "^8.2",
@@ -63,7 +63,7 @@
     "extra": {
         "typo3/cms": {
             "extension-key": "webcon_easy_workspace",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "Package": {
                 "providesPackages": {}
             }
