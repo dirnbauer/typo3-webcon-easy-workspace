@@ -181,6 +181,8 @@ final readonly class EasyWorkspaceAjaxController
         // The Fluid template renders it without embedding the full
         // standalone record_history module chrome in the modal.
         $timeline = $this->historyTimelineService->build($table, $workspaceUid);
+        $pageUid = $this->resolveContainingPageUid($table, Value::stringKeyArray($row), $payload);
+        $pageTimeline = $pageUid > 0 ? $this->historyTimelineService->buildPage($pageUid) : [];
 
         $view = $this->viewFactory->create(new ViewFactoryData(
             templatePathAndFilename: 'EXT:webcon_easy_workspace/Resources/Private/Templates/Diff/Record.html',
@@ -189,15 +191,15 @@ final readonly class EasyWorkspaceAjaxController
         $view->assignMultiple($payload + [
             'editUrl' => $editUrl,
             'timeline' => $timeline,
+            'pageTimeline' => $pageTimeline,
             'rollbackEnabled' => true,
             'labels' => [
                 'workspaceUid' => $this->localizationService->translate('diff.template.workspaceUid', ['uid' => $payload['workspaceUid']]),
                 'liveUid' => $this->localizationService->translate('diff.template.liveUid', ['uid' => $payload['liveUid']]),
                 'historyCount' => $this->localizationService->translate('history.editCount', ['count' => count($timeline)]),
-                'currentChanges' => $this->localizationService->translate('history.tab.currentChanges'),
                 'recordHistory' => $this->localizationService->translate('history.tab.record'),
+                'pageHistory' => $this->localizationService->translate('history.tab.page'),
                 'historyAria' => $this->localizationService->translate('history.aria'),
-                'noCurrentDiffs' => $this->localizationService->translate('diff.template.noCurrentDiffs'),
                 'rollbackLinearTitle' => $this->localizationService->translate('history.rollback.linearTitle'),
                 'rollbackLinear' => $this->localizationService->translate('history.rollback.linear'),
                 'rollbackFieldTitle' => $this->localizationService->translate('history.rollback.fieldTitle'),
@@ -208,6 +210,19 @@ final readonly class EasyWorkspaceAjaxController
         ]);
 
         return new HtmlResponse($view->render());
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param array{liveUid: int, workspaceUid: int} $payload
+     */
+    private function resolveContainingPageUid(string $table, array $row, array $payload): int
+    {
+        if ($table === 'pages') {
+            return Value::int($payload['liveUid'] ?? null) ?: Value::int($payload['workspaceUid'] ?? null);
+        }
+
+        return Value::int($row['pid'] ?? null);
     }
 
     /**

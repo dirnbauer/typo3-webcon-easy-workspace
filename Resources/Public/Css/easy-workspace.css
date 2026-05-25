@@ -1821,6 +1821,28 @@ dialog.wew-diff-modal-shell {
 .wew-history__who {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
+.wew-history__record {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-width: 0;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-history__record-table {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.wew-history__record-title {
+    min-width: 0;
+    max-width: min(48ch, 42vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+}
 .wew-history__rollback {
     margin-left: auto;
     padding: .15rem .5rem;

@@ -14,6 +14,8 @@
        - record history — TYPO3 core's RecordHistory data for the
                           selected workspace record, rendered here
                           without the standalone module chrome.
+       - page history   — TYPO3 core's page history with subelements
+                          enabled for the containing page.
 
     Variables:
         title         — record title for the header
@@ -56,25 +58,11 @@
             <li class="nav-item" role="presentation">
                 <button
                     type="button"
-                    id="wew-history-tab-current"
+                    id="wew-history-tab-record"
                     class="nav-link active"
                     role="tab"
                     aria-selected="true"
-                    aria-controls="wew-history-panel-current"
-                    data-wew-history-tab="current"
-                >
-                    {labels.currentChanges}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button
-                    type="button"
-                    id="wew-history-tab-record"
-                    class="nav-link"
-                    role="tab"
-                    aria-selected="false"
                     aria-controls="wew-history-panel-record"
-                    tabindex="-1"
                     data-wew-history-tab="record"
                 >
                     {labels.recordHistory}
@@ -83,96 +71,109 @@
                     </f:if>
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button
+                    type="button"
+                    id="wew-history-tab-page"
+                    class="nav-link"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="wew-history-panel-page"
+                    tabindex="-1"
+                    data-wew-history-tab="page"
+                >
+                    {labels.pageHistory}
+                    <f:if condition="{pageTimeline -> f:count()} > 0">
+                        <span class="badge badge-secondary ms-1">{pageTimeline -> f:count()}</span>
+                    </f:if>
+                </button>
+            </li>
         </ul>
 
         <div class="tab-content wew-history-tabs__content">
             <section
-                id="wew-history-panel-current"
+                id="wew-history-panel-record"
                 class="tab-pane active show wew-diff-modal__panel"
                 role="tabpanel"
-                aria-labelledby="wew-history-tab-current"
-                data-wew-history-panel="current"
+                aria-labelledby="wew-history-tab-record"
+                data-wew-history-panel="record"
             >
-                <f:if condition="{diffs -> f:count()} > 0">
-                    <f:then>
-                        <dl class="wew-history__diff wew-history__diff--current">
-                            <f:for each="{diffs}" as="diff">
-                                <dt class="wew-diff-modal__field-label">{diff.label}</dt>
-                                <dd class="wew-diff-modal__field-value">
-                                    <span class="wew-history__diff-html"><f:format.raw>{diff.html}</f:format.raw></span>
-                                </dd>
-                            </f:for>
-                        </dl>
-                    </f:then>
-                    <f:else>
-                        <p class="wew-diff-modal__empty">{labels.noCurrentDiffs}</p>
-                    </f:else>
-                </f:if>
+                <f:render section="Timeline" arguments="{entries: timeline, showRecordContext: 0, rollbackEnabled: rollbackEnabled, labels: labels}" />
             </section>
 
             <section
-                id="wew-history-panel-record"
+                id="wew-history-panel-page"
                 class="tab-pane wew-diff-modal__panel"
                 role="tabpanel"
-                aria-labelledby="wew-history-tab-record"
+                aria-labelledby="wew-history-tab-page"
                 hidden="hidden"
-                data-wew-history-panel="record"
+                data-wew-history-panel="page"
             >
-                <f:if condition="{timeline -> f:count()} > 0">
-                    <f:then>
-                        <ol class="wew-history">
-                            <f:for each="{timeline}" as="entry">
-                                <li class="wew-history__entry">
-                                    <div class="wew-history__meta">
-                                        <span class="wew-history__action wew-history__action--{entry.actionKey}">{entry.action}</span>
-                                        <time class="wew-history__when">{entry.tstampFormatted}</time>
-                                        <span class="wew-history__who">{entry.user}</span>
-                                        <f:if condition="{rollbackEnabled}">
-                                            <button
-                                                type="button"
-                                                class="btn btn-default btn-sm wew-history__rollback"
-                                                title="{labels.rollbackLinearTitle}"
-                                                data-wew-rollback="linear"
-                                                data-mode="linear"
-                                                data-history-uid="{entry.historyUid}"
-                                            >
-                                                {labels.rollbackLinear}
-                                            </button>
-                                        </f:if>
-                                    </div>
-                                    <f:if condition="{entry.diffs -> f:count()} > 0">
-                                        <dl class="wew-history__diff">
-                                            <f:for each="{entry.diffs}" as="diff">
-                                                <dt class="wew-diff-modal__field-label">{diff.label}</dt>
-                                                <dd class="wew-diff-modal__field-value">
-                                                    <span class="wew-history__diff-html"><f:format.raw>{diff.html}</f:format.raw></span>
-                                                    <f:if condition="{rollbackEnabled}">
-                                                        <button
-                                                            type="button"
-                                                            class="wew-history__rollback-field"
-                                                            title="{labels.rollbackFieldTitle}"
-                                                            aria-label="{labels.rollbackFieldAria}"
-                                                            data-wew-rollback="field"
-                                                            data-mode="field"
-                                                            data-field="{diff.field}"
-                                                            data-history-uid="{diff.historyUid}"
-                                                        >
-                                                            <core:icon identifier="actions-undo" size="small" />
-                                                        </button>
-                                                    </f:if>
-                                                </dd>
-                                            </f:for>
-                                        </dl>
-                                    </f:if>
-                                </li>
-                            </f:for>
-                        </ol>
-                    </f:then>
-                    <f:else>
-                        <p class="wew-diff-modal__empty">{labels.empty}</p>
-                    </f:else>
-                </f:if>
+                <f:render section="Timeline" arguments="{entries: pageTimeline, showRecordContext: 1, rollbackEnabled: 0, labels: labels}" />
             </section>
         </div>
     </div>
 </div>
+
+<f:section name="Timeline">
+    <f:if condition="{entries -> f:count()} > 0">
+        <f:then>
+            <ol class="wew-history">
+                <f:for each="{entries}" as="entry">
+                    <li class="wew-history__entry">
+                        <div class="wew-history__meta">
+                            <span class="wew-history__action wew-history__action--{entry.actionKey}">{entry.action}</span>
+                            <time class="wew-history__when">{entry.tstampFormatted}</time>
+                            <span class="wew-history__who">{entry.user}</span>
+                            <f:if condition="{showRecordContext}">
+                                <span class="wew-history__record">
+                                    <span class="wew-history__record-table">{entry.tableLabel}</span>
+                                    <span class="wew-history__record-title" title="{entry.recordTitle}">{entry.recordTitle}</span>
+                                </span>
+                            </f:if>
+                            <f:if condition="{rollbackEnabled}">
+                                <button
+                                    type="button"
+                                    class="btn btn-default btn-sm wew-history__rollback"
+                                    title="{labels.rollbackLinearTitle}"
+                                    data-wew-rollback="linear"
+                                    data-mode="linear"
+                                    data-history-uid="{entry.historyUid}"
+                                >
+                                    {labels.rollbackLinear}
+                                </button>
+                            </f:if>
+                        </div>
+                        <f:if condition="{entry.diffs -> f:count()} > 0">
+                            <dl class="wew-history__diff">
+                                <f:for each="{entry.diffs}" as="diff">
+                                    <dt class="wew-diff-modal__field-label">{diff.label}</dt>
+                                    <dd class="wew-diff-modal__field-value">
+                                        <span class="wew-history__diff-html"><f:format.raw>{diff.html}</f:format.raw></span>
+                                        <f:if condition="{rollbackEnabled}">
+                                            <button
+                                                type="button"
+                                                class="wew-history__rollback-field"
+                                                title="{labels.rollbackFieldTitle}"
+                                                aria-label="{labels.rollbackFieldAria}"
+                                                data-wew-rollback="field"
+                                                data-mode="field"
+                                                data-field="{diff.field}"
+                                                data-history-uid="{diff.historyUid}"
+                                            >
+                                                <core:icon identifier="actions-undo" size="small" />
+                                            </button>
+                                        </f:if>
+                                    </dd>
+                                </f:for>
+                            </dl>
+                        </f:if>
+                    </li>
+                </f:for>
+            </ol>
+        </f:then>
+        <f:else>
+            <p class="wew-diff-modal__empty">{labels.empty}</p>
+        </f:else>
+    </f:if>
+</f:section>

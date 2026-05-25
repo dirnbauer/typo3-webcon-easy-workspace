@@ -70,26 +70,69 @@ final readonly class RecordHistoryTimelineService
      *   actionKey: string,
      *   userUid: int,
      *   user: string,
+     *   table: string,
+     *   uid: int,
+     *   tableLabel: string,
+     *   recordTitle: string,
      *   diffs: list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
      * }>
      */
-    public function build(string $table, int $uid): array
+    public function build(string $table, int $uid, bool $includeSubElements = false): array
     {
-        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
-
         // RecordHistory reads $element from constructor as "table:uid".
-        // setShowSubElements(false) keeps it focused on this record;
         // setMaxSteps(0) means "no cap" which is what we want for a
         // single record's lifecycle.
         $history = new RecordHistory(sprintf('%s:%d', $table, $uid));
-        $history->setShowSubElements(false);
+        $history->setShowSubElements($includeSubElements);
         $history->setMaxSteps(0);
-        $changeLog = $history->getChangeLog();
-        $diffData = $history->getDiff($changeLog);
-        // RecordHistory::getDiff returns an array keyed by sys_history
-        // row uid. Re-fold into our timeline shape.
-        $diffEntries = $diffData['differences'] ?? [];
+        return $this->buildFromChangeLog(array_values($history->getChangeLog()));
+    }
 
+    /**
+     * Build a page-wide timeline using TYPO3 core's page-history
+     * behaviour: `RecordHistory('pages:uid')` with subelements
+     * enabled includes the page record and records stored on it.
+     *
+     * @return list<array{
+     *   historyUid: int,
+     *   tstamp: int,
+     *   tstampFormatted: string,
+     *   action: string,
+     *   actionKey: string,
+     *   userUid: int,
+     *   user: string,
+     *   table: string,
+     *   uid: int,
+     *   tableLabel: string,
+     *   recordTitle: string,
+     *   diffs: list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
+     * }>
+     */
+    public function buildPage(int $pageUid): array
+    {
+        return $pageUid > 0 ? $this->build('pages', $pageUid, true) : [];
+    }
+
+    /**
+     * @param list<mixed> $changeLog
+     * @return list<array{
+     *   historyUid: int,
+     *   tstamp: int,
+     *   tstampFormatted: string,
+     *   action: string,
+     *   actionKey: string,
+     *   userUid: int,
+     *   user: string,
+     *   table: string,
+     *   uid: int,
+     *   tableLabel: string,
+     *   recordTitle: string,
+     *   diffs: list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
+     * }>
+     */
+    private function buildFromChangeLog(array $changeLog): array
+    {
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
         $entries = [];
         foreach ($changeLog as $rawLog) {
             $log = Value::stringKeyArray($rawLog);
@@ -113,6 +156,11 @@ final readonly class RecordHistoryTimelineService
             if ($historyUid <= 0) {
                 continue;
             }
+            $entryTable = Value::string($log['tablename'] ?? null);
+            $entryUid = Value::int($log['recuid'] ?? null);
+            if ($entryTable === '' || $entryUid <= 0) {
+                continue;
+            }
             $newRecord = Value::stringKeyArray($log['newRecord'] ?? null);
             $oldRecord = Value::stringKeyArray($log['oldRecord'] ?? null);
             $actionType = Value::int($log['actiontype'] ?? null);
@@ -127,11 +175,15 @@ final readonly class RecordHistoryTimelineService
                 'actionKey' => $actionKey,
                 'userUid' => $userId,
                 'user' => $this->resolveUser($userId),
+                'table' => $entryTable,
+                'uid' => $entryUid,
+                'tableLabel' => $this->resolveTableLabel($entryTable),
+                'recordTitle' => $this->resolveRecordTitle($entryTable, $entryUid, $newRecord, $oldRecord),
                 // historyUid duplicated into each diff so the inner
                 // <f:for as="d"> doesn't have to reach back into the
                 // enclosing entry scope and so the per-field rollback
                 // POST always lands at the real sys_history row.
-                'diffs' => $this->buildFieldDiffs($table, $oldRecord, $newRecord, $historyUid),
+                'diffs' => $this->buildFieldDiffs($entryTable, $entryUid, $oldRecord, $newRecord, $historyUid),
             ];
         }
 
@@ -160,23 +212,27 @@ final readonly class RecordHistoryTimelineService
      * @param array<string, mixed> $new
      * @return list<array{field: string, label: string, before: string, after: string, html: string, historyUid: int}>
      */
-    private function buildFieldDiffs(string $table, array $old, array $new, int $historyUid): array
+    private function buildFieldDiffs(string $table, int $uid, array $old, array $new, int $historyUid): array
     {
         $fields = array_unique(array_merge(array_keys($old), array_keys($new)));
         $languageService = $this->getLanguageService();
+        $tableTca = TcaUtility::table($table);
+        $columns = Value::stringKeyArray($tableTca['columns'] ?? null);
         $out = [];
         foreach ($fields as $field) {
             if (in_array($field, self::SKIP_FIELDS, true)) {
                 continue;
             }
-            $before = Value::string($old[$field] ?? null);
-            $after = Value::string($new[$field] ?? null);
+            $fieldTca = Value::stringKeyArray($columns[$field] ?? null);
+            if ($fieldTca === []) {
+                continue;
+            }
+            $configuration = Value::stringKeyArray($fieldTca['config'] ?? null);
+            $before = $this->formatValue($table, $field, Value::string($old[$field] ?? null), $uid, $configuration, $old);
+            $after = $this->formatValue($table, $field, Value::string($new[$field] ?? null), $uid, $configuration, $new);
             if ($before === $after) {
                 continue;
             }
-            $tableTca = TcaUtility::table($table);
-            $columns = Value::stringKeyArray($tableTca['columns'] ?? null);
-            $fieldTca = Value::stringKeyArray($columns[$field] ?? null);
             $tcaLabel = Value::string($fieldTca['label'] ?? $field);
             $out[] = [
                 'field' => $field,
@@ -188,6 +244,43 @@ final readonly class RecordHistoryTimelineService
             ];
         }
         return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $configuration
+     * @param array<string, mixed> $row
+     */
+    private function formatValue(string $table, string $field, string $value, int $uid, array $configuration, array $row): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        try {
+            $processed = BackendUtility::getProcessedValue(
+                $table,
+                $field,
+                $value,
+                0,
+                true,
+                false,
+                $uid,
+                true,
+                Value::int($row['pid'] ?? null),
+                $row,
+            );
+            $formatted = (string)($processed ?? $value);
+        } catch (\Throwable) {
+            $formatted = $value;
+        }
+
+        if (($configuration['type'] ?? '') === 'text' || str_contains($formatted, '<') || str_contains($formatted, '&lt;')) {
+            $formatted = html_entity_decode($formatted, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $formatted = preg_replace('/<(br|\/p|\/div|\/li|\/ul|\/ol|h[1-6]|\/h[1-6])\b[^>]*>/i', ' ', $formatted) ?? $formatted;
+            $formatted = strip_tags($formatted);
+        }
+
+        return trim((string)preg_replace('/\s+/u', ' ', $formatted));
     }
 
     private function resolveActionKey(int $actionType): string
@@ -227,6 +320,28 @@ final readonly class RecordHistoryTimelineService
             return sprintf('%s (%s)', $realName, $username);
         }
         return $realName !== '' ? $realName : ($username !== '' ? $username : $this->localizationService->translate('history.user.fallback', ['uid' => $userId]));
+    }
+
+    private function resolveTableLabel(string $table): string
+    {
+        $tableTca = TcaUtility::table($table);
+        $label = Value::string(Value::stringKeyArray($tableTca['ctrl'] ?? null)['title'] ?? $table);
+        $translated = $this->getLanguageService()->sL($label);
+        return $translated !== '' ? $translated : $table;
+    }
+
+    /**
+     * @param array<string, mixed> $newRecord
+     * @param array<string, mixed> $oldRecord
+     */
+    private function resolveRecordTitle(string $table, int $uid, array $newRecord, array $oldRecord): string
+    {
+        $row = BackendUtility::getRecord($table, $uid);
+        if (!is_array($row)) {
+            $row = array_replace($oldRecord, $newRecord, ['uid' => $uid]);
+        }
+        $title = trim(strip_tags(BackendUtility::getRecordTitle($table, $row, false, true)));
+        return $title !== '' ? $title : sprintf('%s #%d', $table, $uid);
     }
 
     private function getLanguageService(): LanguageService
