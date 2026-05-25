@@ -119,6 +119,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
     super.connectedCallback();
     this._config = this._readConfig();
     this.workspaceId = this._configuredWorkspaceId();
+    this.classList.toggle('wew-menu-host--compact-toolbar', this._isCompactToolbar());
     // Mode resolution: user's last choice in this browser >
     // TSconfig defaultMode > hardcoded 'changed' fallback.
     this.mode = this._readPersistedMode() ?? this._config.defaultMode;
@@ -774,8 +775,9 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   render() {
+    const compactClass = this._isCompactToolbar() ? ' wew-menu--compact-toolbar' : '';
     return html`
-      <div class="wew-menu">
+      <div class="wew-menu${compactClass}">
         <header class="wew-menu__head">
           <div class="wew-menu__icon" aria-hidden="true">
             <!-- TYPO3 core "module-workspaces" — currentColor + accent (orange). -->
@@ -2218,11 +2220,28 @@ class WebconEasyWorkspaceMenu extends LitElement {
   }
 
   _shouldShowSubelementDetails() {
-    return this._config.showSubelementsInToolbar !== false;
+    return this._configBool('showSubelementsInToolbar', false);
   }
 
   _shouldShowStatePills(item) {
     return this._shouldShowSubelementDetails();
+  }
+
+  _isCompactToolbar() {
+    return !this._shouldShowSubelementDetails();
+  }
+
+  _configBool(key, fallback = false) {
+    const value = this._config?.[key];
+    if (value === undefined || value === null) return fallback;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['1', 'true', 'on', 'yes'].includes(normalized)) return true;
+      if (['0', 'false', 'off', 'no', ''].includes(normalized)) return false;
+    }
+    return Boolean(value);
   }
 
   _detectLanguageUid() {

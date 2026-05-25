@@ -111,8 +111,13 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
      */
     public function getAdditionalAttributes(): array
     {
+        $classes = ['webcon-easy-workspace-toolbar'];
+        if (!$this->configurationProvider->get()['showSubelementsInToolbar']) {
+            $classes[] = 'webcon-easy-workspace-toolbar--compact';
+        }
+
         return [
-            'class' => 'webcon-easy-workspace-toolbar',
+            'class' => implode(' ', $classes),
         ];
     }
 

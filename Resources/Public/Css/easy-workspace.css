@@ -11,6 +11,9 @@
    `.badge` / `.badge-pill` styles (mirrors System Information's
    message-count badge), so no extension-specific styling is needed
    here — the markup lives in EasyWorkspaceItem.html. */
+.webcon-easy-workspace-toolbar--compact .toolbar-item-title {
+    display: none;
+}
 
 webcon-easy-workspace-menu {
     display: block;
@@ -23,6 +26,10 @@ webcon-easy-workspace-menu {
     overflow-x: hidden;
     font-size: 13px;
     color: var(--typo3-component-color, var(--bs-body-color));
+}
+
+webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
+    width: min(340px, calc(100vw - 24px));
 }
 
 .wew-menu__latest,
@@ -54,6 +61,10 @@ webcon-easy-workspace-menu {
     min-width: 300px;
     overflow-x: hidden;
 }
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu.wew-menu-host--compact-toolbar) {
+    max-width: min(340px, calc(100vw - 24px));
+    min-width: 280px;
+}
 /* Defensive: same belt-and-braces clamp on the inner root. */
 .wew-menu {
     max-width: 100%;
@@ -75,6 +86,10 @@ webcon-easy-workspace-menu {
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
+.wew-menu--compact-toolbar .wew-menu__head {
+    gap: .45rem;
+    padding: .38rem .7rem;
+}
 .wew-menu__icon {
     width: 26px;
     height: 26px;
@@ -86,9 +101,17 @@ webcon-easy-workspace-menu {
     justify-content: center;
     flex-shrink: 0;
 }
+.wew-menu--compact-toolbar .wew-menu__icon {
+    width: 24px;
+    height: 24px;
+}
 .wew-menu__icon svg {
     width: 18px;
     height: 18px;
+}
+.wew-menu--compact-toolbar .wew-menu__icon svg {
+    width: 16px;
+    height: 16px;
 }
 .wew-menu__title-wrap { min-width: 0; }
 .wew-menu__title {
@@ -100,6 +123,9 @@ webcon-easy-workspace-menu {
     align-items: center;
     gap: .4rem;
     flex-wrap: wrap;
+}
+.wew-menu--compact-toolbar .wew-menu__title {
+    font-size: 13px;
 }
 .wew-menu__ws-chip {
     display: inline-flex;
@@ -133,6 +159,9 @@ webcon-easy-workspace-menu {
     padding: 0 .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
 }
+.wew-menu--compact-toolbar .wew-menu__filter {
+    padding: 0 .65rem;
+}
 .wew-menu__chip {
     border: 0;
     background: transparent;
@@ -151,6 +180,10 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     transition: color .12s ease, border-color .12s ease;
     /* No rounded background — this is a tab, not a pill. */
+}
+.wew-menu--compact-toolbar .wew-menu__chip {
+    padding: .45rem .65rem .4rem;
+    font-size: 11.5px;
 }
 .wew-menu__chip:hover {
     color: var(--typo3-text-color-base, var(--bs-body-color));
@@ -390,6 +423,9 @@ webcon-easy-workspace-menu {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d)) 45%, transparent) transparent;
     scrollbar-gutter: stable;
+}
+.wew-menu--compact-toolbar .wew-list {
+    max-height: 46vh;
 }
 /* WebKit (Chrome / Safari / Edge) implementation of the same. */
 .wew-list::-webkit-scrollbar {
@@ -685,6 +721,10 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     margin: 0;
 }
+.wew-menu--compact-toolbar .wew-list__label {
+    gap: .5rem;
+    padding: .48rem .6rem .48rem .82rem;
+}
 .wew-list__body {
     flex: 1 1 auto;
     min-width: 0;
@@ -695,6 +735,9 @@ webcon-easy-workspace-menu {
        slightly larger gap because it sits below a smaller-font
        sub-row and needs a visual cue that it's an action. */
     row-gap: .2rem;
+}
+.wew-menu--compact-toolbar .wew-list__body {
+    row-gap: .14rem;
 }
 .wew-list__head {
     display: flex;
@@ -712,6 +755,9 @@ webcon-easy-workspace-menu {
     font-size: 11px;
     line-height: 1.3;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+}
+.wew-menu--compact-toolbar .wew-list__sub {
+    font-size: 10.5px;
 }
 .wew-list__badges,
 .wew-list__change-actions {
@@ -1013,6 +1059,10 @@ webcon-easy-workspace-menu {
     font-size: 12.5px;
     line-height: 1.3;
 }
+.wew-menu--compact-toolbar .wew-list__title-text {
+    font-size: 12px;
+    -webkit-line-clamp: 1;
+}
 .wew-list__meta .badge {
     flex-shrink: 0;
 }
@@ -1053,6 +1103,10 @@ webcon-easy-workspace-menu {
     justify-content: center;
     flex-shrink: 0;
 }
+.wew-menu--compact-toolbar .wew-list__thumb {
+    width: 42px;
+    height: 32px;
+}
 .wew-list__thumb img {
     display: block;
     width: 100%;
@@ -1086,6 +1140,10 @@ webcon-easy-workspace-menu {
     border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
 }
+.wew-menu--compact-toolbar .wew-menu__foot {
+    gap: .4rem;
+    padding: .35rem .6rem .35rem .7rem;
+}
 
 /* Quiet context footnote: identifies which page/news record the
    publish list is scoped to. Joined visually to the footer above
@@ -1098,6 +1156,9 @@ webcon-easy-workspace-menu {
     background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
     text-align: right;
     letter-spacing: .02em;
+}
+.wew-menu--compact-toolbar .wew-menu__context {
+    padding: .12rem .7rem .35rem;
 }
 
 /* Preview link button — promoted to the header's top-right slot.
@@ -1121,6 +1182,10 @@ webcon-easy-workspace-menu {
     cursor: pointer;
     transition: background-color .12s ease, border-color .12s ease, color .12s ease;
     white-space: nowrap;
+}
+.wew-menu--compact-toolbar .wew-menu__preview {
+    padding: .18rem .38rem;
+    font-size: 10px;
 }
 .wew-menu__preview:hover {
     background: var(--typo3-state-default-hover-bg, var(--bs-secondary-bg));
