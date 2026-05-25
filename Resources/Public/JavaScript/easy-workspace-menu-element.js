@@ -113,6 +113,11 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this.mode = this._config.defaultMode;
     this.variant = 'toolbar';
     this._refreshAfterSaveTimer = null;
+    this._backendFrameLoadRefreshTimer = null;
+    this._backendSaveMessageTargets = new Map();
+    this._backendSaveDocumentTargets = new Map();
+    this._backendFrameLoadTargets = new Map();
+    this._backendFrameUrls = new WeakMap();
   }
 
   connectedCallback() {
@@ -157,8 +162,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
     this._declineMessageListener = (event) => this._onDeclineMessage(event);
     window.addEventListener('message', this._declineMessageListener);
 
-    this._visualEditorMessageListener = (event) => this._onVisualEditorMessage(event);
-    window.addEventListener('message', this._visualEditorMessageListener);
+    this._backendSaveMessageListener = (event) => this._onBackendSaveMessage(event);
+    this._registerBackendSaveSignalListeners();
   }
 
   disconnectedCallback() {
@@ -175,26 +180,179 @@ class WebconEasyWorkspaceMenu extends LitElement {
       window.removeEventListener('message', this._declineMessageListener);
       this._declineMessageListener = null;
     }
-    if (this._visualEditorMessageListener) {
-      window.removeEventListener('message', this._visualEditorMessageListener);
-      this._visualEditorMessageListener = null;
-    }
     if (this._refreshAfterSaveTimer) {
       window.clearTimeout(this._refreshAfterSaveTimer);
       this._refreshAfterSaveTimer = null;
     }
+    if (this._backendFrameLoadRefreshTimer) {
+      window.clearTimeout(this._backendFrameLoadRefreshTimer);
+      this._backendFrameLoadRefreshTimer = null;
+    }
+    this._clearBackendSaveSignalListeners();
   }
 
   /**
-   * Use Visual Editor's save lifecycle as a refresh signal only.
-   * The toolbar badge must show server-side workspace versions ready
-   * to publish, not the Visual Editor's temporary unsaved field count.
+   * Use backend save lifecycles as refresh signals only. The toolbar
+   * badge must show server-side workspace versions ready to publish,
+   * not Visual Editor's temporary unsaved field count.
    */
-  _onVisualEditorMessage(event) {
+  _onBackendSaveMessage(event) {
+    if (!this._isTrustedBackendSaveMessage(event)) {
+      return;
+    }
+    this._refreshAfterBackendSave();
+  }
+
+  _isTrustedBackendSaveMessage(event) {
     const command = event.data?.command;
     if (command === 've_saveEnded') {
-      this._refreshAfterVisualEditorSave();
+      return this._isKnownPreviewWindow(event.source);
     }
+    if (event.data?.actionName === 'typo3:editform:saved') {
+      return !event.origin || event.origin === window.location.origin;
+    }
+    return false;
+  }
+
+  /**
+   * The toolbar lives in the top backend frame, while Visual Editor
+   * posts `ve_saveEnded` to its immediate parent module iframe. Add
+   * listeners to same-origin backend frames so saves in Visual Editor,
+   * ContextualRecordEditController, and regular FormEngine reloads all
+   * refresh the persisted workspace count.
+   */
+  _registerBackendSaveSignalListeners() {
+    if (!this._backendSaveMessageListener) {
+      return;
+    }
+
+    this._resetBackendSaveMessageTargets();
+    this._addBackendSaveMessageTarget(window);
+    try { this._addBackendSaveMessageTarget(window.top); } catch { /* cross-origin */ }
+    try { this._addBackendSaveMessageTarget(window.parent); } catch { /* cross-origin */ }
+
+    this._addBackendSaveDocumentTarget(document);
+    try { this._addBackendSaveDocumentTarget(window.top?.document); } catch { /* cross-origin */ }
+
+    for (const iframe of this._collectIframes()) {
+      try { this._addBackendSaveMessageTarget(iframe.contentWindow); } catch { /* cross-origin */ }
+      this._addBackendFrameLoadTarget(iframe);
+    }
+  }
+
+  _addBackendSaveMessageTarget(targetWindow) {
+    if (!targetWindow || this._backendSaveMessageTargets.has(targetWindow)) {
+      return;
+    }
+    try {
+      targetWindow.addEventListener('message', this._backendSaveMessageListener);
+      this._backendSaveMessageTargets.set(targetWindow, () => {
+        try {
+          targetWindow.removeEventListener('message', this._backendSaveMessageListener);
+        } catch { /* target window may be gone */ }
+      });
+    } catch {
+      // Cross-origin frames deliberately stay opaque.
+    }
+  }
+
+  _addBackendSaveDocumentTarget(targetDocument) {
+    if (!targetDocument || this._backendSaveDocumentTargets.has(targetDocument)) {
+      return;
+    }
+    const handler = () => this._scheduleBackendFrameLoadRefresh();
+    try {
+      targetDocument.addEventListener('typo3:pagetree:refresh', handler);
+      this._backendSaveDocumentTargets.set(targetDocument, () => {
+        try {
+          targetDocument.removeEventListener('typo3:pagetree:refresh', handler);
+        } catch { /* target document may be gone */ }
+      });
+    } catch {
+      // Cross-origin frames deliberately stay opaque.
+    }
+  }
+
+  _addBackendFrameLoadTarget(iframe) {
+    if (!iframe || this._backendFrameLoadTargets.has(iframe) || !this._isBackendModuleFrame(iframe)) {
+      return;
+    }
+    this._backendFrameUrls.set(iframe, this._frameHref(iframe));
+    const handler = () => {
+      const previousUrl = this._backendFrameUrls.get(iframe) || '';
+      const currentUrl = this._frameHref(iframe);
+      this._backendFrameUrls.set(iframe, currentUrl);
+      this._registerBackendSaveSignalListeners();
+      if (this._shouldRefreshAfterFrameLoad(iframe, previousUrl, currentUrl)) {
+        this._scheduleBackendFrameLoadRefresh();
+      }
+    };
+    try {
+      iframe.addEventListener('load', handler);
+      this._backendFrameLoadTargets.set(iframe, () => iframe.removeEventListener('load', handler));
+    } catch {
+      // Detached frames can reject listener wiring.
+    }
+  }
+
+  _isBackendModuleFrame(iframe) {
+    if (!iframe || this._isKnownPreviewFrame(iframe)) {
+      return false;
+    }
+    const id = String(iframe.id || '').toLowerCase();
+    const name = String(iframe.name || '').toLowerCase();
+    const src = String(iframe.src || '');
+    return id === 'typo3-contentiframe'
+      || name === 'typo3-contentiframe'
+      || /\/record\/edit(?:\/contextual)?(?:[/?#]|$)/.test(src);
+  }
+
+  _shouldRefreshAfterFrameLoad(iframe, previousUrl, currentUrl) {
+    const id = String(iframe.id || '').toLowerCase();
+    const name = String(iframe.name || '').toLowerCase();
+    if (id === 'typo3-contentiframe' || name === 'typo3-contentiframe') {
+      return true;
+    }
+    return /\/record\/edit(?:\/contextual)?(?:[/?#]|$)/.test(previousUrl)
+      || /\/record\/edit(?:\/contextual)?(?:[/?#]|$)/.test(currentUrl)
+      || /[?&](justSaved|closed)=1(?:&|$)/.test(currentUrl);
+  }
+
+  _frameHref(iframe) {
+    try {
+      return iframe.contentWindow?.location?.href || iframe.src || '';
+    } catch {
+      return iframe.src || '';
+    }
+  }
+
+  _scheduleBackendFrameLoadRefresh() {
+    if (this._backendFrameLoadRefreshTimer) {
+      window.clearTimeout(this._backendFrameLoadRefreshTimer);
+    }
+    this._backendFrameLoadRefreshTimer = window.setTimeout(() => {
+      this._backendFrameLoadRefreshTimer = null;
+      this._refreshAfterBackendSave();
+    }, 120);
+  }
+
+  _resetBackendSaveMessageTargets() {
+    for (const cleanup of this._backendSaveMessageTargets.values()) {
+      cleanup();
+    }
+    this._backendSaveMessageTargets.clear();
+  }
+
+  _clearBackendSaveSignalListeners() {
+    this._resetBackendSaveMessageTargets();
+    for (const cleanup of this._backendSaveDocumentTargets.values()) {
+      cleanup();
+    }
+    this._backendSaveDocumentTargets.clear();
+    for (const cleanup of this._backendFrameLoadTargets.values()) {
+      cleanup();
+    }
+    this._backendFrameLoadTargets.clear();
   }
 
   /**
@@ -2041,17 +2199,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
     }
   }
 
-  async _refreshAfterVisualEditorSave() {
+  async _refreshAfterBackendSave() {
     if (this._refreshAfterSaveTimer) {
       window.clearTimeout(this._refreshAfterSaveTimer);
       this._refreshAfterSaveTimer = null;
     }
     await this._refreshIfPersistedChangesExist();
-    // The Visual Editor emits saveEnded after DataHandler returns, but
+    // Backend save signals are emitted after DataHandler returns, but
     // TYPO3 side effects such as page-tree/workspace overlays can still
-    // settle one tick later in the surrounding backend frames. Run the
-    // same cheap "has any workspace row?" check once more shortly after;
-    // only the positive path pays for the full item/detail refresh.
+    // settle one tick later in surrounding frames. Run the same cheap
+    // "has any workspace row?" check once more shortly after; only the
+    // positive path pays for the full item/detail refresh.
     this._refreshAfterSaveTimer = window.setTimeout(() => {
       this._refreshAfterSaveTimer = null;
       this._refreshIfPersistedChangesExist();
