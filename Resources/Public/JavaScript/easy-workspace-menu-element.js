@@ -1592,7 +1592,7 @@ class WebconEasyWorkspaceMenu extends LitElement {
         }
         try {
           const results = [];
-          for (const record of this._publishRecordsForItem(item)) {
+          for (const record of this._discardRecordsForItem(item)) {
             const response = await new AjaxRequest(ENDPOINTS.discard)
               .post(
                 { table: record.table, workspaceUid: record.workspaceUid },
@@ -2090,6 +2090,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
       unique.set(`${table}:${workspaceUid}`, { table, workspaceUid });
     }
     return Array.from(unique.values());
+  }
+
+  _discardRecordsForItem(item) {
+    const records = this._publishRecordsForItem(item);
+    const ownKey = `${item.table}:${item.workspaceUid}`;
+    return [
+      ...records.filter((record) => `${record.table}:${record.workspaceUid}` !== ownKey),
+      ...records.filter((record) => `${record.table}:${record.workspaceUid}` === ownKey),
+    ];
   }
 
   _toggle(item, checked) {

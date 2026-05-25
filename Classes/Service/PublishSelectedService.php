@@ -142,15 +142,19 @@ final readonly class PublishSelectedService
         if ($workspaceId <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.discardFromLive')]];
         }
-        // Defence-in-depth: confirm the workspace version belongs to
-        // the active workspace before handing it to DataHandler.
-        if (!$this->belongsToWorkspace($table, $workspaceUid, $workspaceId)) {
+        // Defence-in-depth: confirm the record belongs to the active
+        // workspace before handing it to DataHandler. The toolbar usually
+        // sends the concrete workspace uid, but frontend preview controls
+        // can report the rendered live uid. TYPO3's discard command accepts
+        // both, so resolve live uids to their workspace version first.
+        $resolvedWorkspaceUid = $this->resolveWorkspaceUidForDiscard($table, $workspaceUid, $workspaceId);
+        if ($resolvedWorkspaceUid <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
         }
 
         $cmd = [
             $table => [
-                $workspaceUid => [
+                $resolvedWorkspaceUid => [
                     'discard' => true,
                 ],
             ],
@@ -164,6 +168,70 @@ final readonly class PublishSelectedService
             'discarded' => 1,
             'errors' => Value::stringList($dataHandler->errorLog),
         ];
+    }
+
+    private function resolveWorkspaceUidForDiscard(string $table, int $uid, int $workspaceId): int
+    {
+        if ($workspaceId <= 0 || $uid <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return 0;
+        }
+
+        $deletedField = TcaUtility::hasColumn($table, 'deleted');
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $selectFields = ['uid', 't3ver_wsid', 't3ver_oid'];
+        if ($deletedField) {
+            $selectFields[] = 'deleted';
+        }
+        $row = $queryBuilder
+            ->select(...$selectFields)
+            ->from($table)
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
+        if (!is_array($row)) {
+            return 0;
+        }
+        if ($deletedField && Value::int($row['deleted'] ?? null) !== 0) {
+            return 0;
+        }
+
+        $rowWorkspaceId = Value::int($row['t3ver_wsid'] ?? null);
+        if ($rowWorkspaceId === $workspaceId) {
+            return Value::int($row['uid'] ?? null);
+        }
+        if ($rowWorkspaceId !== 0) {
+            return 0;
+        }
+
+        return $this->findWorkspaceVersionUid($table, Value::int($row['uid'] ?? null), $workspaceId);
+    }
+
+    private function findWorkspaceVersionUid(string $table, int $liveUid, int $workspaceId): int
+    {
+        if ($liveUid <= 0 || $workspaceId <= 0) {
+            return 0;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+
+        $row = $queryBuilder
+            ->select('uid')
+            ->from($table)
+            ->where(...$constraints)
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchAssociative();
+
+        return is_array($row) ? Value::int($row['uid'] ?? null) : 0;
     }
 
     /**
