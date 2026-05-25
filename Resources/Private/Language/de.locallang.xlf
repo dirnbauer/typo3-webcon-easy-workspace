@@ -1363,6 +1363,12 @@
         <target state="translated">live #{uid}</target>
       </segment>
     </unit>
+    <unit id="diff.template.noCurrentDiffs">
+      <segment>
+        <source>No field-level differences right now.</source>
+        <target state="translated">Aktuell keine Unterschiede auf Feldebene.</target>
+      </segment>
+    </unit>
     <unit id="discard.button.title">
       <segment>
         <source>Discard this change</source>
@@ -1817,6 +1823,12 @@
       <segment>
         <source>{count, plural, one {# edit} other {# edits}}</source>
         <target state="translated">{count, plural, one {# Bearbeitung} other {# Bearbeitungen}}</target>
+      </segment>
+    </unit>
+    <unit id="history.tab.currentChanges">
+      <segment>
+        <source>Current changes</source>
+        <target state="translated">Aktuelle Änderungen</target>
       </segment>
     </unit>
     <unit id="history.tab.contentElement">

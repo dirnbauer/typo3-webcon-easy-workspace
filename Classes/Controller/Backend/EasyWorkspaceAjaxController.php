@@ -177,9 +177,9 @@ final readonly class EasyWorkspaceAjaxController
             }
         }
 
-        // Keep the lightweight timeline only for the edit count in
-        // the modal header. The actual history view below uses TYPO3
-        // core's native record_history module for the selected record.
+        // Timeline is built from TYPO3 core's RecordHistory service.
+        // The Fluid template renders it without embedding the full
+        // standalone record_history module chrome in the modal.
         $timeline = $this->historyTimelineService->build($table, $workspaceUid);
 
         $view = $this->viewFactory->create(new ViewFactoryData(
@@ -189,13 +189,15 @@ final readonly class EasyWorkspaceAjaxController
         $view->assignMultiple($payload + [
             'editUrl' => $editUrl,
             'timeline' => $timeline,
-            'recordHistoryUrl' => $this->buildRecordHistoryUrl($table, $workspaceUid, $returnUrl),
             'rollbackEnabled' => true,
             'labels' => [
                 'workspaceUid' => $this->localizationService->translate('diff.template.workspaceUid', ['uid' => $payload['workspaceUid']]),
                 'liveUid' => $this->localizationService->translate('diff.template.liveUid', ['uid' => $payload['liveUid']]),
                 'historyCount' => $this->localizationService->translate('history.editCount', ['count' => count($timeline)]),
-                'recordHistoryFrameTitle' => $this->localizationService->translate('history.frame.record'),
+                'currentChanges' => $this->localizationService->translate('history.tab.currentChanges'),
+                'recordHistory' => $this->localizationService->translate('history.tab.record'),
+                'historyAria' => $this->localizationService->translate('history.aria'),
+                'noCurrentDiffs' => $this->localizationService->translate('diff.template.noCurrentDiffs'),
                 'rollbackLinearTitle' => $this->localizationService->translate('history.rollback.linearTitle'),
                 'rollbackLinear' => $this->localizationService->translate('history.rollback.linear'),
                 'rollbackFieldTitle' => $this->localizationService->translate('history.rollback.fieldTitle'),
@@ -206,23 +208,6 @@ final readonly class EasyWorkspaceAjaxController
         ]);
 
         return new HtmlResponse($view->render());
-    }
-
-    private function buildRecordHistoryUrl(string $table, int $uid, string $returnUrl): string
-    {
-        $params = [
-            'element' => sprintf('%s:%d', $table, $uid),
-            'historyEntry' => '',
-        ];
-        if ($returnUrl !== '') {
-            $params['returnUrl'] = $returnUrl;
-        }
-
-        try {
-            return (string)$this->backendUriBuilder->buildUriFromRoute('record_history', $params);
-        } catch (\Throwable) {
-            return '';
-        }
     }
 
     /**

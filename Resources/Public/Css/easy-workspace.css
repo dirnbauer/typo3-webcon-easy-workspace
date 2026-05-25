@@ -1583,6 +1583,17 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     flex-wrap: nowrap;
 }
 
+dialog.wew-diff-modal-shell {
+    width: min(80vw, 1440px);
+    max-width: calc(100vw - 2rem);
+    max-height: min(82vh, 900px);
+}
+
+.wew-diff-modal-shell .modal-body {
+    padding: 0;
+    overflow: hidden;
+}
+
 .wew-diff-modal-shell .modal-header-title {
     display: -webkit-box;
     flex: 1 1 auto;
@@ -1618,19 +1629,34 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 }
 
 .wew-diff-modal {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: calc(min(82vh, 900px) - 58px);
     font-size: 13px;
     color: var(--typo3-text-color-base, var(--bs-body-color));
 }
 .wew-diff-modal__head {
-    margin: 0 0 1rem 0;
-    padding: 0 0 .65rem 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 1rem;
+    margin: 0;
+    padding: 1rem 1.25rem .85rem;
     border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+}
+.wew-diff-modal__summary {
+    min-width: 0;
 }
 .wew-diff-modal__title {
     margin: 0 0 .15rem 0;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .wew-diff-modal__meta {
     margin: 0;
@@ -1692,28 +1718,34 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     font-size: 12px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
 }
-.wew-diff-modal__foot {
-    margin-top: 1.25rem;
-    padding-top: .85rem;
-    border-top: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    text-align: right;
+.wew-diff-modal__edit {
+    justify-self: end;
+    white-space: nowrap;
 }
-
 .wew-history-tabs {
-    min-height: min(72vh, 760px);
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
 }
-.wew-history-tabs__frame {
-    display: block;
-    width: 100%;
-    min-height: min(72vh, 760px);
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    border-radius: 4px;
+.wew-history-tabs > .nav-tabs {
+    flex: 0 0 auto;
+    padding: .75rem 1.25rem 0;
     background: var(--typo3-component-bg, var(--bs-body-bg));
 }
-
+.wew-history-tabs > .nav-tabs .nav-link {
+    font-size: 12px;
+    font-weight: 600;
+}
+.wew-history-tabs__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem 1.25rem 1.25rem;
+}
 /* ---- History panel ---- */
 .wew-diff-modal__panel {
-    padding-top: 1rem;
+    padding: 0;
 }
 
 /* ---- History timeline ---- */
@@ -1881,6 +1913,10 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     justify-content: center;
     transition: background-color .12s ease, color .12s ease, border-color .12s ease, transform .12s ease;
 }
+.wew-history__rollback-field :is(.icon, typo3-backend-icon, svg) {
+    width: 14px;
+    height: 14px;
+}
 .wew-history__rollback-field:hover,
 .wew-history__rollback-field:focus-visible {
     background: var(--typo3-badge-warning-bg);
@@ -1888,6 +1924,38 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     color: var(--typo3-badge-warning-color);
     outline: none;
     transform: scale(1.08);
+}
+
+@media (max-width: 900px) {
+    dialog.wew-diff-modal-shell {
+        width: calc(100vw - 1rem);
+        max-height: calc(100vh - 1rem);
+    }
+
+    .wew-diff-modal {
+        max-height: calc(100vh - 4.75rem);
+    }
+
+    .wew-diff-modal__head {
+        grid-template-columns: 1fr;
+        gap: .75rem;
+    }
+
+    .wew-diff-modal__title {
+        white-space: normal;
+    }
+
+    .wew-diff-modal__edit {
+        justify-self: start;
+    }
+
+    .wew-history-tabs__content {
+        padding: .85rem;
+    }
+
+    .wew-history-tabs > .nav-tabs {
+        padding-inline: .85rem;
+    }
 }
 
 /* ---- Testing reports ---- */

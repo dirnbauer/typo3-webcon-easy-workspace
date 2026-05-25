@@ -24,6 +24,7 @@ import '@typo3/backend/multi-record-selection.js';
 
 const root = document.querySelector('[data-wew-module]');
 const LABELS = parseLabelMap(root);
+const HISTORY_ROLLBACK_ENDPOINT = TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '';
 
 if (root) {
   init(root);
@@ -249,6 +250,7 @@ function onDiff(btn, diffEndpoint) {
     additionalCssClasses: ['wew-diff-modal-shell'],
     ajaxCallback: (modal) => {
       initHistoryTabs(modal);
+      initRollbackButtons(modal, { table, workspaceUid, title });
     },
   });
 }
@@ -274,6 +276,8 @@ function initHistoryTabs(container) {
 
     panels.forEach((panel) => {
       const active = panel.dataset.wewHistoryPanel === name;
+      panel.classList.toggle('active', active);
+      panel.classList.toggle('show', active);
       panel.hidden = !active;
       if (active) {
         const frame = panel.querySelector('iframe[data-src]');
@@ -285,17 +289,70 @@ function initHistoryTabs(container) {
   };
 
   tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'record'));
+    tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'current'));
     tab.addEventListener('keydown', (event) => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
       event.preventDefault();
       const direction = event.key === 'ArrowRight' ? 1 : -1;
       const nextIndex = (index + direction + tabs.length) % tabs.length;
-      activate(tabs[nextIndex].dataset.wewHistoryTab || 'record', true);
+      activate(tabs[nextIndex].dataset.wewHistoryTab || 'current', true);
     });
   });
 
-  activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'record');
+  activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'current');
+}
+
+function initRollbackButtons(modal, item) {
+  if (!HISTORY_ROLLBACK_ENDPOINT) return;
+  modal.addEventListener('click', async (event) => {
+    const btn = event.target instanceof Element ? event.target.closest('[data-wew-rollback]') : null;
+    if (!btn || !modal.contains(btn)) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const mode = btn.dataset.wewRollback;
+    const historyUid = parseInt(btn.dataset.historyUid || '0', 10);
+    const field = btn.dataset.field || '';
+    if ((mode !== 'linear' && mode !== 'field') || !Number.isFinite(historyUid) || historyUid <= 0) {
+      Notification.error(label('rollback.failedTitle'), formatMessage(label('rollback.missingData'), { mode: mode || '-', historyUid: btn.dataset.historyUid || '-' }));
+      return;
+    }
+    if (mode === 'field' && field === '') {
+      Notification.error(label('rollback.failedTitle'), label('rollback.noField'));
+      return;
+    }
+
+    const confirmMessage = mode === 'field'
+      ? formatMessage(label('rollback.confirmField'), { title: item.title || item.workspaceUid })
+      : formatMessage(label('rollback.confirmLinear'), { title: item.title || item.workspaceUid });
+    if (!window.confirm(confirmMessage)) return;
+
+    btn.disabled = true;
+    try {
+      const response = await new AjaxRequest(HISTORY_ROLLBACK_ENDPOINT).post(
+        {
+          table: item.table,
+          uid: item.workspaceUid,
+          historyUid,
+          mode,
+          field,
+        },
+        { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
+      );
+      const result = await response.resolve();
+      if (result?.success) {
+        Notification.success(label('rollback.successTitle'), mode === 'field' ? formatMessage(label('rollback.successField'), { field }) : label('rollback.successLinear'), 4);
+        modal.hideModal();
+        window.location.reload();
+        return;
+      }
+      Notification.error(label('rollback.errorTitle'), result?.error || label('error.unknown'));
+      btn.disabled = false;
+    } catch (error) {
+      Notification.error(label('rollback.failedTitle'), error?.message || label('error.unexpected'));
+      btn.disabled = false;
+    }
+  });
 }
 
 async function onPreview(btn, endpoint) {

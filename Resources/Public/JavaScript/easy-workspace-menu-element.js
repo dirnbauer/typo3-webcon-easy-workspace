@@ -1817,6 +1817,8 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
       panels.forEach((panel) => {
         const active = panel.dataset.wewHistoryPanel === name;
+        panel.classList.toggle('active', active);
+        panel.classList.toggle('show', active);
         panel.hidden = !active;
         if (active) {
           const frame = panel.querySelector('iframe[data-src]');
@@ -1828,17 +1830,17 @@ class WebconEasyWorkspaceMenu extends LitElement {
     };
 
     tabs.forEach((tab, index) => {
-      tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'record'));
+      tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'current'));
       tab.addEventListener('keydown', (event) => {
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
         event.preventDefault();
         const direction = event.key === 'ArrowRight' ? 1 : -1;
         const nextIndex = (index + direction + tabs.length) % tabs.length;
-        activate(tabs[nextIndex].dataset.wewHistoryTab || 'record', true);
+        activate(tabs[nextIndex].dataset.wewHistoryTab || 'current', true);
       });
     });
 
-    activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'record');
+    activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'current');
   }
 
   /**
