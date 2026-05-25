@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please open a private security advisory on the [GitHub Security tab](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new) — do not open a public issue for security reports.
+Please open a private security advisory on the [GitHub Security tab](https://github.com/webconsulting-at/typo3-webcon-easy-workspace/security/advisories/new) — do not open a public issue for security reports.
 
 ## Audit summary (updated 2026-05-18)
 
