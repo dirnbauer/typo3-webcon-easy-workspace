@@ -2,6 +2,16 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- News is now scoped to a single article on its **detail view** (the Visual Editor / preview page, or its edit form) — the news record plus its linked content elements — instead of scanning every news record stored on the selected page or folder. Driven by `tx_news_pi1[news]` in the preview iframe (and the news edit-form URL); still gated by `enableNewsBundles`.
+
+### Fixed
+
+- Toolbar dropdown was rendered behind the module content iframe after switching into a workspace without reloading. The menu is now (re)converted to a native top-layer popover when its toolbar item is injected by a topbar re-render, so it always paints above the iframe.
+
 ## [14.0.0] - 2026-05-24
 
 ### Added

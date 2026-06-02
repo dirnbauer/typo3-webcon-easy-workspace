@@ -10,8 +10,7 @@ When an editor opens the toolbar dropdown or the Easy Workspace module while edi
 - every changed content element on that page
 - every changed inline child record attached to the page or a content element
 - every changed file reference attached to the page or a content element
-- every changed news record stored on that page, when EXT:news is installed
-- for each news, every linked content element, including workspace changes on those content elements
+- *(with EXT:news)* on a news article's **detail view** — its Visual Editor / preview page, or its edit form — the dropdown instead scopes to that single article: the news record plus its linked content elements (`tx_news_related_news`) and their workspace changes. News is not scanned off pages or folders.
 - standalone file metadata records (`sys_file_metadata`) pending in the active workspace
 - protection against stale workspace dependency references such as missing Content Blocks child rows
 
@@ -48,7 +47,7 @@ element remains a separate compact entry point.
 - `typo3/cms-workspaces`
 - `typo3/cms-fluid`
 - `typo3/cms-frontend`
-- *Optional:* `georgringer/news` — enables news + linked content-element bundles
+- *Optional:* `georgringer/news` — enables the per-article news scope on a news detail view (the news record + its linked content elements)
 - *Optional:* `friendsoftypo3/visual-editor` — enables the per-row eye icon to scroll & outline a content element inside the rendered page. **The dropdown works without it** — the eye gracefully falls back to `typo3/cms-viewpage`'s preview iframe (`#tx_viewpage_iframe`), and if no iframe is reachable at all the eye click shows a TYPO3 Notification telling the editor which module to open.
 
 ## Installation
@@ -101,8 +100,8 @@ In a custom workspace it stays visible, even when the current page has no
 pending changes.
 
 The backend module follows the selected page from the page tree. If it is
-opened for a news context, it can also request the existing news bundle API via
-`newsUid`, so news records and their related content elements use the same
+opened for a news context, it can also request the per-article news scope via
+`newsUid`, so a news record and its related content elements use the same
 selection and publish behavior as page content.
 
 ### Backend module layout
@@ -239,10 +238,11 @@ state and, as a fallback, from visible backend/iframe URL parameters such as
 
 On the PHP side, `PendingItemsService` applies the language filter to page-bound
 workspace-aware tables that expose a TCA language field (`ctrl.languageField`,
-falling back to `sys_language_uid`). This affects page content, inline child
-records and news bundles. Translated page and news records are resolved through
-their TCA translation parent field (`ctrl.transOrigPointerField`, falling back
-to `l10n_parent`) before the item is built, so page/news property changes follow
+falling back to `sys_language_uid`). This affects page content and inline child
+records, and — on a news detail view — the news record and its linked content
+elements. Translated page and news records are resolved through their TCA
+translation parent field (`ctrl.transOrigPointerField`, falling back to
+`l10n_parent`) before the item is built, so page/news property changes follow
 the same selected-language rule as content elements.
 
 Standalone `sys_file_metadata` rows are intentionally not hidden by the selected
@@ -270,7 +270,7 @@ Every visible affordance is gated by a TSconfig flag — defaults ON, switch to 
 | Rendering | `enableHiddenBadge` | `1` | "Hidden" badge + diagonal-stripe thumbnail overlay. |
 | Rendering | `showHidden` | `1` | When `0`, hidden records are filtered out **server-side**. |
 | Rendering | `maxItems` | `200` | Hard cap on rows per request. |
-| Scope | `enableNewsBundles` | `1` | Also list news on the page + their linked content elements. |
+| Scope | `enableNewsBundles` | `1` | Scope the dropdown to a single news article (record + linked content elements) on its detail view. `0` disables news handling. |
 | User settings | `userEnabledDefault` | `1` | Default for the personal "Use Easy Workspace" switch. |
 | User settings | `showSubelementsInToolbar` | `0` | Default for showing related child rows in the top-right dropdown. **Off** by default so the toolbar stays compact; editors opt in via User Settings. |
 | User settings | `showSubelementsInModule` | `1` | Default for showing related child rows in the backend module. |

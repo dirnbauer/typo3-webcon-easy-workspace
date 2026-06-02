@@ -10,3 +10,4 @@
 /.phpunit.result.cache
 /.phpstan.result.cache
 node_modules/
+/.claude/settings.local.json

@@ -147,11 +147,21 @@ class WebconEasyWorkspaceMenu extends LitElement {
     const dropdownHost = this.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
       || this.closest('.toolbar-item');
     if (dropdownHost) {
-      dropdownHost.addEventListener('shown.bs.dropdown', () => {
-        this._refresh();
-      });
-      // Belt + braces: also refresh on a direct click on the toggle.
+      const menu = this.closest('.dropdown-menu');
       const toggle = dropdownHost.querySelector('.dropdown-toggle');
+      // The toolbar menu must be a native top-layer popover so it paints
+      // above the module content iframe. See _ensurePopoverDropdown for
+      // why we sometimes have to do this conversion ourselves.
+      this._ensurePopoverDropdown(dropdownHost, toggle, menu);
+      // Refresh when the menu opens. Native popovers fire `toggle`; the
+      // legacy Bootstrap `shown.bs.dropdown` stays as a fallback.
+      if (menu?.hasAttribute('popover')) {
+        menu.addEventListener('toggle', (event) => {
+          if (event.newState === 'open') this._refresh();
+        });
+      }
+      dropdownHost.addEventListener('shown.bs.dropdown', () => this._refresh());
+      // Belt + braces: also refresh on a direct click on the toggle.
       toggle?.addEventListener('click', () => this._refresh());
     }
 
@@ -164,6 +174,50 @@ class WebconEasyWorkspaceMenu extends LitElement {
 
     this._backendSaveMessageListener = (event) => this._onBackendSaveMessage(event);
     this._registerBackendSaveSignalListeners();
+  }
+
+  /**
+   * Make this toolbar item's dropdown a native top-layer popover,
+   * mirroring TYPO3 core's @typo3/backend/dropdown.js convert().
+   *
+   * Why we have to do it ourselves: core runs convertAll() exactly once,
+   * on DocumentService.ready() at initial page load, and never again —
+   * dropdown.js has no t3-topbar-update listener and no MutationObserver.
+   * Our toolbar item is gated by EasyWorkspaceToolbarItem::checkAccess(),
+   * so it is absent from the DOM while the editor is in the Live
+   * workspace and only gets injected when they switch into a workspace
+   * (id > 0) and the topbar re-renders. That fresh toggle therefore
+   * arrives *after* convertAll() ran, stays an unconverted Bootstrap
+   * toggle, and the menu renders in normal flow — where the module
+   * content iframe paints over it. (Reloading recovers it because the
+   * reload re-runs convertAll().) connectedCallback fires precisely when
+   * the re-rendered item enters the DOM, so converting here closes the
+   * gap. The anchor positioning itself is class-based CSS
+   * (.dropdown-toggle { anchor-name: --dropdown }) and needs nothing.
+   *
+   * Idempotent: toggles core already converted carry `popovertarget`, so
+   * the initial-load path and any ordering vs convertAll() are safe.
+   */
+  _ensurePopoverDropdown(host, toggle, menu) {
+    if (!toggle || !menu) return;
+    if (toggle.hasAttribute('popovertarget') || !toggle.hasAttribute('data-bs-toggle')) {
+      return;
+    }
+    if (!menu.id) {
+      menu.id = `wew-toolbar-menu-${Math.random().toString(36).slice(2, 10)}`;
+    }
+    menu.setAttribute('popover', '');
+    // Scope the shared `--dropdown` anchor name to this item, exactly as
+    // core does (it adds `.dropdown` to the toggle's parent element).
+    (toggle.closest('.dropdown') || toggle.parentElement || host)?.classList.add('dropdown');
+    toggle.setAttribute('popovertarget', menu.id);
+    for (const attr of [
+      'data-bs-toggle', 'data-bs-target', 'data-bs-offset', 'data-bs-auto-close',
+      'data-bs-reference', 'data-bs-display', 'data-bs-boundary',
+      'aria-haspopup', 'aria-expanded',
+    ]) {
+      toggle.removeAttribute(attr);
+    }
   }
 
   disconnectedCallback() {
@@ -2349,6 +2403,15 @@ class WebconEasyWorkspaceMenu extends LitElement {
       return { pageUid: configuredPageUid, newsUid: 0 };
     }
 
+    // News detail context wins over the page: when the editor is on a
+    // single news article — its frontend detail view in the Visual
+    // Editor / preview, or its FormEngine edit form — scope the dropdown
+    // to that one article (forNews) instead of the surrounding page.
+    const newsUid = this._detectNewsUid();
+    if (newsUid > 0) {
+      return { pageUid: 0, newsUid };
+    }
+
     // Primary source: v14's ModuleStateStorage tracks the currently
     // selected page in the Web module group (id stored in sessionStorage,
     // mutated whenever the page tree selection changes).
@@ -2375,17 +2438,76 @@ class WebconEasyWorkspaceMenu extends LitElement {
       }
     }
 
-    // News context: edit[tx_news_domain_model_news][N]=edit in URL.
-    let newsUid = 0;
-    for (const key of new URLSearchParams(window.location.search).keys()) {
-      const match = key.match(/^edit\[tx_news_domain_model_news\]\[(\d+)\]$/);
-      if (match) {
-        newsUid = parseInt(match[1], 10);
-        break;
+    return { pageUid: pageUid > 0 ? pageUid : 0, newsUid: 0 };
+  }
+
+  /**
+   * Detect the news article the editor is currently working on, so the
+   * dropdown can scope to that single article (its record + the content
+   * elements linked via tx_news_related_news) instead of a page.
+   *
+   * News records live in sysfolders, not on content pages, so there is
+   * no reliable "news on this page" — the meaningful context is the news
+   * detail view. We read the uid from, in order:
+   *   1. the toolbar's own top-frame URL (covers the module variant), then
+   *   2. any reachable content / Visual-Editor preview iframe — either a
+   *      news detail plugin URL (tx_news_*[news]=N) or an open news edit
+   *      form (edit[tx_news_domain_model_news][N]).
+   *
+   * Gated by the `enableNewsBundles` TSconfig flag (kept for back-compat;
+   * it now toggles this per-article news scope). Returns 0 when the flag
+   * is off or nothing matches → the caller falls back to page mode.
+   *
+   * Caveat: fully slug-routed news detail URLs don't expose the uid, so
+   * auto-detection there is a no-op; editors still get the scoped publish
+   * by opening the news record itself (its edit form is matched above).
+   */
+  _detectNewsUid() {
+    if (!this._configBool('enableNewsBundles', true)) {
+      return 0;
+    }
+    const fromTop = this._matchNewsUid(window.location.search);
+    if (fromTop > 0) {
+      return fromTop;
+    }
+    for (const iframe of this._collectIframes()) {
+      let url = '';
+      try {
+        url = iframe.contentWindow?.location?.href || '';
+      } catch {
+        url = '';
+      }
+      if (!url) {
+        url = iframe.src || '';
+      }
+      const uid = this._matchNewsUid(url);
+      if (uid > 0) {
+        return uid;
       }
     }
+    return 0;
+  }
 
-    return { pageUid: pageUid > 0 ? pageUid : 0, newsUid };
+  /**
+   * Extract a news uid from a URL string. Matches both the news detail
+   * plugin signature (tx_news_pi1[news]=N — also alternate plugin
+   * namespaces and URL-encoded brackets) and an open FormEngine news
+   * edit form (edit[tx_news_domain_model_news][N]). Returns 0 if neither.
+   */
+  _matchNewsUid(url) {
+    if (!url) {
+      return 0;
+    }
+    const str = String(url);
+    const detail = str.match(/tx_news_[^=&]*?(?:\[|%5B)news(?:\]|%5D)=(\d+)/i);
+    if (detail) {
+      return parseInt(detail[1], 10) || 0;
+    }
+    const edit = str.match(/edit(?:\[|%5B)tx_news_domain_model_news(?:\]|%5D)(?:\[|%5B)(\d+)(?:\]|%5D)/i);
+    if (edit) {
+      return parseInt(edit[1], 10) || 0;
+    }
+    return 0;
   }
 
   _shouldShowSubelementDetails() {

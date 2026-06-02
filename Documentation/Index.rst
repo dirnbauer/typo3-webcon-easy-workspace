@@ -44,8 +44,8 @@ Features
 * Language-aware page and record scoping for translated workspaces.
 * Duplicate suppression for nested inline workspace records.
 * Related file references and inline child records below their parent row.
-* News bundle support through the same API when EXT:news is installed,
-  including related content elements attached to news records.
+* Per-article news scope on a news detail view when EXT:news is installed:
+  the news record plus its linked content elements.
 * Stale workspace dependency guard for missing inline child references.
 * TYPO3-processed preview thumbnails for image-bearing rows.
 * Personal user settings for the global feature switch and related-record
@@ -118,17 +118,53 @@ Standalone file metadata is the exception to the page scope: pending
 have no page/content parent but are still publishable workspace records.
 
 The JavaScript detects the page UID from TYPO3's module state and falls
-back to the current URL's ``id`` parameter. For news records it also checks
-the backend edit URL pattern ``edit[tx_news_domain_model_news][N]=edit``.
-The backend module can pass an explicit ``newsUid`` and then requests the
-existing ``forNews`` API path so news property changes and related content
-elements are shown together.
+back to the current URL's ``id`` parameter. A news article takes precedence
+over the page when the editor is on its detail view: the client reads the
+news UID from a news detail plugin URL (``tx_news_pi1[news]=N``) in the
+Visual Editor / preview iframe, or from an open news edit form
+(``edit[tx_news_domain_model_news][N]``), and then requests the ``forNews``
+API path so the news record and its linked content elements are shown
+together. The backend module can also pass an explicit ``newsUid``.
+Auto-detection is gated by ``enableNewsBundles``; fully slug-routed news
+URLs do not expose the UID, so there the scope is reached via the edit form.
 
 The selected language is read from TYPO3 module state first. If no
 language is available there, the JavaScript checks visible backend and
 preview-frame URL parameters such as ``language``, ``sys_language_uid``
 and ``L``. The value is sent to the
 ``webcon_easy_workspace_items`` AJAX route as ``languageUid``.
+
+..  _news-handling:
+
+News handling
+=============
+
+News records live in storage folders, not on the content page you preview,
+so Easy Workspace does **not** scan news off the selected page or folder.
+Instead it scopes to a single news **article on its detail view** — the place
+an editor actually works on one news item.
+
+The per-article scope activates when:
+
+* the **Visual Editor / preview** iframe shows a news detail
+  (``tx_news_pi1[news]=N`` in the frontend URL), or
+* a **news record is open in the FormEngine edit form**
+  (``edit[tx_news_domain_model_news][N]``).
+
+In that scope the dropdown lists the news record plus the content elements
+linked to it through ``tx_news_related_news`` — together with their workspace
+changes — and publishes them as one unit. On any other page the dropdown shows
+page content only.
+
+The feature is gated by the :confval:`enableNewsBundles` setting and has no
+effect when EXT:news is not installed.
+
+..  note::
+
+    Fully slug-routed news detail URLs do not expose the news UID to the
+    preview iframe, so auto-detection cannot fire there. Editors still get the
+    per-article scope by opening the news record itself — its edit-form URL is
+    detected as described above.
 
 ..  _language-aware-listing:
 
@@ -144,9 +180,10 @@ When a language UID is known, ``PendingItemsService`` adds that language
 constraint to page-bound workspace-aware listing queries:
 
 * page content records,
-* inline child records such as Content Blocks collection items,
-* news records stored on the page,
-* content elements linked to news records.
+* inline child records such as Content Blocks collection items.
+
+On a news detail view the same language-aware scoping applies to the news
+record and its linked content elements (resolved per article, not by page).
 
 Translated page and news property records are resolved before the item is
 built. The service uses ``ctrl.transOrigPointerField`` and falls back to

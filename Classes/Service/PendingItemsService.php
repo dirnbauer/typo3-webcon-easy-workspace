@@ -141,18 +141,12 @@ final readonly class PendingItemsService
             );
         }
 
-        $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
-        $enableNews = !isset($config['enableNewsBundles']) || (bool)$config['enableNewsBundles'];
-        if ($hasNews && $enableNews && count($items) < $maxItems) {
-            foreach ($this->resolveNewsItemsOnPage($pageUid, $workspaceId, $mode, $config, $languageUid) as $bundle) {
-                if (count($items) >= $maxItems) break;
-                $items[] = $bundle['news']->toArray();
-                foreach ($bundle['contentElements'] as $ceItem) {
-                    $items[] = $ceItem->toArray();
-                    if (count($items) >= $maxItems) break 2;
-                }
-            }
-        }
+        // News is intentionally NOT scanned off the page. News records
+        // live in sysfolders, not on the content page being previewed,
+        // so listing them by pid surfaces them in the wrong place (and
+        // floods the list on a folder). News uses a per-article scope
+        // (forNews) driven by the news detail view instead — see
+        // WebconEasyWorkspaceMenu._detectNewsUid() on the client.
         if (count($items) < $maxItems) {
             $items = $this->withStandaloneWorkspaceItems($items, $workspaceId, $config, $maxItems);
         }
@@ -167,7 +161,7 @@ final readonly class PendingItemsService
             'items' => $items,
             'itemGroups' => $this->groupItems($items),
             'changedItemGroups' => $this->groupItems($this->changedItems($items)),
-            'hasNews' => $hasNews,
+            'hasNews' => $this->tcaSchemaFactory->has('tx_news_domain_model_news'),
             'mode' => $mode,
         ];
     }
@@ -244,12 +238,6 @@ final readonly class PendingItemsService
         $pageRecordUid = $this->resolvePageRecordUidForLanguage($pageUid, $workspaceId, $languageUid);
         $hasChanges = ($pageRecordUid > 0 && $this->hasWorkspaceVersionForRecord('pages', $pageRecordUid, $workspaceId, $languageUid))
             || $this->hasChangedRowsRelated('tt_content', 'pid', $pageUid, $workspaceId, $languageUid);
-
-        $hasNews = $this->tcaSchemaFactory->has('tx_news_domain_model_news');
-        $enableNews = !isset($config['enableNewsBundles']) || (bool)$config['enableNewsBundles'];
-        if (!$hasChanges && $hasNews && $enableNews) {
-            $hasChanges = $this->hasChangedRowsRelated('tx_news_domain_model_news', 'pid', $pageUid, $workspaceId, $languageUid);
-        }
 
         if (!$hasChanges && $pageRecordUid > 0) {
             $pageRow = $this->resolveRecordRow('pages', $pageRecordUid, $workspaceId);
@@ -1532,114 +1520,6 @@ final readonly class PendingItemsService
             }
         }
         return $rows;
-    }
-
-    /**
-     * @param array<string, mixed>             $config
-     * @param list<array{0: string, 1: string}> $orderBy       Defaults to [['sorting','ASC']] to match the original behaviour for non-tt_content tables.
-     * @param array<int, string>               $columnLabels  colPos → name map. Only relevant for tt_content; ignored for other tables.
-     * @return list<PendingItem>
-     */
-    private function resolveChangedRelated(
-        string $table,
-        string $field,
-        int $parentUid,
-        int $workspaceId,
-        array $config = [],
-        array $orderBy = [['sorting', 'ASC']],
-        array $columnLabels = [],
-        ?int $languageUid = null,
-    ): array {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-
-        $constraints = [
-            $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($parentUid, Connection::PARAM_INT)),
-            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-            $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-        ];
-        $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
-        if ($languageConstraint !== null) {
-            $constraints[] = $languageConstraint;
-        }
-
-        $queryBuilder
-            ->select('*')
-            ->from($table)
-            ->where(...$constraints);
-        foreach ($orderBy as $i => [$column, $direction]) {
-            if ($i === 0) {
-                $queryBuilder->orderBy($column, $direction);
-            } else {
-                $queryBuilder->addOrderBy($column, $direction);
-            }
-        }
-
-        $result = $queryBuilder->executeQuery();
-        $items = [];
-        while ($row = $result->fetchAssociative()) {
-            $item = $this->buildItem($table, $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
-            if ($item !== null) {
-                $items[] = $item;
-            }
-        }
-        return $items;
-    }
-
-    /**
-     * @param array<string, mixed> $config
-     * @return list<array{news: PendingItem, contentElements: list<PendingItem>}>
-     */
-    private function resolveNewsItemsOnPage(int $pageUid, int $workspaceId, string $mode, array $config = [], ?int $languageUid = null): array
-    {
-        if ($mode === self::MODE_ALL) {
-            $newsRows = $this->listAllRecordsOnPage('tx_news_domain_model_news', $pageUid, $workspaceId, [['datetime', 'DESC'], ['uid', 'ASC']], $languageUid);
-        } else {
-            $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_news_domain_model_news');
-            $queryBuilder->getRestrictions()->removeAll();
-            $constraints = [
-                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            ];
-            $languageConstraint = $this->languageConstraint($queryBuilder, 'tx_news_domain_model_news', $languageUid);
-            if ($languageConstraint !== null) {
-                $constraints[] = $languageConstraint;
-            }
-            $result = $queryBuilder
-                ->select('*')
-                ->from('tx_news_domain_model_news')
-                ->where(...$constraints)
-                ->executeQuery();
-            $newsRows = [];
-            while ($row = $result->fetchAssociative()) {
-                $newsRows[] = Value::stringKeyArray($row);
-            }
-        }
-
-        $bundles = [];
-        foreach ($newsRows as $newsRow) {
-            $newsItem = $this->buildItem('tx_news_domain_model_news', $newsRow, isPrimary: true, config: $config);
-            if ($newsItem === null) {
-                continue;
-            }
-            $liveUid = $newsItem->liveUid;
-            $childItems = [];
-            if ($mode === self::MODE_ALL) {
-                foreach ($this->listAllRelatedRecords('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, [['sorting', 'ASC']], $languageUid) as $ceRow) {
-                    $ceItem = $this->buildItem('tt_content', $ceRow, isPrimary: false, config: $config);
-                    if ($ceItem !== null) {
-                        $childItems[] = $ceItem;
-                    }
-                }
-            } else {
-                foreach ($this->resolveChangedRelated('tt_content', 'tx_news_related_news', $liveUid, $workspaceId, $config, languageUid: $languageUid) as $ceItem) {
-                    $childItems[] = $ceItem;
-                }
-            }
-            $bundles[] = ['news' => $newsItem, 'contentElements' => $childItems];
-        }
-        return $bundles;
     }
 
     /**

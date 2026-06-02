@@ -152,8 +152,11 @@ All keys live below ``options.webcon_easy_workspace``.
     :type: bool
     :Default: 1
 
-    Includes news records and linked content elements when EXT:news is
-    installed.
+    When EXT:news is installed, scopes the dropdown to a single news
+    article (the news record plus its linked content elements) on its
+    detail view — the Visual Editor / preview page or its edit form.
+    News is not scanned off pages or folders. Set to ``0`` to disable
+    news handling entirely.
 
 ..  confval:: enableHoverHighlight
 
