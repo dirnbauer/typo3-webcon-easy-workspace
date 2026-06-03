@@ -4,13 +4,25 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Backend screenshots in ``Documentation/Images/`` (toolbar, module, user settings) with figures in ``Documentation/Screenshots.rst``.
+
 ### Changed
 
-- News is now scoped to a single article on its **detail view** (the Visual Editor / preview page, or its edit form) — the news record plus its linked content elements — instead of scanning every news record stored on the selected page or folder. Driven by `tx_news_pi1[news]` in the preview iframe (and the news edit-form URL); still gated by `enableNewsBundles`.
+- News is scoped to a single article on its **detail view** (Visual Editor / preview page, or FormEngine edit form): the news record plus linked content elements, instead of scanning every news record on the selected page or folder. Driven by `tx_news_pi1[news]` in the preview iframe and the news edit-form URL; gated by `enableNewsBundles`.
+- **Documentation:** Complete rewrite of `README.md` and the TYPO3 manual under `Documentation/` (feature inventory, architecture, security posture, screenshot guide).
+- **Security:** Removed standalone `SECURITY.md`; security reporting and audit summary now live in the README and manual. Re-audited controllers, services, AJAX routes, and JavaScript (2026-06-03): prior high/medium findings remain fixed; no new critical issues.
 
 ### Fixed
 
-- Toolbar dropdown was rendered behind the module content iframe after switching into a workspace without reloading. The menu is now (re)converted to a native top-layer popover when its toolbar item is injected by a topbar re-render, so it always paints above the iframe.
+- Toolbar dropdown was rendered behind the module content iframe after switching into a workspace without reloading. The menu is now (re)converted to a native top-layer popover when its toolbar item is injected by a topbar re-render.
+
+### Security (audit 2026-06-03)
+
+- **Verified:** Table allow-list (`WorkspaceTablePolicy`), active-workspace checks before publish/discard cmdmaps, `enabled` / `enableRevert` / `enablePreviewLink` server-side gates, parameterized SQL, generic AJAX error messages, TYPO3 v14 `discard` command, stale workspace dependency listener, POST-only mutating routes, backend authentication and route tokens on all endpoints.
+- **Accepted backend scope:** `items` / `hasChanges` / `diff` do not call `readPageAccess()` explicitly; TYPO3 backend session and record-level APIs still apply. Optional hardening: add page/news access checks before listing or diffing if your site requires stricter IDOR prevention than Core defaults.
+- **Report vulnerabilities:** [GitHub Security Advisories](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new) (private) — not public issues.
 
 ## [14.0.0] - 2026-05-24
 

@@ -4,320 +4,354 @@
 Easy Workspace
 ==============
 
-Easy Workspace 1.0.1 is a TYPO3 14.3 LTS backend extension for
-publishing workspace changes from the backend toolbar and from a full
-backend module.
+:Extension:
+    webcon_easy_workspace
 
-The extension is v14-only. It requires TYPO3 14.3, PHP 8.2-8.5 and
-the TYPO3 system extensions ``backend``, ``core``, ``fluid``,
-``frontend`` and ``workspaces``.
+:Package:
+    webconsulting/webcon-easy-workspace
+
+:Version:
+    1.0.3
+
+:TYPO3:
+    14.3 LTS only
+
+:PHP:
+    8.2 – 8.5
+
+Easy Workspace adds a **backend toolbar dropdown** and a **backend module** so editors can publish workspace changes for the **current page** or **one news article** in a single action. All writes go through TYPO3 Core: ``DataHandler`` publish and discard cmdmaps, Workspaces preview URLs, record history, and workspace dependency resolution.
 
 ..  _installation:
 
 Installation
 ============
 
-Install the extension with Composer:
-
 ..  code-block:: bash
-    :caption: Composer installation
 
     composer require webconsulting/webcon-easy-workspace:^14.0
     vendor/bin/typo3 extension:setup
     vendor/bin/typo3 cache:flush
 
-..  _features:
+Required system extensions: ``workspaces``, ``backend``, ``fluid``, ``frontend``.
 
-Features
-========
+..  _screenshots:
 
-* Toolbar dropdown for page, content element and news workspace records.
-* Backend module below the TYPO3 Workspaces publish module with visible
-  page breadcrumbs, TYPO3 submodules, TYPO3's native module selector,
-  show-page, preview-link and edit-page-property actions.
-* One-click publish through TYPO3's ``DataHandler`` publish cmdmap.
-* Per-record discard through TYPO3 14's ``discard`` command.
-* Preview-link generation through
-  ``TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder``.
-* Field-level diffs and history rollback using TYPO3 backend APIs.
-* Optional Visual Editor and Viewpage iframe highlighting.
-* Language-aware page and record scoping for translated workspaces.
-* Duplicate suppression for nested inline workspace records.
-* Related file references and inline child records below their parent row.
-* Per-article news scope on a news detail view when EXT:news is installed:
-  the news record plus its linked content elements.
-* Stale workspace dependency guard for missing inline child references.
-* TYPO3-processed preview thumbnails for image-bearing rows.
-* Personal user settings for the global feature switch and related-record
-  visibility in toolbar and module.
+Screenshots
+===========
+
+Backend UI screenshots (toolbar, module, user settings) and capture instructions
+are documented in :ref:`screenshots-guide`. PNG files live in
+``Documentation/Images/``.
+
+..  _feature-inventory:
+
+Complete feature inventory
+==========================
+
+The following tables list **every** editor-facing and integrator-facing
+capability shipped by this extension.
+
+Toolbar
+-------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Feature
+      - Behaviour
+    * - Toolbar item registration
+      - ``EasyWorkspaceToolbarItem``; hidden when Live workspace or ``enabled = 0``
+    * - Orange change indicator
+      - ``hasChangesAction`` polling; counts normalized pending rows
+    * - Dropdown menu
+      - Server-rendered Fluid HTML injected into Lit host; popover top-layer
+    * - No-context state
+      - Message when no page/news context is detectable
+    * - Loading state
+      - Spinner while ``items`` AJAX runs
+    * - Header workspace chip
+      - Active workspace title (``enableWorkspaceChip``)
+    * - Header preview link button
+      - Copies ``PreviewUriBuilder`` URL to OS clipboard (``enablePreviewLink``)
+    * - Filter tabs
+      - **To publish** vs **All on page** (``enableFilter``, ``defaultMode``)
+    * - Publish bar
+      - Select all / publish selected via ``publish`` AJAX
+    * - Per-row checkbox
+      - Checked by default for changed rows
+    * - Per-row discard
+      - Modal + ``discard`` AJAX (``enableRevert``)
+    * - Per-row diff pill
+      - Opens ``diff`` AJAX in ``Modal.advanced``
+    * - Per-row edit link
+      - FormEngine when available
+    * - Per-row eye icon
+      - Preview iframe scroll/highlight (``enableHoverHighlight``)
+    * - Thumbnails
+      - Processed file images (``enableThumbnails``)
+    * - Type + state labels
+      - Second line and badges (``enableTypeLabels``, ``enableHiddenBadge``)
+    * - Child change rows
+      - Optional in toolbar via user setting ``showSubelementsInToolbar``
+    * - News context detection
+      - Client reads iframe URL / edit form (``enableNewsBundles``)
+    * - Language parameter
+      - ``languageUid`` sent from module state or URL fallbacks
+
+Backend module
+--------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Feature
+      - Behaviour
+    * - Parent module ``webcon_easy_workspace``
+      - Under **Content**, after Workspaces publish; page tree navigation
+    * - Submodule **Open items**
+      - Publish queue; POST form ``_action=publish``
+    * - Submodule **All records**
+      - Full list; selection disabled
+    * - Submodule **Checks and diagnostics**
+      - ``WorkspaceDiagnosticsService`` scan + health reports
+    * - Doc header breadcrumb
+      - Current page title from permitted page record
+    * - Show page button
+      - Core view button with rootline
+    * - Preview link button
+      - Opens preview URL or AJAX fallback
+    * - Edit page properties
+      - Contextual record edit when user may edit page
+    * - Flash messages
+      - Publish/discard feedback after redirect
+    * - Section statistics
+      - Changed count, CE count, affected tables, last editor/time
+    * - Related child disclosures
+      - Controlled by ``showSubelementsInModule`` user setting
+    * - Module JavaScript
+      - ``easy-workspace-module.js``: Modal, AjaxRequest, Notification only
+    * - Live workspace guard
+      - Module body shows disabled message when workspace id is 0
+
+Record types and scope
+----------------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Scope
+      - Included records
+    * - Page
+      - ``pages``, ``tt_content`` on page, inline children, ``sys_file_reference``
+    * - News article (detail / edit)
+      - ``tx_news_domain_model_news`` + related ``tt_content`` via ``tx_news_related_news``
+    * - Workspace file metadata
+      - ``sys_file_metadata`` pending in active workspace (not language-filtered)
+    * - Inline / IRRE / Content Blocks
+      - Workspace-aware child tables allowed by ``WorkspaceTablePolicy``
+    * - Duplicate removal
+      - Server normalizes live vs workspace-only keys before UI and publish
+    * - Parent-only child change
+      - Parent row added as context when child changed alone
+
+Publishing and discard
+----------------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Bulk publish
+      - ``PublishSelectedService::publish()`` → version publish cmdmap
+    * - Publish order
+      - ``pages``, news, ``tt_content``, ``sys_file_metadata``, then other tables
+    * - Workspace verification
+      - ``belongsToWorkspace()`` before cmdmap
+    * - Table allow-list
+      - ``WorkspaceTablePolicy::isAllowed()`` on AJAX and module POST
+    * - Discard
+      - ``discard`` cmdmap; resolves live uid to workspace uid when needed
+    * - DataHandler errors
+      - Returned in JSON or flash messages (Core ``errorLog``)
+
+Diff and history
+----------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Field diff
+      - ``RecordDiffService`` + Core ``DiffUtility`` markup
+    * - Record history timeline
+      - ``RecordHistoryTimelineService`` in diff modal
+    * - Page history tab
+      - Containing page timeline when applicable
+    * - Linear rollback
+      - ``historyRollbackAction`` mode ``linear``
+    * - Field rollback
+      - mode ``field`` with ``table:uid:field`` selector
+    * - Rollback errors
+      - Localized generic message (no exception leak)
+
+Preview integration
+-------------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Preview URL
+      - ``PreviewUriBuilder::buildUriForPage()``
+    * - Iframe detection order
+      - Visual Editor → Viewpage → name/id heuristics → same-origin iframe
+    * - Locate selectors
+      - ``#c{uid}``, ``data-content-uid``, ``data-typo3-record-uid``
+    * - Visual Editor decline script
+      - ``VisualEditorDeclineButtonMiddleware`` when ``editMode`` and workspace > 0
+
+Diagnostics and CLI
+-------------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Automatic DB checks
+      - Invalid version fields, bad ``t3ver_state``, orphans, duplicates, missing parents
+    * - Inspection SQL hints
+      - Read-only starting points per issue class
+    * - Health check groups
+      - Built by ``WorkspaceTestingReportService``
+    * - Manual-only checklist
+      - FAL, caches, external indexes, editorial conflicts
+    * - Seed command
+      - ``webcon-easy-workspace:seed-diagnostics`` (dry-run or ``--execute``)
+
+Configuration and security
+--------------------------
+
+..  list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - TSconfig namespace
+      - ``options.webcon_easy_workspace.*`` (see :ref:`configuration-reference`)
+    * - User Settings overrides
+      - Per-user enable + subelement visibility
+    * - Server-side gates
+      - ``enabled``, ``enableRevert``, ``enablePreviewLink``, ``showHidden``, etc.
+    * - Stale dependency listener
+      - ``IgnoreMissingWorkspaceDependencyReference`` on ``IsReferenceConsideredForDependencyEvent``
+    * - AJAX authentication
+      - Backend user + route tokens; mutating routes POST-only
+    * - Security reports
+      - `GitHub Security Advisories <https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new>`__
+
+..  _toolbar-and-module:
+
+Toolbar and module (behaviour)
+==============================
+
+Both entry points share ``PendingItemsService`` and the same normalized item
+list. The toolbar is optimized for speed; the module is server-rendered Fluid
+with Bootstrap 5 / TYPO3 styleguide tables and cards.
+
+The module does **not** depend on Apache Solr or search extensions.
 
 ..  _record-scope:
-
-Toolbar and module
-==================
-
-The toolbar dropdown is a compact Lit web component optimized for quick
-publishing from the current backend context. The Easy Workspace backend
-module is fully server-rendered with Fluid templates and the TYPO3 backend
-styleguide; the underlying service layer is shared with the toolbar so both
-entry points see exactly the same workspace records.
-
-The module shows the standard TYPO3 doc header (breadcrumb, page title,
-module menu and the "show page", "copy preview link" and "edit page
-properties" buttons registered on the module template's button bar). TYPO3
-registers Easy Workspace as a parent module with three submodules:
-
-* **Open items** — the changed-only publish queue. Rows stay dense and
-  one-dimensional in a ``table-fit`` Bootstrap table: select, scan
-  title/type/state, then use the right-aligned history, edit and discard
-  button group when needed. Related child records are hidden behind a
-  disclosure instead of being spread across the list. Publishing submits the
-  selection as a standard ``<form method="post">``; the controller publishes
-  through ``DataHandler`` and redirects back with a TYPO3 flash message.
-* **All records** — every record on the page in the same Bootstrap table row
-  UI (read-only inventory view).
-* **Checks and diagnostics** — automatic database scans for broken, stale or
-  risky workspace records that need manual repair before publish. The same
-  screen also includes grouped health reports, in the style of TYPO3 Reports,
-  for automatic diagnostics, seed coverage, inline child publish risks and
-  manual-only failure classes.
-
-Navigation between submodules uses TYPO3's native module selector and backend
-module routes such as ``webcon_easy_workspace_pending``. The current page/news
-context is preserved through route parameters. There is no extra top-left
-navigation inside the module body. The module body uses TYPO3 styleguide and
-Bootstrap 5 elements: cards, tables, list groups, badges, button groups and
-``<core:icon>`` icons. A small companion JavaScript file
-(``easy-workspace-module.js``) only wires the rendered DOM and doc-header
-buttons into TYPO3 Core's ``Modal``, ``AjaxRequest`` and ``Notification``
-modules for the discard, edit, diff and preview-link interactions — no
-client-side rendering.
-
-The module does not depend on Apache Solr or any third-party indexing
-extension. Optional integrations, such as EXT:news and Visual Editor, are
-detected through TYPO3 extension and TCA state.
-
-The pending list is a bulk-action screen first and a review screen second.
-The main path is selecting records and publishing them; deeper inspection
-stays available through row actions and expandable related-record details.
-Selected publish rows use TYPO3's styleguide ``selected``/info table state.
-Rows that are not selected are only softly de-emphasized while another row is
-selected, so the same table remains readable in light and dark backend modes.
 
 Record scope
 ============
 
-The dropdown is scoped to three things:
-
-* the selected page or the currently edited news record,
-* the active backend workspace,
-* the selected backend page language.
-
-Standalone file metadata is the exception to the page scope: pending
-``sys_file_metadata`` rows from the active workspace are appended because they
-have no page/content parent but are still publishable workspace records.
-
-The JavaScript detects the page UID from TYPO3's module state and falls
-back to the current URL's ``id`` parameter. A news article takes precedence
-over the page when the editor is on its detail view: the client reads the
-news UID from a news detail plugin URL (``tx_news_pi1[news]=N``) in the
-Visual Editor / preview iframe, or from an open news edit form
-(``edit[tx_news_domain_model_news][N]``), and then requests the ``forNews``
-API path so the news record and its linked content elements are shown
-together. The backend module can also pass an explicit ``newsUid``.
-Auto-detection is gated by ``enableNewsBundles``; fully slug-routed news
-URLs do not expose the UID, so there the scope is reached via the edit form.
-
-The selected language is read from TYPO3 module state first. If no
-language is available there, the JavaScript checks visible backend and
-preview-frame URL parameters such as ``language``, ``sys_language_uid``
-and ``L``. The value is sent to the
-``webcon_easy_workspace_items`` AJAX route as ``languageUid``.
+See the feature tables above. Standalone ``sys_file_metadata`` is the deliberate
+exception to page language filtering.
 
 ..  _news-handling:
 
 News handling
 =============
 
-News records live in storage folders, not on the content page you preview,
-so Easy Workspace does **not** scan news off the selected page or folder.
-Instead it scopes to a single news **article on its detail view** — the place
-an editor actually works on one news item.
+News is **not** scanned from storage folders. Per-article scope activates on:
 
-The per-article scope activates when:
+* news detail preview URL with ``tx_news_pi1[news]=N``, or
+* open news edit form ``edit[tx_news_domain_model_news][N]``.
 
-* the **Visual Editor / preview** iframe shows a news detail
-  (``tx_news_pi1[news]=N`` in the frontend URL), or
-* a **news record is open in the FormEngine edit form**
-  (``edit[tx_news_domain_model_news][N]``).
-
-In that scope the dropdown lists the news record plus the content elements
-linked to it through ``tx_news_related_news`` — together with their workspace
-changes — and publishes them as one unit. On any other page the dropdown shows
-page content only.
-
-The feature is gated by the :confval:`enableNewsBundles` setting and has no
-effect when EXT:news is not installed.
-
-..  note::
-
-    Fully slug-routed news detail URLs do not expose the news UID to the
-    preview iframe, so auto-detection cannot fire there. Editors still get the
-    per-article scope by opening the news record itself — its edit-form URL is
-    detected as described above.
+Slug-only detail URLs need the edit form or explicit ``newsUid`` on module/AJAX
+routes. Gated by :confval:`enableNewsBundles`.
 
 ..  _language-aware-listing:
 
 Language-aware listing
 ======================
 
-TYPO3 stores translated content records with a language field, usually
-``sys_language_uid``. The exact field can be customized through TCA, so
-Easy Workspace reads ``ctrl.languageField`` first and only falls back to
-``sys_language_uid`` when needed.
-
-When a language UID is known, ``PendingItemsService`` adds that language
-constraint to page-bound workspace-aware listing queries:
-
-* page content records,
-* inline child records such as Content Blocks collection items.
-
-On a news detail view the same language-aware scoping applies to the news
-record and its linked content elements (resolved per article, not by page).
-
-Translated page and news property records are resolved before the item is
-built. The service uses ``ctrl.transOrigPointerField`` and falls back to
-``l10n_parent`` to find the translated record for the selected language.
-
-If no language can be detected, no language constraint is added. This is
-intentional: non-page backend routes and custom modules should not lose
-all records just because they do not expose a language selector.
-
-Standalone ``sys_file_metadata`` rows are not filtered by the selected page
-language. TYPO3's Workspaces module also shows default-language file metadata
-while a page language is selected, and these root-level records would otherwise
-disappear from the publish selection.
+When ``languageUid`` is known, page-bound tables use TCA ``languageField`` and
+translation parent resolution. File metadata stays visible across page language
+selection (same as Core Workspaces behaviour).
 
 ..  _duplicate-suppression:
 
 Duplicate suppression
 =====================
 
-Workspace versions are stored as additional rows in the same database
-table as their live records. A modified workspace row points back to the
-live row through ``t3ver_oid``. New workspace-only records have no live
-counterpart and use their own workspace UID as their identity.
-
-Inline child records can be reachable through both parent identities. For
-example, a changed accordion item can match the live parent content
-element UID and the workspace parent content element UID. Without a final
-normalization step, that produces multiple dropdown rows for the same
-logical publishable record.
-
-The response is therefore de-duplicated server-side:
-
-* existing records are keyed by table name and live UID,
-* new workspace-only records are keyed by table name and workspace UID,
-* later duplicates are removed before JSON is returned.
-
-The toolbar count, the selected checkbox set and the publish payload all
-use the normalized list. One changed nested record is therefore counted,
-selected and published once.
+Items are keyed by ``table + liveUid`` or ``table + workspaceUid`` for
+workspace-only records before JSON/HTML output and publish payloads.
 
 ..  _related-records:
 
 Related records and thumbnails
 ==============================
 
-Changed inline records are rendered with the record that owns them. This
-includes TYPO3 file references, Content Blocks collection items and other
-workspace-aware inline child tables. If only the child changed and the parent
-record has no workspace row of its own, Easy Workspace still adds the parent
-row as context and nests the child change below it.
-
-The same relation handling is used for page properties and content elements.
-Files attached to the page record appear below the page row. Files or other
-inline records attached to a content element appear below that content element.
-
-Related child changes are included in the toolbar count, the default
-selection, publish operations and per-row discard operations. Image rows use
-TYPO3's file processing API to return small preview images for the dropdown
-instead of exposing the original file as the list thumbnail.
-
-Standalone file metadata records are also included when they are pending in the
-active workspace. TYPO3 does not workspace-version the physical ``sys_file``
-row, so Easy Workspace publishes the associated ``sys_file_metadata`` version
-and displays it with the actual file name and preview thumbnail.
+Inline children and file references nest under parents. Thumbnails use Core file
+processing — never client-supplied paths.
 
 ..  _workspace-dependency-guard:
 
 Workspace dependency guard
 ==========================
 
-TYPO3 Workspaces resolves publish dependencies from ``sys_refindex`` before a
-publish command is executed. Inline fields and file fields are structural
-dependencies, so Core follows those references and creates dependency elements
-for the related records.
-
-Generated inline tables, for example Content Blocks collection tables, can
-leave a stale reference behind for a short time after a child row has already
-been removed or published. If Core follows that stale reference, the Workspaces
-AJAX endpoint can fail with an exception such as
-``Element "tabs_items:50" does not exist``.
-
-Easy Workspace registers a PSR-14 listener for
-``IsReferenceConsideredForDependencyEvent``. It runs after TYPO3 Core has
-classified a reference as a workspace dependency, verifies that both referenced
-records still exist, and clears the dependency flag for missing records.
-
-Valid dependencies are not changed. They continue through TYPO3's normal
-Workspaces dependency resolver and ``DataHandler`` publish or discard flow.
+Stale ``sys_refindex`` targets for deleted inline rows are ignored by the
+PSR-14 listener so publish does not fail with missing-element exceptions.
 
 ..  _locate-icon:
 
 Locate icon
 ===========
 
-Rows that can be mapped to rendered page content show an eye icon. On
-hover, focus or click the JavaScript searches same-origin preview iframes
-in this order:
+Inline rows carry ``locateTable`` / ``locateLiveUid`` / ``locateWorkspaceUid``
+pointing at parent ``tt_content``.
 
-1. ``#visual-editor-iframe`` from EXT:visual_editor.
-2. ``#tx_viewpage_iframe`` from EXT:viewpage.
-3. Other iframes whose id or name indicates a page preview.
-4. Any same-origin iframe with a readable document.
+..  _security:
 
-For ordinary content elements the lookup tries the live UID and the
-workspace UID against common frontend markers such as ``#c123``,
-``[data-content-uid]`` and ``[data-typo3-record-uid]``.
+Security posture
+================
 
-Inline records need a parent locate target. A Content Blocks collection
-record, for example ``accordion_items``, does not usually render its own
-frontend wrapper. The visible DOM is part of the parent ``tt_content``
-element. The server therefore adds ``locateTable``, ``locateLiveUid`` and
-``locateWorkspaceUid`` to inline child rows. The JavaScript uses those
-values to show the eye icon and to jump to the parent content element.
+A focused audit on **2026-06-03** confirmed prior fixes remain in place:
 
-If the icon cannot jump, the most common causes are:
+* **Table allow-list** on publish, discard, diff, and history rollback table names.
+* **Active workspace** check on publish/discard cmdmap construction.
+* **TSconfig master switch** on all AJAX actions including publish.
+* **Parameterized SQL** in custom queries; literal ``orderBy`` columns only.
+* **Generic AJAX errors** for preview build and rollback failures.
+* **Fluid / Lit escaping** for labels; dropdown HTML from trusted server render.
+* **POST-only** publish, discard, history rollback routes.
 
-* no Visual Editor, Viewpage or same-origin preview iframe is open,
-* the frontend template does not expose a recognizable content marker,
-* the content element is not rendered in the selected language,
-* the record is not a content element and has no parent locate target.
+**Residual accepted risk (TYPO3 backend):** ``items``, ``hasChanges``, and ``diff``
+do not call ``BackendUtility::readPageAccess()`` before loading data for a
+supplied ``pageUid``. Mitigation today is backend login, workspace membership,
+and Core record permissions on publish/discard. Sites with strict IDOR
+requirements may add explicit page/news access checks in a future release.
+
+Report vulnerabilities privately via GitHub Security Advisories, not public
+issues.
 
 ..  _configuration:
 
 Configuration
 =============
-
-All editor-facing controls are configured through User TSconfig and
-Page TSconfig.
-
-TYPO3's User Settings module also contains an Easy Workspace section.
-Editors can disable Easy Workspace for their account and independently
-hide related child rows in the toolbar dropdown or in the backend module.
-Hiding child rows is only a presentation setting: selected parent rows still
-publish the related workspace records collected by the server.
 
 ..  toctree::
     :maxdepth: 2
@@ -325,21 +359,17 @@ publish the related workspace records collected by the server.
     Configuration
     Diagnostics
     Testing
+    Screenshots
 
 ..  _quality:
 
 Quality
 =======
 
-Run the local checks before shipping changes:
-
 ..  code-block:: bash
-    :caption: Quality checks
 
     composer test
     Build/Scripts/runTests.sh -s phpstan
     Build/Scripts/runTests.sh -s lint
 
-PHPStan runs at ``level: max`` with PHP 8.2 as the minimum supported
-runtime and ``saschaegerer/phpstan-typo3`` 3.0.1 for TYPO3 14 API
-awareness.
+PHPStan level ``max`` with ``saschaegerer/phpstan-typo3`` 3.0.1.
