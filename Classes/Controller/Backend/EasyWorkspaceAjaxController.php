@@ -19,12 +19,13 @@ use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItems\PendingItemsToolbarRenderer;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
-use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
+use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
 final readonly class EasyWorkspaceAjaxController
 {
@@ -33,13 +34,6 @@ final readonly class EasyWorkspaceAjaxController
      * inline child tables are accepted only when TCA marks them as
      * workspace-aware children of a workspace-aware parent.
      */
-    private const ALLOWED_TABLES = [
-        'pages',
-        'tt_content',
-        'tx_news_domain_model_news',
-        'sys_file_metadata',
-    ];
-
     public function __construct(
         private PendingItemsService $pendingItemsService,
         private PublishSelectedService $publishService,
@@ -51,6 +45,8 @@ final readonly class EasyWorkspaceAjaxController
         private RecordHistoryTimelineService $historyTimelineService,
         private RecordHistoryRollback $recordHistoryRollback,
         private LocalizationService $localizationService,
+        private WorkspaceTablePolicy $workspaceTablePolicy,
+        private PendingItemsToolbarRenderer $toolbarRenderer,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -67,20 +63,40 @@ final readonly class EasyWorkspaceAjaxController
 
         $defaultMode = $config['defaultMode'];
         $requestedMode = Value::string($query['mode'] ?? $defaultMode);
-        $mode = $config['enableFilter']
+        $viewMode = $config['enableFilter']
             ? ($requestedMode === PendingItemsService::MODE_ALL ? PendingItemsService::MODE_ALL : PendingItemsService::MODE_CHANGED)
             : PendingItemsService::MODE_CHANGED;
+        // Always collect all records; Fluid renders both filter panels.
+        $collectionMode = PendingItemsService::MODE_ALL;
 
         if ($newsUid > 0) {
+            $payload = $this->pendingItemsService->payloadForNews($newsUid, $collectionMode, $config, $languageUid);
             return new JsonResponse([
                 'context' => 'news',
-                ...$this->pendingItemsService->forNews($newsUid, $mode, $config, $languageUid),
+                ...$payload->toNewsClientArray(includeDiff: false),
+                'html' => $this->toolbarRenderer->renderMenu(
+                    $request,
+                    $payload,
+                    $config,
+                    'news',
+                    $viewMode,
+                    newsUid: $newsUid,
+                ),
             ]);
         }
         if ($pageUid > 0) {
+            $payload = $this->pendingItemsService->payloadForPage($pageUid, $collectionMode, $config, $languageUid);
             return new JsonResponse([
                 'context' => 'page',
-                ...$this->pendingItemsService->forPage($pageUid, $mode, $config, $languageUid),
+                ...$payload->toPageClientArray(includeDiff: false),
+                'html' => $this->toolbarRenderer->renderMenu(
+                    $request,
+                    $payload,
+                    $config,
+                    'page',
+                    $viewMode,
+                    pageUid: $pageUid,
+                ),
             ]);
         }
         return new JsonResponse([
@@ -89,7 +105,8 @@ final readonly class EasyWorkspaceAjaxController
             'itemGroups' => [],
             'changedItemGroups' => [],
             'workspaceId' => 0,
-            'mode' => $mode,
+            'mode' => $viewMode,
+            'html' => $this->toolbarRenderer->renderNoContext($request, $config),
         ]);
     }
 
@@ -149,7 +166,7 @@ final readonly class EasyWorkspaceAjaxController
 
         $table = Value::string($query['table'] ?? null);
         $workspaceUid = Value::int($query['workspaceUid'] ?? null);
-        if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
+        if (!$this->workspaceTablePolicy->isAllowed($table) || $workspaceUid <= 0) {
             return new HtmlResponse('<p class="alert alert-danger">' . htmlspecialchars($this->localizationService->translate('error.invalidRecord')) . '</p>', 400);
         }
 
@@ -256,7 +273,7 @@ final readonly class EasyWorkspaceAjaxController
         $mode = Value::string($body['mode'] ?? 'linear');
         $field = Value::string($body['field'] ?? null);
 
-        if (!$this->isAllowedWorkspaceTable($table) || $uid <= 0 || $historyUid <= 0) {
+        if (!$this->workspaceTablePolicy->isAllowed($table) || $uid <= 0 || $historyUid <= 0) {
             return new JsonResponse(['success' => false, 'error' => $this->localizationService->translate('error.invalidArguments')], 400);
         }
         if ($mode !== 'linear' && $mode !== 'field') {
@@ -324,7 +341,7 @@ final readonly class EasyWorkspaceAjaxController
             $workspaceUid = Value::int($entry['workspaceUid'] ?? null);
             // Allow-list — keeps arbitrary TCA tables (be_users,
             // sys_log, …) out of the DataHandler cmdmap.
-            if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
+            if (!$this->workspaceTablePolicy->isAllowed($table) || $workspaceUid <= 0) {
                 continue;
             }
             $selections[] = ['table' => $table, 'workspaceUid' => $workspaceUid];
@@ -345,7 +362,7 @@ final readonly class EasyWorkspaceAjaxController
         $payload = $this->decodeBody($request);
         $table = Value::string($payload['table'] ?? null);
         $workspaceUid = Value::int($payload['workspaceUid'] ?? null);
-        if (!$this->isAllowedWorkspaceTable($table) || $workspaceUid <= 0) {
+        if (!$this->workspaceTablePolicy->isAllowed($table) || $workspaceUid <= 0) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.missingTableWorkspace')], 400);
         }
         $config = $this->configurationProvider->get();
@@ -393,34 +410,5 @@ final readonly class EasyWorkspaceAjaxController
         }
         $parsed = $request->getParsedBody();
         return Value::stringKeyArray($parsed);
-    }
-
-    private function isAllowedWorkspaceTable(string $table): bool
-    {
-        if (in_array($table, self::ALLOWED_TABLES, true)) {
-            return true;
-        }
-        if ($table === 'sys_file_metadata' || $table === 'sys_file_reference') {
-            $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
-            return !empty($ctrl['versioningWS']);
-        }
-        if (!TcaUtility::isWorkspaceAwareHiddenTable($table)) {
-            return false;
-        }
-        if (TcaUtility::hasColumn($table, 'foreign_table_parent_uid')) {
-            return true;
-        }
-        foreach (TcaUtility::tables() as $parentTca) {
-            $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
-            if (empty($ctrl['versioningWS'])) {
-                continue;
-            }
-            foreach (TcaUtility::extractInlineFieldConfigs($parentTca) as $fieldConfig) {
-                if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

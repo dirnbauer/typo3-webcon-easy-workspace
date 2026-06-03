@@ -12,7 +12,7 @@ services:
   Webconsulting\WebconEasyWorkspace\Backend\ToolbarItem\EasyWorkspaceToolbarItem:
     public: true
 
-  # AJAX endpoints invoked from the dropdown's Lit element.
+  # AJAX endpoints invoked from the toolbar dropdown glue script.
   Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceAjaxController:
     public: true
 

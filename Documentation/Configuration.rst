@@ -152,11 +152,11 @@ All keys live below ``options.webcon_easy_workspace``.
     :type: bool
     :Default: 1
 
-    When EXT:news is installed, scopes the dropdown to a single news
-    article (the news record plus its linked content elements) on its
-    detail view — the Visual Editor / preview page or its edit form.
-    News is not scanned off pages or folders. Set to ``0`` to disable
-    news handling entirely.
+    When EXT:news is installed, enables client-side detection of a single
+    news article on its detail view (Visual Editor / preview page or edit
+    form). The toolbar then calls ``forNews`` instead of ``forPage``.
+    Server-side collection never scans news off pages or folders. Set to
+    ``0`` to disable news handling entirely.
 
 ..  confval:: enableHoverHighlight
 

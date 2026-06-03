@@ -1,0 +1,11 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<div id="wew-tabpanel"
+     role="{f:if(condition: config.enableFilter, then: 'tabpanel', else: '')}"
+     data-wew-tabpanel="">
+    <f:render partial="Toolbar/ListPanel" arguments="{config: config, groups: changedItemGroups, showSubelements: showSubelements, panelMode: 'changed', viewMode: viewMode, emptyMessageKey: 'toolbar.empty.changed'}" />
+    <f:render partial="Toolbar/ListPanel" arguments="{config: config, groups: itemGroups, showSubelements: showSubelements, panelMode: 'all', viewMode: viewMode, emptyMessageKey: 'toolbar.empty.all'}" />
+</div>
+
+</html>

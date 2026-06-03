@@ -11,6 +11,7 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
+use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
 /**
  * Publishes a user-selected list of workspace records to live in one
@@ -31,23 +32,8 @@ final readonly class PublishSelectedService
         private ConnectionPool $connectionPool,
         private Context $context,
         private LocalizationService $localizationService,
+        private WorkspaceTablePolicy $workspaceTablePolicy,
     ) {}
-
-    /**
-     * Table priority for the cmdmap order. Pages must be published
-     * before any tt_content sitting on them, otherwise NEW workspace
-     * content elements can lose their parent. News records similarly
-     * need to be published before the tt_content rows that reference
-     * them via tx_news_related_news.
-     *
-     * @var list<string>
-     */
-    private const TABLE_ORDER = [
-        'pages',
-        'tx_news_domain_model_news',
-        'tt_content',
-        'sys_file_metadata',
-    ];
 
     /**
      * @param list<array{table: string, workspaceUid: int}> $selections
@@ -70,7 +56,7 @@ final readonly class PublishSelectedService
         foreach ($selections as $entry) {
             $table = $entry['table'];
             $workspaceUid = $entry['workspaceUid'];
-            if ($table === '' || $workspaceUid <= 0 || !$this->isAllowedWorkspaceTable($table)) {
+            if ($table === '' || $workspaceUid <= 0 || !$this->workspaceTablePolicy->isAllowed($table)) {
                 continue;
             }
             // Defence-in-depth: confirm the record really belongs to
@@ -102,7 +88,7 @@ final readonly class PublishSelectedService
         // Build the cmdmap in priority order: parents first, children
         // second, then anything else in stable order.
         $cmd = [];
-        foreach (self::TABLE_ORDER as $orderedTable) {
+        foreach (WorkspaceTablePolicy::PUBLISH_ORDER as $orderedTable) {
             if (isset($byTable[$orderedTable])) {
                 $cmd[$orderedTable] = $byTable[$orderedTable];
                 unset($byTable[$orderedTable]);
@@ -275,32 +261,4 @@ final readonly class PublishSelectedService
         return $liveUid > 0 ? $liveUid : Value::int($row['uid'] ?? null);
     }
 
-    private function isAllowedWorkspaceTable(string $table): bool
-    {
-        if (in_array($table, self::TABLE_ORDER, true)) {
-            return true;
-        }
-        if ($table === 'sys_file_metadata' || $table === 'sys_file_reference') {
-            $ctrl = Value::stringKeyArray(TcaUtility::table($table)['ctrl'] ?? null);
-            return !empty($ctrl['versioningWS']);
-        }
-        if (!TcaUtility::isWorkspaceAwareHiddenTable($table)) {
-            return false;
-        }
-        if (TcaUtility::hasColumn($table, 'foreign_table_parent_uid')) {
-            return true;
-        }
-        foreach (TcaUtility::tables() as $parentTca) {
-            $ctrl = Value::stringKeyArray($parentTca['ctrl'] ?? null);
-            if (empty($ctrl['versioningWS'])) {
-                continue;
-            }
-            foreach (TcaUtility::extractInlineFieldConfigs($parentTca) as $fieldConfig) {
-                if (($fieldConfig['foreign_table'] ?? '') === $table && !empty($fieldConfig['foreign_field'])) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 }

@@ -38,7 +38,8 @@ final readonly class ConfigurationProvider
         'enableHiddenBadge' => true,
         'showHidden' => true,
         'maxItems' => 200,
-        // Aggregation scope
+        // Client-side only: gates toolbar news-detail detection in JS (detectNewsUid).
+        // The server never scans news off pages; use forNews() when newsUid is known.
         'enableNewsBundles' => true,
         // Per-row actions
         'enableHoverHighlight' => true,

@@ -37,18 +37,12 @@ use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\WorkspaceDiagnosticsService;
 use Webconsulting\WebconEasyWorkspace\Service\WorkspaceTestingReportService;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
+use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder as WorkspacePreviewUriBuilder;
 
 #[AsController]
 final readonly class EasyWorkspaceModuleController
 {
-    private const ALLOWED_TABLES = [
-        'pages',
-        'tt_content',
-        'tx_news_domain_model_news',
-        'sys_file_metadata',
-    ];
-
     private const SECTIONS = ['pending', 'all', 'diagnostics'];
 
     private const MODULE_SECTIONS = [
@@ -74,6 +68,7 @@ final readonly class EasyWorkspaceModuleController
         private WorkspaceDiagnosticsService $workspaceDiagnosticsService,
         private WorkspaceTestingReportService $workspaceTestingReportService,
         private FlashMessageService $flashMessageService,
+        private WorkspaceTablePolicy $workspaceTablePolicy,
     ) {}
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
@@ -179,7 +174,7 @@ final readonly class EasyWorkspaceModuleController
             }
             [$table, $workspaceUid] = array_pad(explode(':', $entry, 2), 2, '');
             $workspaceUid = (int)$workspaceUid;
-            if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+            if (!$this->workspaceTablePolicy->isAllowed($table) || $workspaceUid <= 0) {
                 continue;
             }
             $selections[] = ['table' => $table, 'workspaceUid' => $workspaceUid];
@@ -214,7 +209,7 @@ final readonly class EasyWorkspaceModuleController
             $this->enqueueFlash($this->localizationService->translate('error.revertDisabled'), ContextualFeedbackSeverity::ERROR);
             return $this->redirectBack($request);
         }
-        if (!in_array($table, self::ALLOWED_TABLES, true) || $workspaceUid <= 0) {
+        if (!$this->workspaceTablePolicy->isAllowed($table) || $workspaceUid <= 0) {
             $this->enqueueFlash($this->localizationService->translate('error.missingTableWorkspace'), ContextualFeedbackSeverity::ERROR);
             return $this->redirectBack($request);
         }

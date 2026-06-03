@@ -88,7 +88,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
         $backendUser = $GLOBALS['BE_USER'] ?? null;
         // Merge user-configurable TSconfig with detected runtime
-        // capabilities so the Lit element can adapt its messaging
+        // capabilities so the toolbar glue script can adapt its messaging
         // (eye icon tooltip, "no iframe" notification) to what's
         // actually installed instead of always saying "Visual Editor".
         // Translated UI strings the JS reads through `this._config.labels`.

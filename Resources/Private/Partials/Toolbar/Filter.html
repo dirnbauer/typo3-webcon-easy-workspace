@@ -1,0 +1,34 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<f:if condition="{config.enableFilter}">
+    <div class="wew-menu__filter"
+         role="tablist"
+         aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.filter.aria')}"
+         data-wew-filter="">
+        <button type="button"
+                id="wew-tab-changed"
+                class="wew-menu__chip{f:if(condition: '{viewMode} == \'changed\'', then: ' wew-menu__chip--active')}"
+                role="tab"
+                aria-selected="{f:if(condition: '{viewMode} == \'changed\'', then: 'true', else: 'false')}"
+                aria-controls="wew-tabpanel"
+                tabindex="{f:if(condition: '{viewMode} == \'changed\'', then: '0', else: '-1')}"
+                data-wew-mode="changed">
+            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.tab.changed" />
+            <span class="wew-menu__chip-count" aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.records', arguments: '{count: changedCount}')}">{changedCount}</span>
+        </button>
+        <button type="button"
+                id="wew-tab-all"
+                class="wew-menu__chip{f:if(condition: '{viewMode} == \'all\'', then: ' wew-menu__chip--active')}"
+                role="tab"
+                aria-selected="{f:if(condition: '{viewMode} == \'all\'', then: 'true', else: 'false')}"
+                aria-controls="wew-tabpanel"
+                tabindex="{f:if(condition: '{viewMode} == \'all\'', then: '0', else: '-1')}"
+                data-wew-mode="all">
+            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.tab.all" />
+            <span class="wew-menu__chip-count" aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.records', arguments: '{count: totalCount}')}">{totalCount}</span>
+        </button>
+    </div>
+</f:if>
+
+</html>
