@@ -34,14 +34,40 @@ Installation
 
 Required system extensions: ``workspaces``, ``backend``, ``fluid``, ``frontend``.
 
-..  _screenshots:
+..  _architecture:
 
-Screenshots
-===========
+Architecture
+============
 
-Backend UI screenshots (toolbar, module, user settings) and capture instructions
-are documented in :ref:`screenshots-guide`. PNG files live in
-``Documentation/Images/``.
+PHP owns data collection, policy, and markup. JavaScript is glue only: context
+detection, AJAX refresh, event delegation, TYPO3 modals, and iframe highlight.
+
+Toolbar flow
+------------
+
+#. ``EasyWorkspaceToolbarItem`` mounts ``<webcon-easy-workspace-menu>`` with TSconfig JSON.
+#. The custom element calls ``items`` AJAX with page/news/language context.
+#. ``PendingItemsService`` → ``PendingItemsCollector`` builds ``PendingItemsPayload``.
+#. ``PendingItemsToolbarRenderer`` renders Fluid templates (ICU labels from XLF).
+#. The response includes ``html`` plus a lightweight JSON item list for publish/discard glue.
+#. User actions call ``publish``, ``discard``, ``diff``, or ``preview_link`` AJAX routes.
+
+Module flow
+-----------
+
+#. ``EasyWorkspaceModuleController`` uses the same ``PendingItemsService`` server-side.
+#. Submodule templates render tables with Fluid (``RecordRow`` partial).
+#. Publish/discard use POST forms, not toolbar AJAX.
+
+Shared services
+---------------
+
+* ``WorkspaceRecordQuery`` — workspace-aware DB reads
+* ``PendingItemFactory`` + resolvers — titles, URLs, thumbnails, badges
+* ``InlineChildResolver`` — IRRE / Content Blocks children
+* ``PendingItemAggregator`` — grouping, deduplication, parent context
+* ``WorkspaceTablePolicy`` — canonical table allow-list
+* ``PublishSelectedService`` — ``DataHandler`` cmdmaps
 
 ..  _feature-inventory:
 
@@ -65,7 +91,7 @@ Toolbar
     * - Orange change indicator
       - ``hasChangesAction`` polling; counts normalized pending rows
     * - Dropdown menu
-      - Server-rendered Fluid HTML injected into Lit host; popover top-layer
+      - Server-rendered Fluid HTML injected by glue JS; native popover top-layer
     * - No-context state
       - Message when no page/news context is detectable
     * - Loading state
@@ -336,7 +362,7 @@ A focused audit on **2026-06-03** confirmed prior fixes remain in place:
 * **TSconfig master switch** on all AJAX actions including publish.
 * **Parameterized SQL** in custom queries; literal ``orderBy`` columns only.
 * **Generic AJAX errors** for preview build and rollback failures.
-* **Fluid / Lit escaping** for labels; dropdown HTML from trusted server render.
+* **Server-rendered Fluid** for toolbar markup; ICU labels from XLF; trusted HTML injection.
 * **POST-only** publish, discard, history rollback routes.
 
 **Residual accepted risk (TYPO3 backend):** ``items``, ``hasChanges``, and ``diff``
@@ -359,7 +385,6 @@ Configuration
     Configuration
     Diagnostics
     Testing
-    Screenshots
 
 ..  _quality:
 

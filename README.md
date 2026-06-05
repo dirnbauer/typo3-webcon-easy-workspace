@@ -60,7 +60,7 @@ The toolbar is hidden in the Live workspace. The module requires `workspaces: of
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 1 | Backend toolbar item | Dropdown in the top bar; Lit-based menu with server-rendered Fluid HTML |
+| 1 | Backend toolbar item | Dropdown in the top bar; Fluid-rendered menu with glue JS for refresh and actions |
 | 2 | Toolbar change badge | Count of pending changes; `has-changes` AJAX polling |
 | 3 | Backend module (parent) | **Content → Easy Workspace** with page tree navigation |
 | 4 | Submodule **Open items** | Changed-only publish queue; POST publish form |
@@ -171,18 +171,13 @@ Last full extension audit: **2026-06-03** (see [CHANGELOG](CHANGELOG.md) Unrelea
 
 | Document | Content |
 |----------|---------|
-| [Documentation/Index.rst](Documentation/Index.rst) | TYPO3 manual — full feature and behaviour reference |
+| [Documentation/Index.rst](Documentation/Index.rst) | TYPO3 manual — architecture, feature inventory, security |
 | [Documentation/Configuration.rst](Documentation/Configuration.rst) | TSconfig and user settings |
 | [Documentation/Diagnostics.rst](Documentation/Diagnostics.rst) | Checks and diagnostics submodule |
 | [Documentation/Testing.rst](Documentation/Testing.rst) | Health checks and seed command |
-| [Documentation/Screenshots.rst](Documentation/Screenshots.rst) | Backend screenshot guide and image paths |
 | [CHANGELOG.md](CHANGELOG.md) | Release and security notes |
 
 Rendered manual: [docs.typo3.org](https://docs.typo3.org/p/webconsulting/webcon-easy-workspace/main/en-us/) (when published).
-
-## Screenshots
-
-This repository is extension-only (no bundled DDEV site). Backend screenshots are documented under [Documentation/Screenshots.rst](Documentation/Screenshots.rst) with filenames under `Documentation/Images/`. Add PNGs from your TYPO3 instance after installing the extension in a workspace with pending changes.
 
 ## Quality checks
 
@@ -194,18 +189,28 @@ Build/Scripts/runTests.sh -s lint
 
 PHPStan level **max** (`Build/phpstan/phpstan.neon`). CI runs PHP 8.2–8.5.
 
-## Architecture (short)
+## Architecture
+
+PHP collects pending workspace records, renders toolbar markup with Fluid (ICU labels), and exposes AJAX endpoints. JavaScript is glue only: context detection, menu refresh, checkbox selection, TYPO3 modals, and preview iframe highlight.
 
 ```
-Toolbar (Lit) ──AJAX──► EasyWorkspaceAjaxController
-                              │
-Module (Fluid) ──POST────► EasyWorkspaceModuleController
-                              │
-                              ▼
-                    PendingItemsService ──► PublishSelectedService ──► DataHandler
+Toolbar (custom element + glue JS) ──AJAX──► EasyWorkspaceAjaxController
+                                              │
+Module (Fluid) ──POST──────────────────────► EasyWorkspaceModuleController
+                                              │
+                                              ▼
+                                    PendingItemsService
+                                              │
+                         ┌────────────────────┼────────────────────┐
+                         ▼                    ▼                    ▼
+              PendingItemsCollector   PendingItemsToolbarRenderer   PublishSelectedService
+                         │                    │                         │
+                         ▼                    ▼                         ▼
+              PendingItemFactory +      Fluid templates            DataHandler
+              resolvers / aggregator
 ```
 
-Shared collectors: `PendingItemsCollector`, `WorkspaceRecordQuery`, `InlineChildResolver`. Policy: `WorkspaceTablePolicy`.
+Shared: `WorkspaceRecordQuery`, `InlineChildResolver`, `WorkspaceTablePolicy`.
 
 ## Support
 
