@@ -385,6 +385,7 @@ Configuration
     Configuration
     Diagnostics
     Testing
+    Screenshots
 
 ..  _quality:
 

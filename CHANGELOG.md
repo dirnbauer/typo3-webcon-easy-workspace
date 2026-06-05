@@ -7,7 +7,7 @@ All notable changes to Easy Workspace are documented in this file.
 ### Changed
 
 - News is scoped to a single article on its **detail view** (Visual Editor / preview page, or FormEngine edit form): the news record plus linked content elements, instead of scanning every news record on the selected page or folder. Driven by `tx_news_pi1[news]` in the preview iframe and the news edit-form URL; gated by `enableNewsBundles`.
-- **Documentation:** Rewrote `README.md` and the TYPO3 manual under `Documentation/` for the Fluid toolbar + glue JS architecture; removed screenshot assets and `Documentation/Screenshots.rst`.
+- **Documentation:** Rewrote `README.md` and the TYPO3 manual under `Documentation/` for the Fluid toolbar + glue JS architecture; re-added backend screenshot assets under `Documentation/Images/` and `Documentation/Screenshots.rst` (lab page 505, Staging, six pending changes).
 - **Security:** Removed standalone `SECURITY.md`; security reporting and audit summary now live in the README and manual. Re-audited controllers, services, AJAX routes, and JavaScript (2026-06-03): prior high/medium findings remain fixed; no new critical issues.
 
 ### Fixed
