@@ -14,6 +14,14 @@ use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
+/**
+ * Resolves workspace-aware inline / IRRE / Content Blocks children for
+ * pending-item collection.
+ *
+ * Keep table-specific traversal here — not in PendingItemsCollector or
+ * PendingItemAggregator. When a new child table needs special handling,
+ * add a focused helper in this class rather than branching shared paths.
+ */
 final readonly class InlineChildResolver
 {
     public function __construct(

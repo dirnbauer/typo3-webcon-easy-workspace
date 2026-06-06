@@ -24,6 +24,7 @@ use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
+use Webconsulting\WebconEasyWorkspace\Utility\PublishSelectionNormalizer;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
@@ -47,6 +48,7 @@ final readonly class EasyWorkspaceAjaxController
         private LocalizationService $localizationService,
         private WorkspaceTablePolicy $workspaceTablePolicy,
         private PendingItemsToolbarRenderer $toolbarRenderer,
+        private PublishSelectionNormalizer $publishSelectionNormalizer,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -69,44 +71,40 @@ final readonly class EasyWorkspaceAjaxController
         // Always collect all records; Fluid renders both filter panels.
         $collectionMode = PendingItemsService::MODE_ALL;
 
-        if ($newsUid > 0) {
-            $payload = $this->pendingItemsService->payloadForNews($newsUid, $collectionMode, $config, $languageUid);
+        $collection = $this->pendingItemsService->toolbarCollectionForContext(
+            $pageUid,
+            $newsUid,
+            $collectionMode,
+            $config,
+            $languageUid,
+        );
+        if ($collection['context'] === PendingItemsService::CONTEXT_NONE || $collection['payload'] === null) {
             return new JsonResponse([
-                'context' => 'news',
-                ...$payload->toNewsClientArray(includeDiff: false),
-                'html' => $this->toolbarRenderer->renderMenu(
-                    $request,
-                    $payload,
-                    $config,
-                    'news',
-                    $viewMode,
-                    newsUid: $newsUid,
-                ),
-            ]);
-        }
-        if ($pageUid > 0) {
-            $payload = $this->pendingItemsService->payloadForPage($pageUid, $collectionMode, $config, $languageUid);
-            return new JsonResponse([
-                'context' => 'page',
-                ...$payload->toPageClientArray(includeDiff: false),
-                'html' => $this->toolbarRenderer->renderMenu(
-                    $request,
-                    $payload,
-                    $config,
-                    'page',
-                    $viewMode,
-                    pageUid: $pageUid,
-                ),
-            ]);
-        }
-        return new JsonResponse([
-            'context' => 'none',
+                'context' => PendingItemsService::CONTEXT_NONE,
             'items' => [],
             'itemGroups' => [],
             'changedItemGroups' => [],
             'workspaceId' => 0,
             'mode' => $viewMode,
-            'html' => $this->toolbarRenderer->renderNoContext($request, $config),
+                'html' => $this->toolbarRenderer->renderNoContext($request, $config),
+            ]);
+        }
+
+        $context = $collection['context'];
+        $payload = $collection['payload'];
+
+        return new JsonResponse([
+            'context' => $context,
+            ...$payload->toToolbarClientArray($context, includeDiff: false),
+            'html' => $this->toolbarRenderer->renderMenu(
+                $request,
+                $payload,
+                $config,
+                $context,
+                $viewMode,
+                pageUid: $pageUid,
+                newsUid: $newsUid,
+            ),
         ]);
     }
 
@@ -122,23 +120,9 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
 
-        if ($newsUid > 0) {
-            return new JsonResponse([
-                'context' => 'news',
-                ...$this->pendingItemsService->hasChangesForNews($newsUid, $config, $languageUid),
-            ]);
-        }
-        if ($pageUid > 0) {
-            return new JsonResponse([
-                'context' => 'page',
-                ...$this->pendingItemsService->hasChangesForPage($pageUid, $config, $languageUid),
-            ]);
-        }
-        return new JsonResponse([
-            'context' => 'none',
-            'workspaceId' => 0,
-            'hasChanges' => false,
-        ]);
+        return new JsonResponse(
+            $this->pendingItemsService->hasChangesForContext($pageUid, $newsUid, $config, $languageUid),
+        );
     }
 
     /**
@@ -332,20 +316,7 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse(['error' => $this->localizationService->translate('error.invalidSelections')], 400);
         }
 
-        $selections = [];
-        foreach ($rawSelections as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-            $table = Value::string($entry['table'] ?? null);
-            $workspaceUid = Value::int($entry['workspaceUid'] ?? null);
-            // Allow-list — keeps arbitrary TCA tables (be_users,
-            // sys_log, …) out of the DataHandler cmdmap.
-            if (!$this->workspaceTablePolicy->isAllowed($table) || $workspaceUid <= 0) {
-                continue;
-            }
-            $selections[] = ['table' => $table, 'workspaceUid' => $workspaceUid];
-        }
+        $selections = $this->publishSelectionNormalizer->fromAjaxJson($rawSelections);
         if ($selections === []) {
             return new JsonResponse([
                 'success' => false,

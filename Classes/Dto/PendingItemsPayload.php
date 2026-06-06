@@ -127,6 +127,16 @@ final readonly class PendingItemsPayload
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function toToolbarClientArray(string $context, bool $includeDiff = false): array
+    {
+        return $context === 'news'
+            ? $this->toNewsClientArray($includeDiff)
+            : $this->toPageClientArray($includeDiff);
+    }
+
+    /**
      * @param list<PendingItem> $items
      * @return list<array<string, mixed>>
      */

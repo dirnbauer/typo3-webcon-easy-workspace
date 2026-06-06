@@ -385,6 +385,32 @@ Configuration
     Configuration
     Diagnostics
     Testing
+    Contributing
+
+..  _maintainability:
+
+Maintainability
+===============
+
+A **thermo-nuclear code-quality review** (2026-06-06) found the
+extension in good shape overall: no file exceeds 1000 lines, the pending-
+items pipeline is decomposed under ``Classes/Service/PendingItems/``, and
+``WorkspaceTablePolicy`` centralizes table allow-lists.
+
+Refactored **2026-06-06:** ``EasyWorkspaceModuleController`` (~456 lines)
+delegates section statistics to ``ModuleSectionViewDataFactory`` and
+doc-header buttons to ``EasyWorkspaceModuleDocHeaderBuilder``.
+``PublishSelectionNormalizer`` shares publish selection parsing between
+module POST and toolbar AJAX. ``PendingItemsService`` context helpers
+(``toolbarCollectionForContext``, ``hasChangesForContext``,
+``listForContext``) replace duplicated page/news branches.
+
+**Do not add** ad-hoc conditionals to shared collectors or query helpers.
+Push new scope rules into ``PageCollectionScope`` / ``NewsCollectionScope``
+or a dedicated resolver.
+
+See :ref:`contributing` for the full layer model, file-size inventory,
+anti-patterns, and contributor checklist.
 
 ..  _quality:
 

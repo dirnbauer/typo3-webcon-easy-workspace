@@ -175,6 +175,7 @@ Last full extension audit: **2026-06-03** (see [CHANGELOG](CHANGELOG.md) Unrelea
 | [Documentation/Configuration.rst](Documentation/Configuration.rst) | TSconfig and user settings |
 | [Documentation/Diagnostics.rst](Documentation/Diagnostics.rst) | Checks and diagnostics submodule |
 | [Documentation/Testing.rst](Documentation/Testing.rst) | Health checks and seed command |
+| [Documentation/Contributing.rst](Documentation/Contributing.rst) | Layer model, maintainability bar, contributor checklist |
 | [CHANGELOG.md](CHANGELOG.md) | Release and security notes |
 
 Rendered manual: [docs.typo3.org](https://docs.typo3.org/p/webconsulting/webcon-easy-workspace/main/en-us/) (when published).
@@ -188,6 +189,21 @@ Build/Scripts/runTests.sh -s lint
 ```
 
 PHPStan level **max** (`Build/phpstan/phpstan.neon`). CI runs PHP 8.2–8.5.
+
+## Maintainability (code-quality review 2026-06-06)
+
+Thermo-nuclear review verdict: **healthy** — no file exceeds 1000 lines; pending-items logic is split across `Classes/Service/PendingItems/`; `WorkspaceTablePolicy` owns the table allow-list. Refactors applied the same day:
+
+| Area | Status | Note |
+|------|--------|------|
+| Pending items pipeline | Good | `PendingItemsService` → `PendingItemsCollector` → factory + resolvers + `PendingItemAggregator` |
+| Module controller | Good | `EasyWorkspaceModuleController` (~456 lines) — stats in `ModuleSectionViewDataFactory`, doc-header in `EasyWorkspaceModuleDocHeaderBuilder` |
+| Publish selection parsing | Good | `PublishSelectionNormalizer` shared by module POST and toolbar AJAX |
+| AJAX context branching | Good | `PendingItemsService::{toolbarCollection,hasChanges,list}ForContext()` |
+| Inline child traversal | Policy | Table-specific logic stays in `InlineChildResolver`, not collectors |
+| JavaScript | Good | Toolbar split into focused glue modules; largest file `easy-workspace-module.js` (~543 lines) |
+
+Contributors: keep feature logic in the canonical service layer, do not push files past 1k lines without decomposition, and run the quality commands above. Full layer model, anti-patterns, and security expectations: [Documentation/Contributing.rst](Documentation/Contributing.rst).
 
 ## Architecture
 
@@ -210,7 +226,9 @@ Module (Fluid) ──POST──────────────────�
               resolvers / aggregator
 ```
 
-Shared: `WorkspaceRecordQuery`, `InlineChildResolver`, `WorkspaceTablePolicy`.
+Shared: `WorkspaceRecordQuery`, `InlineChildResolver`, `WorkspaceTablePolicy`, `PublishSelectionNormalizer`.
+
+Module-only: `ModuleSectionViewDataFactory`, `EasyWorkspaceModuleDocHeaderBuilder`.
 
 ## Support
 

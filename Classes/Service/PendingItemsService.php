@@ -26,6 +26,10 @@ final readonly class PendingItemsService
     public const MODE_CHANGED = 'changed';
     public const MODE_ALL = 'all';
 
+    public const CONTEXT_NONE = 'none';
+    public const CONTEXT_PAGE = 'page';
+    public const CONTEXT_NEWS = 'news';
+
     public function __construct(
         private Context $context,
         private TcaSchemaFactory $tcaSchemaFactory,
@@ -156,6 +160,92 @@ final readonly class PendingItemsService
     public function hasChangesForNews(int $newsUid, array $config = [], ?int $languageUid = null): array
     {
         return $this->pendingItemsCollector->hasChangesForNews($newsUid, $config, $languageUid);
+    }
+
+    public function resolveContext(int $pageUid, int $newsUid): string
+    {
+        if ($newsUid > 0) {
+            return self::CONTEXT_NEWS;
+        }
+        if ($pageUid > 0) {
+            return self::CONTEXT_PAGE;
+        }
+
+        return self::CONTEXT_NONE;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @return array{context: string, payload: PendingItemsPayload|null}
+     */
+    public function toolbarCollectionForContext(
+        int $pageUid,
+        int $newsUid,
+        string $mode,
+        array $config,
+        ?int $languageUid = null,
+    ): array {
+        $context = $this->resolveContext($pageUid, $newsUid);
+
+        return match ($context) {
+            self::CONTEXT_NEWS => [
+                'context' => $context,
+                'payload' => $this->payloadForNews($newsUid, $mode, $config, $languageUid),
+            ],
+            self::CONTEXT_PAGE => [
+                'context' => $context,
+                'payload' => $this->payloadForPage($pageUid, $mode, $config, $languageUid),
+            ],
+            default => [
+                'context' => self::CONTEXT_NONE,
+                'payload' => null,
+            ],
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @return array{context: string, workspaceId: int, hasChanges: bool, pageUid?: int, newsUid?: int, languageUid?: int|null}
+     */
+    public function hasChangesForContext(int $pageUid, int $newsUid, array $config, ?int $languageUid = null): array
+    {
+        $context = $this->resolveContext($pageUid, $newsUid);
+
+        return match ($context) {
+            self::CONTEXT_NEWS => [
+                'context' => $context,
+                ...$this->hasChangesForNews($newsUid, $config, $languageUid),
+            ],
+            self::CONTEXT_PAGE => [
+                'context' => $context,
+                ...$this->hasChangesForPage($pageUid, $config, $languageUid),
+            ],
+            default => [
+                'context' => self::CONTEXT_NONE,
+                'workspaceId' => 0,
+                'hasChanges' => false,
+            ],
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>|null Serialized page or news list, or null when no context.
+     */
+    public function listForContext(
+        int $pageUid,
+        int $newsUid,
+        string $mode,
+        array $config,
+        ?int $languageUid = null,
+    ): ?array {
+        $context = $this->resolveContext($pageUid, $newsUid);
+
+        return match ($context) {
+            self::CONTEXT_NEWS => $this->forNews($newsUid, $mode, $config, $languageUid),
+            self::CONTEXT_PAGE => $this->forPage($pageUid, $mode, $config, $languageUid),
+            default => null,
+        };
     }
 
     /**
