@@ -62,12 +62,24 @@ Module flow
 Shared services
 ---------------
 
+* ``PendingItemsService`` — facade plus ``resolveContext()`` /
+  ``toolbarCollectionForContext()`` / ``hasChangesForContext()`` /
+  ``listForContext()`` for page, news, or no context
 * ``WorkspaceRecordQuery`` — workspace-aware DB reads
 * ``PendingItemFactory`` + resolvers — titles, URLs, thumbnails, badges
 * ``InlineChildResolver`` — IRRE / Content Blocks children
 * ``PendingItemAggregator`` — grouping, deduplication, parent context
 * ``WorkspaceTablePolicy`` — canonical table allow-list
+* ``PublishSelectionNormalizer`` — module POST and toolbar AJAX publish
+  selections → cmdmap input
 * ``PublishSelectedService`` — ``DataHandler`` cmdmaps
+
+Module-only helpers:
+
+* ``ModuleSectionViewDataFactory`` — pending/all statistics and diagnostics
+  section payload
+* ``EasyWorkspaceModuleDocHeaderBuilder`` — doc-header view, preview, edit
+  buttons
 
 ..  _feature-inventory:
 
@@ -392,18 +404,31 @@ Configuration
 Maintainability
 ===============
 
-A **thermo-nuclear code-quality review** (2026-06-06) found the
-extension in good shape overall: no file exceeds 1000 lines, the pending-
-items pipeline is decomposed under ``Classes/Service/PendingItems/``, and
-``WorkspaceTablePolicy`` centralizes table allow-lists.
+**Thermo-nuclear review verdict (2026-06-06, post-refactor): pass.**
 
-Refactored **2026-06-06:** ``EasyWorkspaceModuleController`` (~456 lines)
-delegates section statistics to ``ModuleSectionViewDataFactory`` and
-doc-header buttons to ``EasyWorkspaceModuleDocHeaderBuilder``.
-``PublishSelectionNormalizer`` shares publish selection parsing between
-module POST and toolbar AJAX. ``PendingItemsService`` context helpers
-(``toolbarCollectionForContext``, ``hasChangesForContext``,
-``listForContext``) replace duplicated page/news branches.
+No structural regression. No file exceeds 1000 lines. The pending-items
+pipeline, table policy, publish selection normalizer, and page/news context
+dispatchers are in the canonical layers. PHPStan level ``max`` is green.
+
+Completed the same day:
+
+* ``EasyWorkspaceModuleController`` (~456 lines) — section stats and
+  doc-header extracted
+* ``PublishSelectionNormalizer`` — shared module POST / toolbar AJAX parsing
+* ``PendingItemsService`` context helpers — no duplicated page/news branches
+  in toolbar AJAX
+
+**Optional backlog** (address when touching nearby code, not blockers):
+
+* ``EasyWorkspaceAjaxController::diffAction`` and
+  ``historyRollbackAction`` — extract a diff/history modal renderer if
+  either grows past ~500 lines combined
+* ``EasyWorkspaceModuleController::buildJsLabelMap()`` — move to a small
+  label-map helper if the module gains more client strings
+* ``PendingItemsService`` — ``forPage`` / ``forNews`` / ``payloadFor*`` still
+  repeat empty-payload setup; acceptable until a third context appears
+* ``InlineChildResolver`` (~530 lines) — keep table-specific traversal here;
+  do not branch collectors
 
 **Do not add** ad-hoc conditionals to shared collectors or query helpers.
 Push new scope rules into ``PageCollectionScope`` / ``NewsCollectionScope``

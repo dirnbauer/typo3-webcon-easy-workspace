@@ -26,7 +26,8 @@ Before merging substantial PHP or JavaScript changes, confirm:
 * **No ad-hoc branching** — new ``if`` chains on unrelated paths belong
   behind a dedicated helper, scope object, or service.
 * **Reuse canonical helpers** — ``WorkspaceTablePolicy``,
-  ``PendingItemsService``, ``PublishSelectedService``, ``Value``,
+  ``PendingItemsService`` (including ``*ForContext()`` dispatchers),
+  ``PublishSelectionNormalizer``, ``PublishSelectedService``, ``Value``,
   ``ConfigurationProvider``; do not duplicate their contracts.
 * **PHPStan max** and ``composer test`` stay green.
 
@@ -56,7 +57,9 @@ behaviour; DTOs carry shaped data to Fluid/JSON.
     EasyWorkspaceModuleController (Fluid module)
             │
             ▼
-    PendingItemsService (facade)
+    PendingItemsService (facade + context dispatch)
+            │
+            ├── PublishSelectionNormalizer ──► PublishSelectedService
             │
             ▼
     PendingItemsCollector
@@ -70,16 +73,38 @@ behaviour; DTOs carry shaped data to Fluid/JSON.
             ▼
     PublishSelectedService ──► DataHandler (publish / discard)
 
+Module path (server-rendered Fluid):
+
+* ``ModuleSectionViewDataFactory`` — section payload and statistics
+* ``EasyWorkspaceModuleDocHeaderBuilder`` — doc-header buttons
+
 Parallel paths (same policy, different presentation):
 
 * ``WorkspaceDiagnosticsService`` + ``WorkspaceTestingReportService``
-* ``RecordDiffService`` + ``RecordHistoryTimelineService``
+* ``RecordDiffService`` + ``RecordHistoryTimelineService`` (AJAX diff modal)
 * ``ConfigurationProvider`` — single TSconfig normalization
 
 **JavaScript is glue only.** Context detection, AJAX refresh, checkbox
 selection, TYPO3 modals, and iframe highlight live under
 ``Resources/Public/JavaScript/``. Markup and labels are server-rendered
 with Fluid and XLF.
+
+..  _file-size-inventory:
+
+Review outcome (2026-06-06)
+=========================
+
+Post-refactor thermo-nuclear pass: **approved**. Prior decomposition
+targets (module controller, publish selection parsing, AJAX context
+branching) are resolved. No new spaghetti in shared paths.
+
+Remaining optional work — not required for merge:
+
+* Extract diff/history modal assembly from ``EasyWorkspaceAjaxController``
+  when that file approaches ~500 lines
+* Extract module JS label map if ``buildJsLabelMap()`` keeps growing
+* Collapse ``PendingItemsService`` empty-payload helpers when a third
+  collection context appears
 
 ..  _file-size-inventory:
 
@@ -98,14 +123,23 @@ Largest PHP units today (lines, approximate):
     * - ``EasyWorkspaceModuleController``
       - ~456
       - Request glue; section stats and doc-header extracted
+    * - ``EasyWorkspaceAjaxController``
+      - ~385
+      - Items, publish, discard, diff, rollback; split diff/history if it grows
     * - ``ModuleSectionViewDataFactory``
-      - ~165
+      - ~170
       - Pending/all statistics and diagnostics payload
     * - ``EasyWorkspaceModuleDocHeaderBuilder``
       - ~176
       - Doc-header view/preview/edit buttons
+    * - ``PublishSelectionNormalizer``
+      - ~77
+      - Shared publish selection parsing
+    * - ``PendingItemsService``
+      - ~285
+      - Facade + context dispatchers
     * - ``InlineChildResolver``
-      - ~522
+      - ~530
       - Cohesive IRRE / Content Blocks recursion; monitor growth
     * - ``WorkspaceDiagnosticsService``
       - ~513
@@ -113,10 +147,6 @@ Largest PHP units today (lines, approximate):
     * - ``PendingItemAggregator``
       - ~428
       - Dedupe, grouping, parent-context — correct home for this logic
-    * - ``EasyWorkspaceAjaxController``
-      - ~414
-      - Items, publish, discard, diff, rollback — still readable; split
-        only if diff/history grows further
 
 Largest JavaScript units:
 
@@ -172,13 +202,23 @@ Page/news context
     table-specific helpers** inside ``PendingItems/`` over more conditionals
     in ``PendingItemsCollector``.
 
+AJAX diff and history
+    ``diffAction`` and ``historyRollbackAction`` still live in
+    ``EasyWorkspaceAjaxController``. Extract a dedicated renderer/service
+    only if combined growth makes the controller hard to scan.
+
+Module JS labels
+    ``buildJsLabelMap()`` in the module controller is a static key list.
+    Extract when adding substantial new module client strings.
+
 ..  _anti-patterns:
 
 Anti-patterns to reject in review
 ==================================
 
-* Pushing ``EasyWorkspaceModuleController`` past **1000 lines** without
-  extracting section stats or doc-header builders.
+* Pushing ``EasyWorkspaceModuleController`` or ``EasyWorkspaceAjaxController``
+  past **1000 lines** without extracting view-data, modal, or doc-header
+  builders.
 * Adding feature checks to ``WorkspaceRecordQuery`` or
   ``PublishSelectedService`` that belong in ``ConfigurationProvider`` or
   ``WorkspaceTablePolicy``.

@@ -190,20 +190,22 @@ Build/Scripts/runTests.sh -s lint
 
 PHPStan level **max** (`Build/phpstan/phpstan.neon`). CI runs PHP 8.2–8.5.
 
-## Maintainability (code-quality review 2026-06-06)
+## Maintainability (thermo-nuclear review 2026-06-06)
 
-Thermo-nuclear review verdict: **healthy** — no file exceeds 1000 lines; pending-items logic is split across `Classes/Service/PendingItems/`; `WorkspaceTablePolicy` owns the table allow-list. Refactors applied the same day:
+**Verdict: pass (post-refactor).** No file exceeds 1000 lines; canonical layers are respected; PHPStan max is green.
 
-| Area | Status | Note |
-|------|--------|------|
-| Pending items pipeline | Good | `PendingItemsService` → `PendingItemsCollector` → factory + resolvers + `PendingItemAggregator` |
-| Module controller | Good | `EasyWorkspaceModuleController` (~456 lines) — stats in `ModuleSectionViewDataFactory`, doc-header in `EasyWorkspaceModuleDocHeaderBuilder` |
-| Publish selection parsing | Good | `PublishSelectionNormalizer` shared by module POST and toolbar AJAX |
-| AJAX context branching | Good | `PendingItemsService::{toolbarCollection,hasChanges,list}ForContext()` |
-| Inline child traversal | Policy | Table-specific logic stays in `InlineChildResolver`, not collectors |
-| JavaScript | Good | Toolbar split into focused glue modules; largest file `easy-workspace-module.js` (~543 lines) |
+| Area | Status | Largest unit | Note |
+|------|--------|--------------|------|
+| Pending items pipeline | Pass | `InlineChildResolver` (~530) | `PendingItemsService` → `PendingItemsCollector` → factory + resolvers + `PendingItemAggregator` |
+| Module controller | Pass | `EasyWorkspaceModuleController` (~456) | Stats → `ModuleSectionViewDataFactory`; doc-header → `EasyWorkspaceModuleDocHeaderBuilder` |
+| AJAX controller | Pass | `EasyWorkspaceAjaxController` (~385) | Context via `PendingItemsService`; extract diff/history renderer only if it grows |
+| Publish selection | Pass | `PublishSelectionNormalizer` (~77) | Shared module POST + toolbar AJAX parsing |
+| Table policy | Pass | `WorkspaceTablePolicy` (~72) | Single allow-list for publish, discard, diff, rollback |
+| JavaScript | Pass | `easy-workspace-module.js` (~543) | Toolbar split into focused glue modules |
 
-Contributors: keep feature logic in the canonical service layer, do not push files past 1k lines without decomposition, and run the quality commands above. Full layer model, anti-patterns, and security expectations: [Documentation/Contributing.rst](Documentation/Contributing.rst).
+**Optional backlog** (not blockers): diff/history modal extraction in AJAX controller; module JS label-map helper if strings grow; collapse `PendingItemsService` empty-payload duplication when a third context appears.
+
+Contributors: [Documentation/Contributing.rst](Documentation/Contributing.rst) — layer model, file-size inventory, anti-patterns, quality bar.
 
 ## Architecture
 
@@ -211,24 +213,26 @@ PHP collects pending workspace records, renders toolbar markup with Fluid (ICU l
 
 ```
 Toolbar (custom element + glue JS) ──AJAX──► EasyWorkspaceAjaxController
-                                              │
-Module (Fluid) ──POST──────────────────────► EasyWorkspaceModuleController
-                                              │
-                                              ▼
-                                    PendingItemsService
-                                              │
-                         ┌────────────────────┼────────────────────┐
-                         ▼                    ▼                    ▼
-              PendingItemsCollector   PendingItemsToolbarRenderer   PublishSelectedService
-                         │                    │                         │
-                         ▼                    ▼                         ▼
-              PendingItemFactory +      Fluid templates            DataHandler
-              resolvers / aggregator
+         │                                          │
+         │                              PendingItemsToolbarRenderer (Fluid)
+         │
+Module (Fluid) ──POST──► EasyWorkspaceModuleController
+         │                        │
+         │            ModuleSectionViewDataFactory
+         │            EasyWorkspaceModuleDocHeaderBuilder
+         ▼
+PendingItemsService  ── resolveContext / *ForContext()
+         │
+         ├── PublishSelectionNormalizer ──► PublishSelectedService ──► DataHandler
+         │
+         ▼
+PendingItemsCollector
+         │
+         ▼
+PendingItemFactory + resolvers + InlineChildResolver + PendingItemAggregator
 ```
 
-Shared: `WorkspaceRecordQuery`, `InlineChildResolver`, `WorkspaceTablePolicy`, `PublishSelectionNormalizer`.
-
-Module-only: `ModuleSectionViewDataFactory`, `EasyWorkspaceModuleDocHeaderBuilder`.
+Canonical utilities: `WorkspaceRecordQuery`, `WorkspaceTablePolicy`, `ConfigurationProvider`, `Value`.
 
 ## Support
 
