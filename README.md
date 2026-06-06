@@ -2,7 +2,7 @@
 
 TYPO3 14.3 LTS backend extension for **one-click workspace publishing** from the top bar and from a full **Easy Workspace** module. Editors review pending workspace changes for the current page (or a single news article), select rows, and publish or discard through TYPO3’s `DataHandler` — no custom versioning layer.
 
-**Version:** 1.0.3 (see `composer.json` `extra.typo3/cms.version`)  
+**Version:** 1.1.0 (see `composer.json` `extra.typo3/cms.version`)  
 **Package:** `webconsulting/webcon-easy-workspace`  
 **License:** GPL-2.0-or-later
 
@@ -165,7 +165,7 @@ All endpoints require an authenticated backend user, TYPO3 route tokens, and (fo
 
 **Report security issues privately:** [GitHub Security Advisories](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new) — do not use public issues.
 
-Last full extension audit: **2026-06-03** (see [CHANGELOG](CHANGELOG.md) Unreleased → Security).
+Last full extension audit: **2026-06-03** (see [CHANGELOG](CHANGELOG.md) [1.1.0] → Security).
 
 ## Documentation
 
@@ -190,9 +190,9 @@ Build/Scripts/runTests.sh -s lint
 
 PHPStan level **max** (`Build/phpstan/phpstan.neon`). CI runs PHP 8.2–8.5.
 
-## Maintainability (thermo-nuclear review 2026-06-06)
+## Maintainability (thermo-nuclear review 2026-06-06, release 1.1.0)
 
-**Verdict: pass.** `composer test` and PHPStan level max are green. No file exceeds 1000 lines; canonical layers are respected after the June refactor.
+**Verdict: pass.** `composer test` and PHPStan level max are green. No file exceeds 1000 lines; canonical layers are respected. Release 1.1.0 ships with no open structural blockers from this review.
 
 ### Layer health
 

@@ -11,7 +11,7 @@ Easy Workspace
     webconsulting/webcon-easy-workspace
 
 :Version:
-    1.0.3
+    1.1.0
 
 :TYPO3:
     14.3 LTS only
@@ -404,11 +404,12 @@ Configuration
 Maintainability
 ===============
 
-**Thermo-nuclear review verdict (2026-06-06): pass.**
+**Thermo-nuclear review verdict (2026-06-06, release 1.1.0): pass.**
 
 ``composer test`` and PHPStan level ``max`` are green. No file exceeds
 **1000 lines**. The pending-items pipeline, table policy, publish selection
 normalizer, and page/news context dispatchers sit in the canonical layers.
+Release **1.1.0** ships with no open structural blockers from that review.
 
 Completed refactor (same day):
 

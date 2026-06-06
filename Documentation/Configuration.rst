@@ -4,7 +4,7 @@
 Configuration reference
 =======================
 
-Easy Workspace 1.0.3 ships ``Configuration/user.tsconfig``. TYPO3 14 loads
+Easy Workspace 1.1.0 ships ``Configuration/user.tsconfig``. TYPO3 14 loads
 this file automatically for active extensions, so no manual import is needed.
 
 Override precedence is:

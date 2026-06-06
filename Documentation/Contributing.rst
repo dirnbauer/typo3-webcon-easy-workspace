@@ -91,8 +91,8 @@ with Fluid and XLF.
 
 ..  _review-outcome:
 
-Thermo-nuclear review (2026-06-06)
-==================================
+Thermo-nuclear review (2026-06-06, release 1.1.0)
+=================================================
 
 **Verdict: pass.** PHPStan level ``max`` and ``composer test`` are green.
 No file exceeds **1000 lines**. Canonical layers are respected; no new
