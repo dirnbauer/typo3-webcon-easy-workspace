@@ -404,37 +404,44 @@ Configuration
 Maintainability
 ===============
 
-**Thermo-nuclear review verdict (2026-06-06, post-refactor): pass.**
+**Thermo-nuclear review verdict (2026-06-06): pass.**
 
-No structural regression. No file exceeds 1000 lines. The pending-items
-pipeline, table policy, publish selection normalizer, and page/news context
-dispatchers are in the canonical layers. PHPStan level ``max`` is green.
+``composer test`` and PHPStan level ``max`` are green. No file exceeds
+**1000 lines**. The pending-items pipeline, table policy, publish selection
+normalizer, and page/news context dispatchers sit in the canonical layers.
 
-Completed the same day:
+Completed refactor (same day):
 
-* ``EasyWorkspaceModuleController`` (~456 lines) — section stats and
+* ``EasyWorkspaceModuleController`` (456 lines) — section stats and
   doc-header extracted
 * ``PublishSelectionNormalizer`` — shared module POST / toolbar AJAX parsing
-* ``PendingItemsService`` context helpers — no duplicated page/news branches
-  in toolbar AJAX
+* ``PendingItemsService`` context helpers — page/news branching removed from
+  toolbar AJAX
 
-**Optional backlog** (address when touching nearby code, not blockers):
+Watch list — decompose before **~700 lines**:
 
-* ``EasyWorkspaceAjaxController::diffAction`` and
-  ``historyRollbackAction`` — extract a diff/history modal renderer if
-  either grows past ~500 lines combined
-* ``EasyWorkspaceModuleController::buildJsLabelMap()`` — move to a small
-  label-map helper if the module gains more client strings
+* ``InlineChildResolver`` (530) — IRRE / Content Blocks traversal
+* ``WorkspaceDiagnosticsService`` (513) — workspace DB integrity scan
+* ``easy-workspace-module.js`` (543) — module Modal / AjaxRequest glue
+
+Optional backlog (not blockers):
+
+* ``EasyWorkspaceAjaxController::diffAction`` — extract
+  ``RecordDiffModalViewDataFactory`` when timeline/label assembly grows
+* ``EasyWorkspaceModuleController::buildJsLabelMap()`` — extract when module
+  client strings multiply
 * ``PendingItemsService`` — ``forPage`` / ``forNews`` / ``payloadFor*`` still
   repeat empty-payload setup; acceptable until a third context appears
-* ``InlineChildResolver`` (~530 lines) — keep table-specific traversal here;
-  do not branch collectors
 
 **Do not add** ad-hoc conditionals to shared collectors or query helpers.
 Push new scope rules into ``PageCollectionScope`` / ``NewsCollectionScope``
 or a dedicated resolver.
 
-See :ref:`contributing` for the full layer model, file-size inventory,
+**Do not merge** PRs that push any file past **1000 lines**, scatter
+page/news checks into collectors, or duplicate ``WorkspaceTablePolicy`` gates.
+
+See :ref:`review-outcome` and :ref:`file-size-inventory` in
+:ref:`contributing` for the full layer model, measured line counts,
 anti-patterns, and contributor checklist.
 
 ..  _quality:

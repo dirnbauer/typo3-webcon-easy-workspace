@@ -192,20 +192,40 @@ PHPStan level **max** (`Build/phpstan/phpstan.neon`). CI runs PHP 8.2–8.5.
 
 ## Maintainability (thermo-nuclear review 2026-06-06)
 
-**Verdict: pass (post-refactor).** No file exceeds 1000 lines; canonical layers are respected; PHPStan max is green.
+**Verdict: pass.** `composer test` and PHPStan level max are green. No file exceeds 1000 lines; canonical layers are respected after the June refactor.
+
+### Layer health
 
 | Area | Status | Largest unit | Note |
 |------|--------|--------------|------|
-| Pending items pipeline | Pass | `InlineChildResolver` (~530) | `PendingItemsService` → `PendingItemsCollector` → factory + resolvers + `PendingItemAggregator` |
-| Module controller | Pass | `EasyWorkspaceModuleController` (~456) | Stats → `ModuleSectionViewDataFactory`; doc-header → `EasyWorkspaceModuleDocHeaderBuilder` |
-| AJAX controller | Pass | `EasyWorkspaceAjaxController` (~385) | Context via `PendingItemsService`; extract diff/history renderer only if it grows |
-| Publish selection | Pass | `PublishSelectionNormalizer` (~77) | Shared module POST + toolbar AJAX parsing |
-| Table policy | Pass | `WorkspaceTablePolicy` (~72) | Single allow-list for publish, discard, diff, rollback |
-| JavaScript | Pass | `easy-workspace-module.js` (~543) | Toolbar split into focused glue modules |
+| Pending items pipeline | Pass | `InlineChildResolver` (530) | `PendingItemsService` → `PendingItemsCollector` → factory + resolvers + `PendingItemAggregator` |
+| Diagnostics | Pass | `WorkspaceDiagnosticsService` (513) | Scan rules stay together; health reports via `WorkspaceTestingReportService` (426) |
+| Module controller | Pass | `EasyWorkspaceModuleController` (456) | Stats → `ModuleSectionViewDataFactory`; doc-header → `EasyWorkspaceModuleDocHeaderBuilder` |
+| AJAX controller | Pass | `EasyWorkspaceAjaxController` (385) | Context via `PendingItemsService`; `diffAction` still inline (~70 lines) |
+| Publish selection | Pass | `PublishSelectionNormalizer` (77) | Shared module POST + toolbar AJAX parsing |
+| Table policy | Pass | `WorkspaceTablePolicy` (72) | Single allow-list for publish, discard, diff, rollback |
+| JavaScript | Pass | `easy-workspace-module.js` (543) | Toolbar split into focused glue modules (`menu-*.js`) |
 
-**Optional backlog** (not blockers): diff/history modal extraction in AJAX controller; module JS label-map helper if strings grow; collapse `PendingItemsService` empty-payload duplication when a third context appears.
+### Watch list (decompose before ~700 lines)
 
-Contributors: [Documentation/Contributing.rst](Documentation/Contributing.rst) — layer model, file-size inventory, anti-patterns, quality bar.
+| File | Lines | Trigger for extraction |
+|------|-------|------------------------|
+| `InlineChildResolver.php` | 530 | New table-specific traversal → helper inside `PendingItems/`, not collector |
+| `WorkspaceDiagnosticsService.php` | 513 | New scan category → dedicated checker class |
+| `easy-workspace-module.js` | 543 | New module interaction → separate init module |
+| `PendingItemAggregator.php` | 428 | New grouping rule → small strategy helper |
+
+### Optional backlog (not blockers)
+
+- Extract `RecordDiffModalViewDataFactory` from `EasyWorkspaceAjaxController::diffAction` when diff labels or timeline assembly grow
+- Extract module `buildJsLabelMap()` when client strings multiply
+- Collapse `PendingItemsService` empty-payload helpers when a third collection context appears
+
+### PR blockers (from review bar)
+
+Do not merge changes that push any file past **1000 lines**, scatter page/news `if` chains into collectors or query helpers, or duplicate `WorkspaceTablePolicy` gates.
+
+Contributors: [Documentation/Contributing.rst](Documentation/Contributing.rst) — full review outcome, file-size inventory, anti-patterns, quality bar.
 
 ## Architecture
 

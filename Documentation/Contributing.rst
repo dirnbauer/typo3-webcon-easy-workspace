@@ -89,82 +89,139 @@ selection, TYPO3 modals, and iframe highlight live under
 ``Resources/Public/JavaScript/``. Markup and labels are server-rendered
 with Fluid and XLF.
 
-..  _file-size-inventory:
+..  _review-outcome:
 
-Review outcome (2026-06-06)
-=========================
+Thermo-nuclear review (2026-06-06)
+==================================
 
-Post-refactor thermo-nuclear pass: **approved**. Prior decomposition
-targets (module controller, publish selection parsing, AJAX context
-branching) are resolved. No new spaghetti in shared paths.
+**Verdict: pass.** PHPStan level ``max`` and ``composer test`` are green.
+No file exceeds **1000 lines**. Canonical layers are respected; no new
+ad-hoc branching in shared collectors or query helpers.
 
-Remaining optional work — not required for merge:
+Completed the same day (post-refactor):
 
-* Extract diff/history modal assembly from ``EasyWorkspaceAjaxController``
-  when that file approaches ~500 lines
-* Extract module JS label map if ``buildJsLabelMap()`` keeps growing
-* Collapse ``PendingItemsService`` empty-payload helpers when a third
-  collection context appears
+* ``EasyWorkspaceModuleController`` (456 lines) — section stats and
+  doc-header extracted to dedicated services
+* ``PublishSelectionNormalizer`` — shared module POST / toolbar AJAX
+  publish selection parsing
+* ``PendingItemsService`` context dispatchers — page/news branching
+  removed from ``EasyWorkspaceAjaxController``
+
+Prioritized findings (none are merge blockers):
+
+#. **No structural regression** — pending-items pipeline, table policy,
+   publish path, and diagnostics stay in the canonical layers.
+#. **Optional code-judo** — ``EasyWorkspaceAjaxController::diffAction``
+   still assembles timeline data and ~15 localized labels inline (~70
+   lines). Extract a ``RecordDiffModalViewDataFactory`` (or similar)
+   when that action grows or when diff labels are shared with the module.
+#. **Watch list (~500–700 lines)** — ``InlineChildResolver`` (530),
+   ``WorkspaceDiagnosticsService`` (513), and ``easy-workspace-module.js``
+   (543) are cohesive but large. Decompose before crossing **700**;
+   never cross **1000** without a compelling reason.
+#. **Facade repetition** — ``PendingItemsService`` repeats workspace-id and
+   empty-payload setup across ``forPage`` / ``forNews`` / ``payloadFor*``.
+   Acceptable until a third collection context appears.
+#. **Module label map** — ``buildJsLabelMap()`` (~35 lines) in the module
+   controller is a static key list. Extract when adding substantial new
+   module client strings.
+
+Do **not** approve future PRs that:
+
+* Push any single file past **1000 lines** without decomposition
+* Add page/news ``if`` chains to ``PendingItemsCollector``,
+  ``WorkspaceRecordQuery``, or ``PublishSelectedService`` instead of
+  scope objects or ``PendingItemsService`` dispatchers
+* Introduce thin wrappers or duplicate ``WorkspaceTablePolicy`` gates
 
 ..  _file-size-inventory:
 
 File-size inventory (2026-06-06)
 ================================
 
-Largest PHP units today (lines, approximate):
+Measured with ``wc -l``. Budget: decompose before **~700**; hard stop at
+**1000**.
+
+Largest PHP units:
 
 ..  list-table::
     :header-rows: 1
-    :widths: 55 15 30
+    :widths: 55 10 35
 
     * - File
       - Lines
       - Notes
+    * - ``InlineChildResolver``
+      - 530
+      - IRRE / Content Blocks traversal; add table helpers here, not in collector
+    * - ``WorkspaceDiagnosticsService``
+      - 513
+      - Single-purpose DB scan; keep scan rules together
     * - ``EasyWorkspaceModuleController``
-      - ~456
-      - Request glue; section stats and doc-header extracted
+      - 456
+      - Request glue; stats and doc-header delegated
+    * - ``PendingItemAggregator``
+      - 428
+      - Dedupe, grouping, parent context
+    * - ``WorkspaceTestingReportService``
+      - 426
+      - Health-check grouping from diagnostics scan
     * - ``EasyWorkspaceAjaxController``
-      - ~385
-      - Items, publish, discard, diff, rollback; split diff/history if it grows
+      - 385
+      - AJAX orchestration; extract diff modal if ``diffAction`` grows
+    * - ``RecordHistoryTimelineService``
+      - 355
+      - History timeline for diff modal
+    * - ``WorkspaceRecordQuery``
+      - 333
+      - Workspace-aware DB reads
+    * - ``PendingItemsCollector``
+      - 332
+      - Page/news scope orchestration
+    * - ``RecordDiffService``
+      - 304
+      - Field-level diff payload
+    * - ``PendingItemsService``
+      - 285
+      - Facade + ``*ForContext()`` dispatchers
+    * - ``PublishSelectedService``
+      - 264
+      - DataHandler publish/discard cmdmaps
     * - ``ModuleSectionViewDataFactory``
-      - ~170
-      - Pending/all statistics and diagnostics payload
+      - 170
+      - Section statistics and diagnostics payload
     * - ``EasyWorkspaceModuleDocHeaderBuilder``
-      - ~176
+      - 176
       - Doc-header view/preview/edit buttons
     * - ``PublishSelectionNormalizer``
-      - ~77
+      - 77
       - Shared publish selection parsing
-    * - ``PendingItemsService``
-      - ~285
-      - Facade + context dispatchers
-    * - ``InlineChildResolver``
-      - ~530
-      - Cohesive IRRE / Content Blocks recursion; monitor growth
-    * - ``WorkspaceDiagnosticsService``
-      - ~513
-      - Single-purpose DB scan; acceptable while scan rules stay together
-    * - ``PendingItemAggregator``
-      - ~428
-      - Dedupe, grouping, parent-context — correct home for this logic
 
 Largest JavaScript units:
 
 ..  list-table::
     :header-rows: 1
-    :widths: 55 15 30
+    :widths: 55 10 35
 
     * - File
       - Lines
       - Notes
     * - ``easy-workspace-module.js``
-      - ~543
+      - 543
       - Module glue (Modal, AjaxRequest, publish bar)
     * - ``menu-preview-locate.js``
-      - ~337
+      - 337
       - Iframe detection + scroll/highlight
+    * - ``menu-actions.js``
+      - 285
+      - Toolbar publish/discard/diff actions
+    * - ``menu-view.js``
+      - 257
+      - Toolbar filter panels and list rendering glue
 
-No file currently exceeds **1000 lines**. Treat that as a hard budget.
+Toolbar JS is split into focused modules (``menu-context.js``,
+``menu-selection.js``, ``menu-modals.js``, etc.). Keep new toolbar
+behaviour in the smallest existing module rather than growing one file.
 
 ..  _known-hotspots:
 
