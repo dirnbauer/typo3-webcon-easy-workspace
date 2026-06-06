@@ -2,6 +2,11 @@
  * DOM utilities shared by menu modules (breaks menu-context ↔ preview-locate cycle).
  */
 
+export function isKnownPreviewFrame(iframe) {
+  const src = iframe?.src || '';
+  return iframe?.id === 'visual-editor-iframe' || /[?&]editMode=/.test(src);
+}
+
 export function collectIframes(maxDepth = 4) {
   const seen = new Set();
   const out = [];

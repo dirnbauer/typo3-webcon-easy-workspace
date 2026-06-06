@@ -1,12 +1,9 @@
 import Notification from '@typo3/backend/notification.js';
 import { IFRAME_HIGHLIGHT_STYLE } from './menu-constants.js';
 import { label } from './menu-context.js';
-import { collectIframes } from './menu-dom-utils.js';
+import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
 
-export function isKnownPreviewFrame(iframe) {
-  const src = iframe?.src || '';
-  return iframe?.id === 'visual-editor-iframe' || /[?&]editMode=/.test(src);
-}
+export { isKnownPreviewFrame } from './menu-dom-utils.js';
 
 export function isPreviewGate(doc) {
   if (!doc) return false;

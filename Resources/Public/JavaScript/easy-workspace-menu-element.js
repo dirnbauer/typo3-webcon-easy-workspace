@@ -176,7 +176,7 @@ class WebconEasyWorkspaceMenu extends HTMLElement {
   _setMode(mode) { return setMode(this, mode); }
   _configuredWorkspaceId() { return configuredWorkspaceId(this); }
   _refresh() { return refresh(this); }
-  _refreshAfterBackendSave() { return refreshAfterBackendSave(this); }
+  _refreshAfterBackendSave(options) { return refreshAfterBackendSave(this, options); }
   _publish() { return publish(this); }
   _copyPreviewLink(pageUid) { return copyPreviewLink(this, pageUid); }
   _isCompactToolbar() { return isCompactToolbar(this); }

@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG } from './menu-constants.js';
-import { collectIframes } from './menu-dom-utils.js';
+import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
 
 export function readConfig(element) {
   const raw = element.getAttribute('config') || '';
@@ -102,13 +102,42 @@ export function detectContext(host) {
   // Fallback: URL ?id= parameter (e.g. when a module link was opened
   // before any page-tree selection happened in this session).
   if (pageUid <= 0) {
-    const fromUrl = parseInt(new URLSearchParams(window.location.search).get('id') || '0', 10);
-    if (fromUrl > 0) {
-      pageUid = fromUrl;
-    }
+    pageUid = detectPageUidFromModuleUrls();
   }
 
   return { pageUid: pageUid > 0 ? pageUid : 0, newsUid: 0 };
+}
+
+/**
+ * Resolve the page uid from backend module URLs. The toolbar lives in
+ * the top frame while Visual Editor runs inside typo3-contentiframe,
+ * so window.location.search often has no ?id= even though the module
+ * iframe URL does.
+ */
+export function detectPageUidFromModuleUrls() {
+  let pageUid = parseInt(new URLSearchParams(window.location.search).get('id') || '0', 10);
+  if (pageUid > 0) {
+    return pageUid;
+  }
+
+  try {
+    const topHref = window.top?.location?.href;
+    if (topHref) {
+      pageUid = parseInt(new URL(topHref, window.location.href).searchParams.get('id') || '0', 10);
+      if (pageUid > 0) {
+        return pageUid;
+      }
+    }
+  } catch { /* cross-origin */ }
+
+  for (const params of collectSearchParams()) {
+    pageUid = parseInt(params.get('id') || '0', 10);
+    if (pageUid > 0) {
+      return pageUid;
+    }
+  }
+
+  return 0;
 }
 
 /**
@@ -124,7 +153,12 @@ export function detectNewsUid(host) {
   if (fromTop > 0) {
     return fromTop;
   }
+  // Only inspect Visual Editor / preview iframes. Scanning every backend
+  // iframe (FormEngine edit forms, modals, …) caused false news context.
   for (const iframe of collectIframes()) {
+    if (!isKnownPreviewFrame(iframe)) {
+      continue;
+    }
     let url = '';
     try {
       url = iframe.contentWindow?.location?.href || '';

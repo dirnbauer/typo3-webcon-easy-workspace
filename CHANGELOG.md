@@ -4,6 +4,11 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Visual Editor saves now refresh the Easy Workspace toolbar reliably: resolve page context from backend module iframe URLs (`?id=`), force-refresh after `ve_saveEnded`, accept same-origin save signals when iframe discovery is briefly stale, and stop attaching save listeners inside the preview iframe (avoids interfering with Visual Editor postMessage).
+- News context detection scans only Visual Editor / preview iframes, not every backend iframe (FormEngine modals no longer steal scope).
+
 ### Changed
 
 - **Distribution:** GitHub/VCS install only; removed Packagist-oriented install instructions from README and manual. Package is not published on Packagist.

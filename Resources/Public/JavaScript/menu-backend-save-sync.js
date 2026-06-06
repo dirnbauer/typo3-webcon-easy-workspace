@@ -1,4 +1,5 @@
-import { collectIframes, isKnownPreviewFrame, isKnownPreviewWindow } from './menu-preview-locate.js';
+import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
+import { isKnownPreviewWindow } from './menu-preview-locate.js';
 
 /**
  * Use backend save lifecycles as refresh signals only. The toolbar
@@ -9,18 +10,38 @@ export function onBackendSaveMessage(host, event) {
   if (!isTrustedBackendSaveMessage(host, event)) {
     return;
   }
-  host._refreshAfterBackendSave();
+  const fromVisualEditor = event.data?.command === 've_saveEnded';
+  host._refreshAfterBackendSave({ force: fromVisualEditor });
 }
 
 export function isTrustedBackendSaveMessage(host, event) {
   const command = event.data?.command;
   if (command === 've_saveEnded') {
-    return isKnownPreviewWindow(host, event.source);
+    if (isKnownPreviewWindow(host, event.source)) {
+      return true;
+    }
+    // saveEnded is posted from the preview iframe to the VE module frame.
+    // Accept same-origin payloads even when iframe discovery is briefly stale.
+    return isSameOriginMessage(event);
   }
   if (event.data?.actionName === 'typo3:editform:saved') {
     return !event.origin || event.origin === window.location.origin;
   }
   return false;
+}
+
+function isSameOriginMessage(event) {
+  if (!event.origin) {
+    return true;
+  }
+  if (event.origin === window.location.origin) {
+    return true;
+  }
+  try {
+    return event.origin === window.top?.location?.origin;
+  } catch {
+    return false;
+  }
 }
 
 export function registerBackendSaveSignalListeners(host) {
@@ -37,6 +58,12 @@ export function registerBackendSaveSignalListeners(host) {
   try { addBackendSaveDocumentTarget(host, window.top?.document); } catch { /* cross-origin */ }
 
   for (const iframe of collectIframes()) {
+    // Listen on backend/module frames only. The preview iframe receives
+    // parent→child commands; attaching here is unnecessary and can race
+    // Visual Editor's strict postMessage routing during save.
+    if (isKnownPreviewFrame(iframe)) {
+      continue;
+    }
     try { addBackendSaveMessageTarget(host, iframe.contentWindow); } catch { /* cross-origin */ }
     addBackendFrameLoadTarget(host, iframe);
   }
@@ -134,7 +161,7 @@ export function scheduleBackendFrameLoadRefresh(host) {
   }
   host._backendFrameLoadRefreshTimer = window.setTimeout(() => {
     host._backendFrameLoadRefreshTimer = null;
-    host._refreshAfterBackendSave();
+    host._refreshAfterBackendSave({ force: true });
   }, 120);
 }
 

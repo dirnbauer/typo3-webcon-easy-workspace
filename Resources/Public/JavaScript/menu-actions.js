@@ -107,27 +107,31 @@ export async function refresh(host) {
   }
 }
 
-export async function refreshAfterBackendSave(host) {
+export async function refreshAfterBackendSave(host, options = {}) {
+  const force = Boolean(options.force);
   if (host._refreshAfterSaveTimer) {
     window.clearTimeout(host._refreshAfterSaveTimer);
     host._refreshAfterSaveTimer = null;
   }
-  await refreshIfPersistedChangesExist(host);
+  await refreshIfPersistedChangesExist(host, { force });
   host._refreshAfterSaveTimer = window.setTimeout(() => {
     host._refreshAfterSaveTimer = null;
-    refreshIfPersistedChangesExist(host);
+    refreshIfPersistedChangesExist(host, { force });
   }, 800);
 }
 
-export async function refreshIfPersistedChangesExist(host) {
+export async function refreshIfPersistedChangesExist(host, options = {}) {
+  const force = Boolean(options.force);
   const currentCount = changedItemCount(host);
-  try {
-    const hasChanges = await hasPersistedChangesInCurrentContext(host);
-    if (!hasChanges && currentCount === 0) {
-      return;
+  if (!force) {
+    try {
+      const hasChanges = await hasPersistedChangesInCurrentContext(host);
+      if (!hasChanges && currentCount === 0) {
+        return;
+      }
+    } catch (error) {
+      console.warn('[easy-workspace] has-changes request failed; refreshing item list', error);
     }
-  } catch (error) {
-    console.warn('[easy-workspace] has-changes request failed; refreshing item list', error);
   }
   await refresh(host);
 }
