@@ -21,13 +21,7 @@ TYPO3 14.3 LTS backend extension for **one-click workspace publishing** from the
 
 ## Installation
 
-```bash
-composer require webconsulting/webcon-easy-workspace:^14.0
-vendor/bin/typo3 extension:setup
-vendor/bin/typo3 cache:flush
-```
-
-VCS install (before Packagist):
+Distributed via **GitHub tags only** — not published on Packagist. Add the VCS repository to your project `composer.json`, then require the package:
 
 ```json
 {
@@ -38,9 +32,15 @@ VCS install (before Packagist):
     }
   ],
   "require": {
-    "webconsulting/webcon-easy-workspace": "^14.0"
+    "webconsulting/webcon-easy-workspace": "^1.1"
   }
 }
+```
+
+```bash
+composer update webconsulting/webcon-easy-workspace
+vendor/bin/typo3 extension:setup
+vendor/bin/typo3 cache:flush
 ```
 
 ## Quick start

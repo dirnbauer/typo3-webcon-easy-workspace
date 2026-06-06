@@ -4,6 +4,10 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Distribution:** GitHub/VCS install only; removed Packagist-oriented install instructions from README and manual. Package is not published on Packagist.
+
 ## [1.1.0] - 2026-06-06
 
 ### Changed

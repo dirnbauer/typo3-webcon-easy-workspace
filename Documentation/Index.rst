@@ -26,9 +26,28 @@ Easy Workspace adds a **backend toolbar dropdown** and a **backend module** so e
 Installation
 ============
 
+Easy Workspace is distributed via **GitHub tags only**. It is **not** published
+on Packagist. Add the VCS repository to your project ``composer.json``:
+
+..  code-block:: json
+
+    {
+      "repositories": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/dirnbauer/typo3-webcon-easy-workspace.git"
+        }
+      ],
+      "require": {
+        "webconsulting/webcon-easy-workspace": "^1.1"
+      }
+    }
+
+Then install or update:
+
 ..  code-block:: bash
 
-    composer require webconsulting/webcon-easy-workspace:^14.0
+    composer update webconsulting/webcon-easy-workspace
     vendor/bin/typo3 extension:setup
     vendor/bin/typo3 cache:flush
 
