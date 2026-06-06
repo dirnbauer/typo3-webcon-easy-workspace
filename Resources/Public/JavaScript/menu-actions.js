@@ -10,7 +10,6 @@ import {
 } from './menu-context.js';
 import { reloadPreviewIframes } from './menu-preview-locate.js';
 import { broadcastDeclineState } from './menu-backend-save-sync.js';
-import { applyViewMode, mountMenuHtml, updateFooterState } from './menu-view.js';
 import {
   key,
   publishRecordsForItem,
@@ -36,14 +35,17 @@ export function writePersistedMode(mode) {
   } catch { /* ignore */ }
 }
 
+function notifyView(host) {
+  host.requestUpdate?.();
+}
+
 export function setMode(host, mode) {
   if (host.mode === mode) {
     return;
   }
   host.mode = mode;
   writePersistedMode(mode);
-  applyViewMode(host, mode);
-  updateFooterState(host);
+  notifyView(host);
 }
 
 export async function refresh(host) {
@@ -53,12 +55,15 @@ export async function refresh(host) {
     host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = 0;
+    notifyView(host);
     syncToolbarVisibility(host);
     return;
   }
   host.state = 'loading';
-  host.innerHTML = '<div class="wew-menu wew-menu--loading"><div class="wew-menu__loading"><typo3-backend-spinner size="default"></typo3-backend-spinner><span>...</span></div></div>';
+  notifyView(host);
   const { pageUid, newsUid } = detectContext(host);
+  host.pageUid = pageUid;
+  host.newsUid = newsUid;
   const languageUid = detectLanguageUid(host);
   if (!pageUid && !newsUid) {
     host.state = 'no-context';
@@ -67,7 +72,7 @@ export async function refresh(host) {
     host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = configuredWorkspaceId(host);
-    host.innerHTML = `<div class="wew-menu"><div class="alert alert-info wew-menu__alert" role="status">${label(host, 'toolbar.noContext')}</div></div>`;
+    notifyView(host);
     updateToolbarBadge(host);
     syncToolbarVisibility(host);
     broadcastDeclineState(host);
@@ -90,11 +95,8 @@ export async function refresh(host) {
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
     host.contextLabel = buildContextLabel(host, data);
     host.selection = new Set(host.items.filter((i) => i.isChanged).map((i) => key(host, i)));
-    host.state = host.items.length === 0 ? 'empty' : 'loaded';
-    if (typeof data.html === 'string' && data.html !== '') {
-      mountMenuHtml(host, data.html);
-      applyViewMode(host, host.mode);
-    }
+    host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
+    notifyView(host);
     updateToolbarBadge(host);
     syncToolbarVisibility(host);
     broadcastDeclineState(host);
@@ -103,6 +105,7 @@ export async function refresh(host) {
     host.state = 'error';
     host.itemGroups = [];
     host.changedItemGroups = [];
+    notifyView(host);
     updateToolbarBadge(host);
   }
 }
@@ -230,7 +233,7 @@ export async function publish(host) {
     Notification.error(label(host, 'publish.failedTitle'), error?.message || label(host, 'error.unexpected'));
   } finally {
     host.publishing = false;
-    updateFooterState(host);
+    notifyView(host);
   }
 }
 

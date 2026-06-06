@@ -12,6 +12,9 @@ use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
 
 /**
  * Renders the toolbar dropdown menu markup via Fluid (ICU labels server-side).
+ *
+ * @deprecated since Easy Workspace 1.2 — toolbar menu is Lit-rendered client-side.
+ *             Kept for reference; not used by the items AJAX endpoint anymore.
  */
 final readonly class PendingItemsToolbarRenderer
 {

@@ -60,7 +60,7 @@ The toolbar is hidden in the Live workspace. The module requires `workspaces: of
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 1 | Backend toolbar item | Dropdown in the top bar; Fluid-rendered menu with glue JS for refresh and actions |
+| 1 | Backend toolbar item | Dropdown in the top bar; Lit-rendered menu (light DOM) with glue modules for context, preview, and save sync |
 | 2 | Toolbar change badge | Count of pending changes; `has-changes` AJAX polling |
 | 3 | Backend module (parent) | **Content → Easy Workspace** with page tree navigation |
 | 4 | Submodule **Open items** | Changed-only publish queue; POST publish form |
@@ -204,7 +204,7 @@ PHPStan level **max** (`Build/phpstan/phpstan.neon`). CI runs PHP 8.2–8.5.
 | AJAX controller | Pass | `EasyWorkspaceAjaxController` (385) | Context via `PendingItemsService`; `diffAction` still inline (~70 lines) |
 | Publish selection | Pass | `PublishSelectionNormalizer` (77) | Shared module POST + toolbar AJAX parsing |
 | Table policy | Pass | `WorkspaceTablePolicy` (72) | Single allow-list for publish, discard, diff, rollback |
-| JavaScript | Pass | `easy-workspace-module.js` (543) | Toolbar split into focused glue modules (`menu-*.js`) |
+| JavaScript | Pass | `components/wew-toolbar-menu.js` (~780) | Lit toolbar dropdown; glue modules (`menu-*.js`) for context, preview, modals |
 
 ### Watch list (decompose before ~700 lines)
 
@@ -229,12 +229,10 @@ Contributors: [Documentation/Contributing.rst](Documentation/Contributing.rst) �
 
 ## Architecture
 
-PHP collects pending workspace records, renders toolbar markup with Fluid (ICU labels), and exposes AJAX endpoints. JavaScript is glue only: context detection, menu refresh, checkbox selection, TYPO3 modals, and preview iframe highlight.
+PHP collects pending workspace records and exposes AJAX endpoints. The toolbar Lit component fetches JSON, renders the dropdown client-side (ICU labels from PHP `config`), and uses glue modules for context detection, preview iframe highlight, and TYPO3 modals.
 
 ```
-Toolbar (custom element + glue JS) ──AJAX──► EasyWorkspaceAjaxController
-         │                                          │
-         │                              PendingItemsToolbarRenderer (Fluid)
+Toolbar (Lit custom element + glue modules) ──AJAX──► EasyWorkspaceAjaxController
          │
 Module (Fluid) ──POST──► EasyWorkspaceModuleController
          │                        │

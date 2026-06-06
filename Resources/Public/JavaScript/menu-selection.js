@@ -34,12 +34,15 @@ export function toggle(host, item, checked) {
     next.delete(itemKey);
   }
   host.selection = next;
+  host.requestSelectionUpdate?.();
 }
 
 export function selectAll(host, value) {
   if (!value) {
     host.selection = new Set();
+    host.requestSelectionUpdate?.();
     return;
   }
   host.selection = new Set(host.items.filter((i) => i.isChanged).map((i) => key(host, i)));
+  host.requestSelectionUpdate?.();
 }

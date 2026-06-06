@@ -49,10 +49,10 @@ behaviour; DTOs carry shaped data to Fluid/JSON.
 
 ..  code-block:: text
 
-    Toolbar custom element + glue JS
+    Toolbar Lit custom element + glue modules
             │
             ▼
-    EasyWorkspaceAjaxController ──► PendingItemsToolbarRenderer (Fluid)
+    EasyWorkspaceAjaxController (JSON items payload)
             │
     EasyWorkspaceModuleController (Fluid module)
             │
@@ -212,12 +212,15 @@ Largest JavaScript units:
     * - ``menu-preview-locate.js``
       - 337
       - Iframe detection + scroll/highlight
+    * - ``components/wew-toolbar-menu.js``
+      - ~780
+      - Lit toolbar dropdown (light DOM, Visual Editor style)
     * - ``menu-actions.js``
-      - 285
-      - Toolbar publish/discard/diff actions
-    * - ``menu-view.js``
-      - 257
-      - Toolbar filter panels and list rendering glue
+      - ~290
+      - Toolbar publish/discard refresh orchestration
+    * - ``menu-toolbar-helpers.js``
+      - ~80
+      - Row/footer helpers shared by the Lit template
 
 Toolbar JS is split into focused modules (``menu-context.js``,
 ``menu-selection.js``, ``menu-modals.js``, etc.). Keep new toolbar

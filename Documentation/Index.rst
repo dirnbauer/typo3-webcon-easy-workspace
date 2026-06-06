@@ -58,17 +58,17 @@ Required system extensions: ``workspaces``, ``backend``, ``fluid``, ``frontend``
 Architecture
 ============
 
-PHP owns data collection, policy, and markup. JavaScript is glue only: context
-detection, AJAX refresh, event delegation, TYPO3 modals, and iframe highlight.
+PHP owns data collection, policy, and server-side labels. The toolbar Lit
+component renders the dropdown; glue modules handle context detection,
+preview highlight, and TYPO3 modals.
 
 Toolbar flow
 ------------
 
 #. ``EasyWorkspaceToolbarItem`` mounts ``<webcon-easy-workspace-menu>`` with TSconfig JSON.
-#. The custom element calls ``items`` AJAX with page/news/language context.
+#. The Lit custom element calls ``items`` AJAX with page/news/language context.
 #. ``PendingItemsService`` → ``PendingItemsCollector`` builds ``PendingItemsPayload``.
-#. ``PendingItemsToolbarRenderer`` renders Fluid templates (ICU labels from XLF).
-#. The response includes ``html`` plus a lightweight JSON item list for publish/discard glue.
+#. The JSON response includes grouped items for client-side rendering (labels from ``config``).
 #. User actions call ``publish``, ``discard``, ``diff``, or ``preview_link`` AJAX routes.
 
 Module flow
@@ -122,7 +122,7 @@ Toolbar
     * - Orange change indicator
       - ``hasChangesAction`` polling; counts normalized pending rows
     * - Dropdown menu
-      - Server-rendered Fluid HTML injected by glue JS; native popover top-layer
+      - Lit-rendered (light DOM); native popover top-layer
     * - No-context state
       - Message when no page/news context is detectable
     * - Loading state

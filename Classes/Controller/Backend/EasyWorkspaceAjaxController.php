@@ -19,7 +19,6 @@ use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
-use Webconsulting\WebconEasyWorkspace\Service\PendingItems\PendingItemsToolbarRenderer;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
@@ -47,7 +46,6 @@ final readonly class EasyWorkspaceAjaxController
         private RecordHistoryRollback $recordHistoryRollback,
         private LocalizationService $localizationService,
         private WorkspaceTablePolicy $workspaceTablePolicy,
-        private PendingItemsToolbarRenderer $toolbarRenderer,
         private PublishSelectionNormalizer $publishSelectionNormalizer,
     ) {}
 
@@ -81,12 +79,11 @@ final readonly class EasyWorkspaceAjaxController
         if ($collection['context'] === PendingItemsService::CONTEXT_NONE || $collection['payload'] === null) {
             return new JsonResponse([
                 'context' => PendingItemsService::CONTEXT_NONE,
-            'items' => [],
-            'itemGroups' => [],
-            'changedItemGroups' => [],
-            'workspaceId' => 0,
-            'mode' => $viewMode,
-                'html' => $this->toolbarRenderer->renderNoContext($request, $config),
+                'items' => [],
+                'itemGroups' => [],
+                'changedItemGroups' => [],
+                'workspaceId' => 0,
+                'mode' => $viewMode,
             ]);
         }
 
@@ -96,15 +93,6 @@ final readonly class EasyWorkspaceAjaxController
         return new JsonResponse([
             'context' => $context,
             ...$payload->toToolbarClientArray($context, includeDiff: false),
-            'html' => $this->toolbarRenderer->renderMenu(
-                $request,
-                $payload,
-                $config,
-                $context,
-                $viewMode,
-                pageUid: $pageUid,
-                newsUid: $newsUid,
-            ),
         ]);
     }
 

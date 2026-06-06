@@ -11,6 +11,7 @@ All notable changes to Easy Workspace are documented in this file.
 
 ### Changed
 
+- **Toolbar UI:** The dropdown menu is now a Lit component (`components/wew-toolbar-menu.js`, Visual Editor style) with light DOM so existing CSS keeps working. AJAX returns JSON item data only; labels still come from PHP via the `config` attribute.
 - **Distribution:** GitHub/VCS install only; removed Packagist-oriented install instructions from README and manual. Package is not published on Packagist.
 
 ## [1.1.0] - 2026-06-06
