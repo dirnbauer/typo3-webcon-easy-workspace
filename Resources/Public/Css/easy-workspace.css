@@ -165,6 +165,11 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 .wew-menu__chip {
     border: 0;
     background: transparent;
+    /* Keep the label and its count badge on a single row — the chip
+       must never wrap "Zu veröffentlichen" + count onto two lines. */
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
     /* TYPO3 v14 styleguide tokens — `--typo3-text-color-*` come from
        cms-backend/Resources/Public/Css/backend.css and adapt to
        light/dark via light-dark(). Inactive tab uses the secondary
@@ -1266,6 +1271,8 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 .wew-menu__selectall-label {
     font-weight: 500;
     color: var(--typo3-text-color-base, var(--bs-body-color));
+    /* Keep "Alle abwählen" on one line next to the checkbox. */
+    white-space: nowrap;
 }
 .wew-menu__count {
     font-variant-numeric: tabular-nums;
