@@ -4,6 +4,8 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-07
+
 ### Fixed
 
 - Visual Editor saves now refresh the Easy Workspace toolbar reliably: resolve page context from backend module iframe URLs (`?id=`), force-refresh after `ve_saveEnded`, accept same-origin save signals when iframe discovery is briefly stale, and stop attaching save listeners inside the preview iframe (avoids interfering with Visual Editor postMessage).
