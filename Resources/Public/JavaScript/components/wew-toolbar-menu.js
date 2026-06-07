@@ -37,6 +37,8 @@ import {
   copyPreviewLink,
   configuredWorkspaceId,
   setMode,
+  startBadgePolling,
+  stopBadgePolling,
 } from '../menu-actions.js';
 import {
   key,
@@ -105,6 +107,9 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.newsUid = 0;
     this._refreshAfterSaveTimer = null;
     this._backendFrameLoadRefreshTimer = null;
+    this._badgePollTimer = null;
+    this._badgePolling = false;
+    this._badgeWakeListener = null;
     this._backendSaveMessageTargets = new Map();
     this._backendSaveDocumentTargets = new Map();
     this._backendFrameLoadTargets = new Map();
@@ -147,6 +152,10 @@ export class WebconEasyWorkspaceMenu extends LitElement {
 
     this._backendSaveMessageListener = (event) => onBackendSaveMessage(this, event);
     registerBackendSaveSignalListeners(this);
+
+    // Guarantee the badge converges to the real pending count regardless of
+    // how a record changed (save path, drag/drop, paste, another tab).
+    this._startBadgePolling();
   }
 
   _ensurePopoverDropdown(host, toggle, menu) {
@@ -190,6 +199,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
       window.clearTimeout(this._backendFrameLoadRefreshTimer);
       this._backendFrameLoadRefreshTimer = null;
     }
+    this._stopBadgePolling();
     clearBackendSaveSignalListeners(this);
     super.disconnectedCallback();
   }
@@ -217,6 +227,8 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   _configuredWorkspaceId() { return configuredWorkspaceId(this); }
   _refresh() { return refresh(this); }
   _refreshAfterBackendSave(options) { return refreshAfterBackendSave(this, options); }
+  _startBadgePolling() { return startBadgePolling(this); }
+  _stopBadgePolling() { return stopBadgePolling(this); }
   _publish() { return publish(this); }
   _copyPreviewLink(pageUid) { return copyPreviewLink(this, pageUid); }
   _isCompactToolbar() { return isCompactToolbar(this); }

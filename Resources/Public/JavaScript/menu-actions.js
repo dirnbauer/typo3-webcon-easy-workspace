@@ -48,7 +48,7 @@ export function setMode(host, mode) {
   notifyView(host);
 }
 
-export async function refresh(host) {
+export async function refresh(host, options = {}) {
   if (!ENDPOINTS.items) {
     host.state = 'error';
     host.items = [];
@@ -59,8 +59,15 @@ export async function refresh(host) {
     syncToolbarVisibility(host);
     return;
   }
-  host.state = 'loading';
-  notifyView(host);
+  // Background polls pass `quiet` so an already-rendered (open) dropdown
+  // is not reset to the loading spinner on every tick; the badge and list
+  // still update once data arrives.
+  const quiet = Boolean(options.quiet);
+  const settled = host.state === 'loaded' || host.state === 'empty' || host.state === 'no-context';
+  if (!quiet || !settled) {
+    host.state = 'loading';
+    notifyView(host);
+  }
   const { pageUid, newsUid } = detectContext(host);
   host.pageUid = pageUid;
   host.newsUid = newsUid;
@@ -125,6 +132,7 @@ export async function refreshAfterBackendSave(host, options = {}) {
 
 export async function refreshIfPersistedChangesExist(host, options = {}) {
   const force = Boolean(options.force);
+  const quiet = Boolean(options.quiet);
   const currentCount = changedItemCount(host);
   if (!force) {
     try {
@@ -136,7 +144,63 @@ export async function refreshIfPersistedChangesExist(host, options = {}) {
       console.warn('[easy-workspace] has-changes request failed; refreshing item list', error);
     }
   }
-  await refresh(host);
+  await refresh(host, { quiet });
+}
+
+// Interval for the background "did anything change?" probe. Independent
+// of how the change was made (FormEngine, drag/drop, paste, another tab,
+// CLI), so the topnav badge always converges to the real count.
+export const BADGE_POLL_INTERVAL_MS = 4000;
+
+export function startBadgePolling(host) {
+  stopBadgePolling(host);
+  if (!ENDPOINTS.hasChanges && !ENDPOINTS.items) {
+    return;
+  }
+  host._badgePollTimer = window.setInterval(() => pollBadge(host), BADGE_POLL_INTERVAL_MS);
+  host._badgeWakeListener = () => {
+    if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+      pollBadge(host);
+    }
+  };
+  try {
+    document.addEventListener('visibilitychange', host._badgeWakeListener);
+    window.addEventListener('focus', host._badgeWakeListener);
+  } catch { /* noop */ }
+}
+
+export function stopBadgePolling(host) {
+  if (host._badgePollTimer) {
+    window.clearInterval(host._badgePollTimer);
+    host._badgePollTimer = null;
+  }
+  if (host._badgeWakeListener) {
+    try {
+      document.removeEventListener('visibilitychange', host._badgeWakeListener);
+      window.removeEventListener('focus', host._badgeWakeListener);
+    } catch { /* noop */ }
+    host._badgeWakeListener = null;
+  }
+}
+
+export async function pollBadge(host) {
+  // Skip hidden tabs (no point fetching) and avoid overlapping requests
+  // when a tick runs long on a slow connection.
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    return;
+  }
+  if (host._badgePolling) {
+    return;
+  }
+  host._badgePolling = true;
+  try {
+    await refreshIfPersistedChangesExist(host, { quiet: true });
+  } catch (error) {
+    // A transient failure must not break the polling loop.
+    console.warn('[easy-workspace] badge poll failed', error);
+  } finally {
+    host._badgePolling = false;
+  }
 }
 
 export async function hasPersistedChangesInCurrentContext(host) {
