@@ -1235,8 +1235,8 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 .wew-menu__foot-selection {
     display: flex;
     align-items: center;
-    gap: .45rem;
-    font-size: 11px;
+    gap: .4rem;
+    font-size: 10px;
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     min-width: 0;
     overflow: hidden;
@@ -1282,6 +1282,10 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 .wew-menu__count strong {
     color: var(--typo3-text-color-base, var(--bs-body-color));
     font-weight: 600;
+}
+.wew-menu__count-sep {
+    margin: 0 .1em;
+    opacity: .6;
 }
 
 /* Tier 1: the primary action. Refined — no longer a hero button.

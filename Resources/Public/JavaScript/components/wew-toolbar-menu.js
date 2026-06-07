@@ -749,10 +749,11 @@ export class WebconEasyWorkspaceMenu extends LitElement {
                      @change=${this.#onSelectAllChange} />
               <span class="wew-menu__selectall-label" data-wew-select-all-label>${selectAllLabel}</span>
             </label>
-            <span class="wew-menu__count" aria-live="polite" data-wew-selection-count>
-              <strong data-wew-selected-count>${selectedCount}</strong>
-              ${this._label('toolbar.of')}
-              <span data-wew-total-count>${total}</span>
+            <span class="wew-menu__count"
+                  aria-live="polite"
+                  aria-label="${selectedCount} ${this._label('toolbar.of')} ${total}"
+                  data-wew-selection-count>
+              <strong data-wew-selected-count>${selectedCount}</strong><span class="wew-menu__count-sep" aria-hidden="true">/</span><span data-wew-total-count>${total}</span>
             </span>
           ` : ''}
         </div>
