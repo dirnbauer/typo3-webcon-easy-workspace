@@ -191,15 +191,12 @@ final readonly class PublishSelectedService
             ];
         }
 
-        $resolvedWorkspaceUid = $this->findWorkspaceVersionUid($table, Value::int($row['uid'] ?? null), $preferredWorkspaceId);
-        if ($resolvedWorkspaceUid <= 0 || $preferredWorkspaceId <= 0) {
+        $resolvedTarget = $this->findDiscardTargetForLiveRecord($table, Value::int($row['uid'] ?? null), $preferredWorkspaceId);
+        if ($resolvedTarget['workspaceUid'] <= 0 || $resolvedTarget['workspaceId'] <= 0) {
             return $empty;
         }
 
-        return [
-            'workspaceUid' => $resolvedWorkspaceUid,
-            'workspaceId' => $preferredWorkspaceId,
-        ];
+        return $resolvedTarget;
     }
 
     private function activeMutationWorkspaceId(): int
@@ -285,6 +282,58 @@ final readonly class PublishSelectedService
             ->fetchAssociative();
 
         return is_array($row) ? Value::int($row['uid'] ?? null) : 0;
+    }
+
+    /**
+     * @return array{workspaceUid: int, workspaceId: int}
+     */
+    private function findDiscardTargetForLiveRecord(string $table, int $liveUid, int $preferredWorkspaceId): array
+    {
+        $empty = ['workspaceUid' => 0, 'workspaceId' => 0];
+        if ($liveUid <= 0) {
+            return $empty;
+        }
+
+        if ($preferredWorkspaceId > 0) {
+            $workspaceUid = $this->findWorkspaceVersionUid($table, $liveUid, $preferredWorkspaceId);
+            if ($workspaceUid > 0) {
+                return ['workspaceUid' => $workspaceUid, 'workspaceId' => $preferredWorkspaceId];
+            }
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+
+        $rows = $queryBuilder
+            ->select('uid', 't3ver_wsid')
+            ->from($table)
+            ->where(...$constraints)
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $accessible = [];
+        foreach ($rows as $row) {
+            $workspaceId = Value::int($row['t3ver_wsid'] ?? null);
+            if ($workspaceId > 0 && $this->backendUserCanAccessWorkspace($workspaceId)) {
+                $accessible[$workspaceId . ':' . Value::int($row['uid'] ?? null)] = [
+                    'workspaceUid' => Value::int($row['uid'] ?? null),
+                    'workspaceId' => $workspaceId,
+                ];
+            }
+        }
+
+        if (count($accessible) !== 1) {
+            return $empty;
+        }
+
+        return array_values($accessible)[0];
     }
 
     /**

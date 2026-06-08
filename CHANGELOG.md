@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-06-08
+
+### Fixed
+
+- Discard now resolves posted live record UIDs to their unique accessible workspace overlay when the backend request has no reliable active workspace state.
+
 ## [1.2.4] - 2026-06-08
 
 ### Fixed
