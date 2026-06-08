@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-08
+
+### Fixed
+
+- Toolbar dropdown selection now preserves explicit user choices across AJAX refreshes and badge polling. Choosing "Alle abwählen" no longer reselects all changed records after the next refresh.
+
 ## [1.1.1] - 2026-06-07
 
 ### Fixed
