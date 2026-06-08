@@ -731,7 +731,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     const publishLabel = selectedCount > 0 ? `${publishBase} (${selectedCount})` : publishBase;
     const selectAllLabel = allChecked
       ? this._label('toolbar.deselectAll')
-      : (someChecked ? this._label('toolbar.someSelected') : this._label('toolbar.selectAll'));
+      : this._label('toolbar.selectAll');
     const selectAllAria = allChecked
       ? this._label('toolbar.deselectAllChanges')
       : this._label('toolbar.selectAllChanges');

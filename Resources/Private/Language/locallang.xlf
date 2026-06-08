@@ -105,14 +105,14 @@
     </unit>
     <unit id="toolbar.allSelected">
       <segment>
-        <source>All selected - click to deselect</source>
-        <target state="translated">All selected - click to deselect</target>
+        <source>Deselect all</source>
+        <target state="translated">Deselect all</target>
       </segment>
     </unit>
     <unit id="toolbar.someSelected">
       <segment>
-        <source>Some selected - click to select all</source>
-        <target state="translated">Some selected - click to select all</target>
+        <source>Select all</source>
+        <target state="translated">Select all</target>
       </segment>
     </unit>
     <unit id="toolbar.selectAll">
