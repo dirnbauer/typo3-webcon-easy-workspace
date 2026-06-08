@@ -4,6 +4,13 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-06-08
+
+### Fixed
+
+- Discard and publish actions now resolve the active workspace from the backend user before running DataHandler commands, avoiding false "record does not belong to the active workspace" errors when Context and backend-user workspace state diverge.
+- Discard confirmation and preview copy now explains the actual workspace outcome for modified, new, delete-placeholder, and move-placeholder records.
+
 ## [1.2.2] - 2026-06-08
 
 ### Fixed

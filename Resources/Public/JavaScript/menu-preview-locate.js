@@ -1,6 +1,7 @@
 import Notification from '@typo3/backend/notification.js';
 import { IFRAME_HIGHLIGHT_STYLE } from './menu-constants.js';
 import { label } from './menu-context.js';
+import { discardTagSubtitleKey, discardTagTitleKey } from './menu-discard-copy.js';
 import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
 
 export { isKnownPreviewFrame } from './menu-dom-utils.js';
@@ -289,8 +290,8 @@ export function previewDiscard(host, item) {
     const doc = located.doc;
     const existing = doc.querySelector('.wew-discard-tag');
     if (existing) existing.remove();
-    const title = label(host, 'discardTag.title');
-    const subtitle = label(host, 'discardTag.subtitle');
+    const title = label(host, discardTagTitleKey(item), { title: item.title || '' });
+    const subtitle = label(host, discardTagSubtitleKey(item), { title: item.title || '' });
     const tag = doc.createElement('div');
     tag.className = 'wew-discard-tag';
     Object.assign(tag.style, {
@@ -307,7 +308,8 @@ export function previewDiscard(host, item) {
       backdropFilter: 'blur(4px) saturate(135%)',
       WebkitBackdropFilter: 'blur(4px) saturate(135%)',
       pointerEvents: 'none',
-      whiteSpace: 'nowrap',
+      whiteSpace: 'normal',
+      maxWidth: 'min(360px, calc(100vw - 32px))',
       fontFamily: 'inherit',
       textShadow: '0 1px 1px rgba(0, 0, 0, 0.38)',
     });
@@ -325,9 +327,15 @@ export function previewDiscard(host, item) {
     const scrollY = doc.defaultView?.scrollY ?? 0;
     const scrollX = doc.defaultView?.scrollX ?? 0;
     doc.body.appendChild(tag);
-    const tagHeight = tag.getBoundingClientRect().height || 36;
+    const tagRect = tag.getBoundingClientRect();
+    const tagHeight = tagRect.height || 36;
+    const tagWidth = tagRect.width || 0;
+    const viewportWidth = doc.defaultView?.innerWidth || doc.documentElement.clientWidth || 0;
+    const left = viewportWidth > 0
+      ? Math.max(scrollX + 8, Math.min(rect.left + scrollX, scrollX + viewportWidth - tagWidth - 8))
+      : rect.left + scrollX;
     tag.style.top = `${rect.top + scrollY - tagHeight - 6}px`;
-    tag.style.left = `${rect.left + scrollX}px`;
+    tag.style.left = `${left}px`;
   } catch {
     /* DOM access guarded — cross-origin iframes throw silently. */
   }

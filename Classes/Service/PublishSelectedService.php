@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -44,7 +45,7 @@ final readonly class PublishSelectedService
         if ($selections === []) {
             return ['success' => true, 'published' => 0, 'errors' => []];
         }
-        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+        $workspaceId = $this->activeMutationWorkspaceId();
         if ($workspaceId <= 0) {
             return ['success' => false, 'published' => 0, 'errors' => [$this->localizationService->translate('error.publishFromLive')]];
         }
@@ -124,7 +125,7 @@ final readonly class PublishSelectedService
         if ($table === '' || $workspaceUid <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
-        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+        $workspaceId = $this->activeMutationWorkspaceId();
         if ($workspaceId <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.discardFromLive')]];
         }
@@ -191,6 +192,16 @@ final readonly class PublishSelectedService
         }
 
         return $this->findWorkspaceVersionUid($table, Value::int($row['uid'] ?? null), $workspaceId);
+    }
+
+    private function activeMutationWorkspaceId(): int
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if ($backendUser instanceof BackendUserAuthentication) {
+            return max(0, Value::int($backendUser->workspace));
+        }
+
+        return Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
     }
 
     private function findWorkspaceVersionUid(string $table, int $liveUid, int $workspaceId): int

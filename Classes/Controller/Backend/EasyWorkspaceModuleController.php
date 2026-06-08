@@ -259,6 +259,10 @@ final readonly class EasyWorkspaceModuleController
         $keys = [
             'discard.modal.title',
             'discard.modal.message',
+            'discard.modal.message.modified',
+            'discard.modal.message.new',
+            'discard.modal.message.delete',
+            'discard.modal.message.move',
             'discard.modal.cancel',
             'discard.modal.confirm',
             'edit.title',

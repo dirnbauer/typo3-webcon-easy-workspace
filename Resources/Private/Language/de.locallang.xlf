@@ -13,6 +13,54 @@
         <target state="translated">Zurück zur zuletzt veröffentlichten Version</target>
       </segment>
     </unit>
+    <unit id="discardTag.title.modified">
+      <segment>
+        <source>Discard unpublished changes for "{title}"?</source>
+        <target state="translated">Unveröffentlichte Änderungen an "{title}" verwerfen?</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.subtitle.modified">
+      <segment>
+        <source>Removes the draft and shows the last published version again.</source>
+        <target state="translated">Entfernt den Entwurf und zeigt die zuletzt veröffentlichte Version wieder.</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.title.new">
+      <segment>
+        <source>Discard this new unpublished record?</source>
+        <target state="translated">Diesen neuen unveröffentlichten Datensatz verwerfen?</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.subtitle.new">
+      <segment>
+        <source>It will be removed from the workspace.</source>
+        <target state="translated">Er wird aus dem Workspace entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.title.delete">
+      <segment>
+        <source>Cancel the pending deletion?</source>
+        <target state="translated">Vorgemerkte Löschung aufheben?</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.subtitle.delete">
+      <segment>
+        <source>The published record remains available.</source>
+        <target state="translated">Der veröffentlichte Datensatz bleibt verfügbar.</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.title.move">
+      <segment>
+        <source>Cancel the pending move?</source>
+        <target state="translated">Vorgemerkte Verschiebung aufheben?</target>
+      </segment>
+    </unit>
+    <unit id="discardTag.subtitle.move">
+      <segment>
+        <source>The published position remains unchanged.</source>
+        <target state="translated">Die veröffentlichte Position bleibt unverändert.</target>
+      </segment>
+    </unit>
     <unit id="toolbar.title">
       <segment>
         <source>Workspace</source>
@@ -1395,8 +1443,32 @@
     </unit>
     <unit id="discard.modal.message">
       <segment>
-        <source>"{title}" ({table}) will lose its workspace edits. The live record stays untouched, but the staged change is gone for good. This cannot be undone.</source>
-        <target state="translated">"{title}" ({table}) verliert seine Workspace-Bearbeitungen. Der Live-Datensatz bleibt unverändert, aber die vorbereitete Änderung ist endgültig weg. Dies kann nicht rückgängig gemacht werden.</target>
+        <source>Discard unpublished changes for "{title}" ({table})? This removes the workspace draft and shows the last published version again.</source>
+        <target state="translated">Unveröffentlichte Änderungen an "{title}" ({table}) verwerfen? Der Workspace-Entwurf wird entfernt und die zuletzt veröffentlichte Version wieder angezeigt.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.message.modified">
+      <segment>
+        <source>Discard unpublished changes for "{title}" ({table})? This removes the workspace draft and shows the last published version again.</source>
+        <target state="translated">Unveröffentlichte Änderungen an "{title}" ({table}) verwerfen? Der Workspace-Entwurf wird entfernt und die zuletzt veröffentlichte Version wieder angezeigt.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.message.new">
+      <segment>
+        <source>Discard new unpublished record "{title}" ({table})? It will be removed from this workspace. There is no published version to restore.</source>
+        <target state="translated">Neuen unveröffentlichten Datensatz "{title}" ({table}) verwerfen? Er wird aus diesem Workspace entfernt. Es gibt keine veröffentlichte Version, die wiederhergestellt werden kann.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.message.delete">
+      <segment>
+        <source>Cancel the pending deletion of "{title}" ({table})? The published record remains available.</source>
+        <target state="translated">Vorgemerkte Löschung von "{title}" ({table}) aufheben? Der veröffentlichte Datensatz bleibt verfügbar.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.message.move">
+      <segment>
+        <source>Cancel the pending move of "{title}" ({table})? The published position remains unchanged.</source>
+        <target state="translated">Vorgemerkte Verschiebung von "{title}" ({table}) aufheben? Die veröffentlichte Position bleibt unverändert.</target>
       </segment>
     </unit>
     <unit id="discard.modal.cancel">
@@ -1419,8 +1491,32 @@
     </unit>
     <unit id="discard.success.message">
       <segment>
-        <source>Workspace version of "{title}" discarded.</source>
-        <target state="translated">Workspace-Version von "{title}" wurde verworfen.</target>
+        <source>Unpublished changes for "{title}" discarded. The published version is shown again.</source>
+        <target state="translated">Unveröffentlichte Änderungen an "{title}" wurden verworfen. Die veröffentlichte Version wird wieder angezeigt.</target>
+      </segment>
+    </unit>
+    <unit id="discard.success.message.modified">
+      <segment>
+        <source>Unpublished changes for "{title}" discarded. The published version is shown again.</source>
+        <target state="translated">Unveröffentlichte Änderungen an "{title}" wurden verworfen. Die veröffentlichte Version wird wieder angezeigt.</target>
+      </segment>
+    </unit>
+    <unit id="discard.success.message.new">
+      <segment>
+        <source>Unpublished new record "{title}" removed.</source>
+        <target state="translated">Unveröffentlichter neuer Datensatz "{title}" wurde entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="discard.success.message.delete">
+      <segment>
+        <source>Pending deletion of "{title}" canceled.</source>
+        <target state="translated">Vorgemerkte Löschung von "{title}" wurde aufgehoben.</target>
+      </segment>
+    </unit>
+    <unit id="discard.success.message.move">
+      <segment>
+        <source>Pending move of "{title}" canceled.</source>
+        <target state="translated">Vorgemerkte Verschiebung von "{title}" wurde aufgehoben.</target>
       </segment>
     </unit>
     <unit id="discard.error.title">

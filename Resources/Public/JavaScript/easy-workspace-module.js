@@ -21,6 +21,7 @@ import Notification from '@typo3/backend/notification.js';
 import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPositions } from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import '@typo3/backend/multi-record-selection.js';
+import { discardMessageKey } from './menu-discard-copy.js';
 
 const root = document.querySelector('[data-wew-module]');
 const LABELS = parseLabelMap(root);
@@ -133,12 +134,13 @@ function onDiscard(btn) {
   const table = btn.dataset.wewTable || '';
   const workspaceUid = parseInt(btn.dataset.wewWorkspaceUid || '0', 10);
   const title = btn.dataset.wewTitle || '';
+  const kindKey = btn.dataset.wewKindKey || '';
   if (!table || workspaceUid <= 0) return;
 
   const form = btn.closest('form');
   const modal = Modal.confirm(
     label('discard.modal.title'),
-    formatMessage(label('discard.modal.message'), { title, table }),
+    formatMessage(label(discardMessageKey(kindKey)), { title, table }),
     SeverityEnum.warning,
     [
       { text: label('discard.modal.cancel'), btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },

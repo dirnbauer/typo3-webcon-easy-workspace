@@ -5,6 +5,7 @@ import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js';
+import { discardMessageKey, discardSuccessMessageKey } from '../menu-discard-copy.js';
 import {
   readConfig,
   label,
@@ -332,7 +333,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
 
     const modal = Modal.confirm(
       this._label('discard.modal.title'),
-      this._label('discard.modal.message', { title: item.title, table: item.tableLabel || item.table }),
+      this._label(discardMessageKey(item), { title: item.title, table: item.tableLabel || item.table }),
       SeverityEnum.warning,
       [
         { text: this._label('discard.modal.cancel'), btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },
@@ -359,7 +360,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
           }
           const failed = results.filter((result) => !result?.success);
           if (failed.length === 0) {
-            Notification.success(this._label('discard.success.title'), this._label('discard.success.message', { title: item.title }), 4);
+            Notification.success(this._label('discard.success.title'), this._label(discardSuccessMessageKey(item), { title: item.title }), 4);
             await this._refresh();
             this._reloadPreviewIframes();
           } else {
