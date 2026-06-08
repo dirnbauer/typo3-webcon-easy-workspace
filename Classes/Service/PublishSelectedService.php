@@ -226,6 +226,9 @@ final readonly class PublishSelectedService
         if (!$backendUser instanceof BackendUserAuthentication || $workspaceId <= 0) {
             return false;
         }
+        if ($backendUser->isAdmin()) {
+            return true;
+        }
         return $backendUser->checkWorkspace($workspaceId) !== false;
     }
 
@@ -236,8 +239,16 @@ final readonly class PublishSelectedService
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
         $savedWorkspace = null;
+        $savedWorkspaceRec = null;
         if ($backendUser instanceof BackendUserAuthentication) {
             $savedWorkspace = $backendUser->workspace;
+            $savedWorkspaceRec = $backendUser->workspaceRec;
+            $workspaceRecord = $backendUser->checkWorkspace($workspaceId);
+            if (is_array($workspaceRecord)) {
+                $backendUser->workspaceRec = $workspaceRecord;
+            } elseif ($backendUser->isAdmin()) {
+                $backendUser->workspaceRec = ['uid' => $workspaceId, '_ACCESS' => 'admin'];
+            }
             $backendUser->workspace = $workspaceId;
         }
 
@@ -254,6 +265,9 @@ final readonly class PublishSelectedService
         } finally {
             if ($savedWorkspace !== null && $backendUser instanceof BackendUserAuthentication) {
                 $backendUser->workspace = $savedWorkspace;
+                if (is_array($savedWorkspaceRec)) {
+                    $backendUser->workspaceRec = $savedWorkspaceRec;
+                }
             }
             $this->context->setAspect('workspace', $savedWorkspaceContext);
         }

@@ -63,7 +63,7 @@
     "extra": {
         "typo3/cms": {
             "extension-key": "webcon_easy_workspace",
-            "version": "1.2.6",
+            "version": "1.2.7",
             "Package": {
                 "providesPackages": {}
             }

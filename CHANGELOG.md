@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-06-08
+
+### Fixed
+
+- Discard no longer rejects admin users before TYPO3 DataHandler runs when the AJAX bootstrap cannot resolve the workspace through Core's internal `checkWorkspace()` helper. The temporary DataHandler workspace state now carries the matching workspace record and is restored after the command.
+
 ## [1.2.6] - 2026-06-08
 
 ### Fixed
