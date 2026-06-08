@@ -13,7 +13,8 @@ import { broadcastDeclineState } from './menu-backend-save-sync.js';
 import {
   key,
   publishRecordsForItem,
-  selectAll,
+  resetSelection,
+  syncSelectionWithItems,
 } from './menu-selection.js';
 
 export { key, publishRecordsForItem, discardRecordsForItem } from './menu-selection.js';
@@ -39,6 +40,14 @@ function notifyView(host) {
   host.requestUpdate?.();
 }
 
+function selectionContextKey(pageUid, newsUid, languageUid, workspaceId) {
+  const contextType = pageUid > 0 ? 'page' : 'news';
+  const contextUid = pageUid > 0 ? pageUid : newsUid;
+  const languagePart = languageUid === null ? 'all' : String(languageUid);
+
+  return `${workspaceId}:${languagePart}:${contextType}:${contextUid}`;
+}
+
 export function setMode(host, mode) {
   if (host.mode === mode) {
     return;
@@ -55,6 +64,7 @@ export async function refresh(host, options = {}) {
     host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = 0;
+    resetSelection(host);
     notifyView(host);
     syncToolbarVisibility(host);
     return;
@@ -79,6 +89,7 @@ export async function refresh(host, options = {}) {
     host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = configuredWorkspaceId(host);
+    resetSelection(host);
     notifyView(host);
     updateToolbarBadge(host);
     syncToolbarVisibility(host);
@@ -101,7 +112,7 @@ export async function refresh(host, options = {}) {
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
     host.contextLabel = buildContextLabel(host, data);
-    host.selection = new Set(host.items.filter((i) => i.isChanged).map((i) => key(host, i)));
+    syncSelectionWithItems(host, selectionContextKey(pageUid, newsUid, languageUid, host.workspaceId));
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
     notifyView(host);
     updateToolbarBadge(host);
@@ -112,6 +123,7 @@ export async function refresh(host, options = {}) {
     host.state = 'error';
     host.itemGroups = [];
     host.changedItemGroups = [];
+    resetSelection(host);
     notifyView(host);
     updateToolbarBadge(host);
   }

@@ -93,6 +93,8 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.changedItemGroups = [];
     this.selection = new Set();
     this.selectionVersion = 0;
+    this._selectionContextKey = '';
+    this._selectionTouched = false;
     this.context = null;
     this.contextLabel = '';
     this.workspaceTitle = '';

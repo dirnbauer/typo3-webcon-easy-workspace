@@ -25,6 +25,32 @@ export function discardRecordsForItem(host, item) {
   ];
 }
 
+export function syncSelectionWithItems(host, contextKey) {
+  const items = Array.isArray(host.items) ? host.items : [];
+  const changedKeys = new Set(items.filter((i) => i.isChanged).map((i) => key(host, i)));
+  const contextChanged = host._selectionContextKey !== contextKey;
+
+  if (contextChanged) {
+    host._selectionContextKey = contextKey;
+    host._selectionTouched = false;
+  }
+
+  if (!host._selectionTouched) {
+    host.selection = changedKeys;
+    return;
+  }
+
+  host.selection = new Set(
+    Array.from(host.selection || []).filter((itemKey) => changedKeys.has(itemKey)),
+  );
+}
+
+export function resetSelection(host) {
+  host.selection = new Set();
+  host._selectionContextKey = '';
+  host._selectionTouched = false;
+}
+
 export function toggle(host, item, checked) {
   const next = new Set(host.selection);
   const itemKey = key(host, item);
@@ -34,10 +60,12 @@ export function toggle(host, item, checked) {
     next.delete(itemKey);
   }
   host.selection = next;
+  host._selectionTouched = true;
   host.requestSelectionUpdate?.();
 }
 
 export function selectAll(host, value) {
+  host._selectionTouched = true;
   if (!value) {
     host.selection = new Set();
     host.requestSelectionUpdate?.();
