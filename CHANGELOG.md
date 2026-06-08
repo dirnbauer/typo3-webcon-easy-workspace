@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-06-08
+
+### Fixed
+
+- Discard now resolves the target workspace from the workspace record itself and runs TYPO3 DataHandler inside that workspace context, so valid rows such as `tt_content#26304` are no longer rejected when request workspace state is stale or incomplete.
+
 ## [1.2.3] - 2026-06-08
 
 ### Fixed

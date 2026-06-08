@@ -6,6 +6,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -125,30 +126,28 @@ final readonly class PublishSelectedService
         if ($table === '' || $workspaceUid <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
-        $workspaceId = $this->activeMutationWorkspaceId();
-        if ($workspaceId <= 0) {
-            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.discardFromLive')]];
-        }
         // Defence-in-depth: confirm the record belongs to the active
         // workspace before handing it to DataHandler. The toolbar usually
         // sends the concrete workspace uid, but frontend preview controls
         // can report the rendered live uid. TYPO3's discard command accepts
         // both, so resolve live uids to their workspace version first.
-        $resolvedWorkspaceUid = $this->resolveWorkspaceUidForDiscard($table, $workspaceUid, $workspaceId);
-        if ($resolvedWorkspaceUid <= 0) {
+        $target = $this->resolveDiscardTarget($table, $workspaceUid, $this->activeMutationWorkspaceId());
+        if ($target['workspaceUid'] <= 0 || $target['workspaceId'] <= 0) {
+            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
+        }
+        if (!$this->backendUserCanAccessWorkspace($target['workspaceId'])) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
         }
 
         $cmd = [
             $table => [
-                $resolvedWorkspaceUid => [
+                $target['workspaceUid'] => [
                     'discard' => true,
                 ],
             ],
         ];
-        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
-        $dataHandler->start([], $cmd);
-        $dataHandler->process_cmdmap();
+
+        $dataHandler = $this->processCmdMapInWorkspace($cmd, $target['workspaceId']);
 
         return [
             'success' => $dataHandler->errorLog === [],
@@ -157,10 +156,14 @@ final readonly class PublishSelectedService
         ];
     }
 
-    private function resolveWorkspaceUidForDiscard(string $table, int $uid, int $workspaceId): int
+    /**
+     * @return array{workspaceUid: int, workspaceId: int}
+     */
+    private function resolveDiscardTarget(string $table, int $uid, int $preferredWorkspaceId): array
     {
-        if ($workspaceId <= 0 || $uid <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
-            return 0;
+        $empty = ['workspaceUid' => 0, 'workspaceId' => 0];
+        if ($uid <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return $empty;
         }
 
         $deletedField = TcaUtility::hasColumn($table, 'deleted');
@@ -176,32 +179,85 @@ final readonly class PublishSelectedService
             ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
-        if (!is_array($row)) {
-            return 0;
-        }
-        if ($deletedField && Value::int($row['deleted'] ?? null) !== 0) {
-            return 0;
+        if (!is_array($row) || ($deletedField && Value::int($row['deleted'] ?? null) !== 0)) {
+            return $empty;
         }
 
         $rowWorkspaceId = Value::int($row['t3ver_wsid'] ?? null);
-        if ($rowWorkspaceId === $workspaceId) {
-            return Value::int($row['uid'] ?? null);
-        }
-        if ($rowWorkspaceId !== 0) {
-            return 0;
+        if ($rowWorkspaceId > 0) {
+            return [
+                'workspaceUid' => Value::int($row['uid'] ?? null),
+                'workspaceId' => $rowWorkspaceId,
+            ];
         }
 
-        return $this->findWorkspaceVersionUid($table, Value::int($row['uid'] ?? null), $workspaceId);
+        $resolvedWorkspaceUid = $this->findWorkspaceVersionUid($table, Value::int($row['uid'] ?? null), $preferredWorkspaceId);
+        if ($resolvedWorkspaceUid <= 0 || $preferredWorkspaceId <= 0) {
+            return $empty;
+        }
+
+        return [
+            'workspaceUid' => $resolvedWorkspaceUid,
+            'workspaceId' => $preferredWorkspaceId,
+        ];
     }
 
     private function activeMutationWorkspaceId(): int
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
         if ($backendUser instanceof BackendUserAuthentication) {
-            return max(0, Value::int($backendUser->workspace));
+            $workspaceId = max(0, Value::int($backendUser->workspace));
+            if ($workspaceId > 0) {
+                return $workspaceId;
+            }
+            $userWorkspaceId = max(0, Value::int($backendUser->user['workspace_id'] ?? null));
+            if ($userWorkspaceId > 0) {
+                return $userWorkspaceId;
+            }
         }
 
         return Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+    }
+
+    private function backendUserCanAccessWorkspace(int $workspaceId): bool
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication || $workspaceId <= 0) {
+            return false;
+        }
+        return $backendUser->checkWorkspace($workspaceId) !== false;
+    }
+
+    /**
+     * @param array<string, array<int, array<string, mixed>>> $cmd
+     */
+    private function processCmdMapInWorkspace(array $cmd, int $workspaceId): DataHandler
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        $savedWorkspace = null;
+        if ($backendUser instanceof BackendUserAuthentication) {
+            $savedWorkspace = $backendUser->workspace;
+            $backendUser->workspace = $workspaceId;
+        }
+
+        $savedWorkspaceContext = $this->context->getAspect('workspace');
+        $this->context->setAspect('workspace', new WorkspaceAspect($workspaceId));
+        try {
+            $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+            if ($backendUser instanceof BackendUserAuthentication) {
+                $dataHandler->start([], $cmd, $backendUser);
+            } else {
+                $dataHandler->start([], $cmd);
+            }
+            $dataHandler->process_cmdmap();
+        } finally {
+            if ($savedWorkspace !== null && $backendUser instanceof BackendUserAuthentication) {
+                $backendUser->workspace = $savedWorkspace;
+            }
+            $this->context->setAspect('workspace', $savedWorkspaceContext);
+        }
+
+        return $dataHandler;
     }
 
     private function findWorkspaceVersionUid(string $table, int $liveUid, int $workspaceId): int
