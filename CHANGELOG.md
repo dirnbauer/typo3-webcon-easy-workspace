@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-06-08
+
+### Fixed
+
+- Toolbar footer now uses short action labels for all and partial selection states, avoiding truncated German helper text beside the publish button.
+
 ## [1.2.1] - 2026-06-08
 
 ### Fixed
