@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.9] - 2026-06-08
+
+### Fixed
+
+- Discard target resolution now checks TYPO3 workspace system fields (`t3ver_*`) against the database schema instead of normal TCA columns. This avoids falsely rejecting valid workspace rows such as `tt_content` with "record does not belong to the active workspace".
+
 ## [1.2.8] - 2026-06-08
 
 ### Fixed

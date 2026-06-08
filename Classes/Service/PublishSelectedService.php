@@ -11,7 +11,6 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
@@ -165,11 +164,11 @@ final readonly class PublishSelectedService
     private function resolveDiscardTarget(string $table, int $uid, int $preferredWorkspaceId): array
     {
         $empty = ['workspaceUid' => 0, 'workspaceId' => 0];
-        if ($uid <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($uid <= 0 || !$this->hasDatabaseColumn($table, 't3ver_wsid') || !$this->hasDatabaseColumn($table, 't3ver_oid')) {
             return $empty;
         }
 
-        $deletedField = TcaUtility::hasColumn($table, 'deleted');
+        $deletedField = $this->hasDatabaseColumn($table, 'deleted');
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
         $selectFields = ['uid', 't3ver_wsid', 't3ver_oid'];
@@ -264,11 +263,11 @@ final readonly class PublishSelectedService
 
     private function discardTargetIsAlreadyLive(string $table, int $uid, int $preferredWorkspaceId): bool
     {
-        if ($uid <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($uid <= 0 || !$this->hasDatabaseColumn($table, 't3ver_wsid') || !$this->hasDatabaseColumn($table, 't3ver_oid')) {
             return false;
         }
 
-        $deletedField = TcaUtility::hasColumn($table, 'deleted');
+        $deletedField = $this->hasDatabaseColumn($table, 'deleted');
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
         $selectFields = ['uid', 't3ver_wsid', 't3ver_oid'];
@@ -312,7 +311,7 @@ final readonly class PublishSelectedService
             $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
             $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
+        if ($this->hasDatabaseColumn($table, 'deleted')) {
             $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
 
@@ -339,7 +338,7 @@ final readonly class PublishSelectedService
             $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
             $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
+        if ($this->hasDatabaseColumn($table, 'deleted')) {
             $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
 
@@ -376,7 +375,7 @@ final readonly class PublishSelectedService
             $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
             $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
+        if ($this->hasDatabaseColumn($table, 'deleted')) {
             $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
 
@@ -407,11 +406,11 @@ final readonly class PublishSelectedService
 
     private function workspaceRowStillExists(string $table, int $workspaceUid, int $workspaceId): bool
     {
-        if ($workspaceUid <= 0 || $workspaceId <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($workspaceUid <= 0 || $workspaceId <= 0 || !$this->hasDatabaseColumn($table, 't3ver_wsid')) {
             return false;
         }
 
-        $deletedField = TcaUtility::hasColumn($table, 'deleted');
+        $deletedField = $this->hasDatabaseColumn($table, 'deleted');
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
         $selectFields = ['t3ver_wsid'];
@@ -470,6 +469,20 @@ final readonly class PublishSelectedService
         }
         $liveUid = Value::int($row['t3ver_oid'] ?? null);
         return $liveUid > 0 ? $liveUid : Value::int($row['uid'] ?? null);
+    }
+
+    private function hasDatabaseColumn(string $table, string $column): bool
+    {
+        try {
+            $columns = $this->connectionPool
+                ->getConnectionForTable($table)
+                ->createSchemaManager()
+                ->listTableColumns($table);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return array_key_exists(strtolower($column), array_change_key_case($columns, CASE_LOWER));
     }
 
 }
