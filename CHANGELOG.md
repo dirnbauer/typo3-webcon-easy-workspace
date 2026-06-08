@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.8] - 2026-06-08
+
+### Fixed
+
+- Discard now treats TYPO3 DataHandler as the source of truth for resolved workspace rows instead of failing on a preflight workspace-access check. Live UIDs are resolved by unique workspace overlay, and the service verifies that the workspace row was actually removed before reporting success.
+
 ## [1.2.7] - 2026-06-08
 
 ### Fixed

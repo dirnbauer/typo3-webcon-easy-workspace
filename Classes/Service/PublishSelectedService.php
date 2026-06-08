@@ -126,20 +126,15 @@ final readonly class PublishSelectedService
         if ($table === '' || $workspaceUid <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
-        // Defence-in-depth: confirm the record belongs to the active
-        // workspace before handing it to DataHandler. The toolbar usually
-        // sends the concrete workspace uid, but frontend preview controls
-        // can report the rendered live uid. TYPO3's discard command accepts
-        // both, so resolve live uids to their workspace version first.
+        // Resolve the concrete workspace row before handing it to
+        // DataHandler. The toolbar usually sends the workspace uid, but
+        // frontend preview controls can report the rendered live uid.
         $activeWorkspaceId = $this->activeMutationWorkspaceId();
         $target = $this->resolveDiscardTarget($table, $workspaceUid, $activeWorkspaceId);
         if ($target['workspaceUid'] <= 0 || $target['workspaceId'] <= 0) {
             if ($this->discardTargetIsAlreadyLive($table, $workspaceUid, $activeWorkspaceId)) {
                 return ['success' => true, 'discarded' => 0, 'errors' => []];
             }
-            return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
-        }
-        if (!$this->backendUserCanAccessWorkspace($target['workspaceId'])) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
         }
 
@@ -152,11 +147,15 @@ final readonly class PublishSelectedService
         ];
 
         $dataHandler = $this->processCmdMapInWorkspace($cmd, $target['workspaceId']);
+        $stillExists = $this->workspaceRowStillExists($table, $target['workspaceUid'], $target['workspaceId']);
+        if ($stillExists && $dataHandler->errorLog === []) {
+            $dataHandler->errorLog[] = $this->localizationService->translate('error.discardNotApplied');
+        }
 
         return [
-            'success' => $dataHandler->errorLog === [],
-            'discarded' => 1,
-            'errors' => Value::stringList($dataHandler->errorLog),
+            'success' => !$stillExists,
+            'discarded' => $stillExists ? 0 : 1,
+            'errors' => $stillExists ? Value::stringList($dataHandler->errorLog) : [],
         ];
     }
 
@@ -218,18 +217,6 @@ final readonly class PublishSelectedService
         }
 
         return Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
-    }
-
-    private function backendUserCanAccessWorkspace(int $workspaceId): bool
-    {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication || $workspaceId <= 0) {
-            return false;
-        }
-        if ($backendUser->isAdmin()) {
-            return true;
-        }
-        return $backendUser->checkWorkspace($workspaceId) !== false;
     }
 
     /**
@@ -310,7 +297,7 @@ final readonly class PublishSelectedService
             return false;
         }
 
-        return $this->countAccessibleWorkspaceVersionsOfLiveRecord($table, $liveUid) === 0;
+        return $this->countWorkspaceVersionsOfLiveRecord($table, $liveUid) === 0;
     }
 
     private function findWorkspaceVersionUid(string $table, int $liveUid, int $workspaceId): int
@@ -340,7 +327,7 @@ final readonly class PublishSelectedService
         return is_array($row) ? Value::int($row['uid'] ?? null) : 0;
     }
 
-    private function countAccessibleWorkspaceVersionsOfLiveRecord(string $table, int $liveUid): int
+    private function countWorkspaceVersionsOfLiveRecord(string $table, int $liveUid): int
     {
         if ($liveUid <= 0) {
             return 0;
@@ -363,15 +350,7 @@ final readonly class PublishSelectedService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $count = 0;
-        foreach ($rows as $row) {
-            $workspaceId = Value::int($row['t3ver_wsid'] ?? null);
-            if ($workspaceId > 0 && $this->backendUserCanAccessWorkspace($workspaceId)) {
-                ++$count;
-            }
-        }
-
-        return $count;
+        return count($rows);
     }
 
     /**
@@ -408,22 +387,48 @@ final readonly class PublishSelectedService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $accessible = [];
+        $targets = [];
         foreach ($rows as $row) {
             $workspaceId = Value::int($row['t3ver_wsid'] ?? null);
-            if ($workspaceId > 0 && $this->backendUserCanAccessWorkspace($workspaceId)) {
-                $accessible[$workspaceId . ':' . Value::int($row['uid'] ?? null)] = [
+            if ($workspaceId > 0) {
+                $targets[$workspaceId . ':' . Value::int($row['uid'] ?? null)] = [
                     'workspaceUid' => Value::int($row['uid'] ?? null),
                     'workspaceId' => $workspaceId,
                 ];
             }
         }
 
-        if (count($accessible) !== 1) {
+        if (count($targets) !== 1) {
             return $empty;
         }
 
-        return array_values($accessible)[0];
+        return array_values($targets)[0];
+    }
+
+    private function workspaceRowStillExists(string $table, int $workspaceUid, int $workspaceId): bool
+    {
+        if ($workspaceUid <= 0 || $workspaceId <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return false;
+        }
+
+        $deletedField = TcaUtility::hasColumn($table, 'deleted');
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $selectFields = ['t3ver_wsid'];
+        if ($deletedField) {
+            $selectFields[] = 'deleted';
+        }
+        $row = $queryBuilder
+            ->select(...$selectFields)
+            ->from($table)
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($workspaceUid, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
+        if (!is_array($row) || ($deletedField && Value::int($row['deleted'] ?? null) !== 0)) {
+            return false;
+        }
+
+        return Value::int($row['t3ver_wsid'] ?? null) === $workspaceId;
     }
 
     /**

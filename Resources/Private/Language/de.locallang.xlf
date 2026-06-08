@@ -1867,6 +1867,12 @@
         <target state="translated">Datensatz gehört nicht zum aktiven Arbeitsbereich.</target>
       </segment>
     </unit>
+    <unit id="error.discardNotApplied">
+      <segment>
+        <source>TYPO3 did not remove the workspace version. Reload the backend and try discarding again.</source>
+        <target state="translated">TYPO3 hat die Workspace-Version nicht entfernt. Bitte das Backend neu laden und erneut verwerfen.</target>
+      </segment>
+    </unit>
     <unit id="history.action.created">
       <segment>
         <source>Created</source>
