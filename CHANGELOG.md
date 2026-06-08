@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-06-08
+
+### Fixed
+
+- Discard is now idempotent for stale toolbar requests: if the workspace row was already removed or the live record no longer has an accessible workspace overlay, the endpoint returns success instead of a misleading workspace mismatch error.
+
 ## [1.2.5] - 2026-06-08
 
 ### Fixed

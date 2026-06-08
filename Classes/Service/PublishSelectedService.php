@@ -131,8 +131,12 @@ final readonly class PublishSelectedService
         // sends the concrete workspace uid, but frontend preview controls
         // can report the rendered live uid. TYPO3's discard command accepts
         // both, so resolve live uids to their workspace version first.
-        $target = $this->resolveDiscardTarget($table, $workspaceUid, $this->activeMutationWorkspaceId());
+        $activeWorkspaceId = $this->activeMutationWorkspaceId();
+        $target = $this->resolveDiscardTarget($table, $workspaceUid, $activeWorkspaceId);
         if ($target['workspaceUid'] <= 0 || $target['workspaceId'] <= 0) {
+            if ($this->discardTargetIsAlreadyLive($table, $workspaceUid, $activeWorkspaceId)) {
+                return ['success' => true, 'discarded' => 0, 'errors' => []];
+            }
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.recordWrongWorkspace')]];
         }
         if (!$this->backendUserCanAccessWorkspace($target['workspaceId'])) {
@@ -257,6 +261,44 @@ final readonly class PublishSelectedService
         return $dataHandler;
     }
 
+    private function discardTargetIsAlreadyLive(string $table, int $uid, int $preferredWorkspaceId): bool
+    {
+        if ($uid <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+            return false;
+        }
+
+        $deletedField = TcaUtility::hasColumn($table, 'deleted');
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $selectFields = ['uid', 't3ver_wsid', 't3ver_oid'];
+        if ($deletedField) {
+            $selectFields[] = 'deleted';
+        }
+        $row = $queryBuilder
+            ->select(...$selectFields)
+            ->from($table)
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
+
+        if (!is_array($row)) {
+            return true;
+        }
+        if ($deletedField && Value::int($row['deleted'] ?? null) !== 0) {
+            return true;
+        }
+        if (Value::int($row['t3ver_wsid'] ?? null) > 0) {
+            return false;
+        }
+
+        $liveUid = Value::int($row['uid'] ?? null);
+        if ($preferredWorkspaceId > 0 && $this->findWorkspaceVersionUid($table, $liveUid, $preferredWorkspaceId) > 0) {
+            return false;
+        }
+
+        return $this->countAccessibleWorkspaceVersionsOfLiveRecord($table, $liveUid) === 0;
+    }
+
     private function findWorkspaceVersionUid(string $table, int $liveUid, int $workspaceId): int
     {
         if ($liveUid <= 0 || $workspaceId <= 0) {
@@ -282,6 +324,40 @@ final readonly class PublishSelectedService
             ->fetchAssociative();
 
         return is_array($row) ? Value::int($row['uid'] ?? null) : 0;
+    }
+
+    private function countAccessibleWorkspaceVersionsOfLiveRecord(string $table, int $liveUid): int
+    {
+        if ($liveUid <= 0) {
+            return 0;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+
+        $rows = $queryBuilder
+            ->select('t3ver_wsid')
+            ->from($table)
+            ->where(...$constraints)
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $count = 0;
+        foreach ($rows as $row) {
+            $workspaceId = Value::int($row['t3ver_wsid'] ?? null);
+            if ($workspaceId > 0 && $this->backendUserCanAccessWorkspace($workspaceId)) {
+                ++$count;
+            }
+        }
+
+        return $count;
     }
 
     /**
