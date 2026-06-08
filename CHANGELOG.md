@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [14.0.1] - 2026-06-08
+
+### Fixed
+
+- Re-release the current TYPO3 14 line from the working 1.2.9 code so Composer resolves the newest Easy Workspace build as the latest stable `v14.x` package.
+
 ## [1.2.9] - 2026-06-08
 
 ### Fixed
