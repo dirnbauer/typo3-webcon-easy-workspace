@@ -74,42 +74,43 @@ The toolbar is hidden in the Live workspace. The module requires `workspaces: of
 | 7 | Page scope | Page record, `tt_content` on that page, inline children, file references |
 | 8 | Active workspace only | `WorkspaceRestriction` + `t3ver_wsid` on queries |
 | 9 | Backend language scope | Defaults to the detected backend page language; toolbar control can include all page languages; server filtering uses TCA `languageField` / `l10n_parent` |
-| 10 | Standalone file metadata | Pending `sys_file_metadata` in the active workspace (global to workspace, not page language) |
-| 11 | Duplicate suppression | One row per logical record (live key or workspace-only key) |
-| 12 | Parent context rows | Child-only changes still show parent row with nested children |
-| 13 | EXT:news per-article scope | On news detail preview or news edit form: article + `tx_news_related_news` CEs |
-| 14 | News auto-detection (toolbar) | `tx_news_pi1[news]` in iframe URL or `edit[tx_news_domain_model_news][N]` |
-| 15 | Explicit `newsUid` (module/AJAX) | Module route and AJAX accept `newsUid` |
-| 16 | `maxItems` cap | Server-side limit (default 200) per request |
-| 17 | Hidden records | `showHidden` filters server-side; optional Hidden badge + thumbnail stripe |
+| 10 | Localization metadata filter | Workspace rows changed only by localization metadata (`l10n_diffsource` / `l18n_diffsource`, `l10n_state`, etc.) stay out of the changed queue |
+| 11 | Standalone file metadata | Pending `sys_file_metadata` in the active workspace (global to workspace, not page language) |
+| 12 | Duplicate suppression | One row per logical record (live key or workspace-only key) |
+| 13 | Parent context rows | Child-only changes still show parent row with nested children |
+| 14 | EXT:news per-article scope | On news detail preview or news edit form: article + `tx_news_related_news` CEs |
+| 15 | News auto-detection (toolbar) | `tx_news_pi1[news]` in iframe URL or `edit[tx_news_domain_model_news][N]` |
+| 16 | Explicit `newsUid` (module/AJAX) | Module route and AJAX accept `newsUid` |
+| 17 | `maxItems` cap | Server-side limit (default 200) per request |
+| 18 | Hidden records | `showHidden` filters server-side; optional Hidden badge + thumbnail stripe |
 
 ### Row presentation
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 18 | Title + type label | TCA-based type line (`enableTypeLabels`) |
-| 19 | Workspace state badge | Changed vs live indicator |
-| 20 | Thumbnails | TYPO3-processed previews (`enableThumbnails`) |
-| 21 | Related child disclosures | Toolbar/module toggles via user settings (publish still includes children) |
-| 22 | Table grouping | `itemGroups` / `changedItemGroups` in API and module |
-| 23 | Multi-select table state | TYPO3 styleguide selected/info row styling in module |
-| 24 | Filter modes | **To publish** / **All on page** (`enableFilter`, `defaultMode`) |
-| 25 | Workspace name chip | Header chip with workspace title (`enableWorkspaceChip`) |
+| 19 | Title + type label | TCA-based type line (`enableTypeLabels`) |
+| 20 | Workspace state badge | Changed vs live indicator |
+| 21 | Thumbnails | TYPO3-processed previews (`enableThumbnails`) |
+| 22 | Related child disclosures | Toolbar/module toggles via user settings (publish still includes children) |
+| 23 | Table grouping | `itemGroups` / `changedItemGroups` in API and module |
+| 24 | Multi-select table state | TYPO3 styleguide selected/info row styling in module |
+| 25 | Filter modes | **To publish** / **All on page** (`enableFilter`, `defaultMode`) |
+| 26 | Workspace name chip | Header chip with workspace title (`enableWorkspaceChip`) |
 
 ### Actions per row / batch
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 26 | Bulk publish | `DataHandler` version publish cmdmap; parent-before-child order |
-| 27 | Per-row discard | TYPO3 v14 `discard` command (`enableRevert`) |
-| 28 | Diff modal | Field-level diff + `sys_history` timeline (AJAX HTML) |
-| 29 | History rollback | Linear or single-field rollback via `RecordHistoryRollback` |
-| 30 | Record edit | Contextual / full FormEngine links from module and diff |
-| 31 | Eye icon (locate in preview) | Scroll/highlight `#c{uid}` in Visual Editor, Viewpage, or same-origin iframe |
-| 32 | Inline locate target | Child rows target parent `tt_content` for eye icon |
-| 33 | Preview link | `PreviewUriBuilder` → OS clipboard (`enablePreviewLink`) |
-| 34 | Module doc-header actions | Show page, preview link, edit page properties (with permission checks on page) |
-| 35 | Visual Editor decline control | Optional FE `editMode` middleware loads discard helper in workspace |
+| 27 | Bulk publish | `DataHandler` version publish cmdmap; parent-before-child order |
+| 28 | Per-row discard | TYPO3 v14 `discard` command (`enableRevert`) |
+| 29 | Diff modal | Field-level diff + `sys_history` timeline (AJAX HTML) |
+| 30 | History rollback | Linear or single-field rollback via `RecordHistoryRollback` |
+| 31 | Record edit | Contextual / full FormEngine links from module and diff |
+| 32 | Eye icon (locate in preview) | Scroll/highlight `#c{uid}` in Visual Editor, Viewpage, or same-origin iframe |
+| 33 | Inline locate target | Child rows target parent `tt_content` for eye icon |
+| 34 | Preview link | `PreviewUriBuilder` → OS clipboard (`enablePreviewLink`) |
+| 35 | Module doc-header actions | Show page, preview link, edit page properties (with permission checks on page) |
+| 36 | Visual Editor decline control | Optional FE `editMode` middleware loads discard helper in workspace |
 
 ### AJAX API (backend, authenticated)
 
@@ -229,7 +230,7 @@ Contributors: [Documentation/Contributing.rst](Documentation/Contributing.rst) �
 
 ## Architecture
 
-PHP collects pending workspace records and exposes AJAX endpoints. The toolbar Lit component fetches JSON, renders the dropdown client-side (ICU labels from PHP `config`), and uses glue modules for context detection, preview iframe highlight, and TYPO3 modals.
+PHP collects pending workspace records and exposes AJAX endpoints. The toolbar Lit component fetches JSON, renders the dropdown client-side (ICU labels from PHP `config`), and uses glue modules for context detection, preview iframe highlight, and TYPO3 modals. Workspace rows that only differ in ignored system/localization fields are rendered as normal records in all-record views, not as changed rows with publish checkboxes.
 
 ```
 Toolbar (Lit custom element + glue modules) ──AJAX──► EasyWorkspaceAjaxController

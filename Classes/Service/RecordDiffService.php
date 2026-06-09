@@ -115,6 +115,24 @@ final readonly class RecordDiffService
     }
 
     /**
+     * Metadata-only workspace rows can be created by TYPO3's localization
+     * machinery when the source record changes. They are real workspace rows,
+     * but they are not editor-visible content changes for the compact toolbar
+     * list.
+     *
+     * @param array<string, mixed> $versionRow
+     */
+    public function hasEditorVisibleChanges(string $table, array $versionRow): bool
+    {
+        $versionState = VersionState::tryFrom(Value::int($versionRow['t3ver_state'] ?? null)) ?? VersionState::DEFAULT_STATE;
+        if ($versionState !== VersionState::DEFAULT_STATE) {
+            return true;
+        }
+
+        return $this->diff($table, $versionRow) !== [];
+    }
+
+    /**
      * Best-effort record title for the modal heading. Used only as
      * presentation — the canonical title-field resolution lives in
      * PendingItemsService::resolveTitle(); we duplicate a minimal

@@ -155,6 +155,8 @@ Toolbar
       - Client reads iframe URL / edit form (``enableNewsBundles``)
     * - Language parameter
       - Toolbar defaults to the detected current page language; editors can switch the dropdown to all page languages
+    * - Localization metadata filter
+      - Workspace rows changed only by localization system fields stay out of the changed queue
 
 Backend module
 --------------
@@ -354,6 +356,15 @@ It starts with the current page language so a publish action stays aligned with
 the editor's visible backend context. A compact language scope control in the
 dropdown can switch the same page/news context to all languages when an editor
 intentionally wants a cross-language review.
+
+Changing a source-language record can create workspace versions of localized
+records even when the translated text itself did not change. Easy Workspace
+does not promote those metadata-only rows to the changed queue. The same
+ignored fields as the diff view are used for that decision, including
+``l10n_diffsource`` / ``l18n_diffsource``, ``l10n_state``, ``l10n_source`` and
+``l10n_parent``. Those rows may still appear as normal context records in
+all-record views, but they do not get publish checkboxes or inflate the toolbar
+badge count.
 
 ..  _duplicate-suppression:
 
