@@ -5,7 +5,6 @@ import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js';
-import { discardMessageKey, discardSuccessMessageKey } from '../menu-discard-copy.js';
 import {
   readConfig,
   label,
@@ -13,6 +12,8 @@ import {
   buildContextLabel,
   detectContext,
   detectLanguageUid,
+  discardMessageKey,
+  discardSuccessMessageKey,
 } from '../menu-context.js';
 import {
   highlightInIframe,
@@ -28,19 +29,17 @@ import {
   broadcastDeclineState,
 } from '../menu-backend-save-sync.js';
 import { openEditModal, openDiffModal } from '../menu-modals.js';
-import { isCompactToolbar } from '../menu-glue.js';
 import {
   discardRecordsForItem,
   readPersistedMode,
   refresh,
   refreshAfterBackendSave,
+  refreshBadge,
   publish,
   copyPreviewLink,
   configuredWorkspaceId,
   setMode,
   setLanguageScope,
-  startBadgePolling,
-  stopBadgePolling,
 } from '../menu-actions.js';
 import {
   key,
@@ -78,6 +77,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     workspaceTitle: { type: String },
     pageUid: { type: Number },
     newsUid: { type: Number },
+    badgeCount: { type: Number },
     detectedLanguageUid: { type: Number },
     languageScope: { type: String },
     publishing: { type: Boolean },
@@ -111,13 +111,10 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.variant = 'toolbar';
     this.pageUid = 0;
     this.newsUid = 0;
+    this.badgeCount = 0;
     this.detectedLanguageUid = null;
     this.languageScope = 'current';
-    this._refreshAfterSaveTimer = null;
     this._backendFrameLoadRefreshTimer = null;
-    this._badgePollTimer = null;
-    this._badgePolling = false;
-    this._badgeWakeListener = null;
     this._backendSaveMessageTargets = new Map();
     this._backendSaveDocumentTargets = new Map();
     this._backendFrameLoadTargets = new Map();
@@ -161,9 +158,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this._backendSaveMessageListener = (event) => onBackendSaveMessage(this, event);
     registerBackendSaveSignalListeners(this);
 
-    // Guarantee the badge converges to the real pending count regardless of
-    // how a record changed (save path, drag/drop, paste, another tab).
-    this._startBadgePolling();
   }
 
   _ensurePopoverDropdown(host, toggle, menu) {
@@ -199,15 +193,10 @@ export class WebconEasyWorkspaceMenu extends LitElement {
       window.removeEventListener('message', this._declineMessageListener);
       this._declineMessageListener = null;
     }
-    if (this._refreshAfterSaveTimer) {
-      window.clearTimeout(this._refreshAfterSaveTimer);
-      this._refreshAfterSaveTimer = null;
-    }
     if (this._backendFrameLoadRefreshTimer) {
       window.clearTimeout(this._backendFrameLoadRefreshTimer);
       this._backendFrameLoadRefreshTimer = null;
     }
-    this._stopBadgePolling();
     clearBackendSaveSignalListeners(this);
     super.disconnectedCallback();
   }
@@ -236,11 +225,10 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   _configuredWorkspaceId() { return configuredWorkspaceId(this); }
   _refresh() { return refresh(this); }
   _refreshAfterBackendSave(options) { return refreshAfterBackendSave(this, options); }
-  _startBadgePolling() { return startBadgePolling(this); }
-  _stopBadgePolling() { return stopBadgePolling(this); }
+  _refreshBadge() { return refreshBadge(this); }
   _publish() { return publish(this); }
   _copyPreviewLink(pageUid) { return copyPreviewLink(this, pageUid); }
-  _isCompactToolbar() { return isCompactToolbar(this); }
+  _isCompactToolbar() { return !this._config.showSubelementsInToolbar; }
 
   #onModeClick(event) {
     const button = event.currentTarget;

@@ -1,4 +1,4 @@
-import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
+import { collectIframes, isKnownPreviewFrame, tableLabel } from './menu-context.js';
 import { isKnownPreviewWindow } from './menu-preview-locate.js';
 
 /**
@@ -10,8 +10,7 @@ export function onBackendSaveMessage(host, event) {
   if (!isTrustedBackendSaveMessage(host, event)) {
     return;
   }
-  const fromVisualEditor = event.data?.command === 've_saveEnded';
-  host._refreshAfterBackendSave({ force: fromVisualEditor });
+  host._refreshAfterBackendSave();
 }
 
 export function isTrustedBackendSaveMessage(host, event) {
@@ -91,10 +90,15 @@ export function addBackendSaveDocumentTarget(host, targetDocument) {
   }
   const handler = () => scheduleBackendFrameLoadRefresh(host);
   try {
-    targetDocument.addEventListener('typo3:pagetree:refresh', handler);
+    const eventNames = ['typo3:pagetree:refresh', 'typo3:workspace:changed', 'typo3:workspaces:refresh'];
+    for (const eventName of eventNames) {
+      targetDocument.addEventListener(eventName, handler);
+    }
     host._backendSaveDocumentTargets.set(targetDocument, () => {
       try {
-        targetDocument.removeEventListener('typo3:pagetree:refresh', handler);
+        for (const eventName of eventNames) {
+          targetDocument.removeEventListener(eventName, handler);
+        }
       } catch { /* target document may be gone */ }
     });
   } catch {
@@ -161,7 +165,7 @@ export function scheduleBackendFrameLoadRefresh(host) {
   }
   host._backendFrameLoadRefreshTimer = window.setTimeout(() => {
     host._backendFrameLoadRefreshTimer = null;
-    host._refreshAfterBackendSave({ force: true });
+    host._refreshAfterBackendSave();
   }, 120);
 }
 
@@ -208,7 +212,7 @@ export function onDeclineMessage(host, event) {
     workspaceUid: uid,
     liveUid: uid,
     title: `${table} #${uid}`,
-    tableLabel: host._friendlyTable(table),
+    tableLabel: tableLabel(host, table),
     isChanged: true,
   };
   host._confirmAndDiscard(item);

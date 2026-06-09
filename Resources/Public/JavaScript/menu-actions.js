@@ -50,6 +50,24 @@ function notifyView(host) {
   host.requestUpdate?.();
 }
 
+function nextRefreshRequestId(host) {
+  host._refreshRequestId = (host._refreshRequestId || 0) + 1;
+  return host._refreshRequestId;
+}
+
+function isCurrentRefreshRequest(host, requestId) {
+  return host._refreshRequestId === requestId;
+}
+
+function nextBadgeRequestId(host) {
+  host._badgeRequestId = (host._badgeRequestId || 0) + 1;
+  return host._badgeRequestId;
+}
+
+function isCurrentBadgeRequest(host, requestId) {
+  return host._badgeRequestId === requestId;
+}
+
 function selectionContextKey(pageUid, newsUid, languageUid, workspaceId) {
   const contextType = pageUid > 0 ? 'page' : 'news';
   const contextUid = pageUid > 0 ? pageUid : newsUid;
@@ -65,6 +83,34 @@ function updateLanguageScopeContext(host, pageUid, newsUid) {
     notifyView(host);
   }
   host._languageScopeContextKey = contextKey;
+}
+
+function currentToolbarContext(host) {
+  const { pageUid, newsUid } = detectContext(host);
+  host.pageUid = pageUid;
+  host.newsUid = newsUid;
+  updateLanguageScopeContext(host, pageUid, newsUid);
+
+  const detectedLanguageUid = detectLanguageUid(host);
+  host.detectedLanguageUid = detectedLanguageUid;
+
+  return {
+    pageUid,
+    newsUid,
+    languageUid: effectiveLanguageUid(host, detectedLanguageUid),
+    hasContext: pageUid > 0 || newsUid > 0,
+  };
+}
+
+function contextQuery(context, extra = {}) {
+  const query = context.pageUid > 0
+    ? { pageUid: context.pageUid, ...extra }
+    : { newsUid: context.newsUid, ...extra };
+  query._ = Date.now();
+  if (context.languageUid !== null) {
+    query.languageUid = context.languageUid;
+  }
+  return query;
 }
 
 export function setMode(host, mode) {
@@ -86,40 +132,34 @@ export async function setLanguageScope(host, scope) {
 }
 
 export async function refresh(host, options = {}) {
+  const requestId = nextRefreshRequestId(host);
   if (!ENDPOINTS.items) {
     host.state = 'error';
     host.items = [];
     host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = 0;
+    host.badgeCount = 0;
     resetSelection(host);
     notifyView(host);
     syncToolbarVisibility(host);
     return;
   }
-  // Background polls pass `quiet` so an already-rendered (open) dropdown
-  // is not reset to the loading spinner on every tick; the badge and list
-  // still update once data arrives.
   const quiet = Boolean(options.quiet);
   const settled = host.state === 'loaded' || host.state === 'empty' || host.state === 'no-context';
   if (!quiet || !settled) {
     host.state = 'loading';
     notifyView(host);
   }
-  const { pageUid, newsUid } = detectContext(host);
-  host.pageUid = pageUid;
-  host.newsUid = newsUid;
-  updateLanguageScopeContext(host, pageUid, newsUid);
-  const detectedLanguageUid = detectLanguageUid(host);
-  host.detectedLanguageUid = detectedLanguageUid;
-  const languageUid = effectiveLanguageUid(host, detectedLanguageUid);
-  if (!pageUid && !newsUid) {
+  const context = currentToolbarContext(host);
+  if (!context.hasContext) {
     host.state = 'no-context';
     host.contextLabel = label(host, 'toolbar.context.none');
     host.items = [];
     host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = configuredWorkspaceId(host);
+    host.badgeCount = 0;
     resetSelection(host);
     notifyView(host);
     updateToolbarBadge(host);
@@ -128,14 +168,14 @@ export async function refresh(host, options = {}) {
     return;
   }
 
-  const query = pageUid ? { pageUid, mode: host.mode } : { newsUid, mode: host.mode };
-  query._ = Date.now();
-  if (languageUid !== null) {
-    query.languageUid = languageUid;
-  }
   try {
-    const response = await new AjaxRequest(ENDPOINTS.items).withQueryArguments(query).get();
+    const response = await new AjaxRequest(ENDPOINTS.items)
+      .withQueryArguments(contextQuery(context, { mode: host.mode }))
+      .get();
     const data = await response.resolve();
+    if (!isCurrentRefreshRequest(host, requestId)) {
+      return;
+    }
     host.context = data.context;
     host.items = Array.isArray(data.items) ? data.items : [];
     host.itemGroups = Array.isArray(data.itemGroups) ? data.itemGroups : [];
@@ -143,17 +183,25 @@ export async function refresh(host, options = {}) {
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
     host.contextLabel = buildContextLabel(host, data);
-    syncSelectionWithItems(host, selectionContextKey(pageUid, newsUid, languageUid, host.workspaceId));
+    syncSelectionWithItems(
+      host,
+      selectionContextKey(context.pageUid, context.newsUid, context.languageUid, host.workspaceId),
+    );
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
+    host.badgeCount = changedItemCount(host);
     notifyView(host);
     updateToolbarBadge(host);
     syncToolbarVisibility(host);
     broadcastDeclineState(host);
   } catch (error) {
+    if (!isCurrentRefreshRequest(host, requestId)) {
+      return;
+    }
     console.error('[easy-workspace] items request failed', error);
     host.state = 'error';
     host.itemGroups = [];
     host.changedItemGroups = [];
+    host.badgeCount = 0;
     resetSelection(host);
     notifyView(host);
     updateToolbarBadge(host);
@@ -161,110 +209,42 @@ export async function refresh(host, options = {}) {
 }
 
 export async function refreshAfterBackendSave(host, options = {}) {
-  const force = Boolean(options.force);
-  if (host._refreshAfterSaveTimer) {
-    window.clearTimeout(host._refreshAfterSaveTimer);
-    host._refreshAfterSaveTimer = null;
+  await refreshBadge(host);
+  if (options.list !== false) {
+    await refresh(host, { quiet: true });
   }
-  await refreshIfPersistedChangesExist(host, { force });
-  host._refreshAfterSaveTimer = window.setTimeout(() => {
-    host._refreshAfterSaveTimer = null;
-    refreshIfPersistedChangesExist(host, { force });
-  }, 800);
 }
 
-export async function refreshIfPersistedChangesExist(host, options = {}) {
-  const force = Boolean(options.force);
-  const quiet = Boolean(options.quiet);
-  const currentCount = changedItemCount(host);
-  if (!force) {
-    try {
-      const hasChanges = await hasPersistedChangesInCurrentContext(host);
-      if (!hasChanges && currentCount === 0) {
-        return;
-      }
-    } catch (error) {
-      console.warn('[easy-workspace] has-changes request failed; refreshing item list', error);
-    }
-  }
-  await refresh(host, { quiet });
-}
-
-// Interval for the background "did anything change?" probe. Independent
-// of how the change was made (FormEngine, drag/drop, paste, another tab,
-// CLI), so the topnav badge always converges to the real count.
-export const BADGE_POLL_INTERVAL_MS = 4000;
-
-export function startBadgePolling(host) {
-  stopBadgePolling(host);
-  if (!ENDPOINTS.hasChanges && !ENDPOINTS.items) {
+export async function refreshBadge(host) {
+  if (!ENDPOINTS.badge) {
     return;
   }
-  host._badgePollTimer = window.setInterval(() => pollBadge(host), BADGE_POLL_INTERVAL_MS);
-  host._badgeWakeListener = () => {
-    if (typeof document === 'undefined' || document.visibilityState === 'visible') {
-      pollBadge(host);
-    }
-  };
+  const requestId = nextBadgeRequestId(host);
+  const context = currentToolbarContext(host);
+  if (!context.hasContext) {
+    host.badgeCount = 0;
+    host.workspaceId = configuredWorkspaceId(host);
+    updateToolbarBadge(host);
+    syncToolbarVisibility(host);
+    return;
+  }
   try {
-    document.addEventListener('visibilitychange', host._badgeWakeListener);
-    window.addEventListener('focus', host._badgeWakeListener);
-  } catch { /* noop */ }
-}
-
-export function stopBadgePolling(host) {
-  if (host._badgePollTimer) {
-    window.clearInterval(host._badgePollTimer);
-    host._badgePollTimer = null;
-  }
-  if (host._badgeWakeListener) {
-    try {
-      document.removeEventListener('visibilitychange', host._badgeWakeListener);
-      window.removeEventListener('focus', host._badgeWakeListener);
-    } catch { /* noop */ }
-    host._badgeWakeListener = null;
-  }
-}
-
-export async function pollBadge(host) {
-  // Skip hidden tabs (no point fetching) and avoid overlapping requests
-  // when a tick runs long on a slow connection.
-  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-    return;
-  }
-  if (host._badgePolling) {
-    return;
-  }
-  host._badgePolling = true;
-  try {
-    await refreshIfPersistedChangesExist(host, { quiet: true });
+    const response = await new AjaxRequest(ENDPOINTS.badge)
+      .withQueryArguments(contextQuery(context))
+      .get();
+    const data = await response.resolve();
+    if (!isCurrentBadgeRequest(host, requestId)) {
+      return;
+    }
+    host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
+    host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : host.workspaceTitle;
+    host.badgeCount = Math.max(0, parseInt(String(data.changedCount ?? '0'), 10) || 0);
+    host.workspaceChangeRevision = Math.max(0, parseInt(String(data.revision ?? '0'), 10) || 0);
+    updateToolbarBadge(host);
+    syncToolbarVisibility(host);
   } catch (error) {
-    // A transient failure must not break the polling loop.
-    console.warn('[easy-workspace] badge poll failed', error);
-  } finally {
-    host._badgePolling = false;
+    console.warn('[easy-workspace] badge request failed', error);
   }
-}
-
-export async function hasPersistedChangesInCurrentContext(host) {
-  if (!ENDPOINTS.hasChanges) {
-    return true;
-  }
-  const { pageUid, newsUid } = detectContext(host);
-  updateLanguageScopeContext(host, pageUid, newsUid);
-  const detectedLanguageUid = detectLanguageUid(host);
-  host.detectedLanguageUid = detectedLanguageUid;
-  const languageUid = effectiveLanguageUid(host, detectedLanguageUid);
-  if (!pageUid && !newsUid) {
-    return false;
-  }
-  const query = pageUid ? { pageUid } : { newsUid };
-  if (languageUid !== null) {
-    query.languageUid = languageUid;
-  }
-  const response = await new AjaxRequest(ENDPOINTS.hasChanges).withQueryArguments(query).get();
-  const data = await response.resolve();
-  return Boolean(data?.hasChanges);
 }
 
 export function changedItemCount(host) {
@@ -272,13 +252,13 @@ export function changedItemCount(host) {
 }
 
 export function updateToolbarBadge(host) {
-  const toolbarHost = toolbarHostElement(host);
-  const badge = toolbarHost?.querySelector('[data-wew-workspace-badge]');
+  const badge = toolbarBadgeElement(host);
   if (!badge) return;
-  const count = host.workspaceId > 0 && (host.state === 'loaded' || host.state === 'empty')
-    ? changedItemCount(host)
+  const count = host.workspaceId > 0
+    ? Math.max(0, parseInt(String(host.badgeCount ?? changedItemCount(host)), 10) || 0)
     : 0;
   badge.textContent = count > 0 ? String(count) : '';
+  badge.hidden = count <= 0;
   badge.classList.toggle('hidden', count <= 0);
   if (count > 0) {
     const badgeLabel = label(host, 'toolbar.badge.pending', { count });
@@ -291,7 +271,10 @@ export function updateToolbarBadge(host) {
 export function syncToolbarVisibility(host) {
   const toolbarHost = toolbarHostElement(host);
   if (!toolbarHost) return;
-  const stateKnown = host.state === 'loaded' || host.state === 'empty' || host.state === 'no-context';
+  const stateKnown = host.state === 'loaded'
+    || host.state === 'empty'
+    || host.state === 'no-context'
+    || Number.isFinite(Number(host.badgeCount));
   if (!stateKnown) return;
   toolbarHost.hidden = host.workspaceId <= 0;
 }
@@ -302,9 +285,41 @@ export function configuredWorkspaceId(host) {
 }
 
 export function toolbarHostElement(host) {
-  return host.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
-    || host.closest('.toolbar-item')
-    || (window.top || window.parent)?.document?.querySelector('[id*="easyworkspacetoolbaritem"]');
+  const localHost = host.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
+    || host.closest('.toolbar-item');
+  if (localHost?.querySelector?.('[data-wew-workspace-badge]')) {
+    return localHost;
+  }
+  const badge = toolbarBadgeElement(host);
+  return badge?.closest('[id^="typo3-cms-backend-backend-toolbaritems"]')
+    || badge?.closest('.toolbar-item')
+    || localHost
+    || topDocument()?.querySelector('[id*="easyworkspacetoolbaritem"]')
+    || null;
+}
+
+export function toolbarBadgeElement(host) {
+  const roots = [
+    host.closest('[id^="typo3-cms-backend-backend-toolbaritems"]'),
+    host.closest('.toolbar-item'),
+    document,
+    topDocument(),
+  ];
+  for (const root of roots) {
+    const badge = root?.querySelector?.('[data-wew-workspace-badge]');
+    if (badge) {
+      return badge;
+    }
+  }
+  return null;
+}
+
+function topDocument() {
+  try {
+    return window.top?.document || window.parent?.document || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function publish(host) {

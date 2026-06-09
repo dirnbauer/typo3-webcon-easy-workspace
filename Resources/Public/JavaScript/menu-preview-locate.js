@@ -1,10 +1,14 @@
 import Notification from '@typo3/backend/notification.js';
 import { IFRAME_HIGHLIGHT_STYLE } from './menu-constants.js';
-import { label } from './menu-context.js';
-import { discardTagSubtitleKey, discardTagTitleKey } from './menu-discard-copy.js';
-import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
+import {
+  collectIframes,
+  discardTagSubtitleKey,
+  discardTagTitleKey,
+  isKnownPreviewFrame,
+  label,
+} from './menu-context.js';
 
-export { isKnownPreviewFrame } from './menu-dom-utils.js';
+export { isKnownPreviewFrame } from './menu-context.js';
 
 export function isPreviewGate(doc) {
   if (!doc) return false;

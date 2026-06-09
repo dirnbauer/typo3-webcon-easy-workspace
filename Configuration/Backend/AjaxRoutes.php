@@ -15,6 +15,11 @@ return [
         'methods' => ['GET'],
         'target' => EasyWorkspaceAjaxController::class . '::hasChangesAction',
     ],
+    'webcon_easy_workspace_badge' => [
+        'path' => '/webcon-easy-workspace/badge',
+        'methods' => ['GET'],
+        'target' => EasyWorkspaceAjaxController::class . '::badgeAction',
+    ],
     'webcon_easy_workspace_publish' => [
         'path' => '/webcon-easy-workspace/publish',
         'methods' => ['POST'],

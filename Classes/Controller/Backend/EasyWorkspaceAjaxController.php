@@ -23,6 +23,7 @@ use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
+use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeStampService;
 use Webconsulting\WebconEasyWorkspace\Utility\PublishSelectionNormalizer;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
@@ -47,6 +48,7 @@ final readonly class EasyWorkspaceAjaxController
         private LocalizationService $localizationService,
         private WorkspaceTablePolicy $workspaceTablePolicy,
         private PublishSelectionNormalizer $publishSelectionNormalizer,
+        private WorkspaceChangeStampService $workspaceChangeStampService,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -111,6 +113,50 @@ final readonly class EasyWorkspaceAjaxController
         return new JsonResponse(
             $this->pendingItemsService->hasChangesForContext($pageUid, $newsUid, $config, $languageUid),
         );
+    }
+
+    public function badgeAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $query = $request->getQueryParams();
+        $newsUid = Value::int($query['newsUid'] ?? null);
+        $pageUid = Value::int($query['pageUid'] ?? null);
+        $languageUid = array_key_exists('languageUid', $query) ? Value::int($query['languageUid']) : null;
+        $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
+
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
+        }
+
+        $collection = $this->pendingItemsService->toolbarCollectionForContext(
+            $pageUid,
+            $newsUid,
+            PendingItemsService::MODE_ALL,
+            $config,
+            $languageUid,
+        );
+        $stamp = $this->workspaceChangeStampService->current();
+        $payload = $collection['payload'];
+        $changedCount = 0;
+        if ($payload !== null) {
+            foreach ($payload->items as $item) {
+                if ($item->isChanged) {
+                    $changedCount++;
+                }
+            }
+        }
+
+        return new JsonResponse([
+            'context' => $collection['context'],
+            'workspaceId' => $payload !== null ? $payload->workspaceId : 0,
+            'workspaceTitle' => $payload !== null ? $payload->workspaceTitle : '',
+            'pageUid' => $pageUid,
+            'newsUid' => $newsUid,
+            'languageUid' => $languageUid,
+            'changedCount' => $changedCount,
+            'revision' => $stamp['revision'],
+            'changedAt' => $stamp['changedAt'],
+            'changedWorkspaceId' => $stamp['workspaceId'],
+        ]);
     }
 
     /**

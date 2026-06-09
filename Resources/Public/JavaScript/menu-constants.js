@@ -1,6 +1,6 @@
 export const ENDPOINTS = {
   items: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_items || '',
-  hasChanges: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_has_changes || '',
+  badge: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_badge || '',
   publish: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_publish || '',
   previewLink: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_preview_link || '',
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',

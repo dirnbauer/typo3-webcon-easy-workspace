@@ -18,3 +18,6 @@ services:
 
   Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceModuleController:
     public: true
+
+  Webconsulting\WebconEasyWorkspace\Hook\WorkspaceChangeInvalidationHook:
+    public: true

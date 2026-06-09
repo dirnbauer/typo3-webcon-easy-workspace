@@ -1,5 +1,4 @@
 import { DEFAULT_CONFIG } from './menu-constants.js';
-import { collectIframes, isKnownPreviewFrame } from './menu-dom-utils.js';
 
 export function readConfig(element) {
   const raw = element.getAttribute('config') || '';
@@ -34,6 +33,53 @@ export function label(host, key, variables = {}) {
   const labels = host._config.labels || {};
   const message = typeof labels[key] === 'string' && labels[key] !== '' ? labels[key] : key;
   return formatIcu(message, variables);
+}
+
+export function tableLabel(host, table) {
+  switch (table) {
+    case 'pages': return label(host, 'table.pages');
+    case 'tt_content': return label(host, 'table.tt_content');
+    case 'tx_news_domain_model_news': return label(host, 'table.tx_news_domain_model_news');
+    case 'sys_file_metadata': return label(host, 'table.sys_file_metadata');
+    case 'tt_address': return label(host, 'table.tt_address');
+    default: return table;
+  }
+}
+
+export function discardMessageKey(itemOrKind) {
+  return `discard.modal.message.${normalizeDiscardKind(itemOrKind)}`;
+}
+
+export function discardSuccessMessageKey(itemOrKind) {
+  return `discard.success.message.${normalizeDiscardKind(itemOrKind)}`;
+}
+
+export function discardTagTitleKey(itemOrKind) {
+  return `discardTag.title.${normalizeDiscardKind(itemOrKind)}`;
+}
+
+export function discardTagSubtitleKey(itemOrKind) {
+  return `discardTag.subtitle.${normalizeDiscardKind(itemOrKind)}`;
+}
+
+function normalizeDiscardKind(itemOrKind) {
+  const rawKind = typeof itemOrKind === 'string'
+    ? itemOrKind
+    : itemOrKind?.kindKey;
+  switch (String(rawKind || '').toLowerCase()) {
+    case 'new':
+    case 'created':
+      return 'new';
+    case 'delete':
+    case 'deleted':
+    case 'removed':
+      return 'delete';
+    case 'move':
+    case 'moved':
+      return 'move';
+    default:
+      return 'modified';
+  }
 }
 
 export function configBool(host, key, fallback = false) {
@@ -273,4 +319,47 @@ export function collectSearchParams() {
   }
 
   return params;
+}
+
+export function isKnownPreviewFrame(iframe) {
+  const src = iframe?.src || '';
+  return iframe?.id === 'visual-editor-iframe' || /[?&]editMode=/.test(src);
+}
+
+export function collectIframes(maxDepth = 4) {
+  const seen = new Set();
+  const out = [];
+  const roots = [document];
+  try {
+    if (window.top?.document && window.top.document !== document) {
+      roots.push(window.top.document);
+    }
+  } catch { /* cross-origin */ }
+
+  const walk = (root, depth) => {
+    if (!root || depth > maxDepth) return;
+    let frames;
+    try {
+      frames = root.querySelectorAll('iframe');
+    } catch {
+      return;
+    }
+    for (const iframe of frames) {
+      if (seen.has(iframe)) continue;
+      seen.add(iframe);
+      out.push(iframe);
+      let inner;
+      try {
+        inner = iframe.contentDocument;
+      } catch {
+        inner = null;
+      }
+      if (inner) walk(inner, depth + 1);
+    }
+  };
+
+  for (const root of roots) {
+    walk(root, 0);
+  }
+  return out;
 }

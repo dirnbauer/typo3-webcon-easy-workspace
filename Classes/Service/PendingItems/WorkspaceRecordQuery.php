@@ -163,9 +163,58 @@ final readonly class WorkspaceRecordQuery
             $constraints[] = $languageConstraint;
         }
 
-        return (bool)$queryBuilder
+        if ((bool)$queryBuilder
             ->select('uid')
             ->from($table)
+            ->where(...$constraints)
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchOne()) {
+            return true;
+        }
+
+        return $this->hasWorkspaceVersionForLiveRowsRelated($table, $field, $parentUids, $workspaceId, $languageUid);
+    }
+
+    /**
+     * Detect changed workspace versions through their live row. This covers
+     * the common "existing content element was edited" case even if the
+     * version row relation is stale or was created before TYPO3 normalized
+     * workspace record pids.
+     *
+     * @param list<int> $parentUids
+     */
+    private function hasWorkspaceVersionForLiveRowsRelated(string $table, string $field, array $parentUids, int $workspaceId, ?int $languageUid): bool
+    {
+        if ($parentUids === [] || !TcaUtility::hasColumn($table, 't3ver_oid')) {
+            return false;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $constraints = [
+            count($parentUids) === 1
+                ? $queryBuilder->expr()->eq('live.' . $field, $queryBuilder->createNamedParameter($parentUids[0], Connection::PARAM_INT))
+                : $queryBuilder->expr()->in('live.' . $field, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
+            $queryBuilder->expr()->eq('live.t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
+            $queryBuilder->expr()->eq('workspaceVersion.t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+        ];
+        if (TcaUtility::hasColumn($table, 'deleted')) {
+            $constraints[] = $queryBuilder->expr()->eq('live.deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            $constraints[] = $queryBuilder->expr()->eq('workspaceVersion.deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        }
+        $languageField = $this->languageField($table);
+        if ($languageUid !== null && $languageUid >= 0 && $languageField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq(
+                'live.' . $languageField,
+                $queryBuilder->createNamedParameter($languageUid, Connection::PARAM_INT),
+            );
+        }
+
+        return (bool)$queryBuilder
+            ->select('workspaceVersion.uid')
+            ->from($table, 'live')
+            ->innerJoin('live', $table, 'workspaceVersion', $queryBuilder->expr()->eq('workspaceVersion.t3ver_oid', $queryBuilder->quoteIdentifier('live.uid')))
             ->where(...$constraints)
             ->setMaxResults(1)
             ->executeQuery()
