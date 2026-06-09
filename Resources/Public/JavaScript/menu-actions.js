@@ -20,6 +20,8 @@ import {
 export { key, publishRecordsForItem, discardRecordsForItem } from './menu-selection.js';
 
 export const MODE_STORAGE_KEY = 'wew:filter-mode';
+export const LANGUAGE_SCOPE_CURRENT = 'current';
+export const LANGUAGE_SCOPE_ALL = 'all';
 
 export function readPersistedMode() {
   try {
@@ -36,6 +38,14 @@ export function writePersistedMode(mode) {
   } catch { /* ignore */ }
 }
 
+export function normalizeLanguageScope(scope) {
+  return scope === LANGUAGE_SCOPE_ALL ? LANGUAGE_SCOPE_ALL : LANGUAGE_SCOPE_CURRENT;
+}
+
+export function effectiveLanguageUid(host, detectedLanguageUid = detectLanguageUid(host)) {
+  return normalizeLanguageScope(host.languageScope) === LANGUAGE_SCOPE_ALL ? null : detectedLanguageUid;
+}
+
 function notifyView(host) {
   host.requestUpdate?.();
 }
@@ -48,6 +58,15 @@ function selectionContextKey(pageUid, newsUid, languageUid, workspaceId) {
   return `${workspaceId}:${languagePart}:${contextType}:${contextUid}`;
 }
 
+function updateLanguageScopeContext(host, pageUid, newsUid) {
+  const contextKey = `${pageUid > 0 ? 'page' : 'news'}:${pageUid > 0 ? pageUid : newsUid}`;
+  if (host._languageScopeContextKey && host._languageScopeContextKey !== contextKey) {
+    host.languageScope = LANGUAGE_SCOPE_CURRENT;
+    notifyView(host);
+  }
+  host._languageScopeContextKey = contextKey;
+}
+
 export function setMode(host, mode) {
   if (host.mode === mode) {
     return;
@@ -55,6 +74,15 @@ export function setMode(host, mode) {
   host.mode = mode;
   writePersistedMode(mode);
   notifyView(host);
+}
+
+export async function setLanguageScope(host, scope) {
+  const nextScope = normalizeLanguageScope(scope);
+  if (normalizeLanguageScope(host.languageScope) === nextScope) {
+    return;
+  }
+  host.languageScope = nextScope;
+  await refresh(host);
 }
 
 export async function refresh(host, options = {}) {
@@ -81,7 +109,10 @@ export async function refresh(host, options = {}) {
   const { pageUid, newsUid } = detectContext(host);
   host.pageUid = pageUid;
   host.newsUid = newsUid;
-  const languageUid = detectLanguageUid(host);
+  updateLanguageScopeContext(host, pageUid, newsUid);
+  const detectedLanguageUid = detectLanguageUid(host);
+  host.detectedLanguageUid = detectedLanguageUid;
+  const languageUid = effectiveLanguageUid(host, detectedLanguageUid);
   if (!pageUid && !newsUid) {
     host.state = 'no-context';
     host.contextLabel = label(host, 'toolbar.context.none');
@@ -220,7 +251,10 @@ export async function hasPersistedChangesInCurrentContext(host) {
     return true;
   }
   const { pageUid, newsUid } = detectContext(host);
-  const languageUid = detectLanguageUid(host);
+  updateLanguageScopeContext(host, pageUid, newsUid);
+  const detectedLanguageUid = detectLanguageUid(host);
+  host.detectedLanguageUid = detectedLanguageUid;
+  const languageUid = effectiveLanguageUid(host, detectedLanguageUid);
   if (!pageUid && !newsUid) {
     return false;
   }

@@ -154,7 +154,7 @@ Toolbar
     * - News context detection
       - Client reads iframe URL / edit form (``enableNewsBundles``)
     * - Language parameter
-      - ``languageUid`` sent from module state or URL fallbacks
+      - Toolbar defaults to the detected current page language; editors can switch the dropdown to all page languages
 
 Backend module
 --------------
@@ -348,6 +348,12 @@ Language-aware listing
 When ``languageUid`` is known, page-bound tables use TCA ``languageField`` and
 translation parent resolution. File metadata stays visible across page language
 selection (same as Core Workspaces behaviour).
+
+The toolbar dropdown does not always mix translations into the default list.
+It starts with the current page language so a publish action stays aligned with
+the editor's visible backend context. A compact language scope control in the
+dropdown can switch the same page/news context to all languages when an editor
+intentionally wants a cross-language review.
 
 ..  _duplicate-suppression:
 

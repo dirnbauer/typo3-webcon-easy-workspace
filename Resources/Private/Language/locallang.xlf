@@ -97,6 +97,48 @@
         <target state="translated">All on page</target>
       </segment>
     </unit>
+    <unit id="toolbar.languageScope.aria">
+      <segment>
+        <source>Language scope</source>
+        <target state="translated">Language scope</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languageScope.label">
+      <segment>
+        <source>Language</source>
+        <target state="translated">Language</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languageScope.current">
+      <segment>
+        <source>Current</source>
+        <target state="translated">Current</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languageScope.current.title">
+      <segment>
+        <source>Show records in the current page language</source>
+        <target state="translated">Show records in the current page language</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languageScope.all">
+      <segment>
+        <source>All languages</source>
+        <target state="translated">All languages</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languageScope.all.title">
+      <segment>
+        <source>Show records from every page language</source>
+        <target state="translated">Show records from every page language</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languageScope.unavailable">
+      <segment>
+        <source>No current page language detected</source>
+        <target state="translated">No current page language detected</target>
+      </segment>
+    </unit>
     <unit id="toolbar.records">
       <segment>
         <source>{count, plural, one {# record} other {# records}}</source>

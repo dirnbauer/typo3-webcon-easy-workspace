@@ -232,6 +232,78 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     border-color: var(--typo3-badge-primary-border-color);
 }
 
+/* ---- Language scope ---- */
+.wew-menu__language-scope {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .6rem;
+    padding: .35rem .85rem;
+    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: var(--typo3-component-bg, var(--bs-body-bg));
+}
+.wew-menu--compact-toolbar .wew-menu__language-scope {
+    padding: .3rem .65rem;
+    gap: .45rem;
+}
+.wew-menu__language-label {
+    flex: 0 0 auto;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+.wew-menu__language-buttons {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    min-width: 0;
+    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
+}
+.wew-menu__language-button {
+    border: 0;
+    border-inline-start: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
+    background: transparent;
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    min-width: 0;
+    padding: .22rem .5rem;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.wew-menu__language-button:first-child {
+    border-inline-start: 0;
+}
+.wew-menu__language-button:hover {
+    color: var(--typo3-text-color-base, var(--bs-body-color));
+    background: var(--typo3-state-default-hover-bg, var(--bs-secondary-bg));
+}
+.wew-menu__language-button--active {
+    color: var(--typo3-state-primary-color, var(--bs-white, #fff));
+    background: var(--typo3-state-primary-bg, var(--bs-primary));
+}
+.wew-menu__language-button--active:hover {
+    color: var(--typo3-state-primary-hover-color, var(--typo3-state-primary-color, var(--bs-white, #fff)));
+    background: var(--typo3-state-primary-hover-bg, var(--typo3-state-primary-bg, var(--bs-primary)));
+}
+.wew-menu__language-button:focus-visible {
+    outline: 2px solid var(--typo3-state-primary-bg, var(--bs-primary));
+    outline-offset: -2px;
+}
+.wew-menu__language-button:disabled {
+    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
+    opacity: .45;
+    cursor: not-allowed;
+    background: transparent;
+}
+
 /* ---- Status pills (MODIFIED, NEW, MOVED, ...) ----
    Built on TYPO3 v14's `--typo3-badge-{name}-*` design tokens
    (cms-backend/Resources/Public/Css/backend.css). Each token triple

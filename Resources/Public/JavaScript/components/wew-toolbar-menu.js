@@ -38,6 +38,7 @@ import {
   copyPreviewLink,
   configuredWorkspaceId,
   setMode,
+  setLanguageScope,
   startBadgePolling,
   stopBadgePolling,
 } from '../menu-actions.js';
@@ -77,6 +78,8 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     workspaceTitle: { type: String },
     pageUid: { type: Number },
     newsUid: { type: Number },
+    detectedLanguageUid: { type: Number },
+    languageScope: { type: String },
     publishing: { type: Boolean },
     copyingPreview: { type: Boolean },
     selectionVersion: { type: Number },
@@ -108,6 +111,8 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.variant = 'toolbar';
     this.pageUid = 0;
     this.newsUid = 0;
+    this.detectedLanguageUid = null;
+    this.languageScope = 'current';
     this._refreshAfterSaveTimer = null;
     this._backendFrameLoadRefreshTimer = null;
     this._badgePollTimer = null;
@@ -227,6 +232,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
 
   _key(item) { return key(this, item); }
   _setMode(mode) { return setMode(this, mode); }
+  _setLanguageScope(scope) { return setLanguageScope(this, scope); }
   _configuredWorkspaceId() { return configuredWorkspaceId(this); }
   _refresh() { return refresh(this); }
   _refreshAfterBackendSave(options) { return refreshAfterBackendSave(this, options); }
@@ -262,6 +268,15 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     }
     tabs[nextIdx].focus();
     tabs[nextIdx].click();
+  }
+
+  #onLanguageScopeClick(event) {
+    const button = event.currentTarget;
+    const scope = button?.getAttribute('data-wew-language-scope');
+    if (scope === 'current' || scope === 'all') {
+      event.preventDefault();
+      this._setLanguageScope(scope);
+    }
   }
 
   #onRowCheckChange(event) {
@@ -434,6 +449,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
       <div class="wew-menu${compactClass}" data-wew-menu>
         ${this.#renderHeader()}
         ${this.#renderFilter(changedCount, totalCount)}
+        ${this.#renderLanguageScope()}
         <div id="wew-tabpanel"
              role="${this._configBool('enableFilter') ? 'tabpanel' : ''}"
              data-wew-tabpanel>
@@ -521,6 +537,40 @@ export class WebconEasyWorkspaceMenu extends LitElement {
         <span class="wew-menu__chip-count"
               aria-label="${this._label('toolbar.records', { count })}">${count}</span>
       </button>
+    `;
+  }
+
+  #renderLanguageScope() {
+    const hasCurrentLanguage = this.detectedLanguageUid !== null;
+    const activeScope = this.languageScope === 'all' || !hasCurrentLanguage ? 'all' : 'current';
+
+    return html`
+      <div class="wew-menu__language-scope"
+           role="group"
+           aria-label="${this._label('toolbar.languageScope.aria')}">
+        <span class="wew-menu__language-label">${this._label('toolbar.languageScope.label')}</span>
+        <div class="wew-menu__language-buttons">
+          <button type="button"
+                  class="wew-menu__language-button${activeScope === 'current' ? ' wew-menu__language-button--active' : ''}"
+                  data-wew-language-scope="current"
+                  aria-pressed="${activeScope === 'current' ? 'true' : 'false'}"
+                  title="${hasCurrentLanguage
+                    ? this._label('toolbar.languageScope.current.title')
+                    : this._label('toolbar.languageScope.unavailable')}"
+                  ?disabled=${!hasCurrentLanguage}
+                  @click=${this.#onLanguageScopeClick}>
+            ${this._label('toolbar.languageScope.current')}
+          </button>
+          <button type="button"
+                  class="wew-menu__language-button${activeScope === 'all' ? ' wew-menu__language-button--active' : ''}"
+                  data-wew-language-scope="all"
+                  aria-pressed="${activeScope === 'all' ? 'true' : 'false'}"
+                  title="${this._label('toolbar.languageScope.all.title')}"
+                  @click=${this.#onLanguageScopeClick}>
+            ${this._label('toolbar.languageScope.all')}
+          </button>
+        </div>
+      </div>
     `;
   }
 

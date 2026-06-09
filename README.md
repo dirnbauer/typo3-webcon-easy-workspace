@@ -73,7 +73,7 @@ The toolbar is hidden in the Live workspace. The module requires `workspaces: of
 |---|---------|-------------|
 | 7 | Page scope | Page record, `tt_content` on that page, inline children, file references |
 | 8 | Active workspace only | `WorkspaceRestriction` + `t3ver_wsid` on queries |
-| 9 | Backend language filter | `languageUid` from module state / URL; TCA `languageField` / `l10n_parent` |
+| 9 | Backend language scope | Defaults to the detected backend page language; toolbar control can include all page languages; server filtering uses TCA `languageField` / `l10n_parent` |
 | 10 | Standalone file metadata | Pending `sys_file_metadata` in the active workspace (global to workspace, not page language) |
 | 11 | Duplicate suppression | One row per logical record (live key or workspace-only key) |
 | 12 | Parent context rows | Child-only changes still show parent row with nested children |
