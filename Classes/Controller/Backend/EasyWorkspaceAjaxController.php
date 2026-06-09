@@ -6,9 +6,9 @@ namespace Webconsulting\WebconEasyWorkspace\Controller\Backend;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Routing\RouterInterface;
@@ -18,6 +18,7 @@ use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
@@ -49,6 +50,8 @@ final readonly class EasyWorkspaceAjaxController
         private WorkspaceTablePolicy $workspaceTablePolicy,
         private PublishSelectionNormalizer $publishSelectionNormalizer,
         private WorkspaceChangeStampService $workspaceChangeStampService,
+        private BackendAccessGuard $accessGuard,
+        private LoggerInterface $logger,
     ) {}
 
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
@@ -61,6 +64,9 @@ final readonly class EasyWorkspaceAjaxController
 
         if (!$config['enabled']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
+        }
+        if (!$this->canReadContext($request, $pageUid, $newsUid)) {
+            return $this->accessDeniedJson();
         }
 
         $defaultMode = $config['defaultMode'];
@@ -109,6 +115,9 @@ final readonly class EasyWorkspaceAjaxController
         if (!$config['enabled']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
+        if (!$this->canReadContext($request, $pageUid, $newsUid)) {
+            return $this->accessDeniedJson();
+        }
 
         return new JsonResponse(
             $this->pendingItemsService->hasChangesForContext($pageUid, $newsUid, $config, $languageUid),
@@ -125,6 +134,9 @@ final readonly class EasyWorkspaceAjaxController
 
         if (!$config['enabled']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
+        }
+        if (!$this->canReadContext($request, $pageUid, $newsUid)) {
+            return $this->accessDeniedJson();
         }
 
         $collection = $this->pendingItemsService->toolbarCollectionForContext(
@@ -191,6 +203,18 @@ final readonly class EasyWorkspaceAjaxController
         $row = BackendUtility::getRecord($table, $workspaceUid);
         if (!is_array($row)) {
             return new HtmlResponse('<p class="alert alert-warning">' . htmlspecialchars($this->localizationService->translate('error.recordNotFound')) . '</p>', 404);
+        }
+
+        // The diff exposes field values — require show access to the
+        // containing page and limit workspace rows to the user's own
+        // active workspace (admins may inspect any workspace).
+        $user = $this->accessGuard->user($request);
+        $rowWorkspaceId = Value::int($row['t3ver_wsid'] ?? null);
+        $foreignWorkspace = $rowWorkspaceId > 0
+            && $rowWorkspaceId !== $this->accessGuard->activeWorkspaceId($request)
+            && !($user?->isAdmin() ?? false);
+        if ($user === null || $foreignWorkspace || !$this->accessGuard->canReadRecordPage($table, Value::stringKeyArray($row), $request)) {
+            return new HtmlResponse('<p class="alert alert-danger">' . htmlspecialchars($this->localizationService->translate('error.accessDenied')) . '</p>', 403);
         }
 
         $payload = $this->recordDiffService->diffWithHtml($table, Value::stringKeyArray($row));
@@ -298,6 +322,19 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse(['success' => false, 'error' => $this->localizationService->translate('error.unknownRollbackMode')], 400);
         }
 
+        // Rollback mutates the record — require table modify rights
+        // and show access to the containing page before touching
+        // sys_history. DataHandler enforces the rest.
+        $record = BackendUtility::getRecord($table, $uid);
+        if (!is_array($record)) {
+            return new JsonResponse(['success' => false, 'error' => $this->localizationService->translate('error.recordNotFound')], 404);
+        }
+        if (!$this->accessGuard->canModifyTable($table, $request)
+            || !$this->accessGuard->canReadRecordPage($table, Value::stringKeyArray($record), $request)
+        ) {
+            return $this->accessDeniedJson();
+        }
+
         // performRollback's first arg is a "rollbackFields" selector:
         // either "ALL" or "table:uid:field" for a single field. The
         // diff array is the {<sys_history.uid>: {oldRecord, newRecord, …}}
@@ -322,9 +359,15 @@ final readonly class EasyWorkspaceAjaxController
                     'error' => $this->localizationService->translate('error.nothingToRollback'),
                 ]);
             }
-            $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof BackendUserAuthentication ? $GLOBALS['BE_USER'] : null;
-            $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $backendUser);
+            $this->recordHistoryRollback->performRollback($rollbackSelector, $diff, $this->accessGuard->user($request));
         } catch (\Throwable $e) {
+            $this->logger->error('Easy Workspace history rollback failed', [
+                'table' => $table,
+                'uid' => $uid,
+                'historyUid' => $historyUid,
+                'mode' => $mode,
+                'exception' => $e,
+            ]);
             return new JsonResponse([
                 'success' => false,
                 'error' => $this->localizationService->translate('error.rollbackFailed'),
@@ -359,7 +402,7 @@ final readonly class EasyWorkspaceAjaxController
             ]);
         }
 
-        return new JsonResponse($this->publishService->publish($selections));
+        return new JsonResponse($this->publishService->publish($selections, $this->accessGuard->user($request)));
     }
 
     public function discardAction(ServerRequestInterface $request): ResponseInterface
@@ -377,7 +420,10 @@ final readonly class EasyWorkspaceAjaxController
         if (!$config['enableRevert']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.revertDisabled')], 403);
         }
-        return new JsonResponse($this->publishService->discard($table, $workspaceUid));
+        if (!$this->accessGuard->canModifyTable($table, $request)) {
+            return new JsonResponse(['error' => $this->localizationService->translate('error.noTablePermission')], 403);
+        }
+        return new JsonResponse($this->publishService->discard($table, $workspaceUid, $this->accessGuard->user($request)));
     }
 
     public function previewLinkAction(ServerRequestInterface $request): ResponseInterface
@@ -390,6 +436,9 @@ final readonly class EasyWorkspaceAjaxController
         if (!$config['enablePreviewLink']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.previewLinkDisabled')], 403);
         }
+        if (!$this->accessGuard->canReadPage($pageUid, $request)) {
+            return $this->accessDeniedJson();
+        }
         try {
             $url = $this->previewUriBuilder->buildUriForPage($pageUid);
         } catch (\Throwable) {
@@ -398,6 +447,36 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse(['error' => $this->localizationService->translate('error.previewLinkBuild')], 500);
         }
         return new JsonResponse(['url' => $url]);
+    }
+
+    /**
+     * Gate for the page/news-scoped read endpoints: requires an
+     * authenticated backend user with show access to the requested
+     * page and to the news record's storage page when a newsUid is
+     * given. A newsUid pointing at nothing is left to the services,
+     * which resolve it to an empty context anyway.
+     */
+    private function canReadContext(ServerRequestInterface $request, int $pageUid, int $newsUid): bool
+    {
+        if ($this->accessGuard->user($request) === null) {
+            return false;
+        }
+        if ($pageUid > 0 && !$this->accessGuard->canReadPage($pageUid, $request)) {
+            return false;
+        }
+        if ($newsUid > 0) {
+            $newsRecord = BackendUtility::getRecord('tx_news_domain_model_news', $newsUid);
+            if (is_array($newsRecord) && !$this->accessGuard->canReadPage(Value::int($newsRecord['pid'] ?? null), $request)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function accessDeniedJson(): JsonResponse
+    {
+        return new JsonResponse(['error' => $this->localizationService->translate('error.accessDenied')], 403);
     }
 
     /**

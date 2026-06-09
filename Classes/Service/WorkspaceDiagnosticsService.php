@@ -4,19 +4,14 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
-use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 final readonly class WorkspaceDiagnosticsService
 {
-    private const FILE = 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:';
-
     private const VALID_VERSION_STATES = [0, 1, 2, 4];
 
     private const SEVERITY_LABEL_KEYS = [
@@ -28,7 +23,7 @@ final readonly class WorkspaceDiagnosticsService
     public function __construct(
         private ConnectionPool $connectionPool,
         private Context $context,
-        private LanguageServiceFactory $languageServiceFactory,
+        private LocalizationService $localizationService,
     ) {}
 
     /**
@@ -311,7 +306,7 @@ final readonly class WorkspaceDiagnosticsService
                     Value::int($row['pid'] ?? null),
                     'module.diagnostics.issue.inlineChildMissingParent',
                     'SELECT uid,pid,foreign_table_parent_uid,t3ver_oid,t3ver_wsid FROM ' . $table . ' WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
-                    $this->translate('module.diagnostics.detail.parentContentElementUid', ['parentUid' => $parentUid]),
+                    $this->localizationService->translate('module.diagnostics.detail.parentContentElementUid', ['parentUid' => $parentUid]),
                 );
             }
         }
@@ -359,7 +354,7 @@ final readonly class WorkspaceDiagnosticsService
                     Value::int($row['pid'] ?? null),
                     'module.diagnostics.issue.fileReferenceMissingOwner',
                     'SELECT uid,pid,uid_local,uid_foreign,tablenames,fieldname,t3ver_oid,t3ver_wsid FROM sys_file_reference WHERE uid=' . Value::int($row['uid'] ?? null) . ';',
-                    $this->translate('module.diagnostics.detail.ownerField', [
+                    $this->localizationService->translate('module.diagnostics.detail.ownerField', [
                         'ownerTable' => $ownerTable,
                         'ownerUid' => $ownerUid,
                         'fieldName' => Value::string($row['fieldname'] ?? null),
@@ -430,9 +425,9 @@ final readonly class WorkspaceDiagnosticsService
     private function manualChecks(): array
     {
         return array_map(fn (string $key): array => [
-            'title' => $this->translate('module.diagnostics.manual.' . $key . '.title'),
-            'risk' => $this->translate('module.diagnostics.manual.' . $key . '.risk'),
-            'solve' => $this->translate('module.diagnostics.manual.' . $key . '.solve'),
+            'title' => $this->localizationService->translate('module.diagnostics.manual.' . $key . '.title'),
+            'risk' => $this->localizationService->translate('module.diagnostics.manual.' . $key . '.risk'),
+            'solve' => $this->localizationService->translate('module.diagnostics.manual.' . $key . '.solve'),
         ], [
             'overwrittenFalFiles',
             'folderFileCollectionDrift',
@@ -448,32 +443,8 @@ final readonly class WorkspaceDiagnosticsService
         if ($title === '') {
             return $table;
         }
-        $label = $this->languageService()->sL($title);
+        $label = $this->localizationService->resolveLabel($title);
         return $label !== '' ? $label : $table;
-    }
-
-    /**
-     * @param array<string, mixed> $arguments
-     */
-    private function translate(string $key, array $arguments = []): string
-    {
-        $label = $this->languageService()->label(self::FILE . $key, $arguments);
-        if (is_string($label) || $label instanceof \Stringable) {
-            $label = (string)$label;
-            if ($label !== '') {
-                return $label;
-            }
-        }
-        return $key;
-    }
-
-    private function languageService(): LanguageService
-    {
-        if (($GLOBALS['LANG'] ?? null) instanceof LanguageService) {
-            return $GLOBALS['LANG'];
-        }
-        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
-        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 
     /**
@@ -502,10 +473,10 @@ final readonly class WorkspaceDiagnosticsService
             'workspaceId' => $workspaceId,
             'liveUid' => $liveUid,
             'pid' => $pid,
-            'severityLabel' => $this->translate(self::SEVERITY_LABEL_KEYS[$severity] ?? self::SEVERITY_LABEL_KEYS['info']),
-            'title' => $this->translate($labelKeyPrefix . '.title'),
-            'impact' => $this->translate($labelKeyPrefix . '.impact'),
-            'solve' => $this->translate($labelKeyPrefix . '.solve'),
+            'severityLabel' => $this->localizationService->translate(self::SEVERITY_LABEL_KEYS[$severity] ?? self::SEVERITY_LABEL_KEYS['info']),
+            'title' => $this->localizationService->translate($labelKeyPrefix . '.title'),
+            'impact' => $this->localizationService->translate($labelKeyPrefix . '.impact'),
+            'solve' => $this->localizationService->translate($labelKeyPrefix . '.solve'),
             'sql' => $sql,
             'detail' => $detail,
         ];

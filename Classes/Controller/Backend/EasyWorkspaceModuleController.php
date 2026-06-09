@@ -11,8 +11,6 @@ use TYPO3\CMS\Backend\Module\ModuleInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
@@ -21,6 +19,7 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\EasyWorkspaceModuleDocHeaderBuilder;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\ModuleSectionViewDataFactory;
@@ -46,7 +45,7 @@ final readonly class EasyWorkspaceModuleController
         private PageRenderer $pageRenderer,
         private BackendUriBuilder $backendUriBuilder,
         private TcaSchemaFactory $tcaSchemaFactory,
-        private Context $context,
+        private BackendAccessGuard $accessGuard,
         private ConfigurationProvider $configurationProvider,
         private LocalizationService $localizationService,
         private PublishSelectedService $publishService,
@@ -87,9 +86,9 @@ final readonly class EasyWorkspaceModuleController
         }
 
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        $pageRecord = $this->resolvePageRecord($pageUid);
-        $rootLine = $this->resolveRootLine($pageUid);
-        $activeWorkspaceId = $this->resolveActiveWorkspaceId();
+        $pageRecord = $this->resolvePageRecord($pageUid, $request);
+        $rootLine = $this->resolveRootLine($pageUid, $request);
+        $activeWorkspaceId = $this->accessGuard->activeWorkspaceId($request);
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-module.js');
@@ -121,6 +120,7 @@ final readonly class EasyWorkspaceModuleController
             'canRenderEasyWorkspace' => $canRender,
             'disabledMessage' => $disabledMessage,
             'section' => $section,
+            'canSeeDiagnostics' => $this->accessGuard->user($request)?->isAdmin() ?? false,
             'moduleUrls' => $this->buildModuleUrls($pageUid, $newsUid),
             'flashMessages' => $this->flushFlashMessages(),
             'config' => $config,
@@ -153,7 +153,10 @@ final readonly class EasyWorkspaceModuleController
             return $this->redirectBack($request);
         }
 
-        $result = $this->publishService->publish($this->publishSelectionNormalizer->fromModuleForm($rawSelections));
+        $result = $this->publishService->publish(
+            $this->publishSelectionNormalizer->fromModuleForm($rawSelections),
+            $this->accessGuard->user($request),
+        );
         if ($result['success']) {
             $message = $result['published'] > 0
                 ? $this->localizationService->translate('publish.success.message', ['count' => $result['published']])
@@ -186,8 +189,12 @@ final readonly class EasyWorkspaceModuleController
             $this->enqueueFlash($this->localizationService->translate('error.missingTableWorkspace'), ContextualFeedbackSeverity::ERROR);
             return $this->redirectBack($request);
         }
+        if (!$this->accessGuard->canModifyTable($table, $request)) {
+            $this->enqueueFlash($this->localizationService->translate('error.noTablePermission'), ContextualFeedbackSeverity::ERROR);
+            return $this->redirectBack($request);
+        }
 
-        $result = $this->publishService->discard($table, $workspaceUid);
+        $result = $this->publishService->discard($table, $workspaceUid, $this->accessGuard->user($request));
         if ($result['success']) {
             $this->enqueueFlash(
                 $this->localizationService->translate('discard.success.message', ['title' => '#' . $workspaceUid]),
@@ -217,6 +224,18 @@ final readonly class EasyWorkspaceModuleController
     }
 
     private function resolveSection(ServerRequestInterface $request): string
+    {
+        $section = $this->requestedSection($request);
+        // Diagnostics expose schema-level scan details (orphaned rows,
+        // raw repair SQL) — admin only, mirroring the module registration.
+        if ($section === 'diagnostics' && !($this->accessGuard->user($request)?->isAdmin() ?? false)) {
+            return 'pending';
+        }
+
+        return $section;
+    }
+
+    private function requestedSection(ServerRequestInterface $request): string
     {
         $path = rtrim($request->getUri()->getPath(), '/');
         if (str_ends_with($path, '/module/content/easy-workspace')) {
@@ -382,14 +401,10 @@ final readonly class EasyWorkspaceModuleController
     /**
      * @return array<string, mixed>
      */
-    private function resolvePageRecord(int $pageUid): array
+    private function resolvePageRecord(int $pageUid, ServerRequestInterface $request): array
     {
-        if ($pageUid <= 0) {
-            return [];
-        }
-
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
+        $backendUser = $this->accessGuard->user($request);
+        if ($pageUid <= 0 || $backendUser === null) {
             return [];
         }
 
@@ -415,10 +430,10 @@ final readonly class EasyWorkspaceModuleController
     /**
      * @return list<array<string, mixed>>
      */
-    private function resolveRootLine(int $pageUid): array
+    private function resolveRootLine(int $pageUid, ServerRequestInterface $request): array
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication || $pageUid <= 0) {
+        $backendUser = $this->accessGuard->user($request);
+        if ($backendUser === null || $pageUid <= 0) {
             return [];
         }
 
@@ -432,18 +447,6 @@ final readonly class EasyWorkspaceModuleController
         } catch (\Throwable) {
             return [];
         }
-    }
-
-    private function resolveActiveWorkspaceId(): int
-    {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication || $backendUser->workspace <= 0) {
-            return 0;
-        }
-
-        $contextWorkspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
-
-        return $contextWorkspaceId > 0 ? $contextWorkspaceId : $backendUser->workspace;
     }
 
     private function disabledMessage(bool $enabled, int $activeWorkspaceId): string

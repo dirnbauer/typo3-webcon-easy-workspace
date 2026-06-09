@@ -123,7 +123,9 @@
                     <li class="wew-history__entry">
                         <div class="wew-history__meta">
                             <span class="wew-history__action wew-history__action--{entry.actionKey}">{entry.action}</span>
-                            <time class="wew-history__when">{entry.tstampFormatted}</time>
+                            <f:if condition="{entry.tstamp} > 0">
+                                <time class="wew-history__when" datetime="{f:format.date(date: '@{entry.tstamp}', format: 'c')}"><f:format.date date="@{entry.tstamp}" pattern="dd. MMM y, HH:mm" /></time>
+                            </f:if>
                             <span class="wew-history__who">{entry.user}</span>
                             <f:if condition="{showRecordContext}">
                                 <span class="wew-history__record">

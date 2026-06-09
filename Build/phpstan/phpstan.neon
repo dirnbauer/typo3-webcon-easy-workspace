@@ -5,6 +5,7 @@ parameters:
   paths:
     - ../../Classes
     - ../../Configuration
+    - ../../Tests
 
   tmpDir: .cache/phpstan/
 
@@ -16,3 +17,5 @@ parameters:
 
   typo3:
     containerXmlPath: null
+    requestGetAttributeMapping:
+      backend.user: TYPO3\CMS\Core\Authentication\BackendUserAuthentication|null

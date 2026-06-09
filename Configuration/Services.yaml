@@ -21,3 +21,7 @@ services:
 
   Webconsulting\WebconEasyWorkspace\Hook\WorkspaceChangeInvalidationHook:
     public: true
+
+  # Retrieved from the container in functional tests.
+  Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService:
+    public: true

@@ -11,18 +11,16 @@ use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
-use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Routing\RouterInterface;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder as WorkspacePreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
-use Webconsulting\WebconEasyWorkspace\Utility\Value;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 
 /**
  * Registers doc-header action buttons for the Easy Workspace module.
@@ -37,6 +35,7 @@ final readonly class EasyWorkspaceModuleDocHeaderBuilder
         private ConfigurationProvider $configurationProvider,
         private LocalizationService $localizationService,
         private TcaSchemaFactory $tcaSchemaFactory,
+        private BackendAccessGuard $backendAccessGuard,
     ) {}
 
     /**
@@ -99,7 +98,7 @@ final readonly class EasyWorkspaceModuleDocHeaderBuilder
             $moduleTemplate->addButtonToButtonBar($previewButton, ButtonBar::BUTTON_POSITION_LEFT, 16);
         }
 
-        if (!$this->isPageEditable($pageRecord)) {
+        if (!$this->isPageEditable($pageRecord, $request)) {
             return;
         }
 
@@ -108,10 +107,9 @@ final readonly class EasyWorkspaceModuleDocHeaderBuilder
             'module' => 'webcon_easy_workspace',
             'returnUrl' => $this->getCurrentRequestUri($request),
         ];
-        $languageService = $GLOBALS['LANG'] ?? null;
-        $editPagePropertiesLabel = $languageService instanceof LanguageService
-            ? ($languageService->sL('LLL:EXT:backend/Resources/Private/Language/locallang_layout.xlf:editPageProperties') ?: 'Edit page properties')
-            : 'Edit page properties';
+        $editPagePropertiesLabel = $this->localizationService->resolveLabel(
+            'LLL:EXT:backend/Resources/Private/Language/locallang_layout.xlf:editPageProperties',
+        ) ?: 'Edit page properties';
 
         $editButton = $this->componentFactory->createGenericButton()
             ->setTag('typo3-backend-contextual-record-edit-trigger')
@@ -129,7 +127,7 @@ final readonly class EasyWorkspaceModuleDocHeaderBuilder
     /**
      * @param array<string, mixed> $pageRecord
      */
-    private function isPageEditable(array $pageRecord): bool
+    private function isPageEditable(array $pageRecord, ServerRequestInterface $request): bool
     {
         if ($pageRecord === []) {
             return false;
@@ -140,8 +138,8 @@ final readonly class EasyWorkspaceModuleDocHeaderBuilder
             return false;
         }
 
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
+        $backendUser = $this->backendAccessGuard->user($request);
+        if ($backendUser === null) {
             return false;
         }
         if ($backendUser->isAdmin()) {

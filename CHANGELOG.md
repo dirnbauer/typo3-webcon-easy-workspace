@@ -4,6 +4,38 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- `WorkspaceChangeInvalidationHook::processCmdmap_postProcess()` no longer fatals when DataHandler invokes it with `$pasteUpdate = false` (which core passes for every non-paste command, i.e. every publish and discard). Caught by the new functional test suite.
+
+### Added
+
+- PHPUnit test infrastructure via `typo3/testing-framework` (`Build/phpunit/`, `Tests/Unit/`, `Tests/Functional/`): 50 unit tests covering `Value`, `PublishSelectionNormalizer`, `WorkspaceTablePolicy`, `BackendAccessGuard` and `ConfigurationProvider`, plus 6 functional tests running real DataHandler publish/discard round-trips (including permission-denial and foreign-workspace rejection) against sqlite.
+- `Build/Scripts/runTests.sh` now supports `-s unit|functional|lint|phpstan|ci` and `-p <php-version>`; `composer test` runs the full chain.
+- The CI matrix (PHP 8.2–8.5) executes lint, PHPStan, unit and functional suites as separate steps.
+
+### Security
+
+- All toolbar AJAX read endpoints (`items`, `has-changes`, `badge`, `diff`, `preview-link`) now verify backend page-show access (`readPageAccess`) for the requested page or news storage page before returning workspace data.
+- The diff endpoint additionally restricts workspace rows to the user's active workspace (admins may inspect any workspace).
+- History rollback now requires `tables_modify` permission and page access for the affected record, and failures are logged.
+- Publish/discard run pre-flight permission checks (`tables_modify`, workspace membership) and pass the acting backend user to DataHandler explicitly; DataHandler remains the enforcement layer.
+- The "Tests & diagnostics" module section (schema scan details, repair SQL) is now admin-only, both via module registration (`access: admin`) and a controller-side section guard.
+
+### Changed
+
+- New `Security\BackendAccessGuard` centralizes backend-user resolution (PSR-7 `backend.user` attribute first, `BE_USER` global only as fallback) and shared permission checks; scattered `$GLOBALS['BE_USER']`/`$GLOBALS['LANG']` access across controllers, services, middleware and the toolbar item was removed.
+- `LocalizationService::resolveLabel()` replaces four copy-pasted per-service `getLanguageService()` helpers.
+- `PublishSelectedService` validates workspace membership and resolves live uids in one query per table (previously one query per record) and derives workspace/soft-delete columns from the TCA schema (`TcaSchemaFactory`) instead of live database schema introspection.
+- `WorkspaceTablePolicy::isAllowed()` results are memoized per request.
+- Fluid templates render timestamps with Fluid 5.3 ICU patterns (`f:format.date pattern="…"`, request-locale aware) instead of pre-formatted PHP strings.
+- Duplicated history-tab and rollback-button wiring in the backend module JS now reuses the shared implementations from `menu-modals.js`.
+- The Visual Editor decline button label is localized (served via inline labels from the middleware) instead of hardcoded English.
+
+### Accessibility
+
+- Diff trigger buttons expose an `aria-label`; the module placeholder announces itself via `role="status"`.
+
 ## [1.2.9] - 2026-06-08
 
 ### Fixed

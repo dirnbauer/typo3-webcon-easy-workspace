@@ -6,9 +6,6 @@ namespace Webconsulting\WebconEasyWorkspace\Service\PendingItems;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Backend\View\BackendLayoutView;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
@@ -23,7 +20,6 @@ final readonly class PendingItemLabelResolver
     public function __construct(
         private TcaSchemaFactory $tcaSchemaFactory,
         private ResourceFactory $resourceFactory,
-        private LanguageServiceFactory $languageServiceFactory,
         private BackendLayoutView $backendLayoutView,
         private LocalizationService $localizationService,
     ) {}
@@ -42,10 +38,9 @@ final readonly class PendingItemLabelResolver
         if (!is_array($columns)) {
             return [];
         }
-        $languageService = $this->getLanguageService();
         $out = [];
         foreach ($columns as $colPos => $rawLabel) {
-            $resolved = $languageService->sL(Value::string($rawLabel));
+            $resolved = $this->localizationService->resolveLabel(Value::string($rawLabel));
             $out[Value::int($colPos)] = $resolved !== '' ? $resolved : Value::string($rawLabel);
         }
         return $out;
@@ -56,9 +51,8 @@ final readonly class PendingItemLabelResolver
         if (!$this->tcaSchemaFactory->has($table)) {
             return $table;
         }
-        $languageService = $this->getLanguageService();
         $title = $this->tcaSchemaFactory->get($table)->getTitle(
-            static fn (string $key): string => (string)$languageService->sL($key),
+            $this->localizationService->resolveLabel(...),
         );
         return $title !== '' ? $title : $table;
     }
@@ -116,14 +110,14 @@ final readonly class PendingItemLabelResolver
             $rawConfiguration = $schema->getRawConfiguration();
             $ctrl = Value::stringKeyArray($rawConfiguration['ctrl'] ?? null);
             $title = Value::string($ctrl['title'] ?? $table);
-            $label = $this->getLanguageService()->sL($title);
+            $label = $this->localizationService->resolveLabel($title);
             return $label !== '' ? $label : $table;
         }
 
         $value = Value::string($row[$typeField] ?? null);
         $label = BackendUtility::getLabelFromItemlist($table, $typeField, $value);
         if ($label !== '') {
-            return $this->getLanguageService()->sL($label);
+            return $this->localizationService->resolveLabel($label);
         }
         return $value;
     }
@@ -212,19 +206,5 @@ final readonly class PendingItemLabelResolver
             return $label;
         }
         return $this->localizationService->translate('toolbar.column', ['number' => $colPos]);
-    }
-
-    public function getLanguageService(): LanguageService
-    {
-        if (isset($GLOBALS['LANG']) && $GLOBALS['LANG'] instanceof LanguageService) {
-            return $GLOBALS['LANG'];
-        }
-        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof BackendUserAuthentication ? $GLOBALS['BE_USER'] : null;
-        $user = $backendUser instanceof BackendUserAuthentication ? $backendUser->user : [];
-        $lang = Value::string($user['lang'] ?? null);
-        if ($lang === '') {
-            $lang = 'default';
-        }
-        return $this->languageServiceFactory->create($lang);
     }
 }

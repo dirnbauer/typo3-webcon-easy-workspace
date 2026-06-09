@@ -10,7 +10,10 @@ use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
+use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
@@ -26,6 +29,12 @@ use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
  *       'action'   => 'publish',
  *       'swapWith' => $workspaceUid,
  *   ];
+ *
+ * Permission model: DataHandler and the workspaces DataHandlerHook
+ * remain the enforcement layer (publish gate, record-level checks).
+ * The pre-flight checks here reject foreign-workspace rows and
+ * tables the user may not modify before anything reaches the cmdmap,
+ * giving clean error responses instead of opaque DataHandler logs.
  */
 final readonly class PublishSelectedService
 {
@@ -34,55 +43,63 @@ final readonly class PublishSelectedService
         private Context $context,
         private LocalizationService $localizationService,
         private WorkspaceTablePolicy $workspaceTablePolicy,
+        private TcaSchemaFactory $tcaSchemaFactory,
+        private BackendAccessGuard $accessGuard,
     ) {}
 
     /**
      * @param list<array{table: string, workspaceUid: int}> $selections
      * @return array{success: bool, published: int, errors: list<string>}
      */
-    public function publish(array $selections): array
+    public function publish(array $selections, ?BackendUserAuthentication $backendUser = null): array
     {
         if ($selections === []) {
             return ['success' => true, 'published' => 0, 'errors' => []];
         }
-        $workspaceId = $this->activeMutationWorkspaceId();
-        if ($workspaceId <= 0) {
+        $backendUser ??= $this->accessGuard->user();
+        $workspaceId = $this->activeMutationWorkspaceId($backendUser);
+        if ($backendUser === null || $workspaceId <= 0) {
             return ['success' => false, 'published' => 0, 'errors' => [$this->localizationService->translate('error.publishFromLive')]];
         }
+        if (!$backendUser->isAdmin() && $backendUser->checkWorkspace($workspaceId) === false) {
+            return ['success' => false, 'published' => 0, 'errors' => [$this->localizationService->translate('error.noPublishPermission')]];
+        }
 
-        // Group selections by table so we can insert them in priority order.
+        // Deduplicate and group by table; drop tables outside the
+        // policy allow-list up front.
+        $uidsByTable = [];
+        foreach ($selections as $entry) {
+            if ($entry['table'] !== '' && $entry['workspaceUid'] > 0 && $this->workspaceTablePolicy->isAllowed($entry['table'])) {
+                $uidsByTable[$entry['table']][$entry['workspaceUid']] = true;
+            }
+        }
+
         $byTable = [];
         $count = 0;
         $rejected = 0;
-        foreach ($selections as $entry) {
-            $table = $entry['table'];
-            $workspaceUid = $entry['workspaceUid'];
-            if ($table === '' || $workspaceUid <= 0 || !$this->workspaceTablePolicy->isAllowed($table)) {
+        $denied = false;
+        foreach ($uidsByTable as $table => $uidSet) {
+            if (!$backendUser->check('tables_modify', $table)) {
+                $denied = true;
                 continue;
             }
-            // Defence-in-depth: confirm the record really belongs to
-            // the active workspace before we hand it to DataHandler.
-            // DataHandler does its own workspace check too, but
-            // rejecting up front gives a cleaner error path and
-            // prevents the cmdmap from being polluted with foreign
-            // workspace ids that a crafted payload could include.
-            if (!$this->belongsToWorkspace($table, $workspaceUid, $workspaceId)) {
-                ++$rejected;
-                continue;
+            // One query per table: confirm workspace membership and
+            // resolve live uids in the same round trip.
+            $liveByWorkspaceUid = $this->mapWorkspaceUidsToLive($table, array_keys($uidSet), $workspaceId);
+            $rejected += count($uidSet) - count($liveByWorkspaceUid);
+            foreach ($liveByWorkspaceUid as $workspaceUid => $liveUid) {
+                $byTable[$table][$liveUid] = [
+                    'version' => ['action' => 'publish', 'swapWith' => $workspaceUid],
+                ];
+                ++$count;
             }
-            $liveUid = $this->resolveLiveUid($table, $workspaceUid);
-            if ($liveUid <= 0) {
-                continue;
-            }
-            $byTable[$table][$liveUid] = [
-                'version' => ['action' => 'publish', 'swapWith' => $workspaceUid],
-            ];
-            ++$count;
         }
         if ($byTable === []) {
-            $msg = $rejected > 0
-                ? $this->localizationService->translate('error.selectionWrongWorkspace')
-                : $this->localizationService->translate('error.noPublishableRecords');
+            $msg = match (true) {
+                $denied => $this->localizationService->translate('error.noTablePermission'),
+                $rejected > 0 => $this->localizationService->translate('error.selectionWrongWorkspace'),
+                default => $this->localizationService->translate('error.noPublishableRecords'),
+            };
             return ['success' => false, 'published' => 0, 'errors' => [$msg]];
         }
 
@@ -95,12 +112,12 @@ final readonly class PublishSelectedService
                 unset($byTable[$orderedTable]);
             }
         }
-        foreach ($byTable as $table => $rows) {
-            $cmd[$table] = $rows;
-        }
+        $cmd += $byTable;
 
+        // DataHandler is a prototype — makeInstance is the intended
+        // way to obtain a fresh instance per operation.
         $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
-        $dataHandler->start([], $cmd);
+        $dataHandler->start([], $cmd, $backendUser);
         $dataHandler->process_cmdmap();
 
         return [
@@ -120,15 +137,16 @@ final readonly class PublishSelectedService
      *
      * @return array{success: bool, discarded: int, errors: list<string>}
      */
-    public function discard(string $table, int $workspaceUid): array
+    public function discard(string $table, int $workspaceUid, ?BackendUserAuthentication $backendUser = null): array
     {
         if ($table === '' || $workspaceUid <= 0) {
             return ['success' => false, 'discarded' => 0, 'errors' => [$this->localizationService->translate('error.missingTableWorkspace')]];
         }
+        $backendUser ??= $this->accessGuard->user();
         // Resolve the concrete workspace row before handing it to
         // DataHandler. The toolbar usually sends the workspace uid, but
         // frontend preview controls can report the rendered live uid.
-        $activeWorkspaceId = $this->activeMutationWorkspaceId();
+        $activeWorkspaceId = $this->activeMutationWorkspaceId($backendUser);
         $target = $this->resolveDiscardTarget($table, $workspaceUid, $activeWorkspaceId);
         if ($target['workspaceUid'] <= 0 || $target['workspaceId'] <= 0) {
             if ($this->discardTargetIsAlreadyLive($table, $workspaceUid, $activeWorkspaceId)) {
@@ -145,7 +163,7 @@ final readonly class PublishSelectedService
             ],
         ];
 
-        $dataHandler = $this->processCmdMapInWorkspace($cmd, $target['workspaceId']);
+        $dataHandler = $this->processCmdMapInWorkspace($cmd, $target['workspaceId'], $backendUser);
         $stillExists = $this->workspaceRowStillExists($table, $target['workspaceUid'], $target['workspaceId']);
         if ($stillExists && $dataHandler->errorLog === []) {
             $dataHandler->errorLog[] = $this->localizationService->translate('error.discardNotApplied');
@@ -164,48 +182,25 @@ final readonly class PublishSelectedService
     private function resolveDiscardTarget(string $table, int $uid, int $preferredWorkspaceId): array
     {
         $empty = ['workspaceUid' => 0, 'workspaceId' => 0];
-        if ($uid <= 0 || !$this->hasDatabaseColumn($table, 't3ver_wsid') || !$this->hasDatabaseColumn($table, 't3ver_oid')) {
+        if (!$this->isWorkspaceAware($table)) {
             return $empty;
         }
 
-        $deletedField = $this->hasDatabaseColumn($table, 'deleted');
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $selectFields = ['uid', 't3ver_wsid', 't3ver_oid'];
-        if ($deletedField) {
-            $selectFields[] = 'deleted';
-        }
-        $row = $queryBuilder
-            ->select(...$selectFields)
-            ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
-            ->executeQuery()
-            ->fetchAssociative();
-        if (!is_array($row) || ($deletedField && Value::int($row['deleted'] ?? null) !== 0)) {
+        $row = $this->fetchVersionRow($table, $uid);
+        if ($row === null || $row['deleted']) {
             return $empty;
         }
-
-        $rowWorkspaceId = Value::int($row['t3ver_wsid'] ?? null);
-        if ($rowWorkspaceId > 0) {
-            return [
-                'workspaceUid' => Value::int($row['uid'] ?? null),
-                'workspaceId' => $rowWorkspaceId,
-            ];
+        if ($row['workspaceId'] > 0) {
+            return ['workspaceUid' => $row['uid'], 'workspaceId' => $row['workspaceId']];
         }
 
-        $resolvedTarget = $this->findDiscardTargetForLiveRecord($table, Value::int($row['uid'] ?? null), $preferredWorkspaceId);
-        if ($resolvedTarget['workspaceUid'] <= 0 || $resolvedTarget['workspaceId'] <= 0) {
-            return $empty;
-        }
-
-        return $resolvedTarget;
+        return $this->findDiscardTargetForLiveRecord($table, $row['uid'], $preferredWorkspaceId);
     }
 
-    private function activeMutationWorkspaceId(): int
+    private function activeMutationWorkspaceId(?BackendUserAuthentication $backendUser): int
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if ($backendUser instanceof BackendUserAuthentication) {
-            $workspaceId = max(0, Value::int($backendUser->workspace));
+        if ($backendUser !== null) {
+            $workspaceId = max(0, $backendUser->workspace);
             if ($workspaceId > 0) {
                 return $workspaceId;
             }
@@ -221,12 +216,11 @@ final readonly class PublishSelectedService
     /**
      * @param array<string, array<int, array<string, mixed>>> $cmd
      */
-    private function processCmdMapInWorkspace(array $cmd, int $workspaceId): DataHandler
+    private function processCmdMapInWorkspace(array $cmd, int $workspaceId, ?BackendUserAuthentication $backendUser): DataHandler
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
         $savedWorkspace = null;
         $savedWorkspaceRec = null;
-        if ($backendUser instanceof BackendUserAuthentication) {
+        if ($backendUser !== null) {
             $savedWorkspace = $backendUser->workspace;
             $savedWorkspaceRec = $backendUser->workspaceRec;
             $workspaceRecord = $backendUser->checkWorkspace($workspaceId);
@@ -242,14 +236,10 @@ final readonly class PublishSelectedService
         $this->context->setAspect('workspace', new WorkspaceAspect($workspaceId));
         try {
             $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
-            if ($backendUser instanceof BackendUserAuthentication) {
-                $dataHandler->start([], $cmd, $backendUser);
-            } else {
-                $dataHandler->start([], $cmd);
-            }
+            $dataHandler->start([], $cmd, $backendUser);
             $dataHandler->process_cmdmap();
         } finally {
-            if ($savedWorkspace !== null && $backendUser instanceof BackendUserAuthentication) {
+            if ($savedWorkspace !== null && $backendUser !== null) {
                 $backendUser->workspace = $savedWorkspace;
                 if (is_array($savedWorkspaceRec)) {
                     $backendUser->workspaceRec = $savedWorkspaceRec;
@@ -263,93 +253,23 @@ final readonly class PublishSelectedService
 
     private function discardTargetIsAlreadyLive(string $table, int $uid, int $preferredWorkspaceId): bool
     {
-        if ($uid <= 0 || !$this->hasDatabaseColumn($table, 't3ver_wsid') || !$this->hasDatabaseColumn($table, 't3ver_oid')) {
+        if (!$this->isWorkspaceAware($table)) {
             return false;
         }
 
-        $deletedField = $this->hasDatabaseColumn($table, 'deleted');
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $selectFields = ['uid', 't3ver_wsid', 't3ver_oid'];
-        if ($deletedField) {
-            $selectFields[] = 'deleted';
-        }
-        $row = $queryBuilder
-            ->select(...$selectFields)
-            ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if (!is_array($row)) {
+        $row = $this->fetchVersionRow($table, $uid);
+        if ($row === null || $row['deleted']) {
             return true;
         }
-        if ($deletedField && Value::int($row['deleted'] ?? null) !== 0) {
-            return true;
-        }
-        if (Value::int($row['t3ver_wsid'] ?? null) > 0) {
+        if ($row['workspaceId'] > 0) {
             return false;
         }
 
-        $liveUid = Value::int($row['uid'] ?? null);
-        if ($preferredWorkspaceId > 0 && $this->findWorkspaceVersionUid($table, $liveUid, $preferredWorkspaceId) > 0) {
+        if ($preferredWorkspaceId > 0 && $this->workspaceVersionsOfLiveRecord($table, $row['uid'], $preferredWorkspaceId) !== []) {
             return false;
         }
 
-        return $this->countWorkspaceVersionsOfLiveRecord($table, $liveUid) === 0;
-    }
-
-    private function findWorkspaceVersionUid(string $table, int $liveUid, int $workspaceId): int
-    {
-        if ($liveUid <= 0 || $workspaceId <= 0) {
-            return 0;
-        }
-
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $constraints = [
-            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
-            $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
-        ];
-        if ($this->hasDatabaseColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
-        }
-
-        $row = $queryBuilder
-            ->select('uid')
-            ->from($table)
-            ->where(...$constraints)
-            ->setMaxResults(1)
-            ->executeQuery()
-            ->fetchAssociative();
-
-        return is_array($row) ? Value::int($row['uid'] ?? null) : 0;
-    }
-
-    private function countWorkspaceVersionsOfLiveRecord(string $table, int $liveUid): int
-    {
-        if ($liveUid <= 0) {
-            return 0;
-        }
-
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $constraints = [
-            $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
-            $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
-        ];
-        if ($this->hasDatabaseColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
-        }
-
-        $rows = $queryBuilder
-            ->select('t3ver_wsid')
-            ->from($table)
-            ->where(...$constraints)
-            ->executeQuery()
-            ->fetchAllAssociative();
-
-        return count($rows);
+        return $this->workspaceVersionsOfLiveRecord($table, $row['uid']) === [];
     }
 
     /**
@@ -363,20 +283,100 @@ final readonly class PublishSelectedService
         }
 
         if ($preferredWorkspaceId > 0) {
-            $workspaceUid = $this->findWorkspaceVersionUid($table, $liveUid, $preferredWorkspaceId);
-            if ($workspaceUid > 0) {
-                return ['workspaceUid' => $workspaceUid, 'workspaceId' => $preferredWorkspaceId];
+            $versions = $this->workspaceVersionsOfLiveRecord($table, $liveUid, $preferredWorkspaceId);
+            if ($versions !== []) {
+                return ['workspaceUid' => $versions[0]['uid'], 'workspaceId' => $preferredWorkspaceId];
             }
+        }
+
+        // Without a workspace preference the live uid is only
+        // unambiguous when exactly one version exists anywhere.
+        $versions = $this->workspaceVersionsOfLiveRecord($table, $liveUid);
+        if (count($versions) !== 1) {
+            return $empty;
+        }
+
+        return ['workspaceUid' => $versions[0]['uid'], 'workspaceId' => $versions[0]['workspaceId']];
+    }
+
+    private function workspaceRowStillExists(string $table, int $workspaceUid, int $workspaceId): bool
+    {
+        if ($workspaceId <= 0 || !$this->isWorkspaceAware($table)) {
+            return false;
+        }
+
+        $row = $this->fetchVersionRow($table, $workspaceUid);
+
+        return $row !== null && !$row['deleted'] && $row['workspaceId'] === $workspaceId;
+    }
+
+    /**
+     * One query per table: confirm the rows really live in the given
+     * workspace and resolve their live uids in the same round trip.
+     *
+     * @param list<int> $uids
+     * @return array<int, int> workspaceUid => liveUid
+     */
+    private function mapWorkspaceUidsToLive(string $table, array $uids, int $workspaceId): array
+    {
+        if ($uids === [] || !$this->isWorkspaceAware($table)) {
+            return [];
+        }
+
+        $deletedField = $this->softDeleteField($table);
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $select = ['uid', 't3ver_oid', 't3ver_wsid'];
+        if ($deletedField !== null) {
+            $select[] = $deletedField;
+        }
+        $rows = $queryBuilder
+            ->select(...$select)
+            ->from($table)
+            ->where(
+                $queryBuilder->expr()->in('uid', $queryBuilder->createNamedParameter($uids, Connection::PARAM_INT_ARRAY)),
+            )
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $map = [];
+        foreach ($rows as $row) {
+            if ($deletedField !== null && Value::int($row[$deletedField] ?? null) !== 0) {
+                continue;
+            }
+            if (Value::int($row['t3ver_wsid'] ?? null) !== $workspaceId) {
+                continue;
+            }
+            $workspaceUid = Value::int($row['uid'] ?? null);
+            $map[$workspaceUid] = Value::int($row['t3ver_oid'] ?? null) ?: $workspaceUid;
+        }
+
+        return $map;
+    }
+
+    /**
+     * All non-deleted workspace versions pointing at a live record,
+     * optionally limited to one workspace.
+     *
+     * @return list<array{uid: int, workspaceId: int}>
+     */
+    private function workspaceVersionsOfLiveRecord(string $table, int $liveUid, ?int $workspaceId = null): array
+    {
+        if ($liveUid <= 0) {
+            return [];
         }
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
         $constraints = [
-            $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
             $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
+            $workspaceId === null
+                ? $queryBuilder->expr()->gt('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT))
+                : $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
         ];
-        if ($this->hasDatabaseColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $deletedField = $this->softDeleteField($table);
+        if ($deletedField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq($deletedField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
 
         $rows = $queryBuilder
@@ -386,103 +386,73 @@ final readonly class PublishSelectedService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $targets = [];
+        $versions = [];
         foreach ($rows as $row) {
-            $workspaceId = Value::int($row['t3ver_wsid'] ?? null);
-            if ($workspaceId > 0) {
-                $targets[$workspaceId . ':' . Value::int($row['uid'] ?? null)] = [
-                    'workspaceUid' => Value::int($row['uid'] ?? null),
-                    'workspaceId' => $workspaceId,
-                ];
+            $versionWorkspaceId = Value::int($row['t3ver_wsid'] ?? null);
+            if ($versionWorkspaceId > 0) {
+                $versions[] = ['uid' => Value::int($row['uid'] ?? null), 'workspaceId' => $versionWorkspaceId];
             }
         }
 
-        if (count($targets) !== 1) {
-            return $empty;
-        }
-
-        return array_values($targets)[0];
-    }
-
-    private function workspaceRowStillExists(string $table, int $workspaceUid, int $workspaceId): bool
-    {
-        if ($workspaceUid <= 0 || $workspaceId <= 0 || !$this->hasDatabaseColumn($table, 't3ver_wsid')) {
-            return false;
-        }
-
-        $deletedField = $this->hasDatabaseColumn($table, 'deleted');
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $selectFields = ['t3ver_wsid'];
-        if ($deletedField) {
-            $selectFields[] = 'deleted';
-        }
-        $row = $queryBuilder
-            ->select(...$selectFields)
-            ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($workspaceUid, Connection::PARAM_INT)))
-            ->executeQuery()
-            ->fetchAssociative();
-        if (!is_array($row) || ($deletedField && Value::int($row['deleted'] ?? null) !== 0)) {
-            return false;
-        }
-
-        return Value::int($row['t3ver_wsid'] ?? null) === $workspaceId;
+        return $versions;
     }
 
     /**
-     * Verify the row at $table#$workspaceUid actually lives in the
-     * given workspace. Returns false for stale uids, deleted rows
-     * and — critically — rows belonging to a different workspace.
+     * Fetch the version metadata of a single row. Expects the table
+     * to be workspace-aware (guard with isWorkspaceAware()).
+     *
+     * @return array{uid: int, liveUid: int, workspaceId: int, deleted: bool}|null
      */
-    private function belongsToWorkspace(string $table, int $workspaceUid, int $workspaceId): bool
+    private function fetchVersionRow(string $table, int $uid): ?array
     {
+        if ($uid <= 0) {
+            return null;
+        }
+
+        $deletedField = $this->softDeleteField($table);
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
+        $select = ['uid', 't3ver_wsid', 't3ver_oid'];
+        if ($deletedField !== null) {
+            $select[] = $deletedField;
+        }
         $row = $queryBuilder
-            ->select('t3ver_wsid', 'deleted')
+            ->select(...$select)
             ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($workspaceUid, Connection::PARAM_INT)))
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
         if (!is_array($row)) {
-            return false;
+            return null;
         }
-        if (Value::int($row['deleted'] ?? null) !== 0) {
-            return false;
-        }
-        return Value::int($row['t3ver_wsid'] ?? null) === $workspaceId;
+
+        return [
+            'uid' => Value::int($row['uid'] ?? null),
+            'liveUid' => Value::int($row['t3ver_oid'] ?? null),
+            'workspaceId' => Value::int($row['t3ver_wsid'] ?? null),
+            'deleted' => $deletedField !== null && Value::int($row[$deletedField] ?? null) !== 0,
+        ];
     }
 
-    private function resolveLiveUid(string $table, int $workspaceUid): int
+    /**
+     * TCA is the source of truth for workspace support and the
+     * soft-delete column — no live DB schema introspection needed.
+     */
+    private function isWorkspaceAware(string $table): bool
     {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-        $row = $queryBuilder
-            ->select('uid', 't3ver_oid')
-            ->from($table)
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($workspaceUid, Connection::PARAM_INT)))
-            ->executeQuery()
-            ->fetchAssociative();
-        if (!is_array($row)) {
-            return 0;
-        }
-        $liveUid = Value::int($row['t3ver_oid'] ?? null);
-        return $liveUid > 0 ? $liveUid : Value::int($row['uid'] ?? null);
+        return $this->tcaSchemaFactory->has($table) && $this->tcaSchemaFactory->get($table)->isWorkspaceAware();
     }
 
-    private function hasDatabaseColumn(string $table, string $column): bool
+    private function softDeleteField(string $table): ?string
     {
-        try {
-            $columns = $this->connectionPool
-                ->getConnectionForTable($table)
-                ->createSchemaManager()
-                ->listTableColumns($table);
-        } catch (\Throwable) {
-            return false;
+        if (!$this->tcaSchemaFactory->has($table)) {
+            return null;
+        }
+        $schema = $this->tcaSchemaFactory->get($table);
+        if (!$schema->hasCapability(TcaSchemaCapability::SoftDelete)) {
+            return null;
         }
 
-        return array_key_exists(strtolower($column), array_change_key_case($columns, CASE_LOWER));
+        return $schema->getCapability(TcaSchemaCapability::SoftDelete)->getFieldName();
     }
-
 }

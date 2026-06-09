@@ -1,0 +1,18 @@
+"be_users"
+,"uid","pid","username","password","admin","deleted","disable"
+,1,0,"admin","",1,0,0
+,2,0,"editor","",0,0,0
+"sys_workspace"
+,"uid","pid","title","adminusers","members","deleted"
+,1,0,"Workspace One","be_users_1","be_users_2",0
+,2,0,"Workspace Two","be_users_1","",0
+"pages"
+,"uid","pid","title","doktype","deleted","hidden"
+,1,0,"Root",1,0,0
+"tt_content"
+,"uid","pid","header","deleted","hidden","t3ver_oid","t3ver_wsid","t3ver_state"
+,1,1,"Live header",0,0,0,0,0
+,2,1,"Workspace header",0,0,1,1,0
+,4,1,"Other live",0,0,0,0,0
+,5,1,"Other workspace header",0,0,4,2,0
+,6,1,"Versionless live",0,0,0,0,0

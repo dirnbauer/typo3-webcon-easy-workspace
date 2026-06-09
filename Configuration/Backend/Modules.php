@@ -50,7 +50,9 @@ return [
             'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.subtitle',
         ],
     ],
-    'webcon_easy_workspace_diagnostics' => $moduleDefaults + [
+    // Diagnostics expose schema-level scan details (orphaned rows,
+    // repair SQL) — admin only.
+    'webcon_easy_workspace_diagnostics' => ['access' => 'admin'] + $moduleDefaults + [
         'parent' => 'webcon_easy_workspace',
         'position' => ['after' => 'webcon_easy_workspace_records'],
         'path' => '/module/content/easy-workspace/diagnostics',

@@ -73,7 +73,14 @@ export function openDiffModal(host, item) {
     additionalCssClasses: ['wew-diff-modal-shell'],
     ajaxCallback: (m) => {
       wireHistoryTabs(m);
-      wireRollbackButtons(host, m, item);
+      wireRollbackButtons(m, item, {
+        endpoint: ENDPOINTS.historyRollback,
+        translate: (key, vars) => label(host, key, vars),
+        onSuccess: async () => {
+          await host._refresh();
+          reloadPreviewIframes();
+        },
+      });
       const editBtn = m.querySelector('.wew-diff-modal__edit');
       if (editBtn) {
         editBtn.addEventListener('click', (e) => {
@@ -145,33 +152,47 @@ export function wireHistoryTabs(modal) {
   activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'record');
 }
 
-export function wireRollbackButtons(host, modal, item) {
-  if (!ENDPOINTS.historyRollback) return;
-  modal.addEventListener('click', async (e) => {
-    const btn = e.target instanceof Element ? e.target.closest('[data-wew-rollback]') : null;
+/**
+ * Wire the rollback buttons inside a history/diff modal.
+ *
+ * Shared by the toolbar dropdown and the backend module, which differ
+ * only in label lookup and post-rollback refresh behaviour:
+ *
+ * @param {HTMLElement} modal     The modal element returned by Modal.advanced().
+ * @param {object}      item      `{ table, workspaceUid, title }` of the record.
+ * @param {object}      options
+ * @param {string}      options.endpoint   AJAX endpoint for the rollback POST; no-op when empty.
+ * @param {Function}    options.translate  `(key, vars?) => string` label lookup.
+ * @param {Function}    options.onSuccess  Invoked (and awaited) after a successful rollback.
+ */
+export function wireRollbackButtons(modal, item, { endpoint, translate, onSuccess }) {
+  if (!endpoint) return;
+  modal.addEventListener('click', async (event) => {
+    const btn = event.target instanceof Element ? event.target.closest('[data-wew-rollback]') : null;
     if (!btn || !modal.contains(btn)) return;
-    e.preventDefault();
-    e.stopPropagation();
+    event.preventDefault();
+    event.stopPropagation();
+
     const mode = btn.dataset.wewRollback;
     const historyUid = parseInt(btn.dataset.historyUid || '0', 10);
     const field = btn.dataset.field || '';
     if ((mode !== 'linear' && mode !== 'field') || !Number.isFinite(historyUid) || historyUid <= 0) {
-      Notification.error(label(host, 'rollback.failedTitle'), label(host, 'rollback.missingData', { mode: mode || '-', historyUid: btn.dataset.historyUid || '-' }));
+      Notification.error(translate('rollback.failedTitle'), translate('rollback.missingData', { mode: mode || '-', historyUid: btn.dataset.historyUid || '-' }));
       return;
     }
     if (mode === 'field' && field === '') {
-      Notification.error(label(host, 'rollback.failedTitle'), label(host, 'rollback.noField'));
+      Notification.error(translate('rollback.failedTitle'), translate('rollback.noField'));
       return;
     }
 
-    const confirmMsg = mode === 'field'
-      ? label(host, 'rollback.confirmField', { title: item.title || item.workspaceUid })
-      : label(host, 'rollback.confirmLinear', { title: item.title || item.workspaceUid });
-    if (!window.confirm(confirmMsg)) return;
+    const confirmMessage = mode === 'field'
+      ? translate('rollback.confirmField', { title: item.title || item.workspaceUid })
+      : translate('rollback.confirmLinear', { title: item.title || item.workspaceUid });
+    if (!window.confirm(confirmMessage)) return;
 
     btn.disabled = true;
     try {
-      const response = await new AjaxRequest(ENDPOINTS.historyRollback).post(
+      const response = await new AjaxRequest(endpoint).post(
         {
           table: item.table,
           uid: item.workspaceUid,
@@ -183,16 +204,15 @@ export function wireRollbackButtons(host, modal, item) {
       );
       const result = await response.resolve();
       if (result?.success) {
-        Notification.success(label(host, 'rollback.successTitle'), mode === 'field' ? label(host, 'rollback.successField', { field }) : label(host, 'rollback.successLinear'), 4);
+        Notification.success(translate('rollback.successTitle'), mode === 'field' ? translate('rollback.successField', { field }) : translate('rollback.successLinear'), 4);
         modal.hideModal();
-        await host._refresh();
-        reloadPreviewIframes();
-      } else {
-        Notification.error(label(host, 'rollback.errorTitle'), result?.error || label(host, 'error.unknown'));
-        btn.disabled = false;
+        await onSuccess();
+        return;
       }
+      Notification.error(translate('rollback.errorTitle'), result?.error || translate('error.unknown'));
+      btn.disabled = false;
     } catch (error) {
-      Notification.error(label(host, 'rollback.failedTitle'), error?.message || label(host, 'error.unexpected'));
+      Notification.error(translate('rollback.failedTitle'), error?.message || translate('error.unexpected'));
       btn.disabled = false;
     }
   });

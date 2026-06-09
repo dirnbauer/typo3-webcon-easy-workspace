@@ -9,13 +9,11 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Backend\Toolbar\RequestAwareToolbarItemInterface;
 use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
-use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Renders the "Easy Workspace" trigger in the top-right backend toolbar.
@@ -32,7 +30,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function __construct(
         private readonly BackendViewFactory $backendViewFactory,
         private readonly PageRenderer $pageRenderer,
-        private readonly Context $context,
+        private readonly BackendAccessGuard $accessGuard,
         private readonly ConfigurationProvider $configurationProvider,
         private readonly LocalizationService $localizationService,
     ) {}
@@ -44,30 +42,9 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
 
     public function checkAccess(): bool
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
-            return false;
-        }
-        if (!$this->configurationProvider->get()['enabled']) {
-            return false;
-        }
-
-        if ($this->resolveActiveWorkspaceId($backendUser) <= 0) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function resolveActiveWorkspaceId(BackendUserAuthentication $backendUser): int
-    {
-        $userWorkspaceId = $backendUser->workspace;
-        if ($userWorkspaceId <= 0) {
-            return 0;
-        }
-
-        $contextWorkspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
-        return $contextWorkspaceId > 0 ? $contextWorkspaceId : $userWorkspaceId;
+        return $this->accessGuard->user($this->request) !== null
+            && $this->configurationProvider->get()['enabled']
+            && $this->accessGuard->activeWorkspaceId($this->request) > 0;
     }
 
     public function getItem(): string
@@ -86,7 +63,6 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function getDropDown(): string
     {
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
         // Merge user-configurable TSconfig with detected runtime
         // capabilities so the toolbar glue script can adapt its messaging
         // (eye icon tooltip, "no iframe" notification) to what's
@@ -95,9 +71,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // Keeping them server-rendered keeps the JS bundle locale-free
         // and lets editors switch backend language without rebuilds.
         $payload = $this->configurationProvider->get() + [
-            'activeWorkspaceId' => $backendUser instanceof BackendUserAuthentication
-                ? $this->resolveActiveWorkspaceId($backendUser)
-                : 0,
+            'activeWorkspaceId' => $this->accessGuard->activeWorkspaceId($this->request),
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
             'labels' => $this->localizationService->labelsForJavaScript(),

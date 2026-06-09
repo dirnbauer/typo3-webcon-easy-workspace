@@ -154,6 +154,16 @@ final readonly class LocalizationService
     }
 
     /**
+     * Resolve a full "LLL:EXT:…" label reference (e.g. a TCA column
+     * label). Central LanguageService access for all services — keeps
+     * the LANG/BE_USER fallback logic in one place.
+     */
+    public function resolveLabel(string $labelReference): string
+    {
+        return $this->getLanguageService()->sL($labelReference);
+    }
+
+    /**
      * @return array<string, string>
      */
     public function labelsForJavaScript(): array

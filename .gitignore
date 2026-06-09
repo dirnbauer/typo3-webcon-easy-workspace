@@ -11,3 +11,5 @@
 /.phpstan.result.cache
 node_modules/
 /.claude/settings.local.json
+/packages/
+/typo3temp/

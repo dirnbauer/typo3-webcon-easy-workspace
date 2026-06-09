@@ -36,12 +36,26 @@ final class WorkspaceTablePolicy
         'sys_file_metadata',
     ];
 
+    /**
+     * Per-instance memoization of isAllowed() results. The policy is a
+     * DI singleton and TCA does not change within a request, so the
+     * full-TCA scan only has to run once per table.
+     *
+     * @var array<string, bool>
+     */
+    private array $allowedCache = [];
+
     public function isPrimary(string $table): bool
     {
         return in_array($table, self::PRIMARY_TABLES, true);
     }
 
     public function isAllowed(string $table): bool
+    {
+        return $this->allowedCache[$table] ??= $this->resolveAllowed($table);
+    }
+
+    private function resolveAllowed(string $table): bool
     {
         if ($this->isPrimary($table)) {
             return true;

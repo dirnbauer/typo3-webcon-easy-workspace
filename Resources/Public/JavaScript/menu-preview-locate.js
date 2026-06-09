@@ -123,53 +123,6 @@ export function findVisualEditorIframe() {
   return null;
 }
 
-export function logIframeDiagnostics(iframes, liveUid, workspaceUid) {
-  const payload = [];
-  for (const [i, iframe] of iframes.entries()) {
-    const doc = iframe.contentDocument;
-    if (!doc?.body) continue;
-    const veWrappers = Array.from(doc.querySelectorAll('ve-content-element'));
-    const dataUidElements = Array.from(doc.querySelectorAll('[data-uid]'));
-    const cElements = Array.from(doc.querySelectorAll('[id]'))
-      .map((el) => el.id)
-      .filter((id) => /^c\d+$/.test(id) || /tt_content/.test(id));
-    const haystack = doc.body.innerHTML;
-    const textHits = {};
-    for (const uid of [liveUid, workspaceUid].filter((u, idx, arr) => u && arr.indexOf(u) === idx)) {
-      const re = new RegExp(`["'\\s=>](c${uid}|tt_content:${uid}|uid="${uid}")["'\\s<]`, 'g');
-      textHits[`uid_${uid}`] = haystack.match(re)?.slice(0, 5) || null;
-    }
-    payload.push({
-      iframe: i,
-      id: iframe.id || '(none)',
-      src: iframe.src?.slice(0, 120),
-      bodyLength: haystack.length,
-      veContentElementCount: veWrappers.length,
-      veContentElements: veWrappers.slice(0, 20).map((el) => ({
-        uid: el.getAttribute('uid'),
-        table: el.getAttribute('table'),
-        id: el.getAttribute('id'),
-        CType: el.getAttribute('CType'),
-      })),
-      idCElementCount: cElements.length,
-      idCElements: cElements.slice(0, 30),
-      dataUidElementCount: dataUidElements.length,
-      dataUidElements: dataUidElements.slice(0, 20).map((el) => ({
-        tag: el.tagName.toLowerCase(),
-        'data-uid': el.getAttribute('data-uid'),
-        'data-table': el.getAttribute('data-table'),
-        'data-content-uid': el.getAttribute('data-content-uid'),
-        id: el.id || null,
-      })),
-      textHits,
-    });
-  }
-  console.warn(
-    `[easy-workspace] eye couldn't locate uid ${liveUid} / ws #${workspaceUid}. Iframe diagnostics:`,
-    payload,
-  );
-}
-
 export function highlightInIframe(host, item, { announce = false } = {}) {
   clearIframeHighlight(host);
   const target = locateTarget(item);
@@ -199,7 +152,7 @@ export function highlightInIframe(host, item, { announce = false } = {}) {
           10,
         );
       } else {
-        logIframeDiagnostics(accessible, liveUid, workspaceUid);
+        console.warn('[easy-workspace] could not locate content element', { liveUid, workspaceUid, iframeCount: accessible.length });
         Notification.warning(
           label(host, 'preview.show.title'),
           label(host, 'preview.notFound', { count: accessible.length, liveUid, workspaceUid }),

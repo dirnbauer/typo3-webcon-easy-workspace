@@ -1801,6 +1801,24 @@
         <target state="translated">Unbekannter Fehler.</target>
       </segment>
     </unit>
+    <unit id="error.accessDenied">
+      <segment>
+        <source>You do not have permission to access this page or record.</source>
+        <target state="translated">Sie haben keine Berechtigung, auf diese Seite oder diesen Datensatz zuzugreifen.</target>
+      </segment>
+    </unit>
+    <unit id="error.noPublishPermission">
+      <segment>
+        <source>You do not have permission to publish in this workspace.</source>
+        <target state="translated">Sie haben keine Berechtigung, in diesem Workspace zu veröffentlichen.</target>
+      </segment>
+    </unit>
+    <unit id="error.noTablePermission">
+      <segment>
+        <source>You do not have permission to modify records of this type.</source>
+        <target state="translated">Sie haben keine Berechtigung, Datensätze dieses Typs zu bearbeiten.</target>
+      </segment>
+    </unit>
     <unit id="error.unexpected">
       <segment>
         <source>Unexpected error.</source>

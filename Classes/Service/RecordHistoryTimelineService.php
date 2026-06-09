@@ -6,10 +6,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
-use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Utility\DiffGranularity;
 use TYPO3\CMS\Core\Utility\DiffUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
@@ -50,7 +47,6 @@ final readonly class RecordHistoryTimelineService
 
     public function __construct(
         private DiffUtility $diffUtility,
-        private LanguageServiceFactory $languageServiceFactory,
         private Context $context,
         private LocalizationService $localizationService,
     ) {}
@@ -215,7 +211,6 @@ final readonly class RecordHistoryTimelineService
     private function buildFieldDiffs(string $table, int $uid, array $old, array $new, int $historyUid): array
     {
         $fields = array_unique(array_merge(array_keys($old), array_keys($new)));
-        $languageService = $this->getLanguageService();
         $tableTca = TcaUtility::table($table);
         $columns = Value::stringKeyArray($tableTca['columns'] ?? null);
         $out = [];
@@ -236,7 +231,7 @@ final readonly class RecordHistoryTimelineService
             $tcaLabel = Value::string($fieldTca['label'] ?? $field);
             $out[] = [
                 'field' => $field,
-                'label' => $languageService->sL($tcaLabel) ?: $field,
+                'label' => $this->localizationService->resolveLabel($tcaLabel) ?: $field,
                 'before' => $before,
                 'after' => $after,
                 'html' => $this->diffUtility->diff($before, $after, DiffGranularity::WORD),
@@ -326,7 +321,7 @@ final readonly class RecordHistoryTimelineService
     {
         $tableTca = TcaUtility::table($table);
         $label = Value::string(Value::stringKeyArray($tableTca['ctrl'] ?? null)['title'] ?? $table);
-        $translated = $this->getLanguageService()->sL($label);
+        $translated = $this->localizationService->resolveLabel($label);
         return $translated !== '' ? $translated : $table;
     }
 
@@ -342,14 +337,5 @@ final readonly class RecordHistoryTimelineService
         }
         $title = trim(strip_tags(BackendUtility::getRecordTitle($table, $row, false, true)));
         return $title !== '' ? $title : sprintf('%s #%d', $table, $uid);
-    }
-
-    private function getLanguageService(): LanguageService
-    {
-        if (($GLOBALS['LANG'] ?? null) instanceof LanguageService) {
-            return $GLOBALS['LANG'];
-        }
-        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
-        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 }

@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
-use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\DiffGranularity;
 use TYPO3\CMS\Core\Utility\DiffUtility;
@@ -68,7 +65,6 @@ final readonly class RecordDiffService
 
     public function __construct(
         private TcaSchemaFactory $tcaSchemaFactory,
-        private LanguageServiceFactory $languageServiceFactory,
         private DiffUtility $diffUtility,
         private LocalizationService $localizationService,
     ) {}
@@ -180,7 +176,6 @@ final readonly class RecordDiffService
             return [];
         }
         $schema = $this->tcaSchemaFactory->get($table);
-        $languageService = $this->getLanguageService();
 
         $versionState = VersionState::tryFrom(Value::int($versionRow['t3ver_state'] ?? null)) ?? VersionState::DEFAULT_STATE;
         $isNew = $versionState === VersionState::NEW_PLACEHOLDER;
@@ -219,7 +214,7 @@ final readonly class RecordDiffService
 
             $fieldType = $schema->getField($field);
             $rawLabel = $fieldType->getLabel() ?: $field;
-            $label = $languageService->sL($rawLabel);
+            $label = $this->localizationService->resolveLabel($rawLabel);
             if ($label === '') {
                 $label = $field;
             }
@@ -309,14 +304,5 @@ final readonly class RecordDiffService
             return $value;
         }
         return mb_substr($value, 0, self::VALUE_TRUNCATE_CHARS - 1) . '…';
-    }
-
-    private function getLanguageService(): LanguageService
-    {
-        if (isset($GLOBALS['LANG']) && $GLOBALS['LANG'] instanceof LanguageService) {
-            return $GLOBALS['LANG'];
-        }
-        $backendUser = ($GLOBALS['BE_USER'] ?? null) instanceof AbstractUserAuthentication ? $GLOBALS['BE_USER'] : null;
-        return $this->languageServiceFactory->createFromUserPreferences($backendUser);
     }
 }

@@ -33,7 +33,8 @@
     "require-dev": {
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
-        "saschaegerer/phpstan-typo3": "^3.0.1"
+        "saschaegerer/phpstan-typo3": "^3.0.1",
+        "typo3/testing-framework": "^9.5"
     },
     "suggest": {
         "georgringer/news": "Adds news-bundle publishing (news record + content elements via tx_news_related_news).",
@@ -44,12 +45,21 @@
             "Webconsulting\\WebconEasyWorkspace\\": "Classes/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Webconsulting\\WebconEasyWorkspace\\Tests\\": "Tests/"
+        }
+    },
     "scripts": {
-        "lint": "find Classes Configuration -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "lint": "find Classes Configuration Tests -name '*.php' -print0 | xargs -0 -n1 php -l",
         "phpstan": "phpstan analyse --configuration=Build/phpstan/phpstan.neon --memory-limit=1G",
+        "test:unit": "phpunit -c Build/phpunit/UnitTests.xml",
+        "test:functional": "phpunit -c Build/phpunit/FunctionalTests.xml",
         "test": [
             "@lint",
-            "@phpstan"
+            "@phpstan",
+            "@test:unit",
+            "@test:functional"
         ]
     },
     "config": {

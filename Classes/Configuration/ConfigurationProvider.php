@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Configuration;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
@@ -19,6 +19,8 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  */
 final readonly class ConfigurationProvider
 {
+    public function __construct(private BackendAccessGuard $accessGuard) {}
+
     private const DEFAULTS = [
         // Master switch
         'enabled' => true,
@@ -138,8 +140,8 @@ final readonly class ConfigurationProvider
      */
     private function getUserTsConfig(): array
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
+        $backendUser = $this->accessGuard->user();
+        if ($backendUser === null) {
             return [];
         }
         return Value::stringKeyArray($backendUser->getTSConfig());
@@ -147,8 +149,8 @@ final readonly class ConfigurationProvider
 
     private function getUserSettingBool(string $key, bool $default): bool
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
+        $backendUser = $this->accessGuard->user();
+        if ($backendUser === null) {
             return $default;
         }
 

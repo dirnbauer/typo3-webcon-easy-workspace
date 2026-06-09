@@ -22,6 +22,7 @@ import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPosi
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import '@typo3/backend/multi-record-selection.js';
 import { discardMessageKey } from './menu-context.js';
+import { wireHistoryTabs, wireRollbackButtons } from './menu-modals.js';
 
 const root = document.querySelector('[data-wew-module]');
 const LABELS = parseLabelMap(root);
@@ -251,109 +252,13 @@ function onDiff(btn, diffEndpoint) {
     size: ModalSizes.expand,
     additionalCssClasses: ['wew-diff-modal-shell'],
     ajaxCallback: (modal) => {
-      initHistoryTabs(modal);
-      initRollbackButtons(modal, { table, workspaceUid, title });
+      wireHistoryTabs(modal);
+      wireRollbackButtons(modal, { table, workspaceUid, title }, {
+        endpoint: HISTORY_ROLLBACK_ENDPOINT,
+        translate: (key, vars) => (vars === undefined ? label(key) : formatMessage(label(key), vars)),
+        onSuccess: () => window.location.reload(),
+      });
     },
-  });
-}
-
-function initHistoryTabs(container) {
-  const tabsRoot = container.querySelector('[data-wew-history-tabs]');
-  if (!tabsRoot) return;
-
-  const tabs = Array.from(tabsRoot.querySelectorAll('[data-wew-history-tab]'));
-  const panels = Array.from(tabsRoot.querySelectorAll('[data-wew-history-panel]'));
-  if (tabs.length === 0 || panels.length === 0) return;
-
-  const activate = (name, focus = false) => {
-    tabs.forEach((tab) => {
-      const active = tab.dataset.wewHistoryTab === name;
-      tab.classList.toggle('active', active);
-      tab.setAttribute('aria-selected', active ? 'true' : 'false');
-      tab.tabIndex = active ? 0 : -1;
-      if (active && focus) {
-        tab.focus();
-      }
-    });
-
-    panels.forEach((panel) => {
-      const active = panel.dataset.wewHistoryPanel === name;
-      panel.classList.toggle('active', active);
-      panel.classList.toggle('show', active);
-      panel.hidden = !active;
-      if (active) {
-        const frame = panel.querySelector('iframe[data-src]');
-        if (frame && (!frame.getAttribute('src') || frame.getAttribute('src') === 'about:blank')) {
-          frame.setAttribute('src', frame.dataset.src || 'about:blank');
-        }
-      }
-    });
-  };
-
-  tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => activate(tab.dataset.wewHistoryTab || 'record'));
-    tab.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      event.preventDefault();
-      const direction = event.key === 'ArrowRight' ? 1 : -1;
-      const nextIndex = (index + direction + tabs.length) % tabs.length;
-      activate(tabs[nextIndex].dataset.wewHistoryTab || 'record', true);
-    });
-  });
-
-  activate(tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')?.dataset.wewHistoryTab || 'record');
-}
-
-function initRollbackButtons(modal, item) {
-  if (!HISTORY_ROLLBACK_ENDPOINT) return;
-  modal.addEventListener('click', async (event) => {
-    const btn = event.target instanceof Element ? event.target.closest('[data-wew-rollback]') : null;
-    if (!btn || !modal.contains(btn)) return;
-    event.preventDefault();
-    event.stopPropagation();
-
-    const mode = btn.dataset.wewRollback;
-    const historyUid = parseInt(btn.dataset.historyUid || '0', 10);
-    const field = btn.dataset.field || '';
-    if ((mode !== 'linear' && mode !== 'field') || !Number.isFinite(historyUid) || historyUid <= 0) {
-      Notification.error(label('rollback.failedTitle'), formatMessage(label('rollback.missingData'), { mode: mode || '-', historyUid: btn.dataset.historyUid || '-' }));
-      return;
-    }
-    if (mode === 'field' && field === '') {
-      Notification.error(label('rollback.failedTitle'), label('rollback.noField'));
-      return;
-    }
-
-    const confirmMessage = mode === 'field'
-      ? formatMessage(label('rollback.confirmField'), { title: item.title || item.workspaceUid })
-      : formatMessage(label('rollback.confirmLinear'), { title: item.title || item.workspaceUid });
-    if (!window.confirm(confirmMessage)) return;
-
-    btn.disabled = true;
-    try {
-      const response = await new AjaxRequest(HISTORY_ROLLBACK_ENDPOINT).post(
-        {
-          table: item.table,
-          uid: item.workspaceUid,
-          historyUid,
-          mode,
-          field,
-        },
-        { headers: { 'Content-Type': 'application/json; charset=utf-8' } },
-      );
-      const result = await response.resolve();
-      if (result?.success) {
-        Notification.success(label('rollback.successTitle'), mode === 'field' ? formatMessage(label('rollback.successField'), { field }) : label('rollback.successLinear'), 4);
-        modal.hideModal();
-        window.location.reload();
-        return;
-      }
-      Notification.error(label('rollback.errorTitle'), result?.error || label('error.unknown'));
-      btn.disabled = false;
-    } catch (error) {
-      Notification.error(label('rollback.failedTitle'), error?.message || label('error.unexpected'));
-      btn.disabled = false;
-    }
   });
 }
 

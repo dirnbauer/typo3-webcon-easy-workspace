@@ -41,5 +41,14 @@ jobs:
       - name: Install dependencies
         run: composer update --no-interaction --no-progress --prefer-dist
 
-      - name: Run quality checks
-        run: composer test
+      - name: PHP lint
+        run: composer lint
+
+      - name: PHPStan
+        run: composer phpstan
+
+      - name: Unit tests
+        run: composer test:unit
+
+      - name: Functional tests (sqlite)
+        run: composer test:functional

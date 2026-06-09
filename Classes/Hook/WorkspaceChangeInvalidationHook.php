@@ -28,8 +28,9 @@ final readonly class WorkspaceChangeInvalidationHook
     }
 
     /**
-     * @param array<string, mixed>|null $pasteUpdate
-     * @param array<string, mixed>|null $pasteDatamap
+     * DataHandler passes `false` (not null) for $pasteUpdate and
+     * $pasteDatamap on non-paste commands — the parameters must stay
+     * loosely typed.
      */
     public function processCmdmap_postProcess(
         string $command,
@@ -37,8 +38,8 @@ final readonly class WorkspaceChangeInvalidationHook
         int $uid,
         mixed $value,
         DataHandler $dataHandler,
-        ?array $pasteUpdate = null,
-        ?array $pasteDatamap = null,
+        mixed $pasteUpdate = null,
+        mixed $pasteDatamap = null,
     ): void {
         if ($this->isWorkspaceRelevant($table, $dataHandler)) {
             $this->stampService->bump((int)$dataHandler->BE_USER->workspace, $dataHandler->BE_USER);

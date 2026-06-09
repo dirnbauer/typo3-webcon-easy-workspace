@@ -41,13 +41,28 @@ function canDecline(element) {
   return uid > 0 && changedRecords.get(table)?.has(uid) === true;
 }
 
+function declineLabels() {
+  // Injected as a priority inline script by VisualEditorDeclineButtonMiddleware;
+  // fall back to English when the global is absent.
+  const labels = window.webconEasyWorkspaceDeclineLabels || {};
+  const title = typeof labels.title === 'string' && labels.title !== '' ? labels.title : '';
+  const subtitle = typeof labels.subtitle === 'string' && labels.subtitle !== '' ? labels.subtitle : '';
+  return {
+    title: title && subtitle
+      ? `${title} - ${subtitle}`
+      : 'Decline workspace changes - back to the last published version',
+    ariaLabel: title || 'Decline workspace changes',
+  };
+}
+
 function makeButton(element) {
+  const labels = declineLabels();
   const button = document.createElement('button');
   button.className = 'button wew-ve-decline-button';
   button.type = 'button';
   button.tabIndex = 0;
-  button.title = 'Decline workspace changes - back to the last published version';
-  button.setAttribute('aria-label', 'Decline workspace changes');
+  button.title = labels.title;
+  button.setAttribute('aria-label', labels.ariaLabel);
   button.innerHTML = '<ve-icon name="actions-undo"></ve-icon>';
   button.addEventListener('click', (event) => {
     event.preventDefault();

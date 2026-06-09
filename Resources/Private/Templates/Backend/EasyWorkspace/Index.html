@@ -27,7 +27,9 @@
                  data-wew-labels="{jsLabelsJson -> f:format.htmlspecialchars()}">
                 <f:if condition="{hasContext}">
                     <f:then>
-                        <f:render partial="Backend/Module/Section/{section -> f:format.case(mode: 'capital')}" arguments="{_all}" />
+                        <f:if condition="{section} != 'diagnostics' || {canSeeDiagnostics}">
+                            <f:render partial="Backend/Module/Section/{section -> f:format.case(mode: 'capital')}" arguments="{_all}" />
+                        </f:if>
                     </f:then>
                     <f:else>
                         <f:render partial="Backend/Module/Placeholder" arguments="{
