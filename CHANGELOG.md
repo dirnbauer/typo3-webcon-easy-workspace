@@ -24,6 +24,9 @@ All notable changes to Easy Workspace are documented in this file.
 
 ### Changed
 
+- The pending-items mode (`changed`/`all`) and toolbar context (`none`/`page`/`news`) are now native backed enums (`Enum\PendingItemsMode`, `Enum\ToolbarContext`) instead of loose string constants; all service signatures are type-safe and the AJAX wire format is unchanged. `PendingItemsService` lost ~70 lines of duplicated empty-payload/context plumbing in the process.
+- The Visual Editor decline button builds its icon with `createElement` instead of `innerHTML`.
+- Removed 10 orphaned labels (each from both `locallang.xlf` and `de.locallang.xlf`) that were no longer referenced by any template, service or JS module.
 - New `Security\BackendAccessGuard` centralizes backend-user resolution (PSR-7 `backend.user` attribute first, `BE_USER` global only as fallback) and shared permission checks; scattered `$GLOBALS['BE_USER']`/`$GLOBALS['LANG']` access across controllers, services, middleware and the toolbar item was removed.
 - `LocalizationService::resolveLabel()` replaces four copy-pasted per-service `getLanguageService()` helpers.
 - `PublishSelectedService` validates workspace membership and resolves live uids in one query per table (previously one query per record) and derives workspace/soft-delete columns from the TCA schema (`TcaSchemaFactory`) instead of live database schema introspection.
