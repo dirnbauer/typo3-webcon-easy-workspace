@@ -301,12 +301,6 @@
         <target state="translated">ausstehend</target>
       </segment>
     </unit>
-    <unit id="module.total">
-      <segment>
-        <source>total</source>
-        <target state="translated">gesamt</target>
-      </segment>
-    </unit>
     <unit id="module.disabledBySettings">
       <segment>
         <source>Easy Workspace is disabled in your user settings or by administrator configuration.</source>
@@ -317,18 +311,6 @@
       <segment>
         <source>Switch to a workspace to use Easy Workspace.</source>
         <target state="translated">Wechseln Sie in einen Arbeitsbereich, um Easy Workspace zu verwenden.</target>
-      </segment>
-    </unit>
-    <unit id="module.nav.aria">
-      <segment>
-        <source>Easy Workspace sections</source>
-        <target state="translated">Easy-Workspace-Bereiche</target>
-      </segment>
-    </unit>
-    <unit id="module.nav.eyebrow">
-      <segment>
-        <source>Workspace</source>
-        <target state="translated">Arbeitsbereich</target>
       </segment>
     </unit>
     <unit id="module.section.pending">
@@ -485,18 +467,6 @@
       <segment>
         <source>Needs review before publishing or cleanup.</source>
         <target state="translated">Vor Veröffentlichung oder Bereinigung prüfen.</target>
-      </segment>
-    </unit>
-    <unit id="module.diagnostics.kpi.tables">
-      <segment>
-        <source>Tables scanned</source>
-        <target state="translated">Geprüfte Tabellen</target>
-      </segment>
-    </unit>
-    <unit id="module.diagnostics.kpi.tables.hint">
-      <segment>
-        <source>Workspace-aware TCA tables checked.</source>
-        <target state="translated">Workspace-fähige TCA-Tabellen wurden geprüft.</target>
       </segment>
     </unit>
     <unit id="module.diagnostics.kpi.records">
@@ -1267,12 +1237,6 @@
         <target state="translated">Wählen Sie geänderte Datensätze, um sie zu veröffentlichen.</target>
       </segment>
     </unit>
-    <unit id="module.headerActions.preview">
-      <segment>
-        <source>Preview</source>
-        <target state="translated">Vorschau</target>
-      </segment>
-    </unit>
     <unit id="userSettings.tab">
       <segment>
         <source>Easy Workspace</source>
@@ -1915,12 +1879,6 @@
         <target state="translated">Keine veröffentlichbaren Datensätze in der Auswahl.</target>
       </segment>
     </unit>
-    <unit id="error.discardFromLive">
-      <segment>
-        <source>Cannot discard from the live workspace.</source>
-        <target state="translated">Im Live-Arbeitsbereich kann nicht verworfen werden.</target>
-      </segment>
-    </unit>
     <unit id="error.recordWrongWorkspace">
       <segment>
         <source>Record does not belong to the active workspace.</source>
@@ -1981,12 +1939,6 @@
         <target state="translated">{count, plural, one {# Bearbeitung} other {# Bearbeitungen}}</target>
       </segment>
     </unit>
-    <unit id="history.tab.contentElement">
-      <segment>
-        <source>Content element</source>
-        <target state="translated">Inhaltselement</target>
-      </segment>
-    </unit>
     <unit id="history.tab.record">
       <segment>
         <source>Record history</source>
@@ -1997,18 +1949,6 @@
       <segment>
         <source>Whole page history</source>
         <target state="translated">Verlauf der ganzen Seite</target>
-      </segment>
-    </unit>
-    <unit id="history.frame.record">
-      <segment>
-        <source>Record history</source>
-        <target state="translated">Datensatzverlauf</target>
-      </segment>
-    </unit>
-    <unit id="history.frame.page">
-      <segment>
-        <source>Full page history</source>
-        <target state="translated">Vollständiger Seitenverlauf</target>
       </segment>
     </unit>
     <unit id="history.aria">
