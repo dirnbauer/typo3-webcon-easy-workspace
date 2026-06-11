@@ -10,7 +10,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
-use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
+use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -45,7 +45,7 @@ final readonly class InlineChildResolver
         string $parentTable,
         array $parentRow,
         int $workspaceId,
-        string $mode,
+        PendingItemsMode $mode,
         array $config = [],
         array $columnLabels = [],
         ?int $languageUid = null,
@@ -70,7 +70,7 @@ final readonly class InlineChildResolver
                     locateLiveUid: $parentTable === 'tt_content' ? $parentLiveUid : null,
                     locateWorkspaceUid: $parentTable === 'tt_content' ? $parentWorkspaceUid : null,
                 );
-                if ($item !== null && ($mode === PendingItemsService::MODE_ALL || $item->isChanged)) {
+                if ($item !== null && ($mode->includesUnchanged() || $item->isChanged)) {
                     $items[] = $item;
                 }
             }
@@ -360,13 +360,13 @@ final readonly class InlineChildResolver
      * @param array{field: string, label: string, table: string, foreignField: string, foreignTableField: string|null, foreignMatchFields: array<string, scalar>, orderBy: list<array{0: string, 1: string}>} $inlineConfig
      * @return list<array<string, mixed>>
      */
-    public function listInlineChildRows(string $parentTable, array $parentUids, int $workspaceId, string $mode, array $inlineConfig, ?int $languageUid = null): array
+    public function listInlineChildRows(string $parentTable, array $parentUids, int $workspaceId, PendingItemsMode $mode, array $inlineConfig, ?int $languageUid = null): array
     {
         $table = $inlineConfig['table'];
         $foreignField = $inlineConfig['foreignField'];
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll();
-        if ($mode === PendingItemsService::MODE_ALL) {
+        if ($mode->includesUnchanged()) {
             $queryBuilder->getRestrictions()
                 ->add(new DeletedRestriction())
                 ->add(new WorkspaceRestriction($workspaceId, false));
@@ -375,7 +375,7 @@ final readonly class InlineChildResolver
         $constraints = [
             $queryBuilder->expr()->in($foreignField, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
         ];
-        if ($mode !== PendingItemsService::MODE_ALL) {
+        if (!$mode->includesUnchanged()) {
             $constraints[] = $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT));
             $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
@@ -408,7 +408,7 @@ final readonly class InlineChildResolver
         $result = $queryBuilder->executeQuery();
         $rows = [];
         while ($row = $result->fetchAssociative()) {
-            if ($mode === PendingItemsService::MODE_ALL) {
+            if ($mode->includesUnchanged()) {
                 BackendUtility::workspaceOL($table, $row, $workspaceId);
             }
             if (is_array($row)) {

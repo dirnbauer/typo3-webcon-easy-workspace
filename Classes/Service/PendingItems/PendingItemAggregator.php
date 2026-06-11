@@ -9,7 +9,7 @@ use Webconsulting\WebconEasyWorkspace\Dto\PendingChildChange;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingRecordReference;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
-use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
+use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 
 final readonly class PendingItemAggregator
 {
@@ -125,7 +125,7 @@ final readonly class PendingItemAggregator
         string $parentTable,
         int $pageUid,
         int $workspaceId,
-        string $mode,
+        PendingItemsMode $mode,
         array $config,
         array $columnLabels,
         ?int $languageUid,
@@ -156,7 +156,7 @@ final readonly class PendingItemAggregator
             }
 
             $item = $this->withRelatedChanges($item, $childItems);
-            if ($mode === PendingItemsService::MODE_ALL || $item->isChanged) {
+            if ($mode->includesUnchanged() || $item->isChanged) {
                 if ($index === null) {
                     $items[] = $item;
                 } else {

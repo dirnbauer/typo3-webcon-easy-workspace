@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
@@ -36,7 +37,7 @@ final readonly class ModuleSectionViewDataFactory
         $items = $this->pendingItemsService->listForContext(
             $pageUid,
             $newsUid,
-            PendingItemsService::MODE_ALL,
+            PendingItemsMode::All,
             $config,
         );
         if ($items === null) {

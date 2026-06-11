@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Dto;
 
+use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
+use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
+
 /**
  * Typed result of a pending-items collection run. Serialize once at the HTTP boundary.
  */
@@ -17,7 +20,7 @@ final readonly class PendingItemsPayload
     public function __construct(
         public int $workspaceId,
         public string $workspaceTitle,
-        public string $mode,
+        public PendingItemsMode $mode,
         public array $items,
         public array $itemGroups,
         public array $changedItemGroups,
@@ -79,7 +82,7 @@ final readonly class PendingItemsPayload
             'itemGroups' => self::serializeGroups($this->itemGroups, $includeDiff),
             'changedItemGroups' => self::serializeGroups($this->changedItemGroups, $includeDiff),
             'hasNews' => $this->hasNews,
-            'mode' => $this->mode,
+            'mode' => $this->mode->value,
         ];
     }
 
@@ -122,16 +125,16 @@ final readonly class PendingItemsPayload
             'items' => self::serializeItems($this->items, $includeDiff),
             'itemGroups' => self::serializeGroups($this->itemGroups, $includeDiff),
             'changedItemGroups' => self::serializeGroups($this->changedItemGroups, $includeDiff),
-            'mode' => $this->mode,
+            'mode' => $this->mode->value,
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function toToolbarClientArray(string $context, bool $includeDiff = false): array
+    public function toToolbarClientArray(ToolbarContext $context, bool $includeDiff = false): array
     {
-        return $context === 'news'
+        return $context === ToolbarContext::News
             ? $this->toNewsClientArray($includeDiff)
             : $this->toPageClientArray($includeDiff);
     }

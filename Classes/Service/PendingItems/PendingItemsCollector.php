@@ -8,7 +8,7 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
-use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
+use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
@@ -146,7 +146,7 @@ final readonly class PendingItemsCollector
         int $pageUid,
         int $workspaceId,
         string $workspaceTitle,
-        string $mode,
+        PendingItemsMode $mode,
         array $config,
         ?int $languageUid,
         bool $hasNews,
@@ -214,7 +214,7 @@ final readonly class PendingItemsCollector
         int $newsUid,
         int $workspaceId,
         string $workspaceTitle,
-        string $mode,
+        PendingItemsMode $mode,
         array $config,
         ?int $languageUid,
     ): PendingItemsPayload {
@@ -263,7 +263,7 @@ final readonly class PendingItemsCollector
         array $items,
         array $contentRows,
         int $workspaceId,
-        string $mode,
+        PendingItemsMode $mode,
         array $config,
         array $columnLabels,
         ?int $languageUid,
@@ -296,7 +296,7 @@ final readonly class PendingItemsCollector
         array $items,
         int $workspaceId,
         string $workspaceTitle,
-        string $mode,
+        PendingItemsMode $mode,
         array $config,
         ?int $languageUid,
         int $maxItems,
@@ -325,8 +325,8 @@ final readonly class PendingItemsCollector
         );
     }
 
-    private function includeItem(PendingItem $item, string $mode): bool
+    private function includeItem(PendingItem $item, PendingItemsMode $mode): bool
     {
-        return $mode === PendingItemsService::MODE_ALL || $item->isChanged;
+        return $mode->includesUnchanged() || $item->isChanged;
     }
 }

@@ -18,6 +18,8 @@ use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
+use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
@@ -69,29 +71,26 @@ final readonly class EasyWorkspaceAjaxController
             return $this->accessDeniedJson();
         }
 
-        $defaultMode = $config['defaultMode'];
-        $requestedMode = Value::string($query['mode'] ?? $defaultMode);
         $viewMode = $config['enableFilter']
-            ? ($requestedMode === PendingItemsService::MODE_ALL ? PendingItemsService::MODE_ALL : PendingItemsService::MODE_CHANGED)
-            : PendingItemsService::MODE_CHANGED;
-        // Always collect all records; Fluid renders both filter panels.
-        $collectionMode = PendingItemsService::MODE_ALL;
+            ? PendingItemsMode::fromString(Value::string($query['mode'] ?? $config['defaultMode']))
+            : PendingItemsMode::Changed;
 
+        // Always collect all records; Fluid renders both filter panels.
         $collection = $this->pendingItemsService->toolbarCollectionForContext(
             $pageUid,
             $newsUid,
-            $collectionMode,
+            PendingItemsMode::All,
             $config,
             $languageUid,
         );
-        if ($collection['context'] === PendingItemsService::CONTEXT_NONE || $collection['payload'] === null) {
+        if ($collection['context'] === ToolbarContext::None || $collection['payload'] === null) {
             return new JsonResponse([
-                'context' => PendingItemsService::CONTEXT_NONE,
+                'context' => ToolbarContext::None->value,
                 'items' => [],
                 'itemGroups' => [],
                 'changedItemGroups' => [],
                 'workspaceId' => 0,
-                'mode' => $viewMode,
+                'mode' => $viewMode->value,
             ]);
         }
 
@@ -99,7 +98,7 @@ final readonly class EasyWorkspaceAjaxController
         $payload = $collection['payload'];
 
         return new JsonResponse([
-            'context' => $context,
+            'context' => $context->value,
             ...$payload->toToolbarClientArray($context, includeDiff: false),
         ]);
     }
@@ -142,7 +141,7 @@ final readonly class EasyWorkspaceAjaxController
         $collection = $this->pendingItemsService->toolbarCollectionForContext(
             $pageUid,
             $newsUid,
-            PendingItemsService::MODE_ALL,
+            PendingItemsMode::All,
             $config,
             $languageUid,
         );
@@ -158,7 +157,7 @@ final readonly class EasyWorkspaceAjaxController
         }
 
         return new JsonResponse([
-            'context' => $collection['context'],
+            'context' => $collection['context']->value,
             'workspaceId' => $payload !== null ? $payload->workspaceId : 0,
             'workspaceTitle' => $payload !== null ? $payload->workspaceTitle : '',
             'pageUid' => $pageUid,
