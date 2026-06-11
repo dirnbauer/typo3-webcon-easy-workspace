@@ -63,7 +63,9 @@ function makeButton(element) {
   button.tabIndex = 0;
   button.title = labels.title;
   button.setAttribute('aria-label', labels.ariaLabel);
-  button.innerHTML = '<ve-icon name="actions-undo"></ve-icon>';
+  const icon = document.createElement('ve-icon');
+  icon.setAttribute('name', 'actions-undo');
+  button.append(icon);
   button.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();

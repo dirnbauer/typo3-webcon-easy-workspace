@@ -74,7 +74,10 @@ final readonly class RecordDiffService
      * pre-rendered `html` string produced by TYPO3 core's
      * DiffUtility — the same `<ins>`/`<del>` inline-diff format used
      * in the standalone Workspaces module. Suitable for direct
-     * rendering inside a Fluid template via `<f:format.raw>`.
+     * rendering inside a Fluid template via `<f:format.raw>`:
+     * FineDiff htmlentities-escapes all text content, so the only
+     * markup in the string is its own `<ins>`/`<del>` tags (and our
+     * inputs are already strip_tags-normalized by ::formatValue()).
      *
      * Returns the metadata needed to title the diff dialog as well,
      * so a single controller call can fully populate the overlay.
