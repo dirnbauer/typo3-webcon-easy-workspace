@@ -10,6 +10,29 @@ import {
 
 export { isKnownPreviewFrame } from './menu-context.js';
 
+// Visual Editor renders the per-element icon bar (drag handle + edit
+// actions) inside the element's shadow root and reveals it on CSS :hover.
+// Synthetic mouse events do not trigger :hover, so when we programmatically
+// "show" an element we force the handle visible and remember prior values.
+const VE_TOOLBAR_FORCE_STYLE = {
+  opacity: '1',
+  visibility: 'visible',
+  'pointer-events': 'auto',
+};
+
+// Transient green outline confirming the element a mutation just touched
+// (revert, save, or rollback). Hard-coded colors: the preview document has
+// its own CSS scope, so backend custom properties do not reach it.
+const CONFIRM_FLASH_STYLE = {
+  outline: '3px solid #3aae6a',
+  outlineOffset: '2px',
+  boxShadow: '0 0 0 6px rgba(58, 174, 106, 0.22)',
+  transition: 'outline 0.2s ease, box-shadow 0.2s ease',
+  scrollMarginTop: '48px',
+  scrollMarginBottom: '48px',
+};
+const CONFIRM_FLASH_DURATION = 1600;
+
 export function isPreviewGate(doc) {
   if (!doc) return false;
   return doc.title === 'Backend login required';
@@ -61,19 +84,36 @@ export function findContentElement(doc, uid) {
   return probe || null;
 }
 
-export function locateInAnyIframe(host, item) {
+export function targetUids(item) {
   const target = locateTarget(item);
-  if (target.table !== 'tt_content') return null;
-  const uids = [target.liveUid, target.workspaceUid]
+  if (target.table !== 'tt_content') return [];
+  return [target.liveUid, target.workspaceUid]
     .map((n) => parseInt(n, 10))
     .filter((n) => n > 0)
     .filter((n, i, arr) => arr.indexOf(n) === i);
+}
+
+export function locateInDoc(doc, item) {
+  const uids = targetUids(item);
   if (uids.length === 0) return null;
 
   const veSelector = uids.flatMap((u) => [
     `ve-content-element[uid="${u}"][table="tt_content"]`,
     `ve-content-element[id="tt_content:${u}"]`,
   ]).join(', ');
+
+  const veEl = doc.querySelector(veSelector);
+  if (veEl) return { doc, el: veEl, isVeWrapper: true };
+
+  for (const u of uids) {
+    const el = findContentElement(doc, u);
+    if (el) return { doc, el, isVeWrapper: false };
+  }
+  return null;
+}
+
+export function locateInAnyIframe(host, item) {
+  if (targetUids(item).length === 0) return null;
 
   for (const iframe of collectIframes()) {
     let doc;
@@ -82,13 +122,8 @@ export function locateInAnyIframe(host, item) {
     } catch { continue; }
     if (!doc) continue;
 
-    const veEl = doc.querySelector(veSelector);
-    if (veEl) return { iframe, doc, el: veEl, isVeWrapper: true };
-
-    for (const u of uids) {
-      const el = findContentElement(doc, u);
-      if (el) return { iframe, doc, el, isVeWrapper: false };
-    }
+    const located = locateInDoc(doc, item);
+    if (located) return { iframe, ...located };
   }
   return null;
 }
@@ -121,6 +156,38 @@ export function findVisualEditorIframe() {
     } catch { /* skip */ }
   }
   return null;
+}
+
+// Force a Visual Editor element's icon bar visible and return a restore
+// list ([node, prop, value, priority]) so it can be reset on clear.
+export function revealVeToolbar(el) {
+  try {
+    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+  } catch { /* event constructor unavailable - ignore */ }
+
+  const restore = [];
+  const handle = el.shadowRoot?.querySelector('ve-drag-handle');
+  if (handle) {
+    for (const [prop, value] of Object.entries(VE_TOOLBAR_FORCE_STYLE)) {
+      restore.push([handle, prop, handle.style.getPropertyValue(prop), handle.style.getPropertyPriority(prop)]);
+      handle.style.setProperty(prop, value, 'important');
+    }
+  }
+  return restore;
+}
+
+export function restoreVeToolbar(restore) {
+  if (!Array.isArray(restore)) return;
+  for (const [node, prop, value, priority] of restore) {
+    try {
+      if (value) {
+        node.style.setProperty(prop, value, priority || '');
+      } else {
+        node.style.removeProperty(prop);
+      }
+    } catch { /* node may be detached */ }
+  }
 }
 
 export function highlightInIframe(host, item, { announce = false } = {}) {
@@ -171,11 +238,7 @@ export function highlightInIframe(host, item, { announce = false } = {}) {
   }
 
   if (isVeWrapper) {
-    try {
-      el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-    } catch { /* event constructor failed - ignore */ }
-    host._iframeHighlight = { el, isVeWrapper: true };
+    host._iframeHighlight = { el, isVeWrapper: true, veRestore: revealVeToolbar(el) };
     return;
   }
 
@@ -193,6 +256,7 @@ export function clearIframeHighlight(host) {
     try {
       if (current.isVeWrapper) {
         current.el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        restoreVeToolbar(current.veRestore);
       } else if (current.previous) {
         for (const [key, value] of Object.entries(current.previous)) {
           current.el.style[key] = value ?? '';
@@ -209,13 +273,21 @@ export function clearIframeHighlight(host) {
   }
 }
 
-export function reloadPreviewIframes() {
+function isPreviewIframe(iframe) {
+  return iframe?.id === 'visual-editor-iframe' || /[?&]editMode=/.test(iframe?.src || '');
+}
+
+export function reloadPreviewIframes(onReloaded = null) {
   let reloaded = 0;
   for (const iframe of collectIframes()) {
-    const src = iframe.src || '';
-    const isPreview = iframe.id === 'visual-editor-iframe'
-      || /[?&]editMode=/.test(src);
-    if (!isPreview) continue;
+    if (!isPreviewIframe(iframe)) continue;
+    if (typeof onReloaded === 'function') {
+      const handler = () => {
+        iframe.removeEventListener('load', handler);
+        onReloaded(iframe);
+      };
+      iframe.addEventListener('load', handler);
+    }
     try {
       iframe.contentWindow.location.reload();
     } catch {
@@ -225,6 +297,81 @@ export function reloadPreviewIframes() {
     reloaded++;
   }
   return reloaded;
+}
+
+/**
+ * Reload preview iframes after a discard and keep the editor's eye on the
+ * affected element: re-center it and flash a confirmation. If the element
+ * no longer exists (a new record was discarded, a delete was cancelled),
+ * restore the prior scroll position instead of snapping to the page header.
+ */
+export function reloadPreviewAndRefocus(host, item) {
+  const priorScroll = new WeakMap();
+  for (const iframe of collectIframes()) {
+    if (!isPreviewIframe(iframe)) continue;
+    try {
+      const win = iframe.contentWindow;
+      if (win) priorScroll.set(iframe, { x: win.scrollX || 0, y: win.scrollY || 0 });
+    } catch { /* cross-origin - cannot read scroll */ }
+  }
+
+  return reloadPreviewIframes((iframe) => {
+    refocusAfterReload(iframe, item, priorScroll.get(iframe));
+  });
+}
+
+function refocusAfterReload(iframe, item, prior) {
+  let doc;
+  let win;
+  try {
+    doc = iframe.contentDocument;
+    win = iframe.contentWindow;
+  } catch {
+    return; // cross-origin preview - leave it alone
+  }
+  if (!doc || !win) return;
+
+  // The reverted content may render a tick after the load event fires;
+  // poll briefly before deciding the element is truly gone.
+  const settle = (attempt) => {
+    const located = locateInDoc(doc, item);
+    if (located) {
+      try {
+        located.el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      } catch {
+        located.el.scrollIntoView();
+      }
+      flashConfirmation(located.el, located.isVeWrapper, win);
+      return;
+    }
+    if (attempt < 8) {
+      win.setTimeout(() => settle(attempt + 1), 120);
+      return;
+    }
+    if (prior) {
+      try { win.scrollTo(prior.x, prior.y); } catch { /* ignore */ }
+    }
+  };
+  settle(0);
+}
+
+function flashConfirmation(el, isVeWrapper, win) {
+  const previous = {};
+  for (const key of Object.keys(CONFIRM_FLASH_STYLE)) {
+    previous[key] = el.style[key];
+  }
+  Object.assign(el.style, CONFIRM_FLASH_STYLE);
+
+  const veRestore = isVeWrapper ? revealVeToolbar(el) : null;
+
+  win.setTimeout(() => {
+    try {
+      for (const [key, value] of Object.entries(previous)) {
+        el.style[key] = value ?? '';
+      }
+      restoreVeToolbar(veRestore);
+    } catch { /* element detached during the flash */ }
+  }, CONFIRM_FLASH_DURATION);
 }
 
 export function isKnownPreviewWindow(host, source) {

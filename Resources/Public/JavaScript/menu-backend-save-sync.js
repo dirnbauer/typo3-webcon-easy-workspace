@@ -90,7 +90,12 @@ export function addBackendSaveDocumentTarget(host, targetDocument) {
   }
   const handler = () => scheduleBackendFrameLoadRefresh(host);
   try {
-    const eventNames = ['typo3:pagetree:refresh', 'typo3:workspace:changed', 'typo3:workspaces:refresh'];
+    // `typo3:datahandler:process` is TYPO3's canonical "content changed"
+    // signal: ajax-data-handler.js fires it after every DataHandler
+    // operation and BroadcastService re-dispatches the broadcast on the
+    // top document, so it reaches us across frames. This is what keeps the
+    // badge in sync after add/hide/delete/move without a timer.
+    const eventNames = ['typo3:datahandler:process', 'typo3:pagetree:refresh', 'typo3:workspace:changed', 'typo3:workspaces:refresh'];
     for (const eventName of eventNames) {
       targetDocument.addEventListener(eventName, handler);
     }

@@ -19,7 +19,7 @@ import {
   highlightInIframe,
   clearIframeHighlight,
   previewDiscard,
-  reloadPreviewIframes,
+  reloadPreviewAndRefocus,
 } from '../menu-preview-locate.js';
 import {
   onBackendSaveMessage,
@@ -40,6 +40,7 @@ import {
   configuredWorkspaceId,
   setMode,
   setLanguageScope,
+  syncToolbarVisibility,
 } from '../menu-actions.js';
 import {
   key,
@@ -115,6 +116,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.detectedLanguageUid = null;
     this.languageScope = 'current';
     this._backendFrameLoadRefreshTimer = null;
+    this._badgeVisibilityListener = null;
     this._backendSaveMessageTargets = new Map();
     this._backendSaveDocumentTargets = new Map();
     this._backendFrameLoadTargets = new Map();
@@ -125,6 +127,9 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     super.connectedCallback();
     this._config = this._readConfig();
     this.workspaceId = this._configuredWorkspaceId();
+    // Apply the config-based hidden state immediately so the always-rendered
+    // marker does not flash visible in Live before the first refresh resolves.
+    syncToolbarVisibility(this);
     this.classList.toggle('wew-menu-host--compact-toolbar', this._isCompactToolbar());
     this.mode = readPersistedMode() ?? this._config.defaultMode;
     this._refresh();
@@ -158,6 +163,30 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this._backendSaveMessageListener = (event) => onBackendSaveMessage(this, event);
     registerBackendSaveSignalListeners(this);
 
+    this._startBadgeRefreshListeners();
+  }
+
+  /**
+   * Event-driven catch-up — no timer. The badge stays in sync from the
+   * instant path: TYPO3's `typo3:datahandler:process` broadcast, save and
+   * navigation signals, iframe loads, and our own publish/discard. This
+   * adds one cheap safety net: refresh when the tab regains visibility, so
+   * a change made in another tab (or any signal missed while the tab was
+   * hidden) is picked up the moment the editor looks back.
+   */
+  _startBadgeRefreshListeners() {
+    this._stopBadgeRefreshListeners();
+    this._badgeVisibilityListener = () => {
+      if (!document.hidden) this._refreshBadge();
+    };
+    document.addEventListener('visibilitychange', this._badgeVisibilityListener);
+  }
+
+  _stopBadgeRefreshListeners() {
+    if (this._badgeVisibilityListener) {
+      document.removeEventListener('visibilitychange', this._badgeVisibilityListener);
+      this._badgeVisibilityListener = null;
+    }
   }
 
   _ensurePopoverDropdown(host, toggle, menu) {
@@ -197,6 +226,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
       window.clearTimeout(this._backendFrameLoadRefreshTimer);
       this._backendFrameLoadRefreshTimer = null;
     }
+    this._stopBadgeRefreshListeners();
     clearBackendSaveSignalListeners(this);
     super.disconnectedCallback();
   }
@@ -215,7 +245,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   _highlightInIframe(item, options) { return highlightInIframe(this, item, options); }
   _clearIframeHighlight() { return clearIframeHighlight(this); }
   _previewDiscard(item) { return previewDiscard(this, item); }
-  _reloadPreviewIframes() { return reloadPreviewIframes(); }
+  _reloadPreviewAndRefocus(item) { return reloadPreviewAndRefocus(this, item); }
   _openEditModal(item) { return openEditModal(this, item); }
   _openDiffModal(item) { return openDiffModal(this, item); }
 
@@ -365,7 +395,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
           if (failed.length === 0) {
             Notification.success(this._label('discard.success.title'), this._label(discardSuccessMessageKey(item), { title: item.title }), 4);
             await this._refresh();
-            this._reloadPreviewIframes();
+            this._reloadPreviewAndRefocus(item);
           } else {
             const errors = failed.flatMap((result) => Array.isArray(result?.errors) && result.errors.length
               ? result.errors
