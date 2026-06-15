@@ -8,7 +8,6 @@ import {
   detectLanguageUid,
   label,
 } from './menu-context.js';
-import { reloadPreviewIframes } from './menu-preview-locate.js';
 import { broadcastDeclineState } from './menu-backend-save-sync.js';
 import {
   key,

@@ -6,7 +6,11 @@ All notable changes to Easy Workspace are documented in this file.
 
 ### Fixed
 
+- The toolbar badge (and toolbar visibility) now update without a full page reload after content is added to the workspace. The toolbar listened for `typo3:pagetree:refresh` / `workspace:changed` / `workspaces:refresh` but not for `typo3:datahandler:process` — TYPO3's canonical "content changed" signal, fired by `ajax-data-handler.js` and re-dispatched across frames on the top document by `BroadcastService` — so add/hide/delete/move operations left the count stale. Adding that one event to the existing listener fixes it event-driven, with no polling. A single cheap safety net remains: the badge refreshes when the backend tab regains visibility (catches changes made in another tab or any signal missed while hidden).
+- The toolbar item is now rendered as a hidden marker for any user who can use workspaces, even while they are in Live (`checkAccess()` no longer requires an active non-live workspace). This keeps the element in the DOM so it can be revealed and filled the moment the user enters or populates a workspace, instead of only appearing after a topbar re-render or full reload. Users with no workspace access still get nothing.
 - `WorkspaceChangeInvalidationHook::processCmdmap_postProcess()` no longer fatals when DataHandler invokes it with `$pasteUpdate = false` (which core passes for every non-paste command, i.e. every publish and discard). Caught by the new functional test suite.
+- After a discard ("Diese Änderung verwerfen"), edit-save, or history rollback, the Visual Editor preview no longer reloads back to the page header. The affected content element is re-centered in the viewport with a brief green confirmation flash; if it was removed (a new record discarded, a pending delete cancelled) the prior scroll position is restored instead of snapping to the top.
+- The toolbar "show" button now reliably reveals a content element's Visual Editor icon bar: the `ve-drag-handle` toolbar is forced visible in the element's shadow root (synthetic mouse events do not trigger its CSS `:hover`), and restored on mouse-out.
 
 ### Added
 

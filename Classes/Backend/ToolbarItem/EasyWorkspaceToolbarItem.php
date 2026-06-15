@@ -11,6 +11,8 @@ use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
@@ -42,9 +44,43 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
 
     public function checkAccess(): bool
     {
-        return $this->accessGuard->user($this->request) !== null
-            && $this->configurationProvider->get()['enabled']
-            && $this->accessGuard->activeWorkspaceId($this->request) > 0;
+        if ($this->accessGuard->user($this->request) === null
+            || !$this->configurationProvider->get()['enabled']
+        ) {
+            return false;
+        }
+
+        // Render a hidden marker for anyone who can work in a workspace —
+        // even while they are currently in Live. The element stays in the
+        // DOM so the toolbar can be revealed and the badge filled without a
+        // full page reload once the user enters or populates a workspace.
+        // Actual visibility is decided client-side (syncToolbarVisibility).
+        return $this->accessGuard->activeWorkspaceId($this->request) > 0
+            || $this->userCanUseWorkspaces();
+    }
+
+    /**
+     * True when the backend user has access to at least one editable
+     * (non-live) workspace. Mirrors how the core workspace selector
+     * decides visibility; the result is request-cached by WorkspaceService.
+     */
+    private function userCanUseWorkspaces(): bool
+    {
+        $user = $this->accessGuard->user($this->request);
+        if ($user === null) {
+            return false;
+        }
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        foreach (array_keys(GeneralUtility::makeInstance(WorkspaceService::class)->getAvailableWorkspaces()) as $workspaceId) {
+            if ((int)$workspaceId > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getItem(): string

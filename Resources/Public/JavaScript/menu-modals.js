@@ -3,7 +3,7 @@ import Notification from '@typo3/backend/notification.js';
 import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPositions } from '@typo3/backend/modal.js';
 import { ENDPOINTS } from './menu-constants.js';
 import { label } from './menu-context.js';
-import { reloadPreviewIframes } from './menu-preview-locate.js';
+import { reloadPreviewAndRefocus } from './menu-preview-locate.js';
 
 export function openEditModal(host, item) {
   const url = item.contextualEditUrl || item.editUrl;
@@ -52,7 +52,7 @@ export function wireContextualEditModal(host, modal, item) {
     topWindow.removeEventListener('message', onMessage);
     if (!saved) return;
     await host._refresh();
-    reloadPreviewIframes();
+    reloadPreviewAndRefocus(host, item);
     Notification.success(
       label(host, 'edit.saved.title'),
       savedTitle ? label(host, 'edit.saved.messageWithTitle', { title: savedTitle }) : label(host, 'edit.saved.message'),
@@ -78,7 +78,7 @@ export function openDiffModal(host, item) {
         translate: (key, vars) => label(host, key, vars),
         onSuccess: async () => {
           await host._refresh();
-          reloadPreviewIframes();
+          reloadPreviewAndRefocus(host, item);
         },
       });
       const editBtn = m.querySelector('.wew-diff-modal__edit');

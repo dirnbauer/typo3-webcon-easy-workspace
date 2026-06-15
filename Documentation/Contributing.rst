@@ -210,8 +210,8 @@ Largest JavaScript units:
       - 543
       - Module glue (Modal, AjaxRequest, publish bar)
     * - ``menu-preview-locate.js``
-      - 337
-      - Iframe detection + scroll/highlight
+      - 446
+      - Iframe detection, scroll/highlight, post-mutation refocus, VE icon-bar reveal
     * - ``components/wew-toolbar-menu.js``
       - ~780
       - Lit toolbar dropdown (light DOM, Visual Editor style)
