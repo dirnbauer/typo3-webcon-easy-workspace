@@ -4,6 +4,8 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-06-15
+
 ### Fixed
 
 - The toolbar badge (and toolbar visibility) now update without a full page reload after content is added to the workspace. The toolbar listened for `typo3:pagetree:refresh` / `workspace:changed` / `workspaces:refresh` but not for `typo3:datahandler:process` — TYPO3's canonical "content changed" signal, fired by `ajax-data-handler.js` and re-dispatched across frames on the top document by `BroadcastService` — so add/hide/delete/move operations left the count stale. Adding that one event to the existing listener fixes it event-driven, with no polling. A single cheap safety net remains: the badge refreshes when the backend tab regains visibility (catches changes made in another tab or any signal missed while hidden).
