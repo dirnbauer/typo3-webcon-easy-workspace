@@ -4,6 +4,17 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-06-16
+
+### Fixed
+
+- The per-element "decline workspace change" button no longer fails to load.
+  `VisualEditorDeclineButtonMiddleware` registered the frontend module as
+  `@webconsulting/webcon-easy-workspace/visual-editor-decline-button` without
+  the `.js` extension, so the importmap resolved it to a URL that returned
+  **404** and the discard button silently never appeared in the Visual Editor.
+  Added the missing `.js` (matching every other module load in the extension).
+
 ## [1.3.0] — 2026-06-15
 
 ### Fixed

@@ -22,7 +22,7 @@ final readonly class VisualEditorDeclineButtonMiddleware implements MiddlewareIn
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if ($this->shouldLoad($request)) {
-            $this->assetCollector->addJavaScriptModule('@webconsulting/webcon-easy-workspace/visual-editor-decline-button');
+            $this->assetCollector->addJavaScriptModule('@webconsulting/webcon-easy-workspace/visual-editor-decline-button.js');
             $this->assetCollector->addInlineJavaScript(
                 'webcon-easy-workspace-decline-labels',
                 sprintf(
