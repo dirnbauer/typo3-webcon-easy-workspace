@@ -4,6 +4,21 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- The backend no longer crashes with *"Typed property
+  `EasyWorkspaceToolbarItem::$request` must not be accessed before
+  initialization"* when rendering the topbar. TYPO3's
+  `BackendController::getToolbarItems()` calls every toolbar item's
+  `checkAccess()` (inside `array_filter`) *before* it calls `setRequest()`
+  (inside the surrounding `array_map`), so `$this->request` is never
+  initialized at access-check time. `checkAccess()`/`userCanUseWorkspaces()`
+  now resolve the backend user through `BackendAccessGuard` with no request
+  argument, falling back to the `BE_USER` global exactly as the guard is
+  documented to do for toolbar rendering — mirroring how every core toolbar
+  item performs its access check. The request-dependent render methods
+  (`getItem()`, `getDropDown()`) are unchanged; they run after `setRequest()`.
+
 ## [1.3.1] — 2026-06-16
 
 ### Fixed

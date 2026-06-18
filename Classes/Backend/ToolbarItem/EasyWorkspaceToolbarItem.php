@@ -44,7 +44,12 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
 
     public function checkAccess(): bool
     {
-        if ($this->accessGuard->user($this->request) === null
+        // Core calls checkAccess() (via array_filter) *before* setRequest()
+        // (via array_map) in BackendController::getToolbarItems(), so
+        // $this->request is not yet initialized here. The access guard is
+        // built for exactly this case: with no request it falls back to the
+        // BE_USER global — same backend user, no PSR-7 attribute needed.
+        if ($this->accessGuard->user() === null
             || !$this->configurationProvider->get()['enabled']
         ) {
             return false;
@@ -55,7 +60,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // DOM so the toolbar can be revealed and the badge filled without a
         // full page reload once the user enters or populates a workspace.
         // Actual visibility is decided client-side (syncToolbarVisibility).
-        return $this->accessGuard->activeWorkspaceId($this->request) > 0
+        return $this->accessGuard->activeWorkspaceId() > 0
             || $this->userCanUseWorkspaces();
     }
 
@@ -66,7 +71,9 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
      */
     private function userCanUseWorkspaces(): bool
     {
-        $user = $this->accessGuard->user($this->request);
+        // Reached from checkAccess() before setRequest(); use the guard's
+        // BE_USER fallback rather than the uninitialized $this->request.
+        $user = $this->accessGuard->user();
         if ($user === null) {
             return false;
         }
