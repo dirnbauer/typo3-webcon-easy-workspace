@@ -4,6 +4,8 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-06-18
+
 ### Fixed
 
 - The backend no longer crashes with *"Typed property
