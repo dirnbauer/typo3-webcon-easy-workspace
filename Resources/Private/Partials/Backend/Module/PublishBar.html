@@ -5,13 +5,16 @@
 <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2"
      data-wew-publishbar=""
      data-wew-total="{changedCount}"
+     data-wew-summary-key="{summaryLabelKey}"
+     data-wew-unselected-key="{unselectedLabelKey}"
+     data-wew-primary-label-key="{primaryLabelKey}"
      aria-live="polite">
     <div>
         <div>
             <strong data-wew-selected-count="">{changedCount}</strong><span aria-hidden="true"> / </span>{changedCount}
         </div>
         <div class="text-muted small" data-wew-publishbar-summary="">
-            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.publishBar.summary"
+            <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:{summaryLabelKey}"
                          arguments="{0: changedCount}" />
         </div>
     </div>
@@ -21,12 +24,24 @@
                 data-wew-deselect-all="">
             <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.publishBar.deselect" />
         </button>
+        <f:if condition="{secondaryAction}">
+            <button type="submit"
+                    name="_action"
+                    value="{secondaryAction}"
+                    class="btn btn-default"
+                    data-wew-secondary-submit="">
+                <core:icon identifier="{secondaryIconIdentifier}" size="small" />
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:{secondaryLabelKey}" />
+            </button>
+        </f:if>
         <button type="submit"
+                name="_action"
+                value="{primaryAction}"
                 class="btn btn-primary"
                 data-wew-publish-submit="">
-            <core:icon identifier="actions-rocket" size="small" />
+            <core:icon identifier="{primaryIconIdentifier}" size="small" />
             <span data-wew-publish-label="">
-                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.publishToLive" />
+                <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:{primaryLabelKey}" />
             </span>
         </button>
     </div>

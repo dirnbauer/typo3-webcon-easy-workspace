@@ -259,6 +259,18 @@
         <target state="translated">Live veröffentlichen</target>
       </segment>
     </unit>
+    <unit id="approval.publishSelected">
+      <segment>
+        <source>Approve and publish selected</source>
+        <target state="translated">Auswahl freigeben und veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="review.requestSelected">
+      <segment>
+        <source>Mark for review</source>
+        <target state="translated">Zur Prüfung markieren</target>
+      </segment>
+    </unit>
     <unit id="toolbar.badge.pending">
       <segment>
         <source>{count, plural, one {# pending workspace change on this page} other {# pending workspace changes on this page}}</source>
@@ -315,8 +327,8 @@
     </unit>
     <unit id="module.section.pending">
       <segment>
-        <source>Open items</source>
-        <target state="translated">Offene Elemente</target>
+        <source>Review queue</source>
+        <target state="translated">Freigabeprüfung</target>
       </segment>
     </unit>
     <unit id="module.section.all">
@@ -387,8 +399,8 @@
     </unit>
     <unit id="module.pending.subtitle">
       <segment>
-        <source>Overview of workspace changes that can be published for the selected page or news record.</source>
-        <target state="translated">Übersicht der veröffentlichbaren Workspace-Änderungen für die ausgewählte Seite oder den ausgewählten News-Datensatz.</target>
+        <source>Chief editors can preview, compare and approve selected workspace changes before they go live.</source>
+        <target state="translated">Chefredakteure können ausgewählte Workspace-Änderungen ansehen, vergleichen und freigeben, bevor sie live gehen.</target>
       </segment>
     </unit>
     <unit id="module.pending.empty">
@@ -1237,6 +1249,18 @@
         <target state="translated">Wählen Sie geänderte Datensätze, um sie zu veröffentlichen.</target>
       </segment>
     </unit>
+    <unit id="module.approvalBar.summary">
+      <segment>
+        <source>{count, plural, one {# record selected for approval} other {# records selected for approval}}</source>
+        <target state="translated">{count, plural, one {# Datensatz für die Freigabe ausgewählt} other {# Datensätze für die Freigabe ausgewählt}}</target>
+      </segment>
+    </unit>
+    <unit id="module.approvalBar.unselected">
+      <segment>
+        <source>Select changed records to approve and publish them.</source>
+        <target state="translated">Wählen Sie geänderte Datensätze, um sie freizugeben und zu veröffentlichen.</target>
+      </segment>
+    </unit>
     <unit id="userSettings.tab">
       <segment>
         <source>Easy Workspace</source>
@@ -1751,6 +1775,54 @@
       <segment>
         <source>Publish finished with errors</source>
         <target state="translated">Veröffentlichen mit Fehlern abgeschlossen</target>
+      </segment>
+    </unit>
+    <unit id="review.stage.comment">
+      <segment>
+        <source>Ready for chief editor review</source>
+        <target state="translated">Bereit für die Chefredaktion</target>
+      </segment>
+    </unit>
+    <unit id="review.success.title">
+      <segment>
+        <source>Marked for review</source>
+        <target state="translated">Zur Prüfung markiert</target>
+      </segment>
+    </unit>
+    <unit id="review.success.message">
+      <segment>
+        <source>{count, plural, one {# item marked for review.} other {# items marked for review.}}</source>
+        <target state="translated">{count, plural, one {# Element zur Prüfung markiert.} other {# Elemente zur Prüfung markiert.}}</target>
+      </segment>
+    </unit>
+    <unit id="review.warning.title">
+      <segment>
+        <source>Review request finished with errors</source>
+        <target state="translated">Prüfanfrage mit Fehlern abgeschlossen</target>
+      </segment>
+    </unit>
+    <unit id="approval.stage.comment">
+      <segment>
+        <source>Approved by chief editor</source>
+        <target state="translated">Von der Chefredaktion freigegeben</target>
+      </segment>
+    </unit>
+    <unit id="approval.success.title">
+      <segment>
+        <source>Approved and published</source>
+        <target state="translated">Freigegeben und veröffentlicht</target>
+      </segment>
+    </unit>
+    <unit id="approval.success.message">
+      <segment>
+        <source>{count, plural, one {# item approved and published.} other {# items approved and published.}}</source>
+        <target state="translated">{count, plural, one {# Element freigegeben und veröffentlicht.} other {# Elemente freigegeben und veröffentlicht.}}</target>
+      </segment>
+    </unit>
+    <unit id="approval.warning.title">
+      <segment>
+        <source>Approval finished with errors</source>
+        <target state="translated">Freigabe mit Fehlern abgeschlossen</target>
       </segment>
     </unit>
     <unit id="publish.failedTitle">

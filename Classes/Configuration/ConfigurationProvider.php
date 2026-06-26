@@ -47,6 +47,9 @@ final readonly class ConfigurationProvider
         // Per-row actions
         'enableHoverHighlight' => true,
         'enableRevert' => true,
+        // Review workflow stages
+        'approvalStageId' => 1,
+        'publishStageId' => -10,
     ];
 
     private const NAMESPACE_KEY = 'webcon_easy_workspace.';
@@ -73,7 +76,9 @@ final readonly class ConfigurationProvider
      *     maxItems: int,
      *     enableNewsBundles: bool,
      *     enableHoverHighlight: bool,
-     *     enableRevert: bool
+     *     enableRevert: bool,
+     *     approvalStageId: int,
+     *     publishStageId: int
      * }
      */
     public function get(?int $pageUid = null): array
@@ -110,6 +115,8 @@ final readonly class ConfigurationProvider
             'enableNewsBundles' => $this->toBool($merged['enableNewsBundles']),
             'enableHoverHighlight' => $this->toBool($merged['enableHoverHighlight']),
             'enableRevert' => $this->toBool($merged['enableRevert']),
+            'approvalStageId' => Value::int($merged['approvalStageId']),
+            'publishStageId' => Value::int($merged['publishStageId']),
         ];
     }
 

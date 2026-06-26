@@ -259,6 +259,18 @@
         <target state="translated">Publish to live</target>
       </segment>
     </unit>
+    <unit id="approval.publishSelected">
+      <segment>
+        <source>Approve and publish selected</source>
+        <target state="translated">Approve and publish selected</target>
+      </segment>
+    </unit>
+    <unit id="review.requestSelected">
+      <segment>
+        <source>Mark for review</source>
+        <target state="translated">Mark for review</target>
+      </segment>
+    </unit>
     <unit id="toolbar.badge.pending">
       <segment>
         <source>{count, plural, one {# pending workspace change on this page} other {# pending workspace changes on this page}}</source>
@@ -315,8 +327,8 @@
     </unit>
     <unit id="module.section.pending">
       <segment>
-        <source>Open items</source>
-        <target state="translated">Open items</target>
+        <source>Review queue</source>
+        <target state="translated">Review queue</target>
       </segment>
     </unit>
     <unit id="module.section.all">
@@ -387,8 +399,8 @@
     </unit>
     <unit id="module.pending.subtitle">
       <segment>
-        <source>Overview of workspace changes that can be published for the selected page or news record.</source>
-        <target state="translated">Overview of workspace changes that can be published for the selected page or news record.</target>
+        <source>Chief editors can preview, compare and approve selected workspace changes before they go live.</source>
+        <target state="translated">Chief editors can preview, compare and approve selected workspace changes before they go live.</target>
       </segment>
     </unit>
     <unit id="module.pending.empty">
@@ -1237,6 +1249,18 @@
         <target state="translated">Select changed records to publish them.</target>
       </segment>
     </unit>
+    <unit id="module.approvalBar.summary">
+      <segment>
+        <source>{count, plural, one {# record selected for approval} other {# records selected for approval}}</source>
+        <target state="translated">{count, plural, one {# record selected for approval} other {# records selected for approval}}</target>
+      </segment>
+    </unit>
+    <unit id="module.approvalBar.unselected">
+      <segment>
+        <source>Select changed records to approve and publish them.</source>
+        <target state="translated">Select changed records to approve and publish them.</target>
+      </segment>
+    </unit>
     <unit id="userSettings.tab">
       <segment>
         <source>Easy Workspace</source>
@@ -1751,6 +1775,54 @@
       <segment>
         <source>Publish finished with errors</source>
         <target state="translated">Publish finished with errors</target>
+      </segment>
+    </unit>
+    <unit id="review.stage.comment">
+      <segment>
+        <source>Ready for chief editor review</source>
+        <target state="translated">Ready for chief editor review</target>
+      </segment>
+    </unit>
+    <unit id="review.success.title">
+      <segment>
+        <source>Marked for review</source>
+        <target state="translated">Marked for review</target>
+      </segment>
+    </unit>
+    <unit id="review.success.message">
+      <segment>
+        <source>{count, plural, one {# item marked for review.} other {# items marked for review.}}</source>
+        <target state="translated">{count, plural, one {# item marked for review.} other {# items marked for review.}}</target>
+      </segment>
+    </unit>
+    <unit id="review.warning.title">
+      <segment>
+        <source>Review request finished with errors</source>
+        <target state="translated">Review request finished with errors</target>
+      </segment>
+    </unit>
+    <unit id="approval.stage.comment">
+      <segment>
+        <source>Approved by chief editor</source>
+        <target state="translated">Approved by chief editor</target>
+      </segment>
+    </unit>
+    <unit id="approval.success.title">
+      <segment>
+        <source>Approved and published</source>
+        <target state="translated">Approved and published</target>
+      </segment>
+    </unit>
+    <unit id="approval.success.message">
+      <segment>
+        <source>{count, plural, one {# item approved and published.} other {# items approved and published.}}</source>
+        <target state="translated">{count, plural, one {# item approved and published.} other {# items approved and published.}}</target>
+      </segment>
+    </unit>
+    <unit id="approval.warning.title">
+      <segment>
+        <source>Approval finished with errors</source>
+        <target state="translated">Approval finished with errors</target>
       </segment>
     </unit>
     <unit id="publish.failedTitle">

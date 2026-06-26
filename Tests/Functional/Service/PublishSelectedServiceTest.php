@@ -42,11 +42,41 @@ final class PublishSelectedServiceTest extends FunctionalTestCase
         $queryBuilder->getRestrictions()->removeAll();
 
         return $queryBuilder
-            ->select('uid', 'header', 'deleted', 't3ver_wsid', 't3ver_oid')
+            ->select('uid', 'header', 'deleted', 't3ver_wsid', 't3ver_oid', 't3ver_stage')
             ->from('tt_content')
             ->where($queryBuilder->expr()->eq('uid', $uid))
             ->executeQuery()
             ->fetchAssociative();
+    }
+
+    #[Test]
+    public function requestReviewMovesSelectedWorkspaceVersionToApprovalStage(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $subject = $this->get(PublishSelectedService::class);
+
+        $result = $subject->requestReview([['table' => 'tt_content', 'workspaceUid' => 2]], $backendUser);
+
+        self::assertTrue($result['success'], implode(' / ', $result['errors']));
+        self::assertSame(1, $result['changed']);
+        $versionRow = $this->fetchContentRow(2);
+        self::assertIsArray($versionRow);
+        self::assertSame(1, Value::int($versionRow['t3ver_stage'] ?? null));
+    }
+
+    #[Test]
+    public function approveAndPublishSelectedWorkspaceVersionToLive(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $subject = $this->get(PublishSelectedService::class);
+
+        $result = $subject->approveAndPublish([['table' => 'tt_content', 'workspaceUid' => 2]], $backendUser);
+
+        self::assertTrue($result['success'], implode(' / ', $result['errors']));
+        self::assertSame(1, $result['published']);
+        $liveRow = $this->fetchContentRow(1);
+        self::assertIsArray($liveRow);
+        self::assertSame('Workspace header', $liveRow['header']);
     }
 
     #[Test]

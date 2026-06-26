@@ -87,8 +87,6 @@
         <f:if condition="{data.totalCount} > 0">
             <f:then>
                 <form method="post" action="{formAction}" data-wew-publish-form="" data-multi-record-selection-identifier="wew-pending-selection">
-                    <input type="hidden" name="_action" value="publish" />
-
                     <div class="table-fit">
                         <table class="table table-striped table-hover mb-0">
                             <thead>
@@ -154,7 +152,17 @@
                     </div>
 
                     <f:if condition="{data.changedCount} > 0">
-                        <f:render partial="Backend/Module/PublishBar" arguments="{changedCount: data.changedCount}" />
+                        <f:render partial="Backend/Module/PublishBar" arguments="{
+                            changedCount: data.changedCount,
+                            summaryLabelKey: 'module.publishBar.summary',
+                            unselectedLabelKey: 'module.publishBar.unselected',
+                            primaryAction: 'publish',
+                            primaryLabelKey: 'toolbar.publishToLive',
+                            primaryIconIdentifier: 'actions-rocket',
+                            secondaryAction: '',
+                            secondaryLabelKey: '',
+                            secondaryIconIdentifier: ''
+                        }" />
                     </f:if>
                 </form>
             </f:then>

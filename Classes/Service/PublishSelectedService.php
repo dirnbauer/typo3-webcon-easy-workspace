@@ -13,6 +13,7 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
@@ -45,7 +46,44 @@ final readonly class PublishSelectedService
         private WorkspaceTablePolicy $workspaceTablePolicy,
         private TcaSchemaFactory $tcaSchemaFactory,
         private BackendAccessGuard $accessGuard,
+        private ConfigurationProvider $configurationProvider,
     ) {}
+
+    /**
+     * @param list<array{table: string, workspaceUid: int}> $selections
+     * @return array{success: bool, changed: int, errors: list<string>}
+     */
+    public function requestReview(array $selections, ?BackendUserAuthentication $backendUser = null): array
+    {
+        $config = $this->configurationProvider->get();
+
+        return $this->sendToStage(
+            $selections,
+            Value::int($config['approvalStageId'] ?? 1),
+            $backendUser,
+            $this->localizationService->translate('review.stage.comment'),
+        );
+    }
+
+    /**
+     * @param list<array{table: string, workspaceUid: int}> $selections
+     * @return array{success: bool, published: int, errors: list<string>}
+     */
+    public function approveAndPublish(array $selections, ?BackendUserAuthentication $backendUser = null): array
+    {
+        $config = $this->configurationProvider->get();
+        $stageResult = $this->sendToStage(
+            $selections,
+            Value::int($config['publishStageId'] ?? -10),
+            $backendUser,
+            $this->localizationService->translate('approval.stage.comment'),
+        );
+        if (!$stageResult['success']) {
+            return ['success' => false, 'published' => 0, 'errors' => $stageResult['errors']];
+        }
+
+        return $this->publish($selections, $backendUser);
+    }
 
     /**
      * @param list<array{table: string, workspaceUid: int}> $selections
@@ -173,6 +211,69 @@ final readonly class PublishSelectedService
             'success' => !$stillExists,
             'discarded' => $stillExists ? 0 : 1,
             'errors' => $stillExists ? Value::stringList($dataHandler->errorLog) : [],
+        ];
+    }
+
+    /**
+     * @param list<array{table: string, workspaceUid: int}> $selections
+     * @return array{success: bool, changed: int, errors: list<string>}
+     */
+    private function sendToStage(array $selections, int $stageId, ?BackendUserAuthentication $backendUser, string $comment): array
+    {
+        if ($selections === []) {
+            return ['success' => true, 'changed' => 0, 'errors' => []];
+        }
+        $backendUser ??= $this->accessGuard->user();
+        $workspaceId = $this->activeMutationWorkspaceId($backendUser);
+        if ($backendUser === null || $workspaceId <= 0) {
+            return ['success' => false, 'changed' => 0, 'errors' => [$this->localizationService->translate('error.publishFromLive')]];
+        }
+        if (!$backendUser->isAdmin() && $backendUser->checkWorkspace($workspaceId) === false) {
+            return ['success' => false, 'changed' => 0, 'errors' => [$this->localizationService->translate('error.noPublishPermission')]];
+        }
+
+        $uidsByTable = [];
+        foreach ($selections as $entry) {
+            if ($entry['table'] !== '' && $entry['workspaceUid'] > 0 && $this->workspaceTablePolicy->isAllowed($entry['table'])) {
+                $uidsByTable[$entry['table']][$entry['workspaceUid']] = true;
+            }
+        }
+
+        $cmd = [];
+        $count = 0;
+        $rejected = 0;
+        $denied = false;
+        foreach ($uidsByTable as $table => $uidSet) {
+            if (!$backendUser->check('tables_modify', $table)) {
+                $denied = true;
+                continue;
+            }
+            $liveByWorkspaceUid = $this->mapWorkspaceUidsToLive($table, array_keys($uidSet), $workspaceId);
+            $rejected += count($uidSet) - count($liveByWorkspaceUid);
+            foreach (array_keys($liveByWorkspaceUid) as $workspaceUid) {
+                $cmd[$table][$workspaceUid]['version'] = [
+                    'action' => 'setStage',
+                    'stageId' => $stageId,
+                    'comment' => $comment,
+                ];
+                ++$count;
+            }
+        }
+        if ($cmd === []) {
+            $msg = match (true) {
+                $denied => $this->localizationService->translate('error.noTablePermission'),
+                $rejected > 0 => $this->localizationService->translate('error.selectionWrongWorkspace'),
+                default => $this->localizationService->translate('error.noPublishableRecords'),
+            };
+            return ['success' => false, 'changed' => 0, 'errors' => [$msg]];
+        }
+
+        $dataHandler = $this->processCmdMapInWorkspace($cmd, $workspaceId, $backendUser);
+
+        return [
+            'success' => $dataHandler->errorLog === [],
+            'changed' => $count,
+            'errors' => Value::stringList($dataHandler->errorLog),
         ];
     }
 

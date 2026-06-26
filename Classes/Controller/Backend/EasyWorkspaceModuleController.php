@@ -65,6 +65,12 @@ final readonly class EasyWorkspaceModuleController
             if ($action === 'publish') {
                 return $this->handlePublish($request);
             }
+            if ($action === 'request-review') {
+                return $this->handleRequestReview($request);
+            }
+            if ($action === 'approve-publish') {
+                return $this->handleApproveAndPublish($request);
+            }
             if ($action === 'discard') {
                 return $this->handleDiscard($request);
             }
@@ -166,6 +172,62 @@ final readonly class EasyWorkspaceModuleController
         } else {
             $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
             $this->enqueueFlash($errors, ContextualFeedbackSeverity::WARNING, $this->localizationService->translate('publish.warning.title'));
+        }
+
+        return $this->redirectBack($request);
+    }
+
+    private function handleRequestReview(ServerRequestInterface $request): ResponseInterface
+    {
+        $parsed = $this->parsedBody($request);
+        $rawSelections = is_array($parsed['selections'] ?? null) ? $parsed['selections'] : [];
+        $config = $this->configurationProvider->get();
+        if (!$config['enabled']) {
+            $this->enqueueFlash($this->localizationService->translate('error.disabled'), ContextualFeedbackSeverity::ERROR);
+            return $this->redirectBack($request);
+        }
+
+        $result = $this->publishService->requestReview(
+            $this->publishSelectionNormalizer->fromModuleForm($rawSelections),
+            $this->accessGuard->user($request),
+        );
+        if ($result['success']) {
+            $message = $result['changed'] > 0
+                ? $this->localizationService->translate('review.success.message', ['count' => $result['changed']])
+                : $this->localizationService->translate('module.publish.empty');
+            $severity = $result['changed'] > 0 ? ContextualFeedbackSeverity::OK : ContextualFeedbackSeverity::INFO;
+            $this->enqueueFlash($message, $severity, $this->localizationService->translate('review.success.title'));
+        } else {
+            $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
+            $this->enqueueFlash($errors, ContextualFeedbackSeverity::WARNING, $this->localizationService->translate('review.warning.title'));
+        }
+
+        return $this->redirectBack($request);
+    }
+
+    private function handleApproveAndPublish(ServerRequestInterface $request): ResponseInterface
+    {
+        $parsed = $this->parsedBody($request);
+        $rawSelections = is_array($parsed['selections'] ?? null) ? $parsed['selections'] : [];
+        $config = $this->configurationProvider->get();
+        if (!$config['enabled']) {
+            $this->enqueueFlash($this->localizationService->translate('error.disabled'), ContextualFeedbackSeverity::ERROR);
+            return $this->redirectBack($request);
+        }
+
+        $result = $this->publishService->approveAndPublish(
+            $this->publishSelectionNormalizer->fromModuleForm($rawSelections),
+            $this->accessGuard->user($request),
+        );
+        if ($result['success']) {
+            $message = $result['published'] > 0
+                ? $this->localizationService->translate('approval.success.message', ['count' => $result['published']])
+                : $this->localizationService->translate('module.publish.empty');
+            $severity = $result['published'] > 0 ? ContextualFeedbackSeverity::OK : ContextualFeedbackSeverity::INFO;
+            $this->enqueueFlash($message, $severity, $this->localizationService->translate('approval.success.title'));
+        } else {
+            $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
+            $this->enqueueFlash($errors, ContextualFeedbackSeverity::WARNING, $this->localizationService->translate('approval.warning.title'));
         }
 
         return $this->redirectBack($request);
@@ -305,8 +367,11 @@ final readonly class EasyWorkspaceModuleController
             'preview.link.noUrl',
             'error.unexpected',
             'toolbar.publishToLive',
+            'approval.publishSelected',
             'module.publishBar.summary',
             'module.publishBar.unselected',
+            'module.approvalBar.summary',
+            'module.approvalBar.unselected',
         ];
         $map = [];
         foreach ($keys as $key) {

@@ -392,26 +392,34 @@ function updateRelatedChangeControls(scope) {
 }
 
 function updateSelectionSummary(container) {
+  const publishbar = container.querySelector('[data-wew-publishbar]');
   const total = parseInt(
-    container.querySelector('[data-wew-publishbar]')?.dataset.wewTotal || '0',
+    publishbar?.dataset.wewTotal || '0',
     10,
   );
+  const summaryKey = publishbar?.dataset.wewSummaryKey || 'module.publishBar.summary';
+  const unselectedKey = publishbar?.dataset.wewUnselectedKey || 'module.publishBar.unselected';
+  const primaryLabelKey = publishbar?.dataset.wewPrimaryLabelKey || 'toolbar.publishToLive';
   const selected = container.querySelectorAll('[data-wew-row-check]:checked').length;
   const counter = container.querySelector('[data-wew-selected-count]');
   if (counter) counter.textContent = String(selected);
   const summary = container.querySelector('[data-wew-publishbar-summary]');
   if (summary) {
     summary.textContent = selected > 0
-      ? formatMessage(label('module.publishBar.summary'), { count: selected })
-      : label('module.publishBar.unselected');
+      ? formatMessage(label(summaryKey), { count: selected })
+      : label(unselectedKey);
   }
   const submit = container.querySelector('[data-wew-publish-submit]');
   if (submit) {
     submit.disabled = selected === 0;
   }
+  const secondarySubmit = container.querySelector('[data-wew-secondary-submit]');
+  if (secondarySubmit) {
+    secondarySubmit.disabled = selected === 0;
+  }
   const submitLabel = container.querySelector('[data-wew-publish-label]');
   if (submitLabel) {
-    const base = label('toolbar.publishToLive');
+    const base = label(primaryLabelKey);
     submitLabel.textContent = selected > 0 ? `${base} (${selected})` : base;
   }
   if (Number.isFinite(total)) {

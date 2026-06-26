@@ -119,4 +119,16 @@ options.webcon_easy_workspace {
     # which removes the workspace version. The live record stays
     # untouched. TYPO3 calls this operation "discard". (1)
     enableRevert = 1
+
+    # -- Review workflow -----------------------------------------
+
+    # Stage used when an editor marks selected changes as ready for
+    # chief-editor review. TYPO3 workspace stage ids are project
+    # specific; 1 is the default next review stage in this extension. (1)
+    approvalStageId = 1
+
+    # Stage used immediately before chief-editor approval publishes
+    # selected changes. TYPO3 Workspaces uses -10 for "ready to publish".
+    # (-10)
+    publishStageId = -10
 }

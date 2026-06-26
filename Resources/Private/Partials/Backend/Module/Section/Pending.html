@@ -97,8 +97,6 @@
         </div>
 
         <form method="post" action="{formAction}" data-wew-publish-form="" data-multi-record-selection-identifier="wew-pending-selection">
-            <input type="hidden" name="_action" value="publish" />
-
             <f:if condition="{data.changedCount} > 0">
                 <f:then>
                     <div class="table-fit">
@@ -165,7 +163,17 @@
                         </table>
                     </div>
 
-                    <f:render partial="Backend/Module/PublishBar" arguments="{changedCount: data.changedCount}" />
+                    <f:render partial="Backend/Module/PublishBar" arguments="{
+                        changedCount: data.changedCount,
+                        summaryLabelKey: 'module.approvalBar.summary',
+                        unselectedLabelKey: 'module.approvalBar.unselected',
+                        primaryAction: 'approve-publish',
+                        primaryLabelKey: 'approval.publishSelected',
+                        primaryIconIdentifier: 'actions-check-circle-alt',
+                        secondaryAction: 'request-review',
+                        secondaryLabelKey: 'review.requestSelected',
+                        secondaryIconIdentifier: 'actions-share'
+                    }" />
                 </f:then>
                 <f:else>
                     <f:render partial="Backend/Module/Placeholder" arguments="{
