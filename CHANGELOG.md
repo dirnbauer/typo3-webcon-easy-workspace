@@ -4,6 +4,12 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.3.8] — 2026-06-27
+
+### Changed
+
+- Removed the last stale wording from the versioned JavaScript entrypoint.
+
 ## [1.3.7] — 2026-06-27
 
 ### Changed

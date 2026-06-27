@@ -1,7 +1,6 @@
 /**
  * Easy Workspace toolbar dropdown entry point.
  *
- * Versioned entrypoint to force browsers to load the component class that
- * rejects unresolved language-scope label keys.
+ * Versioned entrypoint to force browsers to load the cleaned toolbar component.
  */
-import './components/wew-toolbar-menu.js?wew=20260627-language-labels-v2';
+import './components/wew-toolbar-menu.js?wew=20260627-toolbar-cleanup-v3';
