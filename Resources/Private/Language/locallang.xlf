@@ -1249,6 +1249,12 @@
         <target state="translated">Select changed records to publish them.</target>
       </segment>
     </unit>
+    <unit id="module.publish.empty">
+      <segment>
+        <source>No records were changed.</source>
+        <target state="translated">No records were changed.</target>
+      </segment>
+    </unit>
     <unit id="module.approvalBar.summary">
       <segment>
         <source>{count, plural, one {# record selected for approval} other {# records selected for approval}}</source>
@@ -1895,6 +1901,12 @@
       <segment>
         <source>Nothing to roll back at this entry. The history entry may be older than the live baseline, or the diff is empty.</source>
         <target state="translated">Nothing to roll back at this entry. The history entry may be older than the live baseline, or the diff is empty.</target>
+      </segment>
+    </unit>
+    <unit id="error.rollbackFailed">
+      <segment>
+        <source>Could not roll back the selected history entry.</source>
+        <target state="translated">Could not roll back the selected history entry.</target>
       </segment>
     </unit>
     <unit id="error.invalidSelections">

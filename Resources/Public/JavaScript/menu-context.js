@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG } from './menu-constants.js';
+import { DEFAULT_CONFIG } from './menu-constants.js?wew=20260627-labels';
 
 export function readConfig(element) {
   const raw = element.getAttribute('config') || '';
