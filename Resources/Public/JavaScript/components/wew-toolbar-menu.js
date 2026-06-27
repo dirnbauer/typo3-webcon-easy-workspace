@@ -4,7 +4,7 @@ import Notification from '@typo3/backend/notification.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
-import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js?wew=20260627-labels';
+import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js?wew=20260627-label-fallbacks';
 import {
   readConfig,
   label,
@@ -14,7 +14,7 @@ import {
   detectLanguageUid,
   discardMessageKey,
   discardSuccessMessageKey,
-} from '../menu-context.js?wew=20260627-labels';
+} from '../menu-context.js?wew=20260627-label-fallbacks';
 import {
   highlightInIframe,
   clearIframeHighlight,
