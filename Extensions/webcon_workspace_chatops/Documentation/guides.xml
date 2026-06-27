@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<guides xmlns="https://www.typo3.org/ns/guides"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://www.typo3.org/ns/guides
+        https://docs.typo3.org/schema/guides-1.0.xsd"
+>
+    <project
+        title="Webcon Workspace ChatOps"
+        release="0.1.0"
+        version="main"
+    />
+</guides>

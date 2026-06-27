@@ -1,0 +1,20 @@
+# Webcon Workspace ChatOps defaults.
+#
+# Credentials belong in extension/system configuration or environment
+# variables, not in User TSconfig. These defaults only control feature
+# behavior and can be overridden per backend user or group.
+
+options.webcon_workspace_chatops {
+    enabled = 1
+    userEnabledDefault = 1
+
+    notifyOnReviewRequested = 1
+    notifyOnPublished = 1
+    notifyOnScheduledPublication = 1
+    notifyOnDeploymentStatus = 1
+    notifyOnIncident = 1
+
+    slackEnabledDefault = 1
+    teamsEnabledDefault = 0
+    whatsappEnabledDefault = 0
+}

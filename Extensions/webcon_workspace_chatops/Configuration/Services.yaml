@@ -1,0 +1,14 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Webconsulting\WebconWorkspaceChatops\:
+    resource: '../Classes/*'
+
+  Webconsulting\WebconWorkspaceChatops\Controller\ChatOpsApiController:
+    public: true
+
+  Webconsulting\WebconWorkspaceChatops\Middleware\ChatOpsApiMiddleware:
+    public: true

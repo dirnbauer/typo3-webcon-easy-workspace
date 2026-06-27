@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="en">
+  <file id="EXT:webcon_workspace_chatops/Resources/Private/Language/locallang.xlf">
+    <unit id="userSettings.tab">
+      <segment>
+        <source>Workspace ChatOps</source>
+        <target state="translated">Workspace ChatOps</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.enabled">
+      <segment>
+        <source>Use Workspace ChatOps notifications</source>
+        <target state="translated">Use Workspace ChatOps notifications</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.canApproveFromChat">
+      <segment>
+        <source>Allow approval actions from connected chat accounts</source>
+        <target state="translated">Allow approval actions from connected chat accounts</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.slackEnabled">
+      <segment>
+        <source>Send notifications to Slack</source>
+        <target state="translated">Send notifications to Slack</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.slackUserId">
+      <segment>
+        <source>Slack user ID</source>
+        <target state="translated">Slack user ID</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.slackUserId.description">
+      <segment>
+        <source>Example: U012AB3CD. In Slack, open the user profile and copy the member ID.</source>
+        <target state="translated">Example: U012AB3CD. In Slack, open the user profile and copy the member ID.</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.teamsEnabled">
+      <segment>
+        <source>Send notifications to Microsoft Teams</source>
+        <target state="translated">Send notifications to Microsoft Teams</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.teamsUserId">
+      <segment>
+        <source>Microsoft Teams user ID</source>
+        <target state="translated">Microsoft Teams user ID</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.teamsUserId.description">
+      <segment>
+        <source>Example: 8:orgid:00000000-0000-0000-0000-000000000000, or the Azure AD object ID used by the connector mapping.</source>
+        <target state="translated">Example: 8:orgid:00000000-0000-0000-0000-000000000000, or the Azure AD object ID used by the connector mapping.</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.whatsappEnabled">
+      <segment>
+        <source>Send notifications to WhatsApp</source>
+        <target state="translated">Send notifications to WhatsApp</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.whatsappPhone">
+      <segment>
+        <source>WhatsApp phone number</source>
+        <target state="translated">WhatsApp phone number</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.whatsappPhone.description">
+      <segment>
+        <source>Example: +436641234567 in E.164 format.</source>
+        <target state="translated">Example: +436641234567 in E.164 format.</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.notifyReviewRequested">
+      <segment>
+        <source>Notify me about approval requests</source>
+        <target state="translated">Notify me about approval requests</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.notifyPublished">
+      <segment>
+        <source>Notify me when content is published</source>
+        <target state="translated">Notify me when content is published</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.notifyScheduledPublication">
+      <segment>
+        <source>Notify me about scheduled publications</source>
+        <target state="translated">Notify me about scheduled publications</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.notifyDeploymentStatus">
+      <segment>
+        <source>Notify me about deployment status changes</source>
+        <target state="translated">Notify me about deployment status changes</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.notifyIncident">
+      <segment>
+        <source>Notify me about incidents and monitoring alerts</source>
+        <target state="translated">Notify me about incidents and monitoring alerts</target>
+      </segment>
+    </unit>
+    <unit id="api.error.disabled">
+      <segment>
+        <source>Workspace ChatOps is disabled.</source>
+        <target state="translated">Workspace ChatOps is disabled.</target>
+      </segment>
+    </unit>
+    <unit id="api.error.unauthorized">
+      <segment>
+        <source>The ChatOps request is not authorized.</source>
+        <target state="translated">The ChatOps request is not authorized.</target>
+      </segment>
+    </unit>
+    <unit id="api.error.invalidJson">
+      <segment>
+        <source>The request body must be valid JSON.</source>
+        <target state="translated">The request body must be valid JSON.</target>
+      </segment>
+    </unit>
+    <unit id="api.error.unknownAction">
+      <segment>
+        <source>The requested ChatOps action is not supported.</source>
+        <target state="translated">The requested ChatOps action is not supported.</target>
+      </segment>
+    </unit>
+    <unit id="api.error.noActor">
+      <segment>
+        <source>No backend user could be resolved for this chat identity.</source>
+        <target state="translated">No backend user could be resolved for this chat identity.</target>
+      </segment>
+    </unit>
+    <unit id="api.error.noApprovalPermission">
+      <segment>
+        <source>The resolved backend user is not allowed to approve from chat.</source>
+        <target state="translated">The resolved backend user is not allowed to approve from chat.</target>
+      </segment>
+    </unit>
+    <unit id="api.error.emptySelection">
+      <segment>
+        <source>No workspace records were selected.</source>
+        <target state="translated">No workspace records were selected.</target>
+      </segment>
+    </unit>
+    <unit id="api.status.ok">
+      <segment>
+        <source>Workspace ChatOps is ready.</source>
+        <target state="translated">Workspace ChatOps is ready.</target>
+      </segment>
+    </unit>
+    <unit id="notification.reviewRequested.title">
+      <segment>
+        <source>Workspace approval requested</source>
+        <target state="translated">Workspace approval requested</target>
+      </segment>
+    </unit>
+    <unit id="notification.published.title">
+      <segment>
+        <source>Workspace changes published</source>
+        <target state="translated">Workspace changes published</target>
+      </segment>
+    </unit>
+    <unit id="notification.scheduled.title">
+      <segment>
+        <source>Publication scheduled</source>
+        <target state="translated">Publication scheduled</target>
+      </segment>
+    </unit>
+    <unit id="notification.deployment.title">
+      <segment>
+        <source>Deployment status changed</source>
+        <target state="translated">Deployment status changed</target>
+      </segment>
+    </unit>
+    <unit id="notification.incident.title">
+      <segment>
+        <source>Monitoring alert</source>
+        <target state="translated">Monitoring alert</target>
+      </segment>
+    </unit>
+    <unit id="notification.action.preview">
+      <segment>
+        <source>Preview</source>
+        <target state="translated">Preview</target>
+      </segment>
+    </unit>
+    <unit id="notification.action.openBackend">
+      <segment>
+        <source>Open in TYPO3</source>
+        <target state="translated">Open in TYPO3</target>
+      </segment>
+    </unit>
+    <unit id="notification.field.workspace">
+      <segment>
+        <source>Workspace</source>
+        <target state="translated">Workspace</target>
+      </segment>
+    </unit>
+    <unit id="notification.field.page">
+      <segment>
+        <source>Page</source>
+        <target state="translated">Page</target>
+      </segment>
+    </unit>
+    <unit id="notification.field.records">
+      <segment>
+        <source>Records</source>
+        <target state="translated">Records</target>
+      </segment>
+    </unit>
+    <unit id="notification.field.recipients">
+      <segment>
+        <source>Recipients</source>
+        <target state="translated">Recipients</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>

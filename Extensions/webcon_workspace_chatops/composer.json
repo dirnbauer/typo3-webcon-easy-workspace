@@ -1,0 +1,52 @@
+{
+    "name": "webconsulting/webcon-workspace-chatops",
+    "description": "Webcon Workspace ChatOps - Chat and MCP integration layer for TYPO3 workspace approvals.",
+    "license": "GPL-2.0-or-later",
+    "type": "typo3-cms-extension",
+    "keywords": [
+        "TYPO3",
+        "workspaces",
+        "Slack",
+        "Microsoft Teams",
+        "WhatsApp",
+        "MCP",
+        "ChatOps"
+    ],
+    "authors": [
+        {
+            "name": "webconsulting",
+            "homepage": "https://webconsulting.at",
+            "role": "Developer"
+        }
+    ],
+    "homepage": "https://github.com/dirnbauer/typo3-webcon-workspace-chatops",
+    "support": {
+        "issues": "https://github.com/dirnbauer/typo3-webcon-workspace-chatops/issues",
+        "source": "https://github.com/dirnbauer/typo3-webcon-workspace-chatops"
+    },
+    "require": {
+        "php": "^8.2",
+        "typo3/cms-backend": "^14.3",
+        "typo3/cms-core": "^14.3",
+        "typo3/cms-workspaces": "^14.3"
+    },
+    "suggest": {
+        "webconsulting/webcon-easy-workspace": "Provides the editor-facing pending item list this extension can notify about.",
+        "mcp/sdk": "Optional PHP MCP server/client SDK when exposing these services directly to MCP clients.",
+        "symfony/notifier": "Optional notifier abstraction if a project prefers Symfony transports over the built-in TYPO3 RequestFactory adapters."
+    },
+    "autoload": {
+        "psr-4": {
+            "Webconsulting\\WebconWorkspaceChatops\\": "Classes/"
+        }
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "webcon_workspace_chatops",
+            "version": "0.1.0",
+            "Package": {
+                "providesPackages": {}
+            }
+        }
+    }
+}
