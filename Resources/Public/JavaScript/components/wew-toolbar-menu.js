@@ -4,7 +4,7 @@ import Notification from '@typo3/backend/notification.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
-import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js?wew=20260627-label-fallbacks';
+import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js?wew=20260627-language-labels-v2';
 import {
   readConfig,
   label,
@@ -14,7 +14,7 @@ import {
   detectLanguageUid,
   discardMessageKey,
   discardSuccessMessageKey,
-} from '../menu-context.js?wew=20260627-label-fallbacks';
+} from '../menu-context.js?wew=20260627-language-labels-v2';
 import {
   highlightInIframe,
   clearIframeHighlight,
@@ -857,4 +857,13 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   }
 }
 
-customElements.define('webcon-easy-workspace-menu', WebconEasyWorkspaceMenu);
+if (!customElements.get('webcon-easy-workspace-menu')) {
+  customElements.define('webcon-easy-workspace-menu', WebconEasyWorkspaceMenu);
+}
+
+if (!customElements.get('webcon-easy-workspace-menu-v2')) {
+  customElements.define(
+    'webcon-easy-workspace-menu-v2',
+    class WebconEasyWorkspaceMenuV2 extends WebconEasyWorkspaceMenu {},
+  );
+}

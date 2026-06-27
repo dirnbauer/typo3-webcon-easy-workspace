@@ -15,7 +15,8 @@
     display: none;
 }
 
-webcon-easy-workspace-menu {
+webcon-easy-workspace-menu,
+webcon-easy-workspace-menu-v2 {
     display: block;
     width: min(380px, calc(100vw - 24px));
     max-width: 95vw;
@@ -28,7 +29,8 @@ webcon-easy-workspace-menu {
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 
-webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
+webcon-easy-workspace-menu.wew-menu-host--compact-toolbar,
+webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     width: min(340px, calc(100vw - 24px));
 }
 
@@ -55,13 +57,15 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 /* Bootstrap dropdown clamps width to its parent — force the dropdown
    menu to grow to fit our element, but cap at the same width so it
    stays right-anchored within the viewport. */
-.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu) {
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu),
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2) {
     width: auto;
     max-width: min(380px, calc(100vw - 24px));
     min-width: 300px;
     overflow-x: hidden;
 }
-.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu.wew-menu-host--compact-toolbar) {
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu.wew-menu-host--compact-toolbar),
+.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar) {
     max-width: min(340px, calc(100vw - 24px));
     min-width: 280px;
 }
@@ -183,8 +187,8 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     font-weight: 500;
     line-height: 1.3;
     cursor: pointer;
-    transition: color .12s ease, border-color .12s ease;
-    /* No rounded background — this is a tab, not a pill. */
+    transition: background-color .12s ease, box-shadow .12s ease, color .12s ease, border-color .12s ease;
+    /* This is a compact tab, not a pill. The active state adds the surface. */
 }
 .wew-menu--compact-toolbar .wew-menu__chip {
     padding: .45rem .65rem .4rem;
@@ -192,12 +196,17 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
 }
 .wew-menu__chip:hover {
     color: var(--typo3-text-color-base, var(--bs-body-color));
+    background: color-mix(in srgb, var(--typo3-state-default-hover-bg, var(--bs-secondary-bg)) 72%, transparent);
 }
 .wew-menu__chip--active {
     color: var(--typo3-text-color-base, var(--bs-body-color));
+    background: color-mix(in srgb, var(--typo3-state-primary-bg, var(--bs-primary)) 16%, var(--typo3-component-bg, var(--bs-body-bg)));
     /* Underline accent uses TYPO3's primary state bg — that's the
        brand color (orange in default TYPO3), not Bootstrap blue. */
     border-bottom-color: var(--typo3-state-primary-bg, var(--bs-primary));
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--typo3-state-primary-bg, var(--bs-primary)) 58%, transparent),
+        inset 0 -1px 0 var(--typo3-state-primary-bg, var(--bs-primary));
     font-weight: 600;
 }
 .wew-menu__chip:focus-visible {

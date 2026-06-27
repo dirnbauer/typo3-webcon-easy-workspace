@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG } from './menu-constants.js?wew=20260627-label-fallbacks';
+import { DEFAULT_CONFIG } from './menu-constants.js?wew=20260627-language-labels-v2';
 
 export function readConfig(element) {
   const raw = element.getAttribute('config') || '';
@@ -17,7 +17,7 @@ export function readConfig(element) {
 function withDefaultLabels(config) {
   const labels = config?.labels && typeof config.labels === 'object' ? config.labels : {};
   const resolvedLabels = Object.fromEntries(
-    Object.entries(labels).filter(([key, value]) => value !== key),
+    Object.entries(labels).filter(([key, value]) => isResolvedLabelValue(key, value)),
   );
   return {
     ...DEFAULT_CONFIG,
@@ -27,6 +27,12 @@ function withDefaultLabels(config) {
       ...resolvedLabels,
     },
   };
+}
+
+function isResolvedLabelValue(key, value) {
+  return typeof value === 'string'
+    && value.trim() !== ''
+    && value.trim().toLowerCase() !== key.toLowerCase();
 }
 
 export function formatIcu(message, variables = {}) {
@@ -46,7 +52,7 @@ export function formatIcu(message, variables = {}) {
 
 export function label(host, key, variables = {}) {
   const labels = host._config.labels || {};
-  const message = typeof labels[key] === 'string' && labels[key] !== '' && labels[key] !== key
+  const message = isResolvedLabelValue(key, labels[key])
     ? labels[key]
     : (DEFAULT_CONFIG.labels[key] || key);
   return formatIcu(message, variables);
