@@ -92,7 +92,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
 
     public function getItem(): string
     {
-        $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-menu-element-v2.js');
+        $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-menu-element-v3.js');
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/easy-workspace.css');
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
         return $view->render('ToolbarItems/EasyWorkspaceItem');
