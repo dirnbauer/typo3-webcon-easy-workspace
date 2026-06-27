@@ -3,15 +3,27 @@ import { DEFAULT_CONFIG } from './menu-constants.js';
 export function readConfig(element) {
   const raw = element.getAttribute('config') || '';
   if (raw === '') {
-    return { ...DEFAULT_CONFIG };
+    return withDefaultLabels({});
   }
   try {
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_CONFIG, ...parsed };
+    return withDefaultLabels(parsed);
   } catch (e) {
     console.warn('[easy-workspace] Could not parse TSconfig payload, falling back to defaults.', e);
-    return { ...DEFAULT_CONFIG };
+    return withDefaultLabels({});
   }
+}
+
+function withDefaultLabels(config) {
+  const labels = config?.labels && typeof config.labels === 'object' ? config.labels : {};
+  return {
+    ...DEFAULT_CONFIG,
+    ...config,
+    labels: {
+      ...DEFAULT_CONFIG.labels,
+      ...labels,
+    },
+  };
 }
 
 export function formatIcu(message, variables = {}) {
@@ -31,7 +43,9 @@ export function formatIcu(message, variables = {}) {
 
 export function label(host, key, variables = {}) {
   const labels = host._config.labels || {};
-  const message = typeof labels[key] === 'string' && labels[key] !== '' ? labels[key] : key;
+  const message = typeof labels[key] === 'string' && labels[key] !== ''
+    ? labels[key]
+    : (DEFAULT_CONFIG.labels[key] || key);
   return formatIcu(message, variables);
 }
 

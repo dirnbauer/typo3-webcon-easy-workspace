@@ -38,15 +38,12 @@
     <label class="wew-list__label" for="{f:if(condition: item.isChanged, then: rowId, else: '')}">
         <f:if condition="{item.isChanged}">
             <input type="checkbox"
+                   role="switch"
                    id="{rowId}"
                    class="form-check-input wew-list__check visually-hidden"
                    checked="checked"
                    data-wew-row-check="" />
-            <span class="wew-list__mark" aria-hidden="true">
-                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
-                    <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M3 8.5l3 3 7-7"/>
-                </svg>
-            </span>
+            <span class="wew-list__mark" aria-hidden="true"></span>
         </f:if>
 
         <f:if condition="{item.thumbnailUrl}">

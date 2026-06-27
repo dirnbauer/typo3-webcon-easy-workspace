@@ -34,6 +34,16 @@ export const DEFAULT_CONFIG = Object.freeze({
   newsUid: 0,
   hasVisualEditor: false,
   hasViewpage: false,
+  labels: {
+    'toolbar.languageScope.aria': 'Language scope',
+    'toolbar.languageScope.label': 'Language',
+    'toolbar.languageScope.current': 'Current',
+    'toolbar.languageScope.current.title': 'Show records in the current page language',
+    'toolbar.languageScope.all': 'All languages',
+    'toolbar.languageScope.all.title': 'Show records from every page language',
+    'toolbar.languageScope.unavailable': 'No current page language detected',
+    'error.noPublishableRecords': 'No publishable records in selection.',
+  },
 });
 
 // Inline highlight styles applied to the iframe element. Hard-coded

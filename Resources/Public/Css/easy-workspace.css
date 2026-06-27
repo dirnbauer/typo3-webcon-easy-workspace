@@ -1060,33 +1060,45 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     background: var(--typo3-link-color, var(--bs-primary));
 }
 
-/* ---- Selection mark ("dot/check" on the row's left edge) ----
-   Replaces the visible checkbox we removed earlier. Renders as a
-   small empty ring when the row is unselected and fills with the
-   primary color + a white checkmark when selected. Gives editors
-   the at-a-glance "this is queued" cue that the soft row tint
-   alone wasn't carrying. Only emitted on changed rows (others
-   can't be toggled). */
+/* ---- Selection toggle (switch on the row's left edge) ----
+   A pill-shaped track with a sliding thumb that reads as off/on
+   instead of a check-mark. Off = neutral track, thumb left; on =
+   primary-filled track, thumb slid right. Mirrors the Bootstrap
+   toggle (.form-check-type-toggle) the backend module list already
+   uses, so the toolbar and the module share one "queued for
+   publish" language. The checkbox stays in the DOM (visually-
+   hidden, role="switch") so it remains keyboard- and screen-
+   reader-reachable. Only emitted on changed rows (others can't be
+   toggled). */
 .wew-list__mark {
+    box-sizing: border-box;
+    position: relative;
     flex-shrink: 0;
     align-self: flex-start;
-    width: 18px;
+    width: 32px;
     height: 18px;
     margin-top: 2px;
     margin-right: .55rem;
-    border-radius: 50%;
+    border-radius: 999px;
     border: 1.5px solid color-mix(in srgb, var(--bs-secondary-color, #6c757d) 55%, transparent);
-    background: var(--typo3-component-bg, var(--bs-body-bg));
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--bs-white, #fff);
-    transition: background-color .12s ease, border-color .12s ease, transform .12s ease;
+    background: color-mix(in srgb, var(--bs-secondary-color, #6c757d) 28%, var(--typo3-component-bg, var(--bs-body-bg)));
+    transition: background-color .15s ease, border-color .15s ease;
 }
-.wew-list__mark svg {
-    opacity: 0;
-    transform: scale(.5);
-    transition: opacity .12s ease, transform .12s ease;
+/* Sliding thumb. Rests 2px from the left edge and travels 13px so
+   it sits 2px from the right when on (32 track − 3 border − 12
+   thumb − 2 − 2 = 13). */
+.wew-list__mark::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bs-white, #fff);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+    transform: translateY(-50%);
+    transition: transform .15s ease;
 }
 .wew-list__label:hover .wew-list__mark {
     border-color: color-mix(in srgb, var(--typo3-link-color, var(--bs-primary)) 60%, transparent);
@@ -1095,9 +1107,8 @@ webcon-easy-workspace-menu.wew-menu-host--compact-toolbar {
     background: var(--typo3-link-color, var(--bs-primary));
     border-color: var(--typo3-link-color, var(--bs-primary));
 }
-.wew-list__row:has(.wew-list__check:checked) .wew-list__mark svg {
-    opacity: 1;
-    transform: scale(1);
+.wew-list__row:has(.wew-list__check:checked) .wew-list__mark::after {
+    transform: translate(13px, -50%);
 }
 .wew-list__check:focus-visible + .wew-list__mark {
     outline: 2px solid var(--typo3-link-color, var(--bs-primary));

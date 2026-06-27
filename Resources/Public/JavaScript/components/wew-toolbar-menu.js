@@ -4,7 +4,7 @@ import Notification from '@typo3/backend/notification.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
-import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js';
+import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js?wew=20260623-labels';
 import {
   readConfig,
   label,
@@ -14,7 +14,7 @@ import {
   detectLanguageUid,
   discardMessageKey,
   discardSuccessMessageKey,
-} from '../menu-context.js';
+} from '../menu-context.js?wew=20260623-labels';
 import {
   highlightInIframe,
   clearIframeHighlight,
@@ -644,16 +644,13 @@ export class WebconEasyWorkspaceMenu extends LitElement {
         <label class="wew-list__label" for="${item.isChanged ? rowId : ''}">
           ${item.isChanged ? html`
             <input type="checkbox"
+                   role="switch"
                    id="${rowId}"
                    class="form-check-input wew-list__check visually-hidden"
                    .checked=${checked}
                    data-wew-row-check
                    @change=${this.#onRowCheckChange} />
-            <span class="wew-list__mark" aria-hidden="true">
-              <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true">
-                <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M3 8.5l3 3 7-7"/>
-              </svg>
-            </span>
+            <span class="wew-list__mark" aria-hidden="true"></span>
           ` : ''}
 
           ${item.thumbnailUrl ? html`

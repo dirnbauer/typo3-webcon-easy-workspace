@@ -92,7 +92,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
 
     public function getItem(): string
     {
-        $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-menu-element.js');
+        $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-menu-element-v2.js');
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/easy-workspace.css');
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
         return $view->render('ToolbarItems/EasyWorkspaceItem');
@@ -113,12 +113,12 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // Translated UI strings the JS reads through `this._config.labels`.
         // Keeping them server-rendered keeps the JS bundle locale-free
         // and lets editors switch backend language without rebuilds.
-        $payload = $this->configurationProvider->get() + [
+        $payload = array_replace($this->configurationProvider->get(), [
             'activeWorkspaceId' => $this->accessGuard->activeWorkspaceId($this->request),
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
             'labels' => $this->localizationService->labelsForJavaScript(),
-        ];
+        ]);
         $view->assign('configJson', json_encode($payload, JSON_THROW_ON_ERROR));
         return $view->render('ToolbarItems/EasyWorkspaceDropDown');
     }
