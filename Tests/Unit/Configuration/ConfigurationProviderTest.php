@@ -48,7 +48,6 @@ final class ConfigurationProviderTest extends UnitTestCase
         $config = $this->subject->get();
 
         self::assertTrue($config['enabled']);
-        self::assertSame('changed', $config['defaultMode']);
         self::assertSame(200, $config['maxItems']);
         self::assertTrue($config['enableRevert']);
     }
@@ -80,7 +79,6 @@ final class ConfigurationProviderTest extends UnitTestCase
     public function booleanStringsAreNormalized(): void
     {
         $this->setUpBackendUserWith([
-            'enableFilter' => 'true',
             'enableThumbnails' => 'off',
             'enableRevert' => 'yes',
             'showHidden' => '0',
@@ -88,20 +86,9 @@ final class ConfigurationProviderTest extends UnitTestCase
 
         $config = $this->subject->get();
 
-        self::assertTrue($config['enableFilter']);
         self::assertFalse($config['enableThumbnails']);
         self::assertTrue($config['enableRevert']);
         self::assertFalse($config['showHidden']);
-    }
-
-    #[Test]
-    public function defaultModeIsNormalizedToKnownValues(): void
-    {
-        $this->setUpBackendUserWith(['defaultMode' => ' ALL ']);
-        self::assertSame('all', $this->subject->get()['defaultMode']);
-
-        $this->setUpBackendUserWith(['defaultMode' => 'bogus']);
-        self::assertSame('changed', $this->subject->get()['defaultMode']);
     }
 
     #[Test]

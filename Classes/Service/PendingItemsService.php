@@ -15,7 +15,7 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Collects records visible in the toolbar dropdown for a given page or
- * news context. See PendingItemsMode for the changed/all filter
+ * news context. See PendingItemsMode for the changed/all collection
  * semantics.
  */
 final readonly class PendingItemsService

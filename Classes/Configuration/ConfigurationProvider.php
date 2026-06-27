@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Configuration;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -32,9 +31,6 @@ final readonly class ConfigurationProvider
         // Header
         'enableWorkspaceChip' => true,
         'enablePreviewLink' => true,
-        // List filter
-        'enableFilter' => true,
-        'defaultMode' => 'changed',
         // List rendering
         'enableThumbnails' => true,
         'enableTypeLabels' => true,
@@ -67,8 +63,6 @@ final readonly class ConfigurationProvider
      *     showSubelementsInModule: bool,
      *     enableWorkspaceChip: bool,
      *     enablePreviewLink: bool,
-     *     enableFilter: bool,
-     *     defaultMode: string,
      *     enableThumbnails: bool,
      *     enableTypeLabels: bool,
      *     enableHiddenBadge: bool,
@@ -105,8 +99,6 @@ final readonly class ConfigurationProvider
             'showSubelementsInModule' => $this->getUserSettingBool('webconEasyWorkspaceShowSubelementsModule', $this->toBool($merged['showSubelementsInModule'])),
             'enableWorkspaceChip' => $this->toBool($merged['enableWorkspaceChip']),
             'enablePreviewLink' => $this->toBool($merged['enablePreviewLink']),
-            'enableFilter' => $this->toBool($merged['enableFilter']),
-            'defaultMode' => PendingItemsMode::fromString(Value::string($merged['defaultMode']))->value,
             'enableThumbnails' => $this->toBool($merged['enableThumbnails']),
             'enableTypeLabels' => $this->toBool($merged['enableTypeLabels']),
             'enableHiddenBadge' => $this->toBool($merged['enableHiddenBadge']),

@@ -11,8 +11,8 @@ namespace Webconsulting\WebconEasyWorkspace\Enum;
  *                       isChanged flagged per item so the UI can still
  *                       highlight pending work.
  *
- * The backing values are part of the AJAX wire format ("mode" in the
- * toolbar JSON) and the TSconfig vocabulary (defaultMode = all|changed).
+ * The backing values are used by the collection services and backend
+ * module sections.
  */
 enum PendingItemsMode: string
 {

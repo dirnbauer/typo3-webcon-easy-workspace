@@ -9,9 +9,7 @@ import {
   readConfig,
   label,
   configBool,
-  buildContextLabel,
   detectContext,
-  detectLanguageUid,
   discardMessageKey,
   discardSuccessMessageKey,
 } from '../menu-context.js?wew=20260627-language-labels-v2';
@@ -31,15 +29,12 @@ import {
 import { openEditModal, openDiffModal } from '../menu-modals.js';
 import {
   discardRecordsForItem,
-  readPersistedMode,
   refresh,
   refreshAfterBackendSave,
   refreshBadge,
   publish,
   copyPreviewLink,
   configuredWorkspaceId,
-  setMode,
-  setLanguageScope,
   syncToolbarVisibility,
 } from '../menu-actions.js';
 import {
@@ -70,7 +65,6 @@ import {
 export class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
     state: { type: String },
-    mode: { type: String },
     items: { type: Array },
     itemGroups: { type: Array },
     changedItemGroups: { type: Array },
@@ -79,8 +73,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     pageUid: { type: Number },
     newsUid: { type: Number },
     badgeCount: { type: Number },
-    detectedLanguageUid: { type: Number },
-    languageScope: { type: String },
     publishing: { type: Boolean },
     copyingPreview: { type: Boolean },
     selectionVersion: { type: Number },
@@ -101,20 +93,16 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this._selectionContextKey = '';
     this._selectionTouched = false;
     this.context = null;
-    this.contextLabel = '';
     this.workspaceTitle = '';
     this.workspaceId = 0;
     this.publishing = false;
     this.copyingPreview = false;
     this.previewJustCopied = false;
     this._config = { ...DEFAULT_CONFIG };
-    this.mode = this._config.defaultMode;
     this.variant = 'toolbar';
     this.pageUid = 0;
     this.newsUid = 0;
     this.badgeCount = 0;
-    this.detectedLanguageUid = null;
-    this.languageScope = 'current';
     this._backendFrameLoadRefreshTimer = null;
     this._badgeVisibilityListener = null;
     this._backendSaveMessageTargets = new Map();
@@ -131,7 +119,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     // marker does not flash visible in Live before the first refresh resolves.
     syncToolbarVisibility(this);
     this.classList.toggle('wew-menu-host--compact-toolbar', this._isCompactToolbar());
-    this.mode = readPersistedMode() ?? this._config.defaultMode;
     this._refresh();
 
     this._navListener = () => this._refresh();
@@ -237,9 +224,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
 
   _readConfig() { return readConfig(this); }
   _label(key, variables = {}) { return label(this, key, variables); }
-  _buildContextLabel(data) { return buildContextLabel(this, data); }
   _detectContext() { return detectContext(this); }
-  _detectLanguageUid() { return detectLanguageUid(this); }
   _configBool(key, fallback = false) { return configBool(this, key, fallback); }
 
   _highlightInIframe(item, options) { return highlightInIframe(this, item, options); }
@@ -250,8 +235,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   _openDiffModal(item) { return openDiffModal(this, item); }
 
   _key(item) { return key(this, item); }
-  _setMode(mode) { return setMode(this, mode); }
-  _setLanguageScope(scope) { return setLanguageScope(this, scope); }
   _configuredWorkspaceId() { return configuredWorkspaceId(this); }
   _refresh() { return refresh(this); }
   _refreshAfterBackendSave(options) { return refreshAfterBackendSave(this, options); }
@@ -259,43 +242,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   _publish() { return publish(this); }
   _copyPreviewLink(pageUid) { return copyPreviewLink(this, pageUid); }
   _isCompactToolbar() { return !this._config.showSubelementsInToolbar; }
-
-  #onModeClick(event) {
-    const button = event.currentTarget;
-    const mode = button?.getAttribute('data-wew-mode');
-    if (mode === 'all' || mode === 'changed') {
-      event.preventDefault();
-      this._setMode(mode);
-    }
-  }
-
-  #onFilterKeydown(event) {
-    const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
-    if (!keys.includes(event.key)) return;
-    event.preventDefault();
-    const tabs = Array.from(this.querySelectorAll('[data-wew-mode]'));
-    if (tabs.length === 0) return;
-    const currentIdx = tabs.indexOf(document.activeElement);
-    let nextIdx;
-    switch (event.key) {
-      case 'ArrowLeft': nextIdx = currentIdx <= 0 ? tabs.length - 1 : currentIdx - 1; break;
-      case 'ArrowRight': nextIdx = currentIdx >= tabs.length - 1 ? 0 : currentIdx + 1; break;
-      case 'Home': nextIdx = 0; break;
-      case 'End': nextIdx = tabs.length - 1; break;
-      default: return;
-    }
-    tabs[nextIdx].focus();
-    tabs[nextIdx].click();
-  }
-
-  #onLanguageScopeClick(event) {
-    const button = event.currentTarget;
-    const scope = button?.getAttribute('data-wew-language-scope');
-    if (scope === 'current' || scope === 'all') {
-      event.preventDefault();
-      this._setLanguageScope(scope);
-    }
-  }
 
   #onRowCheckChange(event) {
     const checkbox = event.currentTarget;
@@ -460,20 +406,12 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   #renderMenu() {
     const compactClass = this._isCompactToolbar() ? ' wew-menu--compact-toolbar' : '';
     const changedCount = changedItemCount(this.items);
-    const totalCount = this.items.length;
     const showSubelements = this._configBool('showSubelementsInToolbar');
 
     return html`
       <div class="wew-menu${compactClass}" data-wew-menu>
         ${this.#renderHeader()}
-        ${this.#renderFilter(changedCount, totalCount)}
-        ${this.#renderLanguageScope()}
-        <div id="wew-tabpanel"
-             role="${this._configBool('enableFilter') ? 'tabpanel' : ''}"
-             data-wew-tabpanel>
-          ${this.#renderListPanel('changed', this.changedItemGroups, showSubelements, 'toolbar.empty.changed')}
-          ${this.#renderListPanel('all', this.itemGroups, showSubelements, 'toolbar.empty.all')}
-        </div>
+        ${this.#renderList(this.changedItemGroups, showSubelements, 'toolbar.empty.changed')}
         ${this.#renderFooter(changedCount)}
         ${this.#renderContextFootnote()}
       </div>
@@ -522,86 +460,10 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     `;
   }
 
-  #renderFilter(changedCount, totalCount) {
-    if (!this._configBool('enableFilter')) {
-      return '';
-    }
-
-    return html`
-      <div class="wew-menu__filter"
-           role="tablist"
-           aria-label="${this._label('toolbar.filter.aria')}"
-           data-wew-filter
-           @keydown=${this.#onFilterKeydown}>
-        ${this.#renderFilterTab('changed', changedCount, 'wew-tab-changed')}
-        ${this.#renderFilterTab('all', totalCount, 'wew-tab-all')}
-      </div>
-    `;
-  }
-
-  #renderFilterTab(mode, count, id) {
-    const active = this.mode === mode;
-    return html`
-      <button type="button"
-              id="${id}"
-              class="wew-menu__chip${active ? ' wew-menu__chip--active' : ''}"
-              role="tab"
-              aria-selected="${active ? 'true' : 'false'}"
-              aria-controls="wew-tabpanel"
-              tabindex="${active ? '0' : '-1'}"
-              data-wew-mode="${mode}"
-              @click=${this.#onModeClick}>
-        ${this._label(mode === 'changed' ? 'toolbar.tab.changed' : 'toolbar.tab.all')}
-        <span class="wew-menu__chip-count"
-              aria-label="${this._label('toolbar.records', { count })}">${count}</span>
-      </button>
-    `;
-  }
-
-  #renderLanguageScope() {
-    const hasCurrentLanguage = this.detectedLanguageUid !== null;
-    const activeScope = this.languageScope === 'all' || !hasCurrentLanguage ? 'all' : 'current';
-
-    return html`
-      <div class="wew-menu__language-scope"
-           role="group"
-           aria-label="${this._label('toolbar.languageScope.aria')}">
-        <span class="wew-menu__language-label">${this._label('toolbar.languageScope.label')}</span>
-        <div class="wew-menu__language-buttons">
-          <button type="button"
-                  class="wew-menu__language-button${activeScope === 'current' ? ' wew-menu__language-button--active' : ''}"
-                  data-wew-language-scope="current"
-                  aria-pressed="${activeScope === 'current' ? 'true' : 'false'}"
-                  title="${hasCurrentLanguage
-                    ? this._label('toolbar.languageScope.current.title')
-                    : this._label('toolbar.languageScope.unavailable')}"
-                  ?disabled=${!hasCurrentLanguage}
-                  @click=${this.#onLanguageScopeClick}>
-            ${this._label('toolbar.languageScope.current')}
-          </button>
-          <button type="button"
-                  class="wew-menu__language-button${activeScope === 'all' ? ' wew-menu__language-button--active' : ''}"
-                  data-wew-language-scope="all"
-                  aria-pressed="${activeScope === 'all' ? 'true' : 'false'}"
-                  title="${this._label('toolbar.languageScope.all.title')}"
-                  @click=${this.#onLanguageScopeClick}>
-            ${this._label('toolbar.languageScope.all')}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  #renderListPanel(panelMode, groups, showSubelements, emptyMessageKey) {
-    const active = this.mode === panelMode;
-    const hiddenClass = active ? '' : ' hidden';
-    const ariaHidden = active ? 'false' : 'true';
-
+  #renderList(groups, showSubelements, emptyMessageKey) {
     if (!panelHasItems(groups)) {
       return html`
-        <div class="wew-menu__empty${hiddenClass}"
-             data-wew-mode-panel="${panelMode}"
-             aria-hidden="${ariaHidden}">
+        <div class="wew-menu__empty" data-wew-list-empty>
           <span class="wew-menu__empty-icon" aria-hidden="true">✓</span>
           <p>${this._label(emptyMessageKey)}</p>
         </div>
@@ -609,9 +471,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     }
 
     return html`
-      <ul class="wew-list${hiddenClass}"
-          data-wew-mode-panel="${panelMode}"
-          aria-hidden="${ariaHidden}">
+      <ul class="wew-list" data-wew-list>
         ${groups.map((group) => this.#renderGroup(group, showSubelements))}
       </ul>
     `;

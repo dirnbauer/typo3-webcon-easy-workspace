@@ -3,9 +3,7 @@ import Notification from '@typo3/backend/notification.js';
 
 import { ENDPOINTS } from './menu-constants.js';
 import {
-  buildContextLabel,
   detectContext,
-  detectLanguageUid,
   label,
 } from './menu-context.js';
 import { broadcastDeclineState } from './menu-backend-save-sync.js';
@@ -17,33 +15,6 @@ import {
 } from './menu-selection.js';
 
 export { key, publishRecordsForItem, discardRecordsForItem } from './menu-selection.js';
-
-export const MODE_STORAGE_KEY = 'wew:filter-mode';
-export const LANGUAGE_SCOPE_CURRENT = 'current';
-export const LANGUAGE_SCOPE_ALL = 'all';
-
-export function readPersistedMode() {
-  try {
-    const value = window.localStorage?.getItem(MODE_STORAGE_KEY);
-    return value === 'all' || value === 'changed' ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-export function writePersistedMode(mode) {
-  try {
-    window.localStorage?.setItem(MODE_STORAGE_KEY, mode);
-  } catch { /* ignore */ }
-}
-
-export function normalizeLanguageScope(scope) {
-  return scope === LANGUAGE_SCOPE_ALL ? LANGUAGE_SCOPE_ALL : LANGUAGE_SCOPE_CURRENT;
-}
-
-export function effectiveLanguageUid(host, detectedLanguageUid = detectLanguageUid(host)) {
-  return normalizeLanguageScope(host.languageScope) === LANGUAGE_SCOPE_ALL ? null : detectedLanguageUid;
-}
 
 function notifyView(host) {
   host.requestUpdate?.();
@@ -67,36 +38,21 @@ function isCurrentBadgeRequest(host, requestId) {
   return host._badgeRequestId === requestId;
 }
 
-function selectionContextKey(pageUid, newsUid, languageUid, workspaceId) {
+function selectionContextKey(pageUid, newsUid, workspaceId) {
   const contextType = pageUid > 0 ? 'page' : 'news';
   const contextUid = pageUid > 0 ? pageUid : newsUid;
-  const languagePart = languageUid === null ? 'all' : String(languageUid);
 
-  return `${workspaceId}:${languagePart}:${contextType}:${contextUid}`;
-}
-
-function updateLanguageScopeContext(host, pageUid, newsUid) {
-  const contextKey = `${pageUid > 0 ? 'page' : 'news'}:${pageUid > 0 ? pageUid : newsUid}`;
-  if (host._languageScopeContextKey && host._languageScopeContextKey !== contextKey) {
-    host.languageScope = LANGUAGE_SCOPE_CURRENT;
-    notifyView(host);
-  }
-  host._languageScopeContextKey = contextKey;
+  return `${workspaceId}:${contextType}:${contextUid}`;
 }
 
 function currentToolbarContext(host) {
   const { pageUid, newsUid } = detectContext(host);
   host.pageUid = pageUid;
   host.newsUid = newsUid;
-  updateLanguageScopeContext(host, pageUid, newsUid);
-
-  const detectedLanguageUid = detectLanguageUid(host);
-  host.detectedLanguageUid = detectedLanguageUid;
 
   return {
     pageUid,
     newsUid,
-    languageUid: effectiveLanguageUid(host, detectedLanguageUid),
     hasContext: pageUid > 0 || newsUid > 0,
   };
 }
@@ -106,28 +62,7 @@ function contextQuery(context, extra = {}) {
     ? { pageUid: context.pageUid, ...extra }
     : { newsUid: context.newsUid, ...extra };
   query._ = Date.now();
-  if (context.languageUid !== null) {
-    query.languageUid = context.languageUid;
-  }
   return query;
-}
-
-export function setMode(host, mode) {
-  if (host.mode === mode) {
-    return;
-  }
-  host.mode = mode;
-  writePersistedMode(mode);
-  notifyView(host);
-}
-
-export async function setLanguageScope(host, scope) {
-  const nextScope = normalizeLanguageScope(scope);
-  if (normalizeLanguageScope(host.languageScope) === nextScope) {
-    return;
-  }
-  host.languageScope = nextScope;
-  await refresh(host);
 }
 
 export async function refresh(host, options = {}) {
@@ -153,7 +88,6 @@ export async function refresh(host, options = {}) {
   const context = currentToolbarContext(host);
   if (!context.hasContext) {
     host.state = 'no-context';
-    host.contextLabel = label(host, 'toolbar.context.none');
     host.items = [];
     host.itemGroups = [];
     host.changedItemGroups = [];
@@ -169,7 +103,7 @@ export async function refresh(host, options = {}) {
 
   try {
     const response = await new AjaxRequest(ENDPOINTS.items)
-      .withQueryArguments(contextQuery(context, { mode: host.mode }))
+      .withQueryArguments(contextQuery(context))
       .get();
     const data = await response.resolve();
     if (!isCurrentRefreshRequest(host, requestId)) {
@@ -181,10 +115,9 @@ export async function refresh(host, options = {}) {
     host.changedItemGroups = Array.isArray(data.changedItemGroups) ? data.changedItemGroups : [];
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
-    host.contextLabel = buildContextLabel(host, data);
     syncSelectionWithItems(
       host,
-      selectionContextKey(context.pageUid, context.newsUid, context.languageUid, host.workspaceId),
+      selectionContextKey(context.pageUid, context.newsUid, host.workspaceId),
     );
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
     host.badgeCount = changedItemCount(host);

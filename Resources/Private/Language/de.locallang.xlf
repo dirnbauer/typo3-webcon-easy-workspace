@@ -79,72 +79,6 @@
         <target state="translated">Aktiver Arbeitsbereich</target>
       </segment>
     </unit>
-    <unit id="toolbar.filter.aria">
-      <segment>
-        <source>Filter pending records</source>
-        <target state="translated">Ausstehende Datensätze filtern</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.tab.changed">
-      <segment>
-        <source>To publish</source>
-        <target state="translated">Zu veröffentlichen</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.tab.all">
-      <segment>
-        <source>All on page</source>
-        <target state="translated">Alle auf der Seite</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.aria">
-      <segment>
-        <source>Language scope</source>
-        <target state="translated">Sprachumfang</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.label">
-      <segment>
-        <source>Language</source>
-        <target state="translated">Sprache</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.current">
-      <segment>
-        <source>Current</source>
-        <target state="translated">Aktuell</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.current.title">
-      <segment>
-        <source>Show records in the current page language</source>
-        <target state="translated">Datensätze in der aktuellen Seitensprache anzeigen</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.all">
-      <segment>
-        <source>All languages</source>
-        <target state="translated">Alle Sprachen</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.all.title">
-      <segment>
-        <source>Show records from every page language</source>
-        <target state="translated">Datensätze aus allen Seitensprachen anzeigen</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.languageScope.unavailable">
-      <segment>
-        <source>No current page language detected</source>
-        <target state="translated">Keine aktuelle Seitensprache erkannt</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.records">
-      <segment>
-        <source>{count, plural, one {# record} other {# records}}</source>
-        <target state="translated">{count, plural, one {# Datensatz} other {# Datensätze}}</target>
-      </segment>
-    </unit>
     <unit id="toolbar.loading">
       <segment>
         <source>Loading pending changes...</source>
@@ -155,12 +89,6 @@
       <segment>
         <source>Open a page or a news record in the page tree to see what is ready to publish.</source>
         <target state="translated">Öffnen Sie eine Seite oder einen News-Datensatz im Seitenbaum, um zu sehen, was veröffentlicht werden kann.</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.empty.all">
-      <segment>
-        <source>This page is empty (no records yet).</source>
-        <target state="translated">Diese Seite ist leer (noch keine Datensätze).</target>
       </segment>
     </unit>
     <unit id="toolbar.empty.changed">
@@ -275,24 +203,6 @@
       <segment>
         <source>{count, plural, one {# pending workspace change on this page} other {# pending workspace changes on this page}}</source>
         <target state="translated">{count, plural, one {# ausstehende Workspace-Änderung auf dieser Seite} other {# ausstehende Workspace-Änderungen auf dieser Seite}}</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.context.recordsPending">
-      <segment>
-        <source>{total, plural, one {# record} other {# records}}, {changed} pending</source>
-        <target state="translated">{total, plural, one {# Datensatz} other {# Datensätze}}, {changed} ausstehend</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.context.pending">
-      <segment>
-        <source>{count} pending</source>
-        <target state="translated">{count} ausstehend</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.context.none">
-      <segment>
-        <source>No page or news selected.</source>
-        <target state="translated">Keine Seite oder News ausgewählt.</target>
       </segment>
     </unit>
     <unit id="module.title">

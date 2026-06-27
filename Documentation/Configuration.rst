@@ -95,20 +95,6 @@ All keys live below ``options.webcon_easy_workspace``.
     this flag. In the backend module the button is registered in the
     TYPO3 doc-header button bar and handled by the module JavaScript.
 
-..  confval:: enableFilter
-
-    :type: bool
-    :Default: 1
-
-    Shows the "To publish" and "All on page" filter controls.
-
-..  confval:: defaultMode
-
-    :type: string
-    :Default: changed
-
-    Initial list mode. Allowed values are ``changed`` and ``all``.
-
 ..  confval:: enableThumbnails
 
     :type: bool

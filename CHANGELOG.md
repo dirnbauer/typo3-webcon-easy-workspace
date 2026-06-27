@@ -4,6 +4,13 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.3.7] — 2026-06-27
+
+### Changed
+
+- Removed the toolbar filter tabs ("To publish" / "All on page") and language scope controls ("Current" / "All languages"). The toolbar now shows publishable workspace changes directly.
+- Removed the related toolbar TSconfig options, labels, Fluid partials, CSS, and Lit state/persistence code.
+
 ## [1.3.2] — 2026-06-18
 
 ### Fixed

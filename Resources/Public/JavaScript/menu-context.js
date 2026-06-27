@@ -118,19 +118,6 @@ export function configBool(host, key, fallback = false) {
   return Boolean(value);
 }
 
-export function buildContextLabel(host, data) {
-  const changedCount = (data.items || []).filter((i) => i.isChanged).length;
-  const totalCount = (data.items || []).length;
-  // Header subtitle: just the counts. The page/news identifier
-  // moved to a small footnote at the bottom of the dropdown so it
-  // doesn't compete with the workspace name + preview button up
-  // top.
-  if (host.mode === 'all') {
-    return label(host, 'toolbar.context.recordsPending', { total: totalCount, changed: changedCount });
-  }
-  return label(host, 'toolbar.context.pending', { count: changedCount });
-}
-
 export function detectContext(host) {
   const configuredNewsUid = parseInt(String(host._config.newsUid || '0'), 10);
   if (configuredNewsUid > 0) {
@@ -265,52 +252,6 @@ export function matchNewsUid(url) {
     return parseInt(edit[1], 10) || 0;
   }
   return 0;
-}
-
-export function detectLanguageUid(host) {
-  const stateCandidates = [];
-  try {
-    const storage = window.top?.ModuleStateStorage || window.ModuleStateStorage;
-    if (storage && typeof storage.current === 'function') {
-      stateCandidates.push(storage.current('web'));
-      stateCandidates.push(storage.current('web_layout'));
-      stateCandidates.push(storage.current('web_layout_language'));
-    }
-  } catch {
-    // Cross-frame access errors -> URL parsing below.
-  }
-
-  for (const state of stateCandidates) {
-    const languageUid = extractLanguageUid(state);
-    if (languageUid !== null) return languageUid;
-  }
-
-  for (const params of collectSearchParams()) {
-    for (const key of ['language', 'sys_language_uid', 'L', 'siteLanguage', 'lang']) {
-      const value = params.get(key);
-      if (value === null || value === '') continue;
-      const languageUid = parseInt(value, 10);
-      if (Number.isInteger(languageUid) && languageUid >= 0) {
-        return languageUid;
-      }
-    }
-  }
-
-  return null;
-}
-
-export function extractLanguageUid(value) {
-  if (!value || typeof value !== 'object') return null;
-  const directKeys = ['language', 'languageUid', 'languageId', 'sys_language_uid', 'siteLanguage'];
-  for (const key of directKeys) {
-    const parsed = parseInt(String(value[key] ?? ''), 10);
-    if (Number.isInteger(parsed) && parsed >= 0) return parsed;
-  }
-  for (const nestedKey of ['settings', 'moduleData', 'data']) {
-    const nested = extractLanguageUid(value[nestedKey]);
-    if (nested !== null) return nested;
-  }
-  return null;
 }
 
 export function collectSearchParams() {

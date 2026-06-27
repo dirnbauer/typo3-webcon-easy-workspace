@@ -131,8 +131,6 @@ Toolbar
       - Active workspace title (``enableWorkspaceChip``)
     * - Header preview link button
       - Copies ``PreviewUriBuilder`` URL to OS clipboard (``enablePreviewLink``)
-    * - Filter tabs
-      - **To publish** vs **All on page** (``enableFilter``, ``defaultMode``)
     * - Publish bar
       - Select all / publish selected via ``publish`` AJAX
     * - Per-row checkbox

@@ -61,7 +61,6 @@ final readonly class EasyWorkspaceAjaxController
         $query = $request->getQueryParams();
         $newsUid = Value::int($query['newsUid'] ?? null);
         $pageUid = Value::int($query['pageUid'] ?? null);
-        $languageUid = array_key_exists('languageUid', $query) ? Value::int($query['languageUid']) : null;
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
@@ -71,17 +70,11 @@ final readonly class EasyWorkspaceAjaxController
             return $this->accessDeniedJson();
         }
 
-        $viewMode = $config['enableFilter']
-            ? PendingItemsMode::fromString(Value::string($query['mode'] ?? $config['defaultMode']))
-            : PendingItemsMode::Changed;
-
-        // Always collect all records; Fluid renders both filter panels.
         $collection = $this->pendingItemsService->toolbarCollectionForContext(
             $pageUid,
             $newsUid,
-            PendingItemsMode::All,
+            PendingItemsMode::Changed,
             $config,
-            $languageUid,
         );
         if ($collection['context'] === ToolbarContext::None || $collection['payload'] === null) {
             return new JsonResponse([
@@ -90,7 +83,6 @@ final readonly class EasyWorkspaceAjaxController
                 'itemGroups' => [],
                 'changedItemGroups' => [],
                 'workspaceId' => 0,
-                'mode' => $viewMode->value,
             ]);
         }
 
@@ -108,7 +100,6 @@ final readonly class EasyWorkspaceAjaxController
         $query = $request->getQueryParams();
         $newsUid = Value::int($query['newsUid'] ?? null);
         $pageUid = Value::int($query['pageUid'] ?? null);
-        $languageUid = array_key_exists('languageUid', $query) ? Value::int($query['languageUid']) : null;
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
@@ -119,7 +110,7 @@ final readonly class EasyWorkspaceAjaxController
         }
 
         return new JsonResponse(
-            $this->pendingItemsService->hasChangesForContext($pageUid, $newsUid, $config, $languageUid),
+            $this->pendingItemsService->hasChangesForContext($pageUid, $newsUid, $config),
         );
     }
 
@@ -128,7 +119,6 @@ final readonly class EasyWorkspaceAjaxController
         $query = $request->getQueryParams();
         $newsUid = Value::int($query['newsUid'] ?? null);
         $pageUid = Value::int($query['pageUid'] ?? null);
-        $languageUid = array_key_exists('languageUid', $query) ? Value::int($query['languageUid']) : null;
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
@@ -141,9 +131,8 @@ final readonly class EasyWorkspaceAjaxController
         $collection = $this->pendingItemsService->toolbarCollectionForContext(
             $pageUid,
             $newsUid,
-            PendingItemsMode::All,
+            PendingItemsMode::Changed,
             $config,
-            $languageUid,
         );
         $stamp = $this->workspaceChangeStampService->current();
         $payload = $collection['payload'];
@@ -162,7 +151,7 @@ final readonly class EasyWorkspaceAjaxController
             'workspaceTitle' => $payload !== null ? $payload->workspaceTitle : '',
             'pageUid' => $pageUid,
             'newsUid' => $newsUid,
-            'languageUid' => $languageUid,
+            'languageUid' => null,
             'changedCount' => $changedCount,
             'revision' => $stamp['revision'],
             'changedAt' => $stamp['changedAt'],

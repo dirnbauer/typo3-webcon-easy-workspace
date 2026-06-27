@@ -9,14 +9,10 @@
 
 <div class="wew-menu{compactClass}" data-wew-menu="">
     <f:render partial="Toolbar/Header" arguments="{config: config, payload: payload, pageUid: pageUid}" />
-    <f:render partial="Toolbar/Filter" arguments="{config: config, changedCount: changedCount, totalCount: totalCount, viewMode: viewMode}" />
     <f:render partial="Toolbar/Body" arguments="{
         config: config,
-        itemGroups: itemGroups,
         changedItemGroups: changedItemGroups,
         changedCount: changedCount,
-        totalCount: totalCount,
-        viewMode: viewMode,
         showSubelements: showSubelements
     }" />
     <f:render partial="Toolbar/Footer" arguments="{config: config, changedCount: changedCount}" />

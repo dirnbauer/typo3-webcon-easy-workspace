@@ -14,8 +14,6 @@ export const DEFAULT_CONFIG = Object.freeze({
   enabled: true,
   enableWorkspaceChip: true,
   enablePreviewLink: true,
-  enableFilter: true,
-  defaultMode: 'changed',
   enableThumbnails: true,
   enableTypeLabels: true,
   enableHiddenBadge: true,
@@ -35,13 +33,6 @@ export const DEFAULT_CONFIG = Object.freeze({
   hasVisualEditor: false,
   hasViewpage: false,
   labels: {
-    'toolbar.languageScope.aria': 'Language scope',
-    'toolbar.languageScope.label': 'Language',
-    'toolbar.languageScope.current': 'Current',
-    'toolbar.languageScope.current.title': 'Show records in the current page language',
-    'toolbar.languageScope.all': 'All languages',
-    'toolbar.languageScope.all.title': 'Show records from every page language',
-    'toolbar.languageScope.unavailable': 'No current page language detected',
     'error.noPublishableRecords': 'No publishable records in selection.',
   },
 });

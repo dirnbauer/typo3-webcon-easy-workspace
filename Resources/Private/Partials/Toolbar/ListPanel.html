@@ -1,11 +1,6 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
-<f:variable name="isActive" value="0" />
-<f:if condition="{viewMode} == {panelMode}">
-    <f:variable name="isActive" value="1" />
-</f:if>
-
 <f:variable name="hasItems" value="0" />
 <f:for each="{groups}" as="group">
     <f:if condition="{group.items -> f:count()} > 0">
@@ -15,13 +10,13 @@
 
 <f:if condition="{hasItems} == 0">
     <f:then>
-        <div class="wew-menu__empty{f:if(condition: '{isActive} == 0', then: ' hidden')}" data-wew-mode-panel="{panelMode}" aria-hidden="{f:if(condition: '{isActive} == 0', then: 'true', else: 'false')}">
+        <div class="wew-menu__empty" data-wew-list-empty="">
             <span class="wew-menu__empty-icon" aria-hidden="true">✓</span>
             <p><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:{emptyMessageKey}" /></p>
         </div>
     </f:then>
     <f:else>
-        <ul class="wew-list{f:if(condition: '{isActive} == 0', then: ' hidden')}" data-wew-mode-panel="{panelMode}" aria-hidden="{f:if(condition: '{isActive} == 0', then: 'true', else: 'false')}">
+        <ul class="wew-list" data-wew-list="">
             <f:for each="{groups}" as="group">
                 <f:if condition="{group.label}">
                     <li class="wew-list__colheader" role="presentation">

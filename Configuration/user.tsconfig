@@ -57,16 +57,6 @@ options.webcon_easy_workspace {
     # clipboard. (1)
     enablePreviewLink = 1
 
-    # -- List filter ---------------------------------------------
-
-    # Show the filter chip row ("To publish" / "All on page").
-    # When 0, the dropdown always shows changes only. (1)
-    enableFilter = 1
-
-    # Default filter mode when the dropdown opens.
-    # Allowed: changed | all. (changed)
-    defaultMode = changed
-
     # -- List rendering ------------------------------------------
 
     # Resolve and render the first-image thumbnail of each row

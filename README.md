@@ -94,8 +94,7 @@ The toolbar is hidden in the Live workspace. The module requires `workspaces: of
 | 22 | Related child disclosures | Toolbar/module toggles via user settings (publish still includes children) |
 | 23 | Table grouping | `itemGroups` / `changedItemGroups` in API and module |
 | 24 | Multi-select table state | TYPO3 styleguide selected/info row styling in module |
-| 25 | Filter modes | **To publish** / **All on page** (`enableFilter`, `defaultMode`) |
-| 26 | Workspace name chip | Header chip with workspace title (`enableWorkspaceChip`) |
+| 25 | Workspace name chip | Header chip with workspace title (`enableWorkspaceChip`) |
 
 ### Actions per row / batch
 
