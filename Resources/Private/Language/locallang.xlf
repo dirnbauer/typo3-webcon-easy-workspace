@@ -1215,14 +1215,26 @@
     </unit>
     <unit id="record.pageRecord">
       <segment>
-        <source>Page record</source>
-        <target state="translated">Page record</target>
+        <source>Page properties</source>
+        <target state="translated">Page properties</target>
       </segment>
     </unit>
     <unit id="record.newsRecord">
       <segment>
-        <source>News record</source>
-        <target state="translated">News record</target>
+        <source>News article</source>
+        <target state="translated">News article</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.primaryIntent.page">
+      <segment>
+        <source>The content elements below belong to this page and publish together with it.</source>
+        <target state="translated">The content elements below belong to this page and publish together with it.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.primaryIntent.news">
+      <segment>
+        <source>The content elements below belong to this article and publish together with it.</source>
+        <target state="translated">The content elements below belong to this article and publish together with it.</target>
       </segment>
     </unit>
     <unit id="state.live">

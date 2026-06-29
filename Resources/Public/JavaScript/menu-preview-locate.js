@@ -32,6 +32,10 @@ const CONFIRM_FLASH_STYLE = {
   scrollMarginBottom: '48px',
 };
 const CONFIRM_FLASH_DURATION = 1600;
+const LOCATE_TOP_RESERVE = 96;
+const LOCATE_MIN_TOP_RESERVE = 48;
+const LOCATE_VIEWPORT_RESERVE_RATIO = 0.5;
+const LOCATE_HORIZONTAL_MARGIN = 24;
 
 export function isPreviewGate(doc) {
   if (!doc) return false;
@@ -190,7 +194,54 @@ export function restoreVeToolbar(restore) {
   }
 }
 
-export function highlightInIframe(host, item, { announce = false } = {}) {
+function scrollTargetIntoPreview(el, { behavior = 'smooth' } = {}) {
+  const doc = el.ownerDocument;
+  const win = doc.defaultView;
+  if (!win) {
+    el.scrollIntoView();
+    return;
+  }
+
+  const rect = el.getBoundingClientRect();
+  const viewportHeight = win.innerHeight || doc.documentElement.clientHeight || 0;
+  if (!viewportHeight) {
+    el.scrollIntoView({ behavior, block: 'start', inline: 'nearest' });
+    return;
+  }
+
+  const scrollY = win.scrollY ?? doc.documentElement.scrollTop ?? 0;
+  const scrollX = win.scrollX ?? doc.documentElement.scrollLeft ?? 0;
+  const maxScrollY = Math.max(0, Math.max(
+    doc.documentElement.scrollHeight || 0,
+    doc.body?.scrollHeight || 0,
+  ) - viewportHeight);
+  const topReserve = Math.min(
+    LOCATE_TOP_RESERVE,
+    Math.max(LOCATE_MIN_TOP_RESERVE, Math.floor(viewportHeight * LOCATE_VIEWPORT_RESERVE_RATIO)),
+  );
+  const targetTop = Math.max(0, Math.min(maxScrollY, scrollY + rect.top - topReserve));
+
+  const viewportWidth = win.innerWidth || doc.documentElement.clientWidth || 0;
+  const maxScrollX = Math.max(0, Math.max(
+    doc.documentElement.scrollWidth || 0,
+    doc.body?.scrollWidth || 0,
+  ) - viewportWidth);
+  let targetLeft = scrollX;
+  if (viewportWidth > 0 && rect.left < LOCATE_HORIZONTAL_MARGIN) {
+    targetLeft = scrollX + rect.left - LOCATE_HORIZONTAL_MARGIN;
+  } else if (viewportWidth > 0 && rect.right > viewportWidth - LOCATE_HORIZONTAL_MARGIN) {
+    targetLeft = scrollX + rect.right - viewportWidth + LOCATE_HORIZONTAL_MARGIN;
+  }
+  targetLeft = Math.max(0, Math.min(maxScrollX, targetLeft));
+
+  try {
+    win.scrollTo({ top: targetTop, left: targetLeft, behavior });
+  } catch {
+    win.scrollTo(targetLeft, targetTop);
+  }
+}
+
+export function highlightInIframe(host, item, { announce = false, behavior = 'smooth' } = {}) {
   clearIframeHighlight(host);
   const target = locateTarget(item);
   const liveUid = target.liveUid;
@@ -231,11 +282,7 @@ export function highlightInIframe(host, item, { announce = false } = {}) {
   }
   const { el, isVeWrapper } = located;
 
-  try {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-  } catch {
-    el.scrollIntoView();
-  }
+  scrollTargetIntoPreview(el, { behavior });
 
   if (isVeWrapper) {
     host._iframeHighlight = { el, isVeWrapper: true, veRestore: revealVeToolbar(el) };
@@ -336,11 +383,7 @@ function refocusAfterReload(iframe, item, prior) {
   const settle = (attempt) => {
     const located = locateInDoc(doc, item);
     if (located) {
-      try {
-        located.el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      } catch {
-        located.el.scrollIntoView();
-      }
+      scrollTargetIntoPreview(located.el);
       flashConfirmation(located.el, located.isVeWrapper, win);
       return;
     }
@@ -389,7 +432,7 @@ export function isKnownPreviewWindow(host, source) {
 export function previewDiscard(host, item) {
   const located = locateInAnyIframe(host, item);
   if (!located) return;
-  highlightInIframe(host, item, { announce: false });
+  highlightInIframe(host, item, { announce: false, behavior: 'auto' });
   try {
     const doc = located.doc;
     const existing = doc.querySelector('.wew-discard-tag');
@@ -438,7 +481,17 @@ export function previewDiscard(host, item) {
     const left = viewportWidth > 0
       ? Math.max(scrollX + 8, Math.min(rect.left + scrollX, scrollX + viewportWidth - tagWidth - 8))
       : rect.left + scrollX;
-    tag.style.top = `${rect.top + scrollY - tagHeight - 6}px`;
+    const viewportHeight = doc.defaultView?.innerHeight || doc.documentElement.clientHeight || 0;
+    let top = rect.top + scrollY - tagHeight - 6;
+    if (rect.top - tagHeight - 6 < 8) {
+      top = rect.bottom + scrollY + 6;
+    }
+    if (viewportHeight > 0) {
+      const minTop = scrollY + 8;
+      const maxTop = scrollY + viewportHeight - tagHeight - 8;
+      top = Math.max(minTop, Math.min(top, maxTop));
+    }
+    tag.style.top = `${top}px`;
     tag.style.left = `${left}px`;
   } catch {
     /* DOM access guarded — cross-origin iframes throw silently. */

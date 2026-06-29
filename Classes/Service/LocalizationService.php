@@ -52,6 +52,8 @@ final readonly class LocalizationService
         'context.news',
         'record.pageRecord',
         'record.newsRecord',
+        'toolbar.primaryIntent.page',
+        'toolbar.primaryIntent.news',
         'state.live',
         'state.new',
         'state.delete',

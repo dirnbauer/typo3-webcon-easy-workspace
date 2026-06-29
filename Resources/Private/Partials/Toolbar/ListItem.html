@@ -75,6 +75,18 @@
                 </span>
             </f:if>
 
+            <f:if condition="{item.isPrimary} && ({item.table} == 'pages' || {item.table} == 'tx_news_domain_model_news')">
+                <span class="wew-list__intent">
+                    <span class="wew-list__intent-icon" aria-hidden="true"></span>
+                    <span class="wew-list__intent-text">
+                        <f:if condition="{item.table} == 'pages'">
+                            <f:then><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.primaryIntent.page" /></f:then>
+                            <f:else><f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.primaryIntent.news" /></f:else>
+                        </f:if>
+                    </span>
+                </span>
+            </f:if>
+
             <f:if condition="{item.isChanged}">
                 <span class="wew-list__change-actions">
                     <f:if condition="{item.historyUrl}">

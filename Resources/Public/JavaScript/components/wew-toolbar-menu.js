@@ -542,6 +542,13 @@ export class WebconEasyWorkspaceMenu extends LitElement {
               </span>
             ` : ''}
 
+            ${item.isPrimary && (item.table === 'pages' || item.table === 'tx_news_domain_model_news') ? html`
+              <span class="wew-list__intent">
+                <span class="wew-list__intent-icon" aria-hidden="true"></span>
+                <span class="wew-list__intent-text">${this._label(item.table === 'pages' ? 'toolbar.primaryIntent.page' : 'toolbar.primaryIntent.news')}</span>
+              </span>
+            ` : ''}
+
             ${item.isChanged ? html`
               <span class="wew-list__change-actions">
                 ${item.historyUrl ? html`

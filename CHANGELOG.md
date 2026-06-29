@@ -4,6 +4,18 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+## [1.3.9] — 2026-06-29
+
+### Fixed
+
+- Kept preview discard tags inside the visible iframe viewport when the target content element is near the top edge.
+- Preserved preview context when locating or discarding content elements, avoiding toolbar overlap and unnecessary smooth scrolling.
+
+### Changed
+
+- Clarified primary page and news records in the toolbar as page properties and news articles.
+- Added a short primary-record intent hint and adjusted the toolbar hierarchy styling so child content elements read as belonging to the page or article.
+
 ## [1.3.8] — 2026-06-27
 
 ### Changed
