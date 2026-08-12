@@ -330,7 +330,7 @@ export async function writeToOsClipboard(text) {
     try {
       await navigator.clipboard.writeText(text);
       return;
-    } catch (error) {
+    } catch {
       // Fall through to the textarea copy path.
     }
   }

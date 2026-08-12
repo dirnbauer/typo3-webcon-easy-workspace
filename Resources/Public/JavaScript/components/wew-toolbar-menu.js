@@ -24,7 +24,6 @@ import {
   registerBackendSaveSignalListeners,
   clearBackendSaveSignalListeners,
   onDeclineMessage,
-  broadcastDeclineState,
 } from '../menu-backend-save-sync.js';
 import { openEditModal, openDiffModal } from '../menu-modals.js';
 import {

@@ -338,7 +338,6 @@ export function reloadPreviewIframes(onReloaded = null) {
     try {
       iframe.contentWindow.location.reload();
     } catch {
-      // eslint-disable-next-line no-self-assign
       iframe.src = iframe.src;
     }
     reloaded++;

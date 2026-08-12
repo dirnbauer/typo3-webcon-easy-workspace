@@ -310,7 +310,7 @@ function openBlankPreviewWindow() {
       previewWindow.document.title = label('preview.open.opening');
     }
     return previewWindow;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -329,10 +329,10 @@ function openPreviewUrl(url, previewWindow = null) {
       return;
     }
     opener.location.href = url;
-  } catch (error) {
+  } catch {
     try {
       (window.top || window).location.href = url;
-    } catch (fallbackError) {
+    } catch {
       window.location.href = url;
     }
   }
