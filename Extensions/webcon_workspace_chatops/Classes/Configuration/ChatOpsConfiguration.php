@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webconsulting\WebconWorkspaceChatops\Configuration;
 
 use Webconsulting\WebconWorkspaceChatops\Enum\ChatProvider;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class ChatOpsConfiguration
 {
@@ -13,9 +14,10 @@ final readonly class ChatOpsConfiguration
      */
     private function raw(): array
     {
-        $raw = $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['webcon_workspace_chatops'] ?? [];
+        $typo3Configuration = Value::stringKeyArray($GLOBALS['TYPO3_CONF_VARS'] ?? null);
+        $extensions = Value::stringKeyArray($typo3Configuration['EXTENSIONS'] ?? null);
 
-        return is_array($raw) ? $raw : [];
+        return Value::stringKeyArray($extensions['webcon_workspace_chatops'] ?? null);
     }
 
     public function isEnabled(): bool
@@ -107,7 +109,7 @@ final readonly class ChatOpsConfiguration
         $raw = $this->raw();
         $value = $raw[$key] ?? $default;
 
-        return is_scalar($value) ? trim((string)$value) : $default;
+        return is_scalar($value) ? trim(Value::string($value)) : $default;
     }
 
     private function int(string $key, int $default = 0): int

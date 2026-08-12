@@ -20,7 +20,7 @@ final readonly class LocalizationService
     {
         $label = $this->languageService()->sL(self::FILE . $key);
 
-        return is_string($label) && $label !== '' ? $label : $key;
+        return $label !== '' ? $label : $key;
     }
 
     private function languageService(): LanguageService

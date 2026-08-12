@@ -47,11 +47,12 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Webconsulting\\WebconEasyWorkspace\\Tests\\": "Tests/"
+            "Webconsulting\\WebconEasyWorkspace\\Tests\\": "Tests/",
+            "Webconsulting\\WebconWorkspaceChatops\\": "Extensions/webcon_workspace_chatops/Classes/"
         }
     },
     "scripts": {
-        "lint": "find Classes Configuration Tests -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "lint": "find Classes Configuration Tests Extensions/webcon_workspace_chatops ext_localconf.php -name '*.php' -print0 | xargs -0 -n1 php -l",
         "phpstan": "phpstan analyse --configuration=Build/phpstan/phpstan.neon --memory-limit=1G",
         "test:unit": "phpunit -c Build/phpunit/UnitTests.xml",
         "test:functional": "phpunit -c Build/phpunit/FunctionalTests.xml",

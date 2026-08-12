@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconWorkspaceChatops\Dto;
 
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
+
 final readonly class WorkspaceRecordSelection
 {
     public function __construct(
@@ -16,8 +18,8 @@ final readonly class WorkspaceRecordSelection
      */
     public static function fromArray(array $data): ?self
     {
-        $table = trim((string)($data['table'] ?? ''));
-        $workspaceUid = (int)($data['workspaceUid'] ?? $data['workspace_uid'] ?? $data['uid'] ?? 0);
+        $table = trim(Value::string($data['table'] ?? null));
+        $workspaceUid = Value::int($data['workspaceUid'] ?? $data['workspace_uid'] ?? $data['uid'] ?? null);
         if ($table === '' || $workspaceUid <= 0) {
             return null;
         }

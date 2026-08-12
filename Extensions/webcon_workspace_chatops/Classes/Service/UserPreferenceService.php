@@ -7,6 +7,7 @@ namespace Webconsulting\WebconWorkspaceChatops\Service;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use Webconsulting\WebconWorkspaceChatops\Enum\ChatProvider;
 use Webconsulting\WebconWorkspaceChatops\Enum\WorkspaceEventType;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class UserPreferenceService
 {
@@ -68,12 +69,14 @@ final readonly class UserPreferenceService
 
     private function tsConfigBool(BackendUserAuthentication $backendUser, string $key, bool $default): bool
     {
-        $options = $backendUser->getTSConfig()['options.']['webcon_workspace_chatops.'] ?? [];
-        if (!is_array($options) || !array_key_exists($key, $options)) {
+        $tsConfig = Value::stringKeyArray($backendUser->getTSConfig());
+        $options = Value::stringKeyArray($tsConfig['options.'] ?? null);
+        $chatOpsOptions = Value::stringKeyArray($options['webcon_workspace_chatops.'] ?? null);
+        if (!array_key_exists($key, $chatOpsOptions)) {
             return $default;
         }
 
-        return $this->toBool($options[$key], $default);
+        return $this->toBool($chatOpsOptions[$key], $default);
     }
 
     private function toBool(mixed $value, bool $default): bool

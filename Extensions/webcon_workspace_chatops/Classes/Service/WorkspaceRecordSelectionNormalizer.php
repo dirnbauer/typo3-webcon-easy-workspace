@@ -7,6 +7,7 @@ namespace Webconsulting\WebconWorkspaceChatops\Service;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconWorkspaceChatops\Configuration\ChatOpsConfiguration;
 use Webconsulting\WebconWorkspaceChatops\Dto\WorkspaceRecordSelection;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class WorkspaceRecordSelectionNormalizer
 {
@@ -31,7 +32,7 @@ final readonly class WorkspaceRecordSelectionNormalizer
             if (!is_array($entry)) {
                 continue;
             }
-            $selection = WorkspaceRecordSelection::fromArray($entry);
+            $selection = WorkspaceRecordSelection::fromArray(Value::stringKeyArray($entry));
             if ($selection === null || !isset($allowedTables[$selection->table])) {
                 continue;
             }

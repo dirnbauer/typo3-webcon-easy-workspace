@@ -7,6 +7,7 @@ namespace Webconsulting\WebconWorkspaceChatops\Notification;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use Webconsulting\WebconWorkspaceChatops\Dto\WorkspaceEventPayload;
 use Webconsulting\WebconWorkspaceChatops\Enum\ChatProvider;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class WhatsAppNotifier implements ChannelNotifierInterface
 {
@@ -19,9 +20,9 @@ final readonly class WhatsAppNotifier implements ChannelNotifierInterface
 
     public function send(WorkspaceEventPayload $payload, array $configuration, array $recipients = []): NotificationResult
     {
-        $apiBaseUrl = rtrim((string)($configuration['apiBaseUrl'] ?? ''), '/');
-        $phoneNumberId = trim((string)($configuration['phoneNumberId'] ?? ''));
-        $accessToken = trim((string)($configuration['accessToken'] ?? ''));
+        $apiBaseUrl = rtrim(Value::string($configuration['apiBaseUrl'] ?? null), '/');
+        $phoneNumberId = trim(Value::string($configuration['phoneNumberId'] ?? null));
+        $accessToken = trim(Value::string($configuration['accessToken'] ?? null));
         $defaultRecipients = $this->stringList($configuration['defaultRecipients'] ?? []);
         $recipients = array_values(array_unique(array_merge($defaultRecipients, $recipients)));
         if ($apiBaseUrl === '' || $phoneNumberId === '' || $accessToken === '') {
@@ -53,7 +54,7 @@ final readonly class WhatsAppNotifier implements ChannelNotifierInterface
         WorkspaceEventPayload $payload,
         array $configuration,
     ): NotificationResult {
-        $templateName = trim((string)($configuration['templateName'] ?? ''));
+        $templateName = trim(Value::string($configuration['templateName'] ?? null));
         $body = $templateName !== ''
             ? [
                 'messaging_product' => 'whatsapp',
@@ -61,7 +62,7 @@ final readonly class WhatsAppNotifier implements ChannelNotifierInterface
                 'type' => 'template',
                 'template' => [
                     'name' => $templateName,
-                    'language' => ['code' => (string)($configuration['templateLanguage'] ?? 'en_US')],
+                    'language' => ['code' => Value::string($configuration['templateLanguage'] ?? 'en_US')],
                 ],
             ]
             : [
@@ -96,13 +97,8 @@ final readonly class WhatsAppNotifier implements ChannelNotifierInterface
      */
     private function stringList(mixed $value): array
     {
-        if (is_string($value)) {
-            $value = explode(',', $value);
-        }
-        if (!is_array($value)) {
-            return [];
-        }
+        $strings = Value::stringList(is_string($value) ? explode(',', $value) : $value);
 
-        return array_values(array_filter(array_map(static fn(mixed $item): string => trim((string)$item), $value)));
+        return array_values(array_filter(array_map(trim(...), $strings)));
     }
 }

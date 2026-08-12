@@ -8,6 +8,7 @@ use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconWorkspaceChatops\Configuration\ChatOpsConfiguration;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class WorkspaceChangeListingService
 {
@@ -36,7 +37,7 @@ final readonly class WorkspaceChangeListingService
 
         usort(
             $records,
-            static fn(array $left, array $right): int => ((int)($right['tstamp'] ?? 0)) <=> ((int)($left['tstamp'] ?? 0)),
+            static fn(array $left, array $right): int => Value::int($right['tstamp'] ?? null) <=> Value::int($left['tstamp'] ?? null),
         );
 
         return array_slice($records, 0, $limit);
@@ -99,14 +100,14 @@ final readonly class WorkspaceChangeListingService
         foreach ($rows as $row) {
             $records[] = [
                 'table' => $table,
-                'workspaceUid' => (int)($row['uid'] ?? 0),
-                'liveUid' => (int)($row['t3ver_oid'] ?? 0) ?: (int)($row['uid'] ?? 0),
-                'pid' => (int)($row['pid'] ?? 0),
-                'workspaceId' => (int)($row['t3ver_wsid'] ?? 0),
-                'stage' => (int)($row['t3ver_stage'] ?? 0),
-                'state' => (int)($row['t3ver_state'] ?? 0),
+                'workspaceUid' => Value::int($row['uid'] ?? null),
+                'liveUid' => Value::int($row['t3ver_oid'] ?? null) ?: Value::int($row['uid'] ?? null),
+                'pid' => Value::int($row['pid'] ?? null),
+                'workspaceId' => Value::int($row['t3ver_wsid'] ?? null),
+                'stage' => Value::int($row['t3ver_stage'] ?? null),
+                'state' => Value::int($row['t3ver_state'] ?? null),
                 'title' => $this->recordTitle($table, $row),
-                'tstamp' => (int)($row['tstamp'] ?? 0),
+                'tstamp' => Value::int($row['tstamp'] ?? null),
             ];
         }
 
@@ -129,8 +130,8 @@ final readonly class WorkspaceChangeListingService
             default => '',
         };
 
-        $candidate = trim((string)$candidate);
+        $candidate = trim(Value::string($candidate));
 
-        return $candidate !== '' ? $candidate : $table . ':' . (int)($row['uid'] ?? 0);
+        return $candidate !== '' ? $candidate : $table . ':' . Value::int($row['uid'] ?? null);
     }
 }

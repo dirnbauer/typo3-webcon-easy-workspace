@@ -9,6 +9,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webconsulting\WebconWorkspaceChatops\Enum\ChatProvider;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class BackendUserImpersonator
 {
@@ -64,7 +65,7 @@ final readonly class BackendUserImpersonator
 
         foreach ($rows as $row) {
             $settings = $this->decodeUserSettings($row['user_settings'] ?? null);
-            if (trim((string)($settings[$settingKey] ?? '')) === $externalId) {
+            if (trim(Value::string($settings[$settingKey] ?? null)) === $externalId) {
                 return $this->fromUserRow($row, $workspaceId);
             }
         }
@@ -83,8 +84,8 @@ final readonly class BackendUserImpersonator
         $backendUser->backendSetUC();
         if ($workspaceId > 0) {
             $backendUser->setTemporaryWorkspace($workspaceId);
-        } elseif ((int)($row['workspace_id'] ?? 0) > 0) {
-            $backendUser->setTemporaryWorkspace((int)$row['workspace_id']);
+        } elseif (Value::int($row['workspace_id'] ?? null) > 0) {
+            $backendUser->setTemporaryWorkspace(Value::int($row['workspace_id']));
         }
 
         return $backendUser;
@@ -96,13 +97,13 @@ final readonly class BackendUserImpersonator
     private function decodeUserSettings(mixed $value): array
     {
         if (is_array($value)) {
-            return $value;
+            return Value::stringKeyArray($value);
         }
         if (!is_string($value) || trim($value) === '') {
             return [];
         }
         $decoded = json_decode($value, true);
 
-        return is_array($decoded) ? $decoded : [];
+        return Value::stringKeyArray($decoded);
     }
 }

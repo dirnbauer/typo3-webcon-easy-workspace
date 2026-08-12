@@ -21,6 +21,7 @@ use Webconsulting\WebconWorkspaceChatops\Service\UserPreferenceService;
 use Webconsulting\WebconWorkspaceChatops\Service\WorkspaceChangeListingService;
 use Webconsulting\WebconWorkspaceChatops\Service\WorkspaceRecordSelectionNormalizer;
 use Webconsulting\WebconWorkspaceChatops\Service\WorkspaceWorkflowService;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class ChatOpsApiController
 {
@@ -49,7 +50,7 @@ final readonly class ChatOpsApiController
         if ($body === null) {
             return $this->jsonError('api.error.invalidJson', 400);
         }
-        $action = strtolower(trim((string)($body['action'] ?? ($request->getMethod() === 'GET' ? 'ping' : ''))));
+        $action = strtolower(trim(Value::string($body['action'] ?? ($request->getMethod() === 'GET' ? 'ping' : ''))));
 
         return match ($action) {
             'ping' => new JsonResponse(['success' => true, 'message' => $this->localizationService->translate('api.status.ok')]),
@@ -66,7 +67,7 @@ final readonly class ChatOpsApiController
      */
     private function notify(array $body): JsonResponse
     {
-        $payload = $this->payloadFromBody($body, WorkspaceEventType::fromString((string)($body['type'] ?? 'generic')));
+        $payload = $this->payloadFromBody($body, WorkspaceEventType::fromString(Value::string($body['type'] ?? 'generic')));
         $results = $this->notificationDispatcher->dispatch($payload);
 
         return new JsonResponse([
@@ -80,9 +81,9 @@ final readonly class ChatOpsApiController
      */
     private function pending(array $body): JsonResponse
     {
-        $workspaceId = max(0, (int)($body['workspaceId'] ?? $this->configuration->defaultWorkspaceId()));
-        $pageUid = isset($body['pageUid']) ? (int)$body['pageUid'] : null;
-        $limit = max(1, min(500, (int)($body['limit'] ?? 100)));
+        $workspaceId = max(0, Value::int($body['workspaceId'] ?? $this->configuration->defaultWorkspaceId()));
+        $pageUid = isset($body['pageUid']) ? Value::int($body['pageUid']) : null;
+        $limit = max(1, min(500, Value::int($body['limit'] ?? 100)));
 
         return new JsonResponse([
             'success' => true,
@@ -97,33 +98,21 @@ final readonly class ChatOpsApiController
      */
     private function requestReview(array $body): JsonResponse
     {
-        $actor = $this->resolveActor($body);
-        if ($actor === null) {
-            return $this->jsonError('api.error.noActor', 403);
-        }
-        if (!$this->userPreferenceService->canApproveFromChat($actor) && !$this->apiAccessGuard->allowsUnsignedDevelopmentRequest()) {
-            return $this->jsonError('api.error.noApprovalPermission', 403);
-        }
-
-        $selections = $this->selectionNormalizer->normalize($body['records'] ?? []);
-        if ($selections === []) {
-            return $this->jsonError('api.error.emptySelection', 400);
-        }
-
-        $comment = trim((string)($body['comment'] ?? 'ChatOps review requested'));
-        $result = $this->workspaceWorkflowService->requestApproval($selections, $actor, $comment);
-        if ($result['success']) {
-            $payload = $this->payloadFromBody($body, WorkspaceEventType::ReviewRequested, $selections, $actor);
-            $this->notificationDispatcher->dispatch($payload);
-        }
-
-        return new JsonResponse(['success' => $result['success'], 'changed' => $result['changed'], 'errors' => $result['errors']]);
+        return $this->runWorkflowAction($body, false);
     }
 
     /**
      * @param array<string, mixed> $body
      */
     private function approve(array $body): JsonResponse
+    {
+        return $this->runWorkflowAction($body, true);
+    }
+
+    /**
+     * @param array<string, mixed> $body
+     */
+    private function runWorkflowAction(array $body, bool $publish): JsonResponse
     {
         $actor = $this->resolveActor($body);
         if ($actor === null) {
@@ -138,10 +127,13 @@ final readonly class ChatOpsApiController
             return $this->jsonError('api.error.emptySelection', 400);
         }
 
-        $comment = trim((string)($body['comment'] ?? 'ChatOps approval'));
-        $result = $this->workspaceWorkflowService->approveAndPublish($selections, $actor, $comment);
+        $comment = trim(Value::string($body['comment'] ?? ($publish ? 'ChatOps approval' : 'ChatOps review requested')));
+        $result = $publish
+            ? $this->workspaceWorkflowService->approveAndPublish($selections, $actor, $comment)
+            : $this->workspaceWorkflowService->requestApproval($selections, $actor, $comment);
         if ($result['success']) {
-            $payload = $this->payloadFromBody($body, WorkspaceEventType::Published, $selections, $actor);
+            $eventType = $publish ? WorkspaceEventType::Published : WorkspaceEventType::ReviewRequested;
+            $payload = $this->payloadFromBody($body, $eventType, $selections, $actor);
             $this->notificationDispatcher->dispatch($payload);
         }
 
@@ -158,7 +150,7 @@ final readonly class ChatOpsApiController
         array $selections = [],
         ?BackendUserAuthentication $actor = null,
     ): WorkspaceEventPayload {
-        $title = trim((string)($body['title'] ?? ''));
+        $title = trim(Value::string($body['title'] ?? null));
         if ($title === '') {
             $title = $this->localizationService->translate($eventType->titleLabelKey());
         }
@@ -166,7 +158,7 @@ final readonly class ChatOpsApiController
             ? $selections
             : $this->selectionNormalizer->normalize($body['records'] ?? []);
 
-        $workspaceId = max(0, (int)($body['workspaceId'] ?? 0));
+        $workspaceId = max(0, Value::int($body['workspaceId'] ?? null));
         if ($workspaceId <= 0 && $actor !== null) {
             $workspaceId = max(0, $actor->workspace);
         }
@@ -177,14 +169,14 @@ final readonly class ChatOpsApiController
         return new WorkspaceEventPayload(
             type: $eventType,
             title: $title,
-            message: trim((string)($body['message'] ?? $body['comment'] ?? '')),
+            message: trim(Value::string($body['message'] ?? $body['comment'] ?? null)),
             workspaceId: $workspaceId,
-            pageUid: isset($body['pageUid']) ? (int)$body['pageUid'] : null,
-            backendUserId: $actor !== null ? (int)($actor->user['uid'] ?? 0) : null,
+            pageUid: isset($body['pageUid']) ? Value::int($body['pageUid']) : null,
+            backendUserId: $actor !== null ? Value::int($actor->user['uid'] ?? null) : null,
             records: $records,
-            metadata: is_array($body['metadata'] ?? null) ? $body['metadata'] : [],
-            previewUrl: trim((string)($body['previewUrl'] ?? '')) ?: null,
-            backendUrl: trim((string)($body['backendUrl'] ?? '')) ?: null,
+            metadata: Value::stringKeyArray($body['metadata'] ?? null),
+            previewUrl: trim(Value::string($body['previewUrl'] ?? null)) ?: null,
+            backendUrl: trim(Value::string($body['backendUrl'] ?? null)) ?: null,
         );
     }
 
@@ -193,15 +185,15 @@ final readonly class ChatOpsApiController
      */
     private function resolveActor(array $body): ?BackendUserAuthentication
     {
-        $workspaceId = max(0, (int)($body['workspaceId'] ?? $this->configuration->defaultWorkspaceId()));
-        $actor = is_array($body['actor'] ?? null) ? $body['actor'] : [];
-        $backendUserId = (int)($actor['backendUserId'] ?? $body['backendUserId'] ?? 0);
+        $workspaceId = max(0, Value::int($body['workspaceId'] ?? $this->configuration->defaultWorkspaceId()));
+        $actor = Value::stringKeyArray($body['actor'] ?? null);
+        $backendUserId = Value::int($actor['backendUserId'] ?? $body['backendUserId'] ?? null);
         if ($backendUserId > 0) {
             return $this->backendUserImpersonator->byUid($backendUserId, $workspaceId);
         }
 
-        $provider = ChatProvider::fromString((string)($actor['provider'] ?? $body['provider'] ?? ''));
-        $externalId = trim((string)($actor['externalId'] ?? $body['externalId'] ?? ''));
+        $provider = ChatProvider::fromString(Value::string($actor['provider'] ?? $body['provider'] ?? null));
+        $externalId = trim(Value::string($actor['externalId'] ?? $body['externalId'] ?? null));
         if ($provider !== null && $externalId !== '') {
             return $this->backendUserImpersonator->byExternalIdentity($provider, $externalId, $workspaceId);
         }
@@ -219,7 +211,7 @@ final readonly class ChatOpsApiController
     private function decodeBody(ServerRequestInterface $request): ?array
     {
         if ($request->getMethod() === 'GET') {
-            return $request->getQueryParams();
+            return Value::stringKeyArray($request->getQueryParams());
         }
 
         $body = trim((string)$request->getBody());
@@ -228,7 +220,7 @@ final readonly class ChatOpsApiController
         }
         $decoded = json_decode($body, true);
 
-        return is_array($decoded) ? $decoded : null;
+        return is_array($decoded) ? Value::stringKeyArray($decoded) : null;
     }
 
     private function jsonError(string $labelKey, int $statusCode): JsonResponse

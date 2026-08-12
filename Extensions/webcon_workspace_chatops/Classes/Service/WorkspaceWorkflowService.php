@@ -16,6 +16,7 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webconsulting\WebconWorkspaceChatops\Configuration\ChatOpsConfiguration;
 use Webconsulting\WebconWorkspaceChatops\Dto\WorkspaceRecordSelection;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class WorkspaceWorkflowService
 {
@@ -84,7 +85,7 @@ final readonly class WorkspaceWorkflowService
         return [
             'success' => $dataHandler->errorLog === [],
             'changed' => $count,
-            'errors' => array_values(array_map('strval', $dataHandler->errorLog)),
+            'errors' => Value::stringList($dataHandler->errorLog),
         ];
     }
 
@@ -123,7 +124,7 @@ final readonly class WorkspaceWorkflowService
         return [
             'success' => $dataHandler->errorLog === [],
             'changed' => $count,
-            'errors' => array_values(array_map('strval', $dataHandler->errorLog)),
+            'errors' => Value::stringList($dataHandler->errorLog),
         ];
     }
 
@@ -141,7 +142,7 @@ final readonly class WorkspaceWorkflowService
             $grouped[$selection->table][$selection->workspaceUid] = true;
         }
 
-        return array_map(static fn(array $uidSet): array => array_map('intval', array_keys($uidSet)), $grouped);
+        return array_map(static fn(array $uidSet): array => array_map(Value::int(...), array_keys($uidSet)), $grouped);
     }
 
     /**
@@ -182,14 +183,14 @@ final readonly class WorkspaceWorkflowService
 
         $map = [];
         foreach ($rows as $row) {
-            if ($deletedField !== null && (int)($row[$deletedField] ?? 0) !== 0) {
+            if ($deletedField !== null && Value::int($row[$deletedField] ?? null) !== 0) {
                 continue;
             }
-            $workspaceUid = (int)($row['uid'] ?? 0);
+            $workspaceUid = Value::int($row['uid'] ?? null);
             if ($workspaceUid <= 0) {
                 continue;
             }
-            $map[$workspaceUid] = (int)($row['t3ver_oid'] ?? 0) ?: $workspaceUid;
+            $map[$workspaceUid] = Value::int($row['t3ver_oid'] ?? null) ?: $workspaceUid;
         }
 
         return $map;
@@ -236,7 +237,7 @@ final readonly class WorkspaceWorkflowService
         if ($backendUser->workspace > 0) {
             return $backendUser->workspace;
         }
-        $userWorkspace = (int)($backendUser->user['workspace_id'] ?? 0);
+        $userWorkspace = Value::int($backendUser->user['workspace_id'] ?? null);
         if ($userWorkspace > 0) {
             return $userWorkspace;
         }

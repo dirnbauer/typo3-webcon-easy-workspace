@@ -8,6 +8,7 @@ use TYPO3\CMS\Core\Http\RequestFactory;
 use Webconsulting\WebconWorkspaceChatops\Dto\WorkspaceEventPayload;
 use Webconsulting\WebconWorkspaceChatops\Enum\ChatProvider;
 use Webconsulting\WebconWorkspaceChatops\Service\LocalizationService;
+use Webconsulting\WebconWorkspaceChatops\Utility\Value;
 
 final readonly class TeamsNotifier implements ChannelNotifierInterface
 {
@@ -23,12 +24,12 @@ final readonly class TeamsNotifier implements ChannelNotifierInterface
 
     public function send(WorkspaceEventPayload $payload, array $configuration, array $recipients = []): NotificationResult
     {
-        $webhookUrl = trim((string)($configuration['webhookUrl'] ?? ''));
+        $webhookUrl = trim(Value::string($configuration['webhookUrl'] ?? null));
         if ($webhookUrl === '') {
             return new NotificationResult($this->provider(), false, 'Teams webhook URL is not configured.');
         }
 
-        $body = strtolower((string)($configuration['payloadMode'] ?? 'adaptiveCard')) === 'text'
+        $body = strtolower(Value::string($configuration['payloadMode'] ?? 'adaptiveCard')) === 'text'
             ? ['text' => $payload->plainTextSummary()]
             : $this->adaptiveCardPayload($payload, $recipients);
 

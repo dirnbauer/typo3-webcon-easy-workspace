@@ -48,7 +48,7 @@ done
 cd "${ROOT_DIR}"
 
 run_lint() {
-  find Classes Configuration Tests -name '*.php' -print0 | xargs -0 -n1 -P4 "${PHP_BIN}" -l >/dev/null
+  find Classes Configuration Tests Extensions/webcon_workspace_chatops ext_localconf.php -name '*.php' -print0 | xargs -0 -n1 -P4 "${PHP_BIN}" -l >/dev/null
   echo "PHP lint OK"
 }
 
