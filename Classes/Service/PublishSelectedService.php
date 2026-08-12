@@ -203,14 +203,15 @@ final readonly class PublishSelectedService
 
         $dataHandler = $this->processCmdMapInWorkspace($cmd, $target['workspaceId'], $backendUser);
         $stillExists = $this->workspaceRowStillExists($table, $target['workspaceUid'], $target['workspaceId']);
-        if ($stillExists && $dataHandler->errorLog === []) {
-            $dataHandler->errorLog[] = $this->localizationService->translate('error.discardNotApplied');
+        $errors = Value::stringList($dataHandler->errorLog);
+        if ($stillExists && $errors === []) {
+            $errors[] = $this->localizationService->translate('error.discardNotApplied');
         }
 
         return [
             'success' => !$stillExists,
             'discarded' => $stillExists ? 0 : 1,
-            'errors' => $stillExists ? Value::stringList($dataHandler->errorLog) : [],
+            'errors' => $stillExists ? $errors : [],
         ];
     }
 
