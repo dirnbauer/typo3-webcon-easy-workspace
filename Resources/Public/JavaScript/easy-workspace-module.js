@@ -21,8 +21,8 @@ import Notification from '@typo3/backend/notification.js';
 import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPositions } from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import '@typo3/backend/multi-record-selection.js';
-import { discardMessageKey } from './menu-context.js';
-import { wireHistoryTabs, wireRollbackButtons } from './menu-modals.js';
+import { discardMessageKey } from '@webconsulting/webcon-easy-workspace/menu-context.js';
+import { wireHistoryTabs, wireRollbackButtons } from '@webconsulting/webcon-easy-workspace/menu-modals.js';
 
 const root = document.querySelector('[data-wew-module]');
 const LABELS = parseLabelMap(root);

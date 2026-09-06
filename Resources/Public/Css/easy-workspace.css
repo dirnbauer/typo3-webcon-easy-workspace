@@ -15,7 +15,6 @@
     display: none;
 }
 
-webcon-easy-workspace-menu,
 webcon-easy-workspace-menu-v2 {
     display: block;
     width: min(380px, calc(100vw - 24px));
@@ -29,14 +28,8 @@ webcon-easy-workspace-menu-v2 {
     color: var(--typo3-component-color, var(--bs-body-color));
 }
 
-webcon-easy-workspace-menu.wew-menu-host--compact-toolbar,
 webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     width: min(340px, calc(100vw - 24px));
-}
-
-.wew-menu__latest,
-.wew-changelog {
-    display: none !important;
 }
 
 .wew-module-header {
@@ -50,21 +43,19 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
 .wew-module-header__teaser {
     max-width: 72ch;
     margin: 0;
-    color: var(--typo3-text-muted-color, var(--bs-secondary-color));
+    color: var(--typo3-text-color-secondary);
     font-size: 1rem;
 }
 
 /* Bootstrap dropdown clamps width to its parent — force the dropdown
    menu to grow to fit our element, but cap at the same width so it
    stays right-anchored within the viewport. */
-.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu),
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2) {
     width: auto;
     max-width: min(380px, calc(100vw - 24px));
     min-width: 300px;
     overflow-x: hidden;
 }
-.toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu.wew-menu-host--compact-toolbar),
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar) {
     max-width: min(340px, calc(100vw - 24px));
     min-width: 280px;
@@ -144,16 +135,6 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     background: var(--typo3-badge-primary-bg);
     border: 1px solid var(--typo3-badge-primary-border-color);
 }
-.wew-menu__subtitle {
-    margin: .15rem 0 0;
-    font-size: 11px;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-/* (legacy .wew-menu__copy / .wew-menu__copy-label rules removed —
-   the Preview link button now lives in the footer as .wew-menu__preview) */
 
 /* ---- Status pills (MODIFIED, NEW, MOVED, ...) ----
    Built on TYPO3 v14's `--typo3-badge-{name}-*` design tokens
@@ -243,66 +224,6 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     background: var(--wew-state-pill-bg);
     color: var(--wew-state-pill-color);
     border-color: var(--wew-state-pill-border);
-}
-
-/* ---- Selection bar (master checkbox) ---- */
-.wew-menu__selectbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    padding: .35rem .85rem .35rem 1rem;
-    background: var(--typo3-component-secondary-bg, rgba(0, 0, 0, .025));
-    border-bottom: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-    font-size: 11.5px;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-}
-.wew-menu__selectbar-label {
-    display: inline-flex;
-    align-items: center;
-    gap: .5rem;
-    margin: 0;
-    cursor: pointer;
-    user-select: none;
-    transition: color .12s ease;
-}
-.wew-menu__selectbar-label:hover {
-    color: var(--typo3-component-color, var(--bs-body-color));
-}
-.wew-menu__selectbar-check {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--typo3-link-color, var(--bs-primary));
-    cursor: pointer;
-    appearance: auto;
-    -webkit-appearance: auto;
-    /* macOS / Safari render the native checkbox focus ring as
-       rounded "( )" brackets flanking the control — they're not a
-       CSS outline, they're the platform focus style. Suppress
-       them and provide our own flat ring instead. */
-    outline: none;
-}
-.wew-menu__selectbar-text {
-    font-weight: 500;
-    color: var(--typo3-component-color, var(--bs-body-color));
-}
-.wew-menu__selectbar-count {
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
-    padding: .05rem .4rem;
-    border-radius: 999px;
-    background: var(--typo3-component-bg, var(--bs-body-bg));
-    border: 1px solid var(--typo3-component-border-color, var(--bs-border-color));
-}
-/* Focus indicator: box-shadow ring instead of `outline`, because
-   on macOS Chrome the OS draws its own rounded-bracket focus ring
-   over any CSS outline applied to a native checkbox. box-shadow
-   sits on the box layout — the platform doesn't replace it. */
-.wew-menu__selectbar-check:focus-visible {
-    box-shadow: 0 0 0 2px var(--typo3-state-primary-bg, var(--bs-primary));
-    border-radius: 2px;
 }
 
 /* ---- States ---- */
@@ -897,12 +818,6 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color, #6c757d));
 }
 .wew-list__row--unchanged .wew-list__label { cursor: default; }
-.wew-list__check-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-}
 .wew-list__check {
     margin: 0;
     flex-shrink: 0;
@@ -915,7 +830,6 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     appearance: auto;
     -webkit-appearance: auto;
 }
-.wew-list__check-spacer { display: inline-block; width: 16px; height: 16px; }
 
 /* Visual selection tint — when a row's checkbox is checked, give the
    whole row a primary-color wash so the editor instantly sees what's
@@ -1029,24 +943,11 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     font-size: 12px;
     -webkit-line-clamp: 1;
 }
-.wew-list__meta .badge {
-    flex-shrink: 0;
-}
 .wew-list__sep {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     opacity: .6;
     flex-shrink: 0;
 }
-.wew-list__meta .badge {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    padding: .1rem .35rem;
-    border-radius: 3px;
-    line-height: 1.3;
-}
-.wew-list__hidden-badge { letter-spacing: .03em; }
 .wew-list__table {
     color: var(--typo3-text-color-secondary, var(--bs-secondary-color));
     overflow: hidden;
@@ -1167,20 +1068,6 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     cursor: progress;
 }
 
-/* Transient post-copy state — the JS flips this on for 2 s after a
-   successful clipboard write so the editor has unambiguous visual
-   confirmation that "Copy" did its job. Uses TYPO3's success-state
-   tokens so the green works in both light and dark themes. */
-.wew-menu__preview--copied {
-    background: var(--typo3-state-success-bg);
-    color: var(--typo3-state-success-color);
-    border-color: var(--typo3-state-success-border-color);
-}
-.wew-menu__preview--copied:hover {
-    background: var(--typo3-state-success-hover-bg, var(--typo3-state-success-bg));
-    color: var(--typo3-state-success-color);
-    border-color: var(--typo3-state-success-hover-border-color, var(--typo3-state-success-border-color));
-}
 .wew-menu__preview svg {
     flex-shrink: 0;
 }
@@ -1478,16 +1365,12 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
 /* ---- Mobile / narrow viewport ---- */
 
 @media (max-width: 600px) {
-    webcon-easy-workspace-menu:not([variant="module"]) {
-        width: calc(100vw - 16px);
-    }
     .wew-menu__head {
         gap: .55rem;
         padding: .55rem .65rem;
     }
     .wew-menu__icon { width: 28px; height: 28px; }
     .wew-menu__title { font-size: 13px; }
-    .wew-menu__subtitle { font-size: 10.5px; }
 
     .wew-list__label {
         gap: .5rem;
@@ -1496,7 +1379,6 @@ webcon-easy-workspace-menu-v2.wew-menu-host--compact-toolbar {
     .wew-list__thumb { width: 46px; height: 34px; }
     .wew-list__title-text { font-size: 12.5px; }
     .wew-list__meta { font-size: 10px; }
-    .wew-list__meta .badge { padding: .05rem .3rem; }
 
     /* Footer: stack selection and action onto separate rows below
        600 px. Publish at the bottom-right (thumb zone on touch).

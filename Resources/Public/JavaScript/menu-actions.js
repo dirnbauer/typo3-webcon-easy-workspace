@@ -1,20 +1,21 @@
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
 
-import { ENDPOINTS } from './menu-constants.js';
+import { ENDPOINTS } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import {
   detectContext,
   label,
-} from './menu-context.js';
-import { broadcastDeclineState } from './menu-backend-save-sync.js';
+} from '@webconsulting/webcon-easy-workspace/menu-context.js';
+import { changedItemCount } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
+import { broadcastDeclineState } from '@webconsulting/webcon-easy-workspace/menu-backend-save-sync.js';
 import {
   key,
   publishRecordsForItem,
   resetSelection,
   syncSelectionWithItems,
-} from './menu-selection.js';
+} from '@webconsulting/webcon-easy-workspace/menu-selection.js';
 
-export { key, publishRecordsForItem, discardRecordsForItem } from './menu-selection.js';
+export { key, publishRecordsForItem, discardRecordsForItem } from '@webconsulting/webcon-easy-workspace/menu-selection.js';
 
 function notifyView(host) {
   host.requestUpdate?.();
@@ -70,7 +71,6 @@ export async function refresh(host, options = {}) {
   if (!ENDPOINTS.items) {
     host.state = 'error';
     host.items = [];
-    host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = 0;
     host.badgeCount = 0;
@@ -89,7 +89,6 @@ export async function refresh(host, options = {}) {
   if (!context.hasContext) {
     host.state = 'no-context';
     host.items = [];
-    host.itemGroups = [];
     host.changedItemGroups = [];
     host.workspaceId = configuredWorkspaceId(host);
     host.badgeCount = 0;
@@ -111,7 +110,6 @@ export async function refresh(host, options = {}) {
     }
     host.context = data.context;
     host.items = Array.isArray(data.items) ? data.items : [];
-    host.itemGroups = Array.isArray(data.itemGroups) ? data.itemGroups : [];
     host.changedItemGroups = Array.isArray(data.changedItemGroups) ? data.changedItemGroups : [];
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
@@ -120,7 +118,7 @@ export async function refresh(host, options = {}) {
       selectionContextKey(context.pageUid, context.newsUid, host.workspaceId),
     );
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
-    host.badgeCount = changedItemCount(host);
+    host.badgeCount = changedItemCount(host.items);
     notifyView(host);
     updateToolbarBadge(host);
     syncToolbarVisibility(host);
@@ -131,7 +129,6 @@ export async function refresh(host, options = {}) {
     }
     console.error('[easy-workspace] items request failed', error);
     host.state = 'error';
-    host.itemGroups = [];
     host.changedItemGroups = [];
     host.badgeCount = 0;
     resetSelection(host);
@@ -171,7 +168,6 @@ export async function refreshBadge(host) {
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : host.workspaceTitle;
     host.badgeCount = Math.max(0, parseInt(String(data.changedCount ?? '0'), 10) || 0);
-    host.workspaceChangeRevision = Math.max(0, parseInt(String(data.revision ?? '0'), 10) || 0);
     updateToolbarBadge(host);
     syncToolbarVisibility(host);
   } catch (error) {
@@ -179,15 +175,11 @@ export async function refreshBadge(host) {
   }
 }
 
-export function changedItemCount(host) {
-  return Array.isArray(host.items) ? host.items.filter((i) => i.isChanged).length : 0;
-}
-
 export function updateToolbarBadge(host) {
   const badge = toolbarBadgeElement(host);
   if (!badge) return;
   const count = host.workspaceId > 0
-    ? Math.max(0, parseInt(String(host.badgeCount ?? changedItemCount(host)), 10) || 0)
+    ? Math.max(0, parseInt(String(host.badgeCount ?? changedItemCount(host.items)), 10) || 0)
     : 0;
   badge.textContent = count > 0 ? String(count) : '';
   badge.hidden = count <= 0;
@@ -298,7 +290,6 @@ export async function copyPreviewLink(host, pageUid) {
   if (!ENDPOINTS.previewLink || pageUid <= 0) {
     return;
   }
-  host.copyingPreview = true;
   try {
     const response = await new AjaxRequest(ENDPOINTS.previewLink)
       .withQueryArguments({ pageUid })
@@ -310,18 +301,8 @@ export async function copyPreviewLink(host, pageUid) {
     }
     await writeToOsClipboard(data.url);
     Notification.success(label(host, 'preview.link.copied'), data.url, 4);
-    host.previewJustCopied = true;
-    if (host._previewCopiedResetTimer) {
-      clearTimeout(host._previewCopiedResetTimer);
-    }
-    host._previewCopiedResetTimer = setTimeout(() => {
-      host.previewJustCopied = false;
-      host._previewCopiedResetTimer = null;
-    }, 2000);
   } catch (error) {
     Notification.error(label(host, 'preview.link.title'), error?.message || label(host, 'error.unexpected'));
-  } finally {
-    host.copyingPreview = false;
   }
 }
 

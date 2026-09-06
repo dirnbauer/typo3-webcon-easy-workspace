@@ -1,8 +1,5 @@
-import { label, configBool } from './menu-context.js';
-import { isLocatable, isEditable } from './menu-preview-locate.js';
-import { key } from './menu-selection.js';
-
-export { key };
+import { label, configBool } from '@webconsulting/webcon-easy-workspace/menu-context.js';
+import { key } from '@webconsulting/webcon-easy-workspace/menu-selection.js';
 
 export function changedItemCount(items) {
   return Array.isArray(items) ? items.filter((item) => item.isChanged).length : 0;
@@ -57,14 +54,6 @@ export function panelHasItems(groups) {
     return false;
   }
   return groups.some((group) => Array.isArray(group.items) && group.items.length > 0);
-}
-
-export function itemIsLocatable(host, item) {
-  return isLocatable(host, item);
-}
-
-export function itemIsEditable(item) {
-  return isEditable(item);
 }
 
 export function findItem(host, table, workspaceUid) {

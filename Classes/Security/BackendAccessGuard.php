@@ -37,9 +37,9 @@ final readonly class BackendAccessGuard
     }
 
     /**
-     * Workspace mutations happen in the context aspect's workspace if
-     * one is set, otherwise in the user's session workspace. 0 = live
-     * (no Easy Workspace operations allowed).
+     * Read scope follows the Context workspace, falling back to the user's
+     * workspace. Mutation services require the acting user's workspace.
+     * A user in Live has no Easy Workspace scope.
      */
     public function activeWorkspaceId(?ServerRequestInterface $request = null): int
     {

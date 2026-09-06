@@ -4,28 +4,29 @@ import Notification from '@typo3/backend/notification.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
-import { ENDPOINTS, DEFAULT_CONFIG } from '../menu-constants.js?wew=20260627-language-labels-v2';
+import { ENDPOINTS, DEFAULT_CONFIG } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import {
   readConfig,
   label,
   configBool,
-  detectContext,
   discardMessageKey,
   discardSuccessMessageKey,
-} from '../menu-context.js?wew=20260627-language-labels-v2';
+} from '@webconsulting/webcon-easy-workspace/menu-context.js';
 import {
+  isLocatable,
+  isEditable,
   highlightInIframe,
   clearIframeHighlight,
   previewDiscard,
   reloadPreviewAndRefocus,
-} from '../menu-preview-locate.js';
+} from '@webconsulting/webcon-easy-workspace/menu-preview-locate.js';
 import {
   onBackendSaveMessage,
   registerBackendSaveSignalListeners,
   clearBackendSaveSignalListeners,
   onDeclineMessage,
-} from '../menu-backend-save-sync.js';
-import { openEditModal, openDiffModal } from '../menu-modals.js';
+} from '@webconsulting/webcon-easy-workspace/menu-backend-save-sync.js';
+import { openEditModal, openDiffModal } from '@webconsulting/webcon-easy-workspace/menu-modals.js';
 import {
   discardRecordsForItem,
   refresh,
@@ -35,12 +36,12 @@ import {
   copyPreviewLink,
   configuredWorkspaceId,
   syncToolbarVisibility,
-} from '../menu-actions.js';
+} from '@webconsulting/webcon-easy-workspace/menu-actions.js';
 import {
   key,
   toggle,
   selectAll,
-} from '../menu-selection.js';
+} from '@webconsulting/webcon-easy-workspace/menu-selection.js';
 import {
   changedItemCount,
   footerState,
@@ -49,11 +50,9 @@ import {
   canRevert,
   editUrl,
   panelHasItems,
-  itemIsLocatable,
-  itemIsEditable,
   findItem,
   findItemByKey,
-} from '../menu-toolbar-helpers.js';
+} from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
 
 /**
  * Easy Workspace toolbar dropdown (Lit, light DOM).
@@ -65,7 +64,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
     state: { type: String },
     items: { type: Array },
-    itemGroups: { type: Array },
     changedItemGroups: { type: Array },
     workspaceId: { type: Number },
     workspaceTitle: { type: String },
@@ -73,7 +71,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     newsUid: { type: Number },
     badgeCount: { type: Number },
     publishing: { type: Boolean },
-    copyingPreview: { type: Boolean },
     selectionVersion: { type: Number },
   };
 
@@ -85,7 +82,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     super();
     this.state = 'loading';
     this.items = [];
-    this.itemGroups = [];
     this.changedItemGroups = [];
     this.selection = new Set();
     this.selectionVersion = 0;
@@ -95,19 +91,13 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.workspaceTitle = '';
     this.workspaceId = 0;
     this.publishing = false;
-    this.copyingPreview = false;
-    this.previewJustCopied = false;
     this._config = { ...DEFAULT_CONFIG };
-    this.variant = 'toolbar';
     this.pageUid = 0;
     this.newsUid = 0;
     this.badgeCount = 0;
-    this._backendFrameLoadRefreshTimer = null;
+    this._backendRefreshTimer = null;
     this._badgeVisibilityListener = null;
-    this._backendSaveMessageTargets = new Map();
-    this._backendSaveDocumentTargets = new Map();
-    this._backendFrameLoadTargets = new Map();
-    this._backendFrameUrls = new WeakMap();
+    this._backendSaveAbortController = null;
   }
 
   connectedCallback() {
@@ -208,9 +198,9 @@ export class WebconEasyWorkspaceMenu extends LitElement {
       window.removeEventListener('message', this._declineMessageListener);
       this._declineMessageListener = null;
     }
-    if (this._backendFrameLoadRefreshTimer) {
-      window.clearTimeout(this._backendFrameLoadRefreshTimer);
-      this._backendFrameLoadRefreshTimer = null;
+    if (this._backendRefreshTimer) {
+      window.clearTimeout(this._backendRefreshTimer);
+      this._backendRefreshTimer = null;
     }
     this._stopBadgeRefreshListeners();
     clearBackendSaveSignalListeners(this);
@@ -223,7 +213,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
 
   _readConfig() { return readConfig(this); }
   _label(key, variables = {}) { return label(this, key, variables); }
-  _detectContext() { return detectContext(this); }
   _configBool(key, fallback = false) { return configBool(this, key, fallback); }
 
   _highlightInIframe(item, options) { return highlightInIframe(this, item, options); }
@@ -490,8 +479,8 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   #renderListItem(item, showSubelements) {
     const rowId = `wew-${item.table}-${item.workspaceUid}`;
     const itemKey = this._key(item);
-    const locatable = itemIsLocatable(this, item);
-    const editable = itemIsEditable(item);
+    const locatable = isLocatable(this, item);
+    const editable = isEditable(item);
     const revert = canRevert(this, item);
     const url = editUrl(item);
     const checked = this.selection.has(itemKey);
@@ -723,13 +712,6 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   }
 }
 
-if (!customElements.get('webcon-easy-workspace-menu')) {
-  customElements.define('webcon-easy-workspace-menu', WebconEasyWorkspaceMenu);
-}
-
 if (!customElements.get('webcon-easy-workspace-menu-v2')) {
-  customElements.define(
-    'webcon-easy-workspace-menu-v2',
-    class WebconEasyWorkspaceMenuV2 extends WebconEasyWorkspaceMenu {},
-  );
+  customElements.define('webcon-easy-workspace-menu-v2', WebconEasyWorkspaceMenu);
 }

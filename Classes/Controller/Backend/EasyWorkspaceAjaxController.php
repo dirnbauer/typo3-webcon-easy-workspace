@@ -26,7 +26,6 @@ use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
-use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeStampService;
 use Webconsulting\WebconEasyWorkspace\Utility\PublishSelectionNormalizer;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
@@ -51,7 +50,6 @@ final readonly class EasyWorkspaceAjaxController
         private LocalizationService $localizationService,
         private WorkspaceTablePolicy $workspaceTablePolicy,
         private PublishSelectionNormalizer $publishSelectionNormalizer,
-        private WorkspaceChangeStampService $workspaceChangeStampService,
         private BackendAccessGuard $accessGuard,
         private LoggerInterface $logger,
     ) {}
@@ -134,7 +132,6 @@ final readonly class EasyWorkspaceAjaxController
             PendingItemsMode::Changed,
             $config,
         );
-        $stamp = $this->workspaceChangeStampService->current();
         $payload = $collection['payload'];
         $changedCount = 0;
         if ($payload !== null) {
@@ -153,9 +150,6 @@ final readonly class EasyWorkspaceAjaxController
             'newsUid' => $newsUid,
             'languageUid' => null,
             'changedCount' => $changedCount,
-            'revision' => $stamp['revision'],
-            'changedAt' => $stamp['changedAt'],
-            'changedWorkspaceId' => $stamp['workspaceId'],
         ]);
     }
 

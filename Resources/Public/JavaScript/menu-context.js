@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG } from './menu-constants.js?wew=20260627-language-labels-v2';
+import { DEFAULT_CONFIG } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 
 export function readConfig(element) {
   const raw = element.getAttribute('config') || '';

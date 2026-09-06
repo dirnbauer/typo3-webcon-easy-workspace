@@ -24,11 +24,11 @@
     },
     "require": {
         "php": "^8.2",
-        "typo3/cms-backend": "^14.3",
-        "typo3/cms-core": "^14.3",
-        "typo3/cms-fluid": "^14.3",
-        "typo3/cms-frontend": "^14.3",
-        "typo3/cms-workspaces": "^14.3"
+        "typo3/cms-backend": "^14.3.6",
+        "typo3/cms-core": "^14.3.6",
+        "typo3/cms-fluid": "^14.3.6",
+        "typo3/cms-frontend": "^14.3.6",
+        "typo3/cms-workspaces": "^14.3.6"
     },
     "require-dev": {
         "phpstan/extension-installer": "^1.4",
@@ -52,7 +52,7 @@
         }
     },
     "scripts": {
-        "lint": "find Classes Configuration Tests Extensions/webcon_workspace_chatops ext_localconf.php -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "lint": "find Classes Configuration Tests Extensions/webcon_workspace_chatops -name '*.php' -print0 | xargs -0 -n1 php -l",
         "phpstan": "phpstan analyse --configuration=Build/phpstan/phpstan.neon --memory-limit=1G",
         "test:unit": "phpunit -c Build/phpunit/UnitTests.xml",
         "test:functional": "phpunit -c Build/phpunit/FunctionalTests.xml",

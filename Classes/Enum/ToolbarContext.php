@@ -10,7 +10,7 @@ namespace Webconsulting\WebconEasyWorkspace\Enum;
  * some page, but the editor opened it via the news module).
  *
  * The backing values are part of the AJAX wire format ("context" in
- * the toolbar JSON consumed by easy-workspace-menu-element.js).
+ * the toolbar JSON consumed by components/wew-toolbar-menu.js).
  */
 enum ToolbarContext: string
 {

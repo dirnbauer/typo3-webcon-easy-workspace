@@ -1,5 +1,5 @@
-import { collectIframes, isKnownPreviewFrame, tableLabel } from './menu-context.js';
-import { isKnownPreviewWindow } from './menu-preview-locate.js';
+import { collectIframes, isKnownPreviewFrame, tableLabel } from '@webconsulting/webcon-easy-workspace/menu-context.js';
+import { isKnownPreviewWindow } from '@webconsulting/webcon-easy-workspace/menu-preview-locate.js';
 
 /**
  * Use backend save lifecycles as refresh signals only. The toolbar
@@ -48,13 +48,14 @@ export function registerBackendSaveSignalListeners(host) {
     return;
   }
 
-  resetBackendSaveMessageTargets(host);
-  addBackendSaveMessageTarget(host, window);
-  try { addBackendSaveMessageTarget(host, window.top); } catch { /* cross-origin */ }
-  try { addBackendSaveMessageTarget(host, window.parent); } catch { /* cross-origin */ }
-
-  addBackendSaveDocumentTarget(host, document);
-  try { addBackendSaveDocumentTarget(host, window.top?.document); } catch { /* cross-origin */ }
+  clearBackendSaveSignalListeners(host);
+  const controller = new AbortController();
+  host._backendSaveAbortController = controller;
+  const options = { signal: controller.signal };
+  const windows = new Set([window]);
+  const documents = new Set([document]);
+  try { windows.add(window.top); documents.add(window.top.document); } catch { /* cross-origin */ }
+  try { windows.add(window.parent); } catch { /* cross-origin */ }
 
   for (const iframe of collectIframes()) {
     // Listen on backend/module frames only. The preview iframe receives
@@ -63,134 +64,47 @@ export function registerBackendSaveSignalListeners(host) {
     if (isKnownPreviewFrame(iframe)) {
       continue;
     }
-    try { addBackendSaveMessageTarget(host, iframe.contentWindow); } catch { /* cross-origin */ }
-    addBackendFrameLoadTarget(host, iframe);
+    try { windows.add(iframe.contentWindow); } catch { /* cross-origin */ }
   }
-}
+  for (const targetWindow of windows) {
+    try {
+      targetWindow?.addEventListener('message', host._backendSaveMessageListener, options);
+    } catch { /* cross-origin frames stay opaque */ }
+  }
 
-export function addBackendSaveMessageTarget(host, targetWindow) {
-  if (!targetWindow || host._backendSaveMessageTargets.has(targetWindow)) {
-    return;
-  }
-  try {
-    targetWindow.addEventListener('message', host._backendSaveMessageListener);
-    host._backendSaveMessageTargets.set(targetWindow, () => {
-      try {
-        targetWindow.removeEventListener('message', host._backendSaveMessageListener);
-      } catch { /* target window may be gone */ }
-    });
-  } catch {
-    // Cross-origin frames deliberately stay opaque.
-  }
-}
-
-export function addBackendSaveDocumentTarget(host, targetDocument) {
-  if (!targetDocument || host._backendSaveDocumentTargets.has(targetDocument)) {
-    return;
-  }
-  const handler = () => scheduleBackendFrameLoadRefresh(host);
-  try {
-    // `typo3:datahandler:process` is TYPO3's canonical "content changed"
-    // signal: ajax-data-handler.js fires it after every DataHandler
-    // operation and BroadcastService re-dispatches the broadcast on the
-    // top document, so it reaches us across frames. This is what keeps the
-    // badge in sync after add/hide/delete/move without a timer.
-    const eventNames = ['typo3:datahandler:process', 'typo3:pagetree:refresh', 'typo3:workspace:changed', 'typo3:workspaces:refresh'];
-    for (const eventName of eventNames) {
-      targetDocument.addEventListener(eventName, handler);
-    }
-    host._backendSaveDocumentTargets.set(targetDocument, () => {
-      try {
-        for (const eventName of eventNames) {
-          targetDocument.removeEventListener(eventName, handler);
-        }
-      } catch { /* target document may be gone */ }
-    });
-  } catch {
-    // Cross-origin frames deliberately stay opaque.
-  }
-}
-
-export function addBackendFrameLoadTarget(host, iframe) {
-  if (!iframe || host._backendFrameLoadTargets.has(iframe) || !isBackendModuleFrame(iframe)) {
-    return;
-  }
-  host._backendFrameUrls.set(iframe, frameHref(iframe));
+  // Core emits this even when the module iframe was created after the toolbar.
+  // Rebind save messages to the current frames when navigation replaces them.
   const handler = () => {
-    const previousUrl = host._backendFrameUrls.get(iframe) || '';
-    const currentUrl = frameHref(iframe);
-    host._backendFrameUrls.set(iframe, currentUrl);
     registerBackendSaveSignalListeners(host);
-    if (shouldRefreshAfterFrameLoad(iframe, previousUrl, currentUrl)) {
-      scheduleBackendFrameLoadRefresh(host);
-    }
+    scheduleBackendRefresh(host);
   };
-  try {
-    iframe.addEventListener('load', handler);
-    host._backendFrameLoadTargets.set(iframe, () => iframe.removeEventListener('load', handler));
-  } catch {
-    // Detached frames can reject listener wiring.
+  const eventNames = [
+    'typo3-module-loaded',
+    'typo3:datahandler:process',
+    'typo3:pagetree:refresh',
+    'typo3:workspace:changed',
+    'typo3:workspaces:refresh',
+  ];
+  for (const targetDocument of documents) {
+    for (const eventName of eventNames) {
+      targetDocument.addEventListener(eventName, handler, options);
+    }
   }
 }
 
-export function isBackendModuleFrame(iframe) {
-  if (!iframe || isKnownPreviewFrame(iframe)) {
-    return false;
+function scheduleBackendRefresh(host) {
+  if (host._backendRefreshTimer) {
+    window.clearTimeout(host._backendRefreshTimer);
   }
-  const id = String(iframe.id || '').toLowerCase();
-  const name = String(iframe.name || '').toLowerCase();
-  const src = String(iframe.src || '');
-  return id === 'typo3-contentiframe'
-    || name === 'typo3-contentiframe'
-    || /\/record\/edit(?:\/contextual)?(?:[/?#]|$)/.test(src);
-}
-
-export function shouldRefreshAfterFrameLoad(iframe, previousUrl, currentUrl) {
-  const id = String(iframe.id || '').toLowerCase();
-  const name = String(iframe.name || '').toLowerCase();
-  if (id === 'typo3-contentiframe' || name === 'typo3-contentiframe') {
-    return true;
-  }
-  return /\/record\/edit(?:\/contextual)?(?:[/?#]|$)/.test(previousUrl)
-    || /\/record\/edit(?:\/contextual)?(?:[/?#]|$)/.test(currentUrl)
-    || /[?&](justSaved|closed)=1(?:&|$)/.test(currentUrl);
-}
-
-export function frameHref(iframe) {
-  try {
-    return iframe.contentWindow?.location?.href || iframe.src || '';
-  } catch {
-    return iframe.src || '';
-  }
-}
-
-export function scheduleBackendFrameLoadRefresh(host) {
-  if (host._backendFrameLoadRefreshTimer) {
-    window.clearTimeout(host._backendFrameLoadRefreshTimer);
-  }
-  host._backendFrameLoadRefreshTimer = window.setTimeout(() => {
-    host._backendFrameLoadRefreshTimer = null;
+  host._backendRefreshTimer = window.setTimeout(() => {
+    host._backendRefreshTimer = null;
     host._refreshAfterBackendSave();
   }, 120);
 }
 
-export function resetBackendSaveMessageTargets(host) {
-  for (const cleanup of host._backendSaveMessageTargets.values()) {
-    cleanup();
-  }
-  host._backendSaveMessageTargets.clear();
-}
-
 export function clearBackendSaveSignalListeners(host) {
-  resetBackendSaveMessageTargets(host);
-  for (const cleanup of host._backendSaveDocumentTargets.values()) {
-    cleanup();
-  }
-  host._backendSaveDocumentTargets.clear();
-  for (const cleanup of host._backendFrameLoadTargets.values()) {
-    cleanup();
-  }
-  host._backendFrameLoadTargets.clear();
+  host._backendSaveAbortController?.abort();
+  host._backendSaveAbortController = null;
 }
 
 /**

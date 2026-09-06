@@ -7,19 +7,11 @@ services:
   Webconsulting\WebconEasyWorkspace\:
     resource: '../Classes/*'
 
-  # The toolbar item must be public — the toolbar dispatcher resolves
-  # tagged services from the container at render time.
-  Webconsulting\WebconEasyWorkspace\Backend\ToolbarItem\EasyWorkspaceToolbarItem:
-    public: true
-
   # AJAX endpoints invoked from the toolbar dropdown glue script.
   Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceAjaxController:
     public: true
 
   Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceModuleController:
-    public: true
-
-  Webconsulting\WebconEasyWorkspace\Hook\WorkspaceChangeInvalidationHook:
     public: true
 
   # Retrieved from the container in functional tests.

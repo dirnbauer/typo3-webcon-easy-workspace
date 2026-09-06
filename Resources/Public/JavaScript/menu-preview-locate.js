@@ -1,14 +1,14 @@
 import Notification from '@typo3/backend/notification.js';
-import { IFRAME_HIGHLIGHT_STYLE } from './menu-constants.js';
+import { IFRAME_HIGHLIGHT_STYLE } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import {
   collectIframes,
   discardTagSubtitleKey,
   discardTagTitleKey,
   isKnownPreviewFrame,
   label,
-} from './menu-context.js';
+} from '@webconsulting/webcon-easy-workspace/menu-context.js';
 
-export { isKnownPreviewFrame } from './menu-context.js';
+export { isKnownPreviewFrame } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 
 // Visual Editor renders the per-element icon bar (drag handle + edit
 // actions) inside the element's shadow root and reveals it on CSS :hover.
