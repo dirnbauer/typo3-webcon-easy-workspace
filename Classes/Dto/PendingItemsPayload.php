@@ -30,16 +30,6 @@ final readonly class PendingItemsPayload
         public bool $hasNews = false,
     ) {}
 
-    public function hasAnyChanges(): bool
-    {
-        foreach ($this->items as $item) {
-            if ($item->isChanged) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * @return array{
      *     workspaceId: int,

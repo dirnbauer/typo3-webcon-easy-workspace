@@ -36,10 +36,13 @@ jobs:
           tools: composer:v2
 
       - name: Validate Composer metadata
-        run: composer validate --no-check-publish --no-check-lock
+        run: composer validate --strict --no-check-publish --no-check-lock
 
       - name: Install dependencies
         run: composer update --no-interaction --no-progress --prefer-dist
+
+      - name: Audit dependencies
+        run: composer audit
 
       - name: PHP lint
         run: composer lint

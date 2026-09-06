@@ -1,6 +1,31 @@
 ..  _testing:
 
+=========================
+Testing and health checks
+=========================
+
+Automated checks
 ================
+
+``composer test`` runs lint, PHPStan at maximum level, unit tests and
+functional DataHandler tests. The functional suite defaults to SQLite;
+``typo3DatabaseDriver`` and the other framework database variables can
+select MariaDB/MySQL instead. CI resolves dependencies separately on PHP
+8.2, 8.3, 8.4 and 8.5.
+
+Run one suite with ``composer test:unit`` or ``composer test:functional``.
+The old ``Build/Scripts/runTests.sh`` wrapper has been removed.
+
+Browser checks
+==============
+
+Use a disposable TYPO3 14.3.6+ instance with live and workspace versions of
+a page and content records. Check the toolbar and every Easy Workspace
+submodule, selection updates, diff/history, preview, publishing and discarding.
+Verify live content after mutations and inspect console/server logs.
+Optional Visual Editor and news integrations need their own representative
+records when installed.
+
 Health checks
 =============
 
@@ -33,7 +58,7 @@ Inline child publishing checks
 Seed fixture coverage
     Lists the deliberately broken states covered by
     ``webcon-easy-workspace:seed-diagnostics``. The optional
-    ``article_grid_items`` fixture is shown only when that demo table exists.
+    ``article_grid_items`` fixture reports whether that demo table is installed.
 
 Manual-only checks
     Lists real workspace risks that cannot be proven from database metadata,
@@ -48,8 +73,8 @@ disposable local data:
 
 ..  code-block:: bash
 
-    ddev typo3 webcon-easy-workspace:seed-diagnostics
-    ddev typo3 webcon-easy-workspace:seed-diagnostics --execute --page=664 --workspace=1
+    vendor/bin/typo3 webcon-easy-workspace:seed-diagnostics
+    vendor/bin/typo3 webcon-easy-workspace:seed-diagnostics --execute --page=1 --workspace=1
 
 After seeding, the workspace checks should move from green checks to grouped
 warnings/errors for the seeded failure classes. The diagnostics tables should

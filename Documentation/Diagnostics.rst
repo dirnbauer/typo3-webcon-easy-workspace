@@ -82,8 +82,8 @@ of broken workspace states:
 
 ..  code-block:: bash
 
-    ddev typo3 webcon-easy-workspace:seed-diagnostics
-    ddev typo3 webcon-easy-workspace:seed-diagnostics --execute --page=664 --workspace=1
+    vendor/bin/typo3 webcon-easy-workspace:seed-diagnostics
+    vendor/bin/typo3 webcon-easy-workspace:seed-diagnostics --execute --page=1 --workspace=1
 
 The first command is a dry run. The second writes test records with the marker
 ``[WEW diagnostics seed]``. Re-running with ``--execute`` removes old seed rows
@@ -99,24 +99,6 @@ After seeding:
 The seed command writes deliberately inconsistent rows directly to the
 database. Use it only on disposable local/demo data, never on production.
 
-The Content Blocks child-table publish bug
-==========================================
-
-A real failure that motivated the diagnostics module:
-
-* the toolbar showed two parent rows ready to publish,
-* the actual pending rows were child records from ``article_grid_items`` and
-  ``accordion_items``,
-* the client posted all child rows correctly,
-* the backend publish allow-list rejected those child tables,
-* the publish endpoint returned success with ``0`` published.
-
-The fix has three parts:
-
-* publish validation accepts workspace-aware hidden child tables that use
-  ``foreign_table_parent_uid``,
-* empty publish selections return an error instead of a success toast,
-* the toolbar refresh request is cache-busted after publish.
-
-The diagnostic scanner now has checks for related classes of hidden broken
-child records, especially child rows whose parent record is missing.
+Workspace-aware inline tables are included by the shared table policy.
+When publishing leaves child records pending, inspect their TCA parent
+relation and the scanner's missing-parent report before changing data.

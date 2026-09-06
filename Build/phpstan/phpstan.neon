@@ -6,7 +6,6 @@ parameters:
     - ../../Classes
     - ../../Configuration
     - ../../Tests
-    - ../../ext_localconf.php
     - ../../Extensions/webcon_workspace_chatops/Classes
     - ../../Extensions/webcon_workspace_chatops/Configuration
     - ../../Extensions/webcon_workspace_chatops/ext_localconf.php

@@ -26,9 +26,9 @@
     },
     "require": {
         "php": "^8.2",
-        "typo3/cms-backend": "^14.3",
-        "typo3/cms-core": "^14.3",
-        "typo3/cms-workspaces": "^14.3"
+        "typo3/cms-backend": "^14.3.6",
+        "typo3/cms-core": "^14.3.6",
+        "typo3/cms-workspaces": "^14.3.6"
     },
     "suggest": {
         "webconsulting/webcon-easy-workspace": "Provides the editor-facing pending item list this extension can notify about.",

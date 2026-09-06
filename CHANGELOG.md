@@ -4,6 +4,21 @@ All notable changes to Easy Workspace are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Discard resolves live record IDs only within the acting user's active workspace and rejects foreign-workspace drafts, including for administrators. Live mode cannot discard workspace changes.
+- DataHandler edits from command-line or ChatOps users no longer require an initialized browser session.
+- Internal JavaScript imports now use TYPO3's import map, so cache invalidation covers every toolbar module.
+- The toolbar badge follows Core's module-loaded event after backend publishing and navigation, replacing fragile iframe-load and URL tracking.
+- Restored readable module introductions in the dark backend theme, an accessible toolbar name with an empty queue, and removed duplicate module overview descriptions.
+
+### Changed
+
+- Raised the minimum TYPO3 version to 14.3.6 for both Easy Workspace and the optional ChatOps package.
+- Removed the unused Fluid toolbar renderer and templates, versioned JavaScript entry wrappers, session change-stamp hook, duplicate test runner, unused UI state and obsolete CSS.
+- Replaced outdated architecture and audit notes with current installation, configuration, contributor and upgrade documentation.
+- Added functional regressions for workspace isolation, live-ID discard, table permissions and edits without a browser session.
+
 ## [1.3.9] — 2026-06-29
 
 ### Fixed

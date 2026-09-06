@@ -1,9 +1,9 @@
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
 import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPositions } from '@typo3/backend/modal.js';
-import { ENDPOINTS } from './menu-constants.js';
-import { label } from './menu-context.js';
-import { reloadPreviewAndRefocus } from './menu-preview-locate.js';
+import { ENDPOINTS } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
+import { label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
+import { reloadPreviewAndRefocus } from '@webconsulting/webcon-easy-workspace/menu-preview-locate.js';
 
 export function openEditModal(host, item) {
   const url = item.contextualEditUrl || item.editUrl;

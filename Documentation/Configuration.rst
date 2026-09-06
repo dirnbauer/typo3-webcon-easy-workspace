@@ -4,7 +4,7 @@
 Configuration reference
 =======================
 
-Easy Workspace 1.1.0 ships ``Configuration/user.tsconfig``. TYPO3 14 loads
+Easy Workspace ships ``Configuration/user.tsconfig``. TYPO3 14 loads
 this file automatically for active extensions, so no manual import is needed.
 
 Override precedence is:
@@ -142,7 +142,8 @@ All keys live below ``options.webcon_easy_workspace``.
     news article on its detail view (Visual Editor / preview page or edit
     form). The toolbar then calls ``forNews`` instead of ``forPage``.
     Server-side collection never scans news off pages or folders. Set to
-    ``0`` to disable news handling entirely.
+    ``0`` to disable automatic toolbar news detection. Explicit PHP, module
+    or AJAX ``newsUid`` requests still address that article.
 
 ..  confval:: enableHoverHighlight
 
@@ -159,6 +160,22 @@ All keys live below ``options.webcon_easy_workspace``.
 
     Shows the per-row discard button. The discard endpoint returns
     ``403`` when this flag is disabled.
+
+..  confval:: approvalStageId
+
+    :type: int
+    :Default: 1
+
+    Custom workspace stage used by Request review in the backend module.
+    Set this to a stage that exists in the target workspace.
+
+..  confval:: publishStageId
+
+    :type: int
+    :Default: -10
+
+    Stage applied by Approve and publish before publishing. The default is
+    TYPO3's ready-to-publish stage. Core still checks the actor's permissions.
 
 ..  _configuration-example:
 

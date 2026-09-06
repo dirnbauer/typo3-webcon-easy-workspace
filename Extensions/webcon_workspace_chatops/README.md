@@ -22,15 +22,20 @@ permissions, history, notifications, and publish-stage checks.
 
 ## Installation
 
-Install as a path package or move this directory into its own repository:
+Requires PHP 8.2+ and TYPO3 14.3.6+. This optional package is not installed
+automatically with Easy Workspace and is not published on Packagist.
+Add this directory as a path repository in the host TYPO3 project (adjust
+the path to your checkout):
 
 ```bash
-composer require webconsulting/webcon-workspace-chatops
-bin/typo3 extension:setup
+composer config repositories.webcon-workspace-chatops path ../typo3-webcon-easy-workspace/Extensions/webcon_workspace_chatops
+composer require webconsulting/webcon-workspace-chatops:@dev
+vendor/bin/typo3 extension:setup
+vendor/bin/typo3 cache:flush
 ```
 
-For local development in this repository, add it as a Composer path
-repository in the TYPO3 project that should load it.
+Once installed, the API is enabled by default. Configure authentication
+before using the examples below; production requests require a bearer token.
 
 ## Required workspace setup
 

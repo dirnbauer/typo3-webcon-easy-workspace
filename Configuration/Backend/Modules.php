@@ -37,7 +37,6 @@ return [
         'labels' => [
             'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.pending',
             'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle',
-            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.pending.subtitle',
         ],
     ],
     'webcon_easy_workspace_records' => $moduleDefaults + [
@@ -47,7 +46,6 @@ return [
         'labels' => [
             'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.all',
             'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.subtitle',
-            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.all.subtitle',
         ],
     ],
     // Diagnostics expose schema-level scan details (orphaned rows,
@@ -59,7 +57,6 @@ return [
         'labels' => [
             'title' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.section.testsDiagnostics',
             'description' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testsDiagnostics.subtitle',
-            'shortDescription' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.testsDiagnostics.subtitle',
         ],
     ],
 ];

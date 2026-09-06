@@ -6,6 +6,9 @@ namespace Webconsulting\WebconEasyWorkspace\Tests\Functional\Service;
 
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Authentication\CommandLineUserAuthentication;
+use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -47,6 +50,16 @@ final class PublishSelectedServiceTest extends FunctionalTestCase
             ->where($queryBuilder->expr()->eq('uid', $uid))
             ->executeQuery()
             ->fetchAssociative();
+    }
+
+    #[Test]
+    public function discardRejectsAnUninstalledOptionalTable(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $result = $this->get(PublishSelectedService::class)->discard('tx_news_domain_model_news', 1, $backendUser);
+
+        self::assertFalse($result['success']);
+        self::assertSame(0, $result['discarded']);
     }
 
     #[Test]
@@ -162,6 +175,87 @@ final class PublishSelectedServiceTest extends FunctionalTestCase
         $liveRow = $this->fetchContentRow(1);
         self::assertIsArray($liveRow);
         self::assertSame('Live header', $liveRow['header']);
+    }
+
+    #[Test]
+    public function canEditWorkspaceContentWithoutABrowserSession(): void
+    {
+        $admin = $this->backendUserInWorkspace(1, 1);
+        $user = GeneralUtility::makeInstance(CommandLineUserAuthentication::class);
+        $user->user = $admin->user;
+        $user->fetchGroupData();
+        $user->setTemporaryWorkspace(1);
+        $GLOBALS['BE_USER'] = $user;
+
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start(['tt_content' => [1 => ['header' => 'CLI workspace edit']]], [], $user);
+        $dataHandler->process_datamap();
+
+        self::assertSame([], $dataHandler->errorLog);
+        $draft = $this->fetchContentRow(2);
+        self::assertIsArray($draft);
+        self::assertSame('CLI workspace edit', $draft['header']);
+        $live = $this->fetchContentRow(1);
+        self::assertIsArray($live);
+        self::assertSame('Live header', $live['header']);
+    }
+
+    #[Test]
+    public function discardRejectsForeignWorkspaceEvenForAdministrators(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $result = $this->get(PublishSelectedService::class)->discard('tt_content', 5, $backendUser);
+
+        self::assertFalse($result['success']);
+        self::assertSame(0, $result['discarded']);
+        self::assertIsArray($this->fetchContentRow(5));
+    }
+
+    #[Test]
+    public function discardFromLiveCannotRemoveWorkspaceChanges(): void
+    {
+        $backendUser = $this->setUpBackendUser(1);
+        $result = $this->get(PublishSelectedService::class)->discard('tt_content', 2, $backendUser);
+
+        self::assertFalse($result['success']);
+        self::assertSame(0, $result['discarded']);
+        self::assertIsArray($this->fetchContentRow(2));
+    }
+
+    #[Test]
+    public function discardAcceptsLiveUidInActiveWorkspace(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $result = $this->get(PublishSelectedService::class)->discard('tt_content', 1, $backendUser);
+
+        self::assertTrue($result['success'], implode(' / ', $result['errors']));
+        self::assertSame(1, $result['discarded']);
+        self::assertFalse($this->fetchContentRow(2));
+        $liveRow = $this->fetchContentRow(1);
+        self::assertIsArray($liveRow);
+        self::assertSame('Live header', $liveRow['header']);
+    }
+
+    #[Test]
+    public function discardOfLiveUidCannotFallBackToAnotherWorkspace(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $result = $this->get(PublishSelectedService::class)->discard('tt_content', 4, $backendUser);
+
+        self::assertTrue($result['success']);
+        self::assertSame(0, $result['discarded']);
+        self::assertIsArray($this->fetchContentRow(5));
+    }
+
+    #[Test]
+    public function discardDeniesMissingTableModifyPermission(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(2, 1);
+        $result = $this->get(PublishSelectedService::class)->discard('tt_content', 2, $backendUser);
+
+        self::assertFalse($result['success']);
+        self::assertSame(0, $result['discarded']);
+        self::assertIsArray($this->fetchContentRow(2));
     }
 
     #[Test]
