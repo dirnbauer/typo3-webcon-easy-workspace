@@ -1,15 +1,24 @@
+# Composer / TYPO3 build artefacts
 /vendor/
 /.Build/
-/Build/phpstan/.cache/
 /composer.lock
 /public/
 /var/
-/.idea/
-/.vscode/
-.DS_Store
+/typo3temp/
+/packages/
+/Build/phpstan/.cache/
 /.phpunit.result.cache
 /.phpstan.result.cache
+/.php-cs-fixer.cache
+
+# JavaScript
 node_modules/
+/coverage/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Local tooling state
 /.claude/settings.local.json
-/packages/
-/typo3temp/
