@@ -24,6 +24,11 @@ The personal switches apply to both entry points: the top-right toolbar
 dropdown and the Easy Workspace backend module below the TYPO3 Workspaces
 publish module.
 
+The toolbar badge has no options: it always counts the whole active
+workspace and refreshes on Core events, save messages, a browser
+``BroadcastChannel`` and a visible-tab poll (see :ref:`badge`). The
+dropdown content stays scoped to the current page or news article.
+
 The module and toolbar share the same service layer and configuration flags.
 The module is server-rendered with Fluid and TYPO3 submodule routes for the
 publish overview, page-record inventory and diagnostics.
@@ -84,14 +89,15 @@ All keys live below ``options.webcon_easy_workspace``.
     :type: bool
     :Default: 1
 
-    Shows the active workspace name next to the dropdown title.
+    Shows the active workspace name as a chip in the dropdown header.
 
 ..  confval:: enablePreviewLink
 
     :type: bool
     :Default: 1
 
-    Shows the preview-link button. The server endpoint also checks
+    Shows the Preview split button in the dropdown footer (open the
+    workspace preview or copy its link). The server endpoint also checks
     this flag. In the backend module the button is registered in the
     TYPO3 doc-header button bar and handled by the module JavaScript.
 
@@ -150,8 +156,8 @@ All keys live below ``options.webcon_easy_workspace``.
     :type: bool
     :Default: 1
 
-    Shows the locate icon for content elements and enables iframe
-    highlighting.
+    Shows the "show in preview" row action for content elements and
+    enables iframe highlighting.
 
 ..  confval:: enableRevert
 

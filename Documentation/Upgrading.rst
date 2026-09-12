@@ -8,6 +8,30 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.4
+================
+
+1.4.0 requires **PHP 8.4 or 8.5**. Update the constraint to ``^1.4``: the
+older tags ``v14.0.0``–``v14.0.2`` predate ``v1.3.9`` and never match a
+``^1.x`` constraint.
+
+**Breaking: CSS files renamed.** ``Resources/Public/Css/easy-workspace.css``
+was replaced by ``tokens.css``, ``toolbar-menu.css``, ``module.css`` and
+``diff.css``; the dropdown markup and its ``.wew-*`` class names changed
+with the redesign. Site stylesheets that referenced the old file or its
+selectors must be adapted; theming now works through the ``--wew-*`` tokens
+(see :ref:`toolbar-styling`).
+
+The toolbar badge counts the whole active workspace instead of the current
+page (:ref:`badge`). ``/badge`` and ``/has-changes`` return the new payload;
+integrations that read ``changedCount`` keep working, ``pageUid``/``newsUid``
+are no longer echoed. Publish and discard responses gained a ``badge`` key.
+
+JavaScript: ``menu-backend-save-sync.js`` became ``menu-decline-sync.js``,
+``menu-badge.js`` owns the badge, templates live in
+``Resources/Public/JavaScript/templates/``. Flush caches and reload open
+backend tabs after the update so the import map picks up the new modules.
+
 Updating an existing TYPO3 14.3 project
 ======================================
 

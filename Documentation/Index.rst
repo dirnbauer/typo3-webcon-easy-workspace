@@ -5,13 +5,15 @@ Easy Workspace
 ==============
 
 Easy Workspace adds a publishing toolbar and a backend module for TYPO3
-14.3.6+ on the 14.3 LTS line. It supports PHP 8.2–8.5. Composer metadata is
-the source of truth for requirements and extension version.
+14.3.6+ on the 14.3 LTS line. It requires PHP 8.4 or 8.5. Composer metadata
+is the source of truth for requirements and extension version.
 
 ..  toctree::
     :maxdepth: 2
     :titlesonly:
 
+    Toolbar
+    Badge
     Configuration
     Upgrading
     Diagnostics
@@ -28,7 +30,7 @@ Install from the GitHub VCS repository in a TYPO3 project:
 ..  code-block:: bash
 
     composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-    composer require webconsulting/webcon-easy-workspace:^1.3
+    composer require webconsulting/webcon-easy-workspace:^1.4
     vendor/bin/typo3 extension:setup
     vendor/bin/typo3 cache:flush
 
@@ -45,8 +47,9 @@ Architecture
 
 ``EasyWorkspaceToolbarItem`` renders the trigger and a Lit custom element.
 The component receives configuration and translated labels from PHP and
-fetches JSON from the items endpoint. It renders the dropdown in light DOM.
-The full backend module and diff/history dialogs use Fluid.
+fetches JSON from the items endpoint. It renders the dropdown in light DOM
+(see :ref:`toolbar`). The full backend module and diff/history dialogs use
+Fluid.
 
 Both entry points share ``PendingItemsService`` and its collection pipeline:
 
@@ -59,16 +62,20 @@ Both entry points share ``PendingItemsService`` and its collection pipeline:
                                                         ├→ item factory/resolvers
                                                         └→ aggregation
     Publish / review / discard → PublishSelectedService → Core DataHandler
+    Badge / has-changes ───────→ WorkspaceChangeCounter (COUNT + MAX per table)
 
 The toolbar loads ``components/wew-toolbar-menu.js`` directly. All extension
 JavaScript imports use the registered ``@webconsulting/webcon-easy-workspace/``
 prefix so TYPO3 versions their URLs. There are no numbered entrypoints,
 manual cache timestamps, or alternative Fluid dropdown renderer.
 
-Refresh follows Core DataHandler broadcasts, backend saves, the
-``typo3-module-loaded`` event and tab visibility. There is no polling or session-based
-change counter. Core's workspace dependency event still filters references
-whose source or target has actually been removed.
+The badge is a whole-workspace count served by ``WorkspaceChangeCounter``
+and owned on the client by ``BadgeSync`` (see :ref:`badge`): Core
+DataHandler broadcasts, save messages, a same-origin ``BroadcastChannel``,
+tab visibility and a visible-tab poll all feed one debounced request; the
+server ``stamp`` decides whether an open list re-fetches. Core's workspace
+dependency event still filters references whose source or target has
+actually been removed.
 
 ..  _record-scope:
 
@@ -129,10 +136,11 @@ The route names below use the ``webcon_easy_workspace_`` prefix.
       - JSON pending records, groups, context and workspace identity
     * - ``badge``
       - GET
-      - Current changed count and workspace/context identity
+      - Whole-workspace count: ``changedCount``, ``byTable``, ``byState``,
+        ``stamp`` and workspace identity (:ref:`badge-payload`)
     * - ``has_changes``
       - GET
-      - Whether the context has changes
+      - The badge payload plus ``hasChanges``
     * - ``diff``
       - GET
       - Fluid HTML containing field differences and history
@@ -141,10 +149,10 @@ The route names below use the ``webcon_easy_workspace_`` prefix.
       - Workspace preview URL
     * - ``publish``
       - POST
-      - Publish selected records
+      - Publish selected records; the response embeds the fresh ``badge``
     * - ``discard``
       - POST
-      - Discard a draft from the active workspace
+      - Discard a draft from the active workspace; embeds the fresh ``badge``
     * - ``history_rollback``
       - POST
       - Roll back a record or field history entry
@@ -168,6 +176,7 @@ Report vulnerabilities privately through `GitHub Security Advisories
 Quality checks
 ==============
 
-Run ``composer test`` and ``composer audit``. The PHP 8.2–8.5 CI matrix
-runs PHP lint, maximum-level PHPStan, unit tests and real DataHandler
-functional tests. See :ref:`testing` and :ref:`contributing` for scope.
+Run ``composer test``, ``composer audit`` and ``npm test``. CI runs PHP
+lint, the coding-guideline dry run, PHPStan level 8, unit tests and real
+DataHandler functional tests on MariaDB 10.11 for PHP 8.4 and 8.5, plus the
+vitest suite. See :ref:`testing` and :ref:`contributing` for scope.

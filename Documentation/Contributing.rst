@@ -15,7 +15,9 @@ Responsibilities
 * ``PendingItemsService`` dispatches page/news contexts.
 * The collector, scope objects, query service, factory and resolvers
   collect and present records; the aggregator handles deduplication.
-* ``WorkspaceTablePolicy`` determines eligible tables.
+* ``WorkspaceTablePolicy`` determines eligible tables and the badge tables.
+* ``WorkspaceChangeCounter`` is the only place that counts changes; the
+  client never derives the badge from a list.
 * ``PublishSelectedService`` validates and executes Core DataHandler actions.
 * Diagnostics remain read-only; seed data belongs in disposable databases.
 * The toolbar uses Lit; the backend module and diff dialog use Fluid.
@@ -23,8 +25,9 @@ Responsibilities
 Do not introduce a parallel renderer, numbered asset entrypoints, custom
 versioning, or additional service layers that only forward one call.
 Use the extension's import-map prefix for JavaScript dependencies so Core
-handles cache invalidation. Do not add request polling or session state
-when an existing Core event supplies the signal.
+handles cache invalidation. Every badge trigger goes through ``BadgeSync``;
+do not add a second timer or session state — extend the trigger list in
+``menu-constants.js`` when a Core event supplies the signal.
 
 Verification
 ============
@@ -35,8 +38,10 @@ Verification
     composer test
     composer audit
 
-PHPStan stays at maximum level. Do not hide new errors behind suppressions
-or a baseline. Reproduce behavioral defects with a regression test before
+PHPStan runs at level 8 (``phpVersion: 80400``) and the code follows the
+TYPO3 coding standards (``composer cgl``). Do not hide new errors behind
+suppressions or a baseline. JavaScript changes need a vitest case
+(``npm test``). Reproduce behavioral defects with a regression test before
 changing the implementation. Functional tests must exercise the real
 DataHandler, including foreign workspaces, permissions, Live mode, live-UID
 resolution, repeated discards and writes without browser sessions.

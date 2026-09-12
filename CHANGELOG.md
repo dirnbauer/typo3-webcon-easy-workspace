@@ -2,9 +2,39 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
-## [Unreleased]
+## [1.4.0] — 2026-09-12
 
 ### Fixed
+
+- The toolbar badge now always shows the right number. Its count comes from one place — `WorkspaceChangeCounter` runs a single `COUNT(*)`/`MAX(tstamp)` aggregate per counted table for the user's active workspace — instead of being written by both the list refresh and the badge request. Outside page/news contexts (dashboard, list, file and records modules, other tabs) the badge no longer drops to 0: it counts the whole workspace, like the Workspaces module.
+- Saves are picked up from every source: Core DataHandler broadcasts on the top frame, FormEngine save messages, Visual Editor saves (the preview script announces them on a `BroadcastChannel`), the backend module frame, other browser tabs, and — for CLI, MCP and other users' edits — a jittered 45 s poll while the tab is visible (paused when hidden, backing off to 5 min after three consecutive errors). Iframe enumeration at bind time is gone.
+- List and badge refreshes no longer race: a request-id guard drops stale responses, every trigger goes through one 120 ms debounce, and the server `stamp` decides whether an open dropdown re-fetches its list.
+- The toolbar item is hidden only when the server reports workspace `0`, not when the config attribute fails to parse.
+- `/badge` and `/has-changes` no longer materialise the pending-items collection just to count.
+
+### Added
+
+- `Classes/Service/WorkspaceChangeCounter` and the `WorkspaceChangeCount` DTO (`total`, `byTable`, `byState`, `stamp`); `/badge`, `/has-changes` and the `badge` block of publish/discard responses share the payload `{context, workspaceId, workspaceTitle, changedCount, byTable, byState, latestChangeAt, stamp}`.
+- Redesigned toolbar dropdown: workspace, stage and count chips ("N on this page · M elsewhere"), refresh button, page group header with icon and rootline path, rows with record icon, change-type pill, author and relative time, hover actions (edit, changes, discard, preview), sticky footer with select-all, `Publish N`, a Preview split button (open / copy link) and an "Open module" link. Empty, loading-skeleton and error states; `role="dialog"`, `role="list"`, roving tabindex (Arrow keys), Space selects, Enter edits, Escape closes; badge pulse on increment, row enter/exit transitions, `prefers-reduced-motion` honoured; dark mode through TYPO3 backend tokens.
+- Icon set in the TYPO3 v14 line-art style: `wew-toolbar`, `wew-module`, `wew-change-new|changed|deleted|moved`, `wew-publish`, `wew-discard`, `wew-diff`, `wew-preview`, plus a redrawn `Extension.svg`.
+- JavaScript unit tests with vitest (`npm test`), a `.php-cs-fixer.dist.php` with the TYPO3 ruleset, and a single CI workflow (lint, cgl, PHPStan level 8, unit, functional on MariaDB 10.11, vitest).
+- Manual pages `Documentation/Badge.rst` and `Documentation/Toolbar.rst`.
+
+### Changed
+
+- **Breaking: CSS files renamed.** `Resources/Public/Css/easy-workspace.css` was replaced by `tokens.css`, `toolbar-menu.css`, `module.css` and `diff.css`. Custom overrides that referenced the old file or its `.wew-list__*` / `.wew-menu__*` class names must be updated.
+- **Breaking: PHP 8.4 or newer is required** (`"php": "^8.4"`).
+- The JavaScript module `menu-backend-save-sync.js` was renamed to `menu-decline-sync.js`; the new `menu-badge.js` owns the badge. Lit templates live in `Resources/Public/JavaScript/templates/`.
+- PHPStan runs at level 8 with `phpVersion: 80400`; the CI matrix covers PHP 8.4 and 8.5.
+- The toolbar badge label reads "N pending workspace changes" (no longer "… on this page").
+
+### Notes
+
+- Git tags `v14.0.0`–`v14.0.2` predate `v1.3.9` and are invisible to a `^1.x` constraint; use `^1.4` to receive this release.
+
+### Also in this release (unreleased since 1.3.9)
+
+#### Fixed
 
 - Discard resolves live record IDs only within the acting user's active workspace and rejects foreign-workspace drafts, including for administrators. Live mode cannot discard workspace changes.
 - DataHandler edits from command-line or ChatOps users no longer require an initialized browser session.
@@ -12,7 +42,7 @@ All notable changes to Easy Workspace are documented in this file.
 - The toolbar badge follows Core's module-loaded event after backend publishing and navigation, replacing fragile iframe-load and URL tracking.
 - Restored readable module introductions in the dark backend theme, an accessible toolbar name with an empty queue, and removed duplicate module overview descriptions.
 
-### Changed
+#### Changed
 
 - Raised the minimum TYPO3 version to 14.3.6 for both Easy Workspace and the optional ChatOps package.
 - Removed the unused Fluid toolbar renderer and templates, versioned JavaScript entry wrappers, session change-stamp hook, duplicate test runner, unused UI state and obsolete CSS.

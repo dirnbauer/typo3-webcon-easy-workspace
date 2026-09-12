@@ -1,101 +1,77 @@
 # Easy Workspace
 
-Review and publish TYPO3 workspace changes from the backend toolbar or **Content → Easy Workspace**. Publishing, approval stages, discarding and history rollback use TYPO3 Core APIs.
+## What it is
+
+Easy Workspace adds a workspace publishing dropdown to the TYPO3 backend toolbar and a **Content → Easy Workspace** module. Editors see the pending changes of the page (or news article) they are working on, review diffs and history, and publish or discard selected records without leaving their context. Publishing, staging, discarding and rollback use TYPO3 Core APIs (DataHandler, RecordHistory).
+
+The toolbar badge counts every pending change of the active workspace — like the Workspaces module — and stays current after saves in any frame, other tabs, CLI or MCP edits. See [Documentation/Badge.rst](Documentation/Badge.rst) for how the count is computed and refreshed.
 
 ## Requirements
 
-- TYPO3 **14.3.6 or newer on the 14.3 LTS line**.
-- PHP **8.2–8.5**; CI tests each supported version.
-- Core Backend, Fluid, Frontend and Workspaces extensions (installed by Composer).
+- TYPO3 **14.3.6 or newer** on the 14.3 LTS line
+- PHP **8.4 or 8.5**
+- Core Backend, Fluid, Frontend and Workspaces extensions (installed by Composer)
 
-Optional integrations: `georgringer/news` for individual news articles and `friendsoftypo3/visual-editor` for locating content and discarding drafts in preview. The toolbar also works with Core Viewpage.
+Optional: `georgringer/news` for per-article publishing, `friendsoftypo3/visual-editor` for locating and discarding content elements in the preview.
 
-## Installation
+## Install
 
-The package is distributed through GitHub. Add the repository, then install it in your TYPO3 project:
+The package is distributed through GitHub tags only (not on Packagist):
 
 ```bash
 composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-composer require webconsulting/webcon-easy-workspace:^1.3
+composer require webconsulting/webcon-easy-workspace:^1.4
 vendor/bin/typo3 extension:setup
 vendor/bin/typo3 cache:flush
 ```
 
-For an existing installation, update the extension and the TYPO3 packages together. See the [upgrade notes](Documentation/Upgrading.rst), including the browser reload required after the JavaScript cleanup.
+Use `^1.4`: the tags `v14.0.0`–`v14.0.2` predate `v1.3.9` and do not match a `^1.x` constraint. Existing installations should read the [upgrade notes](Documentation/Upgrading.rst) — 1.4.0 renames the CSS files and requires PHP 8.4.
 
-## Usage
+## Configure
 
-1. Switch to a custom workspace and open a page or news article.
-2. Open **Workspace publish** in the toolbar, or **Content → Easy Workspace**.
-3. Review changes and their history. Select the records to publish.
-4. Publish directly from the toolbar, or request review / approve and publish from the module.
-
-The module has **Review queue**, **All records**, and an administrator-only **Checks and diagnostics** section. Configure `approvalStageId` to match the custom review stage in your workspace; `publishStageId` defaults to TYPO3's ready-to-publish stage (`-10`). Core permissions still determine which actions are allowed.
-
-The toolbar is hidden in Live. It shows pending changes across languages for the selected context, with no language selector. Changes consisting only of localization metadata are excluded from the queue. Related inline records and file references are included in publishing even when their visual details are hidden.
-
-Discard operates only in the active workspace. A preview control may supply a live record ID; it is resolved to a draft in that workspace. A repeated discard is harmless, and another workspace's draft is never selected as a fallback.
-
-## Features
-
-- Page content, workspace-aware inline children, file references and standalone file metadata.
-- Per-article news context from a preview URL or open news edit form.
-- Diff and history modals, record editing, preview links and content highlighting.
-- Event-driven toolbar refresh after edits, publishing, navigation and returning to the browser tab.
-- English and German labels; per-user visibility and detail preferences.
-- Read-only workspace diagnostics and a CLI command for seeding disposable diagnostic data.
-
-Physical FAL file overwrites are not versioned. Standalone file metadata is scoped to the workspace, not the current page. Slug-only news URLs need an open edit form or explicit `newsUid`. See the [manual](Documentation/Index.rst) for scope and API details.
-
-## Configuration
-
-TYPO3 loads `Configuration/user.tsconfig` automatically. Override `options.webcon_easy_workspace.*` in user/group TSconfig, or page TSconfig for requests carrying a page context:
+`Configuration/user.tsconfig` is loaded automatically. Override any key below `options.webcon_easy_workspace` in user, group or page TSconfig:
 
 ```typoscript
 options.webcon_easy_workspace {
     enablePreviewLink = 0
     enableRevert = 0
+    approvalStageId = 1
+    publishStageId = -10
 }
 ```
 
-The [configuration reference](Documentation/Configuration.rst) lists all options and personal settings.
+Editors get personal switches (use the toolbar, show related records) in **User Settings**. The [configuration reference](Documentation/Configuration.rst) lists every option; feature flags are enforced server-side.
 
-## Development
+## Use
+
+1. Switch to a custom workspace and open a page or news article.
+2. Open **Workspace publish** in the toolbar. The header shows the workspace, the stage and "N on this page · M elsewhere".
+3. Select rows (Space), open the editor (Enter), inspect changes and history, discard a draft, or locate the element in the preview.
+4. **Publish N** publishes the selection; **Preview** opens or copies a workspace preview link; **Open module** switches to the full review queue with request-review / approve-and-publish stages.
+
+The toolbar is hidden in Live. Related inline records and file references are published together with their parent even when their details are hidden. Discard only resolves drafts of the active workspace.
+
+## Develop
 
 ```bash
 composer install
-composer test
-composer audit
+composer test          # lint, cgl (dry run), PHPStan level 8, unit, functional (SQLite)
+npm ci && npm test     # vitest for the toolbar JavaScript
+composer cgl:fix       # apply the TYPO3 coding standards
 ```
 
-`composer test` runs PHP lint, PHPStan at maximum level, unit tests and functional tests using SQLite. Individual suites are `composer lint`, `composer phpstan`, `composer test:unit` and `composer test:functional`. PHP version selection belongs to the runtime or CI matrix; there is no separate shell test runner.
+The toolbar is a Lit element served through TYPO3's import map — there is no JavaScript build step. `vitest` aliases the import-map prefixes to the sources and to small mocks in `Tests/JavaScript/mocks`. Functional tests default to SQLite; CI runs them on MariaDB 10.11 with PHP 8.4 and 8.5. A disposable browser installation can be created with DDEV as described in [Documentation/Testing.rst](Documentation/Testing.rst).
 
-The local DDEV configuration uses PHP 8.4. Run the same commands with `ddev exec`, for example `ddev exec composer test`. The disposable browser installation lives in the ignored `.Build/Smoke/` directory.
-
-To create that browser installation in a fresh checkout:
-
-```bash
-mkdir -p .Build/Smoke
-cp Build/Smoke/composer.json .Build/Smoke/composer.json
-ddev start
-ddev exec -d /var/www/html/.Build/Smoke composer install
-ddev exec -d /var/www/html/.Build/Smoke vendor/bin/typo3 setup --create-site=https://webcon-easy-workspace.ddev.site
-```
-
-Use the DDEV database settings (`mysqli`, host/database/user/password `db`) and choose a local backend account during setup. Set `$GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '^webcon-easy-workspace\\.ddev\\.site$';` in `.Build/Smoke/config/system/additional.php`. The backend is at [webcon-easy-workspace.ddev.site/typo3/](https://webcon-easy-workspace.ddev.site/typo3/). Run host CLI commands with the same `ddev exec -d` prefix; the extension checkout itself is not a TYPO3 site.
-
-## Documentation
+## Docs
 
 - [Manual and architecture](Documentation/Index.rst)
-- [Configuration](Documentation/Configuration.rst)
-- [Upgrade notes](Documentation/Upgrading.rst)
-- [Diagnostics](Documentation/Diagnostics.rst)
-- [Testing and health checks](Documentation/Testing.rst)
-- [Contributing](Documentation/Contributing.rst)
+- [Toolbar dropdown](Documentation/Toolbar.rst) · [Badge and refresh](Documentation/Badge.rst)
+- [Configuration](Documentation/Configuration.rst) · [Upgrading](Documentation/Upgrading.rst)
+- [Testing](Documentation/Testing.rst) · [Diagnostics](Documentation/Diagnostics.rst) · [Contributing](Documentation/Contributing.rst)
 - [Changelog](CHANGELOG.md)
 
-[Workspace ChatOps](Extensions/webcon_workspace_chatops/README.md) is a separate, optional extension in this repository. Installing Easy Workspace does not enable its API or notification providers.
+[Workspace ChatOps](Extensions/webcon_workspace_chatops/README.md) is a separate, optional extension in this repository. Report vulnerabilities through [private GitHub Security Advisories](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new).
 
-Report vulnerabilities through [private GitHub Security Advisories](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new).
+## License
 
-License: GPL-2.0-or-later.
+GPL-2.0-or-later.

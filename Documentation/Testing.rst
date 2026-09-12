@@ -7,14 +7,34 @@ Testing and health checks
 Automated checks
 ================
 
-``composer test`` runs lint, PHPStan at maximum level, unit tests and
-functional DataHandler tests. The functional suite defaults to SQLite;
-``typo3DatabaseDriver`` and the other framework database variables can
-select MariaDB/MySQL instead. CI resolves dependencies separately on PHP
-8.2, 8.3, 8.4 and 8.5.
+``composer test`` runs PHP lint, the coding-guideline dry run
+(``composer cgl``), PHPStan at level 8 with ``phpVersion: 80400``, unit
+tests and functional DataHandler tests. The functional suite defaults to
+SQLite; ``typo3DatabaseDriver`` and the other framework database variables
+select MariaDB/MySQL instead. CI runs the PHP job on 8.4 and 8.5 with a
+MariaDB 10.11 service and a separate JavaScript job.
 
 Run one suite with ``composer test:unit`` or ``composer test:functional``.
-The old ``Build/Scripts/runTests.sh`` wrapper has been removed.
+The badge counter tests load a tiny fixture extension
+(``Tests/Functional/Fixtures/Extensions/news_stub``) that provides a
+workspace-aware ``tx_news_domain_model_news`` table, so EXT:news is not a
+dev dependency.
+
+JavaScript
+----------
+
+..  code-block:: bash
+
+    npm ci
+    npm test
+
+``vitest`` (jsdom) aliases the ``@webconsulting/webcon-easy-workspace/``
+and ``@typo3/*`` import-map prefixes to the sources and to mocks in
+``Tests/JavaScript/mocks``. The suite covers ``BadgeSync`` (server count
+wins over the list count, stale responses, debounce, visibility-paused
+polling with error backoff, BroadcastChannel filtering, stamp-driven list
+refresh, DOM badge rendering) and the selection/grouping helpers. The
+runtime still uses TYPO3's import map; ``npm`` is a dev-only dependency.
 
 Browser checks
 ==============
@@ -25,6 +45,12 @@ submodule, selection updates, diff/history, preview, publishing and discarding.
 Verify live content after mutations and inspect console/server logs.
 Optional Visual Editor and news integrations need their own representative
 records when installed.
+
+Badge checks: the count must match the Workspaces module on the dashboard,
+in the list module and on a page; it must update after a FormEngine save, a
+Visual Editor save, a publish/discard from the module frame, a change made
+in a second tab and a CLI/MCP edit (within the 45 s poll). Keyboard: Arrow
+keys, Space, Enter and Escape in the dropdown; both light and dark schemes.
 
 Health checks
 =============
