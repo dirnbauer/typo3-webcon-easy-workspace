@@ -1,10 +1,13 @@
 import { html, nothing } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
+import { key } from '@webconsulting/webcon-easy-workspace/menu-selection.js';
 import { renderRow } from '@webconsulting/webcon-easy-workspace/templates/row.js';
 
 /**
  * A group header (page or news record: icon, title, rootline path,
  * count) followed by its rows. Rendered inside the `role="list"` <ul>,
- * so the header is a presentational <li>.
+ * so the header is a presentational <li>. Rows are keyed so a row that
+ * animates out is never recycled for another record.
  */
 export function renderGroup(host, group, rowOffset = 0) {
   return html`
@@ -18,6 +21,6 @@ export function renderGroup(host, group, rowOffset = 0) {
       </span>
       <span class="wew-group__count">${group.rows.length}</span>
     </li>
-    ${group.rows.map((item, index) => renderRow(host, item, rowOffset + index))}
+    ${repeat(group.rows, (item) => key(host, item), (item, index) => renderRow(host, item, rowOffset + index))}
   `;
 }
