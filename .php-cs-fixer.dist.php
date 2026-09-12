@@ -15,6 +15,6 @@ $config->getFinder()
         __DIR__ . '/Extensions/webcon_workspace_chatops/ext_localconf.php',
         __FILE__,
     ]);
-$config->setCacheFile(__DIR__ . '/.Build/.php-cs-fixer.cache');
+$config->setCacheFile(__DIR__ . '/.php-cs-fixer.cache');
 
 return $config;
