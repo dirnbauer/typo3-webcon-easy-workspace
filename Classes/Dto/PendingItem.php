@@ -46,6 +46,7 @@ final readonly class PendingItem
         public int $latestChangeAt = 0,
         public int $latestChangeUserUid = 0,
         public string $latestChangeUser = '',
+        public int $stageId = 0,
     ) {}
 
     public function withPublishMetadata(): self
@@ -87,6 +88,7 @@ final readonly class PendingItem
             latestChangeAt: $this->latestChangeAt,
             latestChangeUserUid: $this->latestChangeUserUid,
             latestChangeUser: $this->latestChangeUser,
+            stageId: $this->stageId,
         );
     }
 
@@ -139,6 +141,7 @@ final readonly class PendingItem
             'latestChangeAt' => $this->latestChangeAt,
             'latestChangeUserUid' => $this->latestChangeUserUid,
             'latestChangeUser' => $this->latestChangeUser,
+            'stageId' => $this->stageId,
             'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,

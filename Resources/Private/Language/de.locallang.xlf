@@ -87,14 +87,14 @@
     </unit>
     <unit id="toolbar.noContext">
       <segment>
-        <source>Open a page or a news record in the page tree to see what is ready to publish.</source>
-        <target state="translated">Öffnen Sie eine Seite oder einen News-Datensatz im Seitenbaum, um zu sehen, was veröffentlicht werden kann.</target>
+        <source>Open a page or a news record to review its changes here. The badge counts the whole workspace.</source>
+        <target state="translated">Öffnen Sie eine Seite oder einen News-Datensatz, um dessen Änderungen hier zu prüfen. Der Zähler umfasst den gesamten Workspace.</target>
       </segment>
     </unit>
     <unit id="toolbar.empty.changed">
       <segment>
-        <source>Nothing pending on this page.</source>
-        <target state="translated">Auf dieser Seite gibt es nichts Ausstehendes.</target>
+        <source>No pending changes on this page.</source>
+        <target state="translated">Auf dieser Seite gibt es keine ausstehenden Änderungen.</target>
       </segment>
     </unit>
     <unit id="toolbar.loadError">
@@ -201,8 +201,8 @@
     </unit>
     <unit id="toolbar.badge.pending">
       <segment>
-        <source>{count, plural, one {# pending workspace change on this page} other {# pending workspace changes on this page}}</source>
-        <target state="translated">{count, plural, one {# ausstehende Workspace-Änderung auf dieser Seite} other {# ausstehende Workspace-Änderungen auf dieser Seite}}</target>
+        <source>{count, plural, one {# pending workspace change} other {# pending workspace changes}}</source>
+        <target state="translated">{count, plural, one {# ausstehende Workspace-Änderung} other {# ausstehende Workspace-Änderungen}}</target>
       </segment>
     </unit>
     <unit id="module.title">
@@ -1997,6 +1997,186 @@
       <segment>
         <source>Open in form editor</source>
         <target state="translated">Im Formular-Editor öffnen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.dialog.aria">
+      <segment>
+        <source>Workspace publish</source>
+        <target state="translated">Workspace veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.refresh">
+      <segment>
+        <source>Refresh</source>
+        <target state="translated">Aktualisieren</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.count.onPage">
+      <segment>
+        <source>{count, plural, one {# on this page} other {# on this page}}</source>
+        <target state="translated">{count, plural, one {# auf dieser Seite} other {# auf dieser Seite}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.count.elsewhere">
+      <segment>
+        <source>{count, plural, one {# elsewhere in the workspace} other {# elsewhere in the workspace}}</source>
+        <target state="translated">{count, plural, one {# an anderer Stelle im Workspace} other {# an anderer Stelle im Workspace}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.count.workspace">
+      <segment>
+        <source>{count, plural, one {# pending in this workspace} other {# pending in this workspace}}</source>
+        <target state="translated">{count, plural, one {# ausstehend in diesem Workspace} other {# ausstehend in diesem Workspace}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.count.none">
+      <segment>
+        <source>Nothing pending</source>
+        <target state="translated">Nichts ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.stage.title">
+      <segment>
+        <source>Stage</source>
+        <target state="translated">Stufe</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.stage.mixed">
+      <segment>
+        <source>Mixed stages</source>
+        <target state="translated">Gemischte Stufen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.empty.title">
+      <segment>
+        <source>Nothing pending</source>
+        <target state="translated">Nichts ausstehend</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.retry">
+      <segment>
+        <source>Retry</source>
+        <target state="translated">Erneut versuchen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.openModule">
+      <segment>
+        <source>Open module</source>
+        <target state="translated">Modul öffnen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.publishCount">
+      <segment>
+        <source>Publish {count}</source>
+        <target state="translated">{count} veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.preview.open">
+      <segment>
+        <source>Preview</source>
+        <target state="translated">Vorschau</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.preview.openTitle">
+      <segment>
+        <source>Open the workspace preview in a new tab</source>
+        <target state="translated">Workspace-Vorschau in neuem Tab öffnen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.preview.copyLink">
+      <segment>
+        <source>Copy preview link</source>
+        <target state="translated">Vorschau-Link kopieren</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.preview.more">
+      <segment>
+        <source>More preview actions</source>
+        <target state="translated">Weitere Vorschau-Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.select">
+      <segment>
+        <source>Select "{title}"</source>
+        <target state="translated">"{title}" auswählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.edit">
+      <segment>
+        <source>Edit</source>
+        <target state="translated">Bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.diff">
+      <segment>
+        <source>Show changes and history</source>
+        <target state="translated">Änderungen und Verlauf anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.preview">
+      <segment>
+        <source>Show in preview</source>
+        <target state="translated">In der Vorschau anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.group.files">
+      <segment>
+        <source>Files in this workspace</source>
+        <target state="translated">Dateien in diesem Workspace</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.keyboardHint">
+      <segment>
+        <source>Arrow keys move, Space selects, Enter edits, Escape closes.</source>
+        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Escape schließt.</target>
+      </segment>
+    </unit>
+    <unit id="change.new">
+      <segment>
+        <source>New</source>
+        <target state="translated">Neu</target>
+      </segment>
+    </unit>
+    <unit id="change.changed">
+      <segment>
+        <source>Changed</source>
+        <target state="translated">Geändert</target>
+      </segment>
+    </unit>
+    <unit id="change.deleted">
+      <segment>
+        <source>Deleted</source>
+        <target state="translated">Gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="change.moved">
+      <segment>
+        <source>Moved</source>
+        <target state="translated">Verschoben</target>
+      </segment>
+    </unit>
+    <unit id="time.now">
+      <segment>
+        <source>just now</source>
+        <target state="translated">gerade eben</target>
+      </segment>
+    </unit>
+    <unit id="time.minutes">
+      <segment>
+        <source>{count, plural, one {# min ago} other {# min ago}}</source>
+        <target state="translated">{count, plural, one {vor # Min.} other {vor # Min.}}</target>
+      </segment>
+    </unit>
+    <unit id="time.hours">
+      <segment>
+        <source>{count, plural, one {# h ago} other {# h ago}}</source>
+        <target state="translated">{count, plural, one {vor # Std.} other {vor # Std.}}</target>
+      </segment>
+    </unit>
+    <unit id="time.days">
+      <segment>
+        <source>{count, plural, one {# day ago} other {# days ago}}</source>
+        <target state="translated">{count, plural, one {vor # Tag} other {vor # Tagen}}</target>
       </segment>
     </unit>
   </file>

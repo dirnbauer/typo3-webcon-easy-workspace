@@ -144,6 +144,7 @@ final readonly class PendingItemFactory
             latestChangeAt: $latestChange['tstamp'],
             latestChangeUserUid: $latestChange['userUid'],
             latestChangeUser: $latestChange['user'],
+            stageId: Value::int($row['t3ver_stage'] ?? null),
         ))->withPublishMetadata();
     }
 

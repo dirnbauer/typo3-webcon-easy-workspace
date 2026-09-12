@@ -373,6 +373,7 @@ final readonly class PendingItemAggregator
             latestChangeAt: $incoming->latestChangeAt,
             latestChangeUserUid: $incoming->latestChangeUserUid,
             latestChangeUser: $incoming->latestChangeUser,
+            stageId: $incoming->stageId,
         );
     }
 
@@ -423,6 +424,7 @@ final readonly class PendingItemAggregator
             latestChangeAt: $item->latestChangeAt,
             latestChangeUserUid: $item->latestChangeUserUid,
             latestChangeUser: $item->latestChangeUser,
+            stageId: $item->stageId,
         );
     }
 }

@@ -17,15 +17,19 @@ use TYPO3\CMS\Core\View\ViewFactoryInterface;
 use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\History\RecordHistoryRollback;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
+use TYPO3\CMS\Workspaces\Service\StagesService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
+use Webconsulting\WebconEasyWorkspace\Service\ContextRecordResolver;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItems\WorkspaceRecordQuery;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
+use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter;
 use Webconsulting\WebconEasyWorkspace\Utility\PublishSelectionNormalizer;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
@@ -51,6 +55,10 @@ final readonly class EasyWorkspaceAjaxController
         private WorkspaceTablePolicy $workspaceTablePolicy,
         private PublishSelectionNormalizer $publishSelectionNormalizer,
         private BackendAccessGuard $accessGuard,
+        private WorkspaceChangeCounter $changeCounter,
+        private WorkspaceRecordQuery $workspaceRecordQuery,
+        private ContextRecordResolver $contextRecordResolver,
+        private StagesService $stagesService,
         private LoggerInterface $logger,
     ) {}
 
@@ -89,8 +97,36 @@ final readonly class EasyWorkspaceAjaxController
 
         return new JsonResponse([
             'context' => $context->value,
+            'contextRecord' => $this->contextRecordResolver->resolve($context, $pageUid, $newsUid, $request),
+            'stage' => $this->stageSummary($payload->items),
             ...$payload->toToolbarClientArray($context, includeDiff: false),
         ]);
+    }
+
+    /**
+     * Stage chip for the dropdown header: the common stage of all changed
+     * rows, or a "mixed" marker when the list spans several stages.
+     *
+     * @param list<\Webconsulting\WebconEasyWorkspace\Dto\PendingItem> $items
+     * @return array{id: int|null, label: string}|null
+     */
+    private function stageSummary(array $items): ?array
+    {
+        $stageIds = [];
+        foreach ($items as $item) {
+            if ($item->isChanged) {
+                $stageIds[$item->stageId] = true;
+            }
+        }
+        if ($stageIds === []) {
+            return null;
+        }
+        if (count($stageIds) > 1) {
+            return ['id' => null, 'label' => $this->localizationService->translate('toolbar.stage.mixed')];
+        }
+        $stageId = array_key_first($stageIds);
+
+        return ['id' => $stageId, 'label' => $this->stagesService->getStageTitle($stageId)];
     }
 
     public function hasChangesAction(ServerRequestInterface $request): ResponseInterface
@@ -103,15 +139,20 @@ final readonly class EasyWorkspaceAjaxController
         if (!$config['enabled']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
-        if (!$this->canReadContext($request, $pageUid, $newsUid)) {
+        if ($this->accessGuard->user($request) === null) {
             return $this->accessDeniedJson();
         }
 
-        return new JsonResponse(
-            $this->pendingItemsService->hasChangesForContext($pageUid, $newsUid, $config),
-        );
+        $payload = $this->badgePayload($request, ToolbarContext::resolve($pageUid, $newsUid));
+
+        return new JsonResponse($payload + ['hasChanges' => $payload['changedCount'] > 0]);
     }
 
+    /**
+     * Whole-workspace change count of the acting user's workspace. The
+     * count is context-free (like the Workspaces module); pageUid/newsUid
+     * only select the page TSconfig and echo the client context back.
+     */
     public function badgeAction(ServerRequestInterface $request): ResponseInterface
     {
         $query = $request->getQueryParams();
@@ -122,35 +163,40 @@ final readonly class EasyWorkspaceAjaxController
         if (!$config['enabled']) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
         }
-        if (!$this->canReadContext($request, $pageUid, $newsUid)) {
+        if ($this->accessGuard->user($request) === null) {
             return $this->accessDeniedJson();
         }
 
-        $collection = $this->pendingItemsService->toolbarCollectionForContext(
-            $pageUid,
-            $newsUid,
-            PendingItemsMode::Changed,
-            $config,
-        );
-        $payload = $collection['payload'];
-        $changedCount = 0;
-        if ($payload !== null) {
-            foreach ($payload->items as $item) {
-                if ($item->isChanged) {
-                    $changedCount++;
-                }
-            }
-        }
+        return new JsonResponse($this->badgePayload($request, ToolbarContext::resolve($pageUid, $newsUid)));
+    }
 
-        return new JsonResponse([
-            'context' => $collection['context']->value,
-            'workspaceId' => $payload !== null ? $payload->workspaceId : 0,
-            'workspaceTitle' => $payload !== null ? $payload->workspaceTitle : '',
-            'pageUid' => $pageUid,
-            'newsUid' => $newsUid,
-            'languageUid' => null,
-            'changedCount' => $changedCount,
-        ]);
+    /**
+     * Shared badge payload: served by /badge and /has-changes and embedded
+     * in publish/discard responses so the client never derives the count
+     * from a list.
+     *
+     * @return array{
+     *     context: string,
+     *     workspaceId: int,
+     *     workspaceTitle: string,
+     *     changedCount: int,
+     *     byTable: array<string, int>,
+     *     byState: array{new: int, changed: int, deleted: int, moved: int},
+     *     latestChangeAt: int,
+     *     stamp: string
+     * }
+     */
+    private function badgePayload(ServerRequestInterface $request, ToolbarContext $context = ToolbarContext::None): array
+    {
+        $workspaceId = $this->accessGuard->activeWorkspaceId($request);
+        $count = $this->changeCounter->count($workspaceId);
+
+        return [
+            'context' => $context->value,
+            'workspaceId' => $workspaceId,
+            'workspaceTitle' => $workspaceId > 0 ? $this->workspaceRecordQuery->resolveWorkspaceTitle($workspaceId) : '',
+            ...$count->toArray(),
+        ];
     }
 
     /**
@@ -381,10 +427,13 @@ final readonly class EasyWorkspaceAjaxController
                 'success' => false,
                 'published' => 0,
                 'errors' => [$this->localizationService->translate('error.noPublishableRecords')],
+                'badge' => $this->badgePayload($request),
             ]);
         }
 
-        return new JsonResponse($this->publishService->publish($selections, $this->accessGuard->user($request)));
+        $result = $this->publishService->publish($selections, $this->accessGuard->user($request));
+
+        return new JsonResponse($result + ['badge' => $this->badgePayload($request)]);
     }
 
     public function discardAction(ServerRequestInterface $request): ResponseInterface
@@ -405,7 +454,9 @@ final readonly class EasyWorkspaceAjaxController
         if (!$this->accessGuard->canModifyTable($table, $request)) {
             return new JsonResponse(['error' => $this->localizationService->translate('error.noTablePermission')], 403);
         }
-        return new JsonResponse($this->publishService->discard($table, $workspaceUid, $this->accessGuard->user($request)));
+        $result = $this->publishService->discard($table, $workspaceUid, $this->accessGuard->user($request));
+
+        return new JsonResponse($result + ['badge' => $this->badgePayload($request)]);
     }
 
     public function previewLinkAction(ServerRequestInterface $request): ResponseInterface

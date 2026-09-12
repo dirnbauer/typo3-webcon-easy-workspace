@@ -1,0 +1,23 @@
+"be_users"
+,"uid","pid","username","password","admin","deleted","disable"
+,1,0,"admin","",1,0,0
+"sys_workspace"
+,"uid","pid","title","adminusers","members","deleted"
+,1,0,"Workspace One","be_users_1","",0
+,4,0,"Workspace Four","be_users_1","",0
+"pages"
+,"uid","pid","title","doktype","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,1,0,"Root",1,0,0,1700000000,0,0,0,0
+,10,1,"Live page",1,0,0,1700000000,0,0,0,0
+,11,1,"Changed page",1,0,0,1700000100,10,4,0,0
+"tt_content"
+,"uid","pid","header","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,1,10,"Live content",0,0,1700000000,0,0,0,0
+,20,10,"New content",0,0,1700000200,0,4,1,0
+,21,10,"Legacy state row",0,0,1700000300,0,4,3,0
+,22,10,"Soft-deleted version",1,0,1700000400,1,4,0,0
+,23,10,"Other workspace version",0,0,1700000500,1,1,0,0
+"tx_news_domain_model_news"
+,"uid","pid","title","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,30,10,"Live news",0,0,1700000000,0,0,0,0
+,31,10,"Live news",0,0,1700000600,30,4,2,0

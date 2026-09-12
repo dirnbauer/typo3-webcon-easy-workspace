@@ -25,6 +25,20 @@ final class WorkspaceTablePolicy
     ];
 
     /**
+     * Tables counted by the toolbar badge (whole-workspace count). The
+     * optional news table only contributes when EXT:news is installed;
+     * {@see \Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter}
+     * filters by TCA presence and workspace awareness.
+     *
+     * @var list<string>
+     */
+    public const BADGE_TABLES = [
+        'pages',
+        'tt_content',
+        'tx_news_domain_model_news',
+    ];
+
+    /**
      * Cmdmap order: parents before children.
      *
      * @var list<string>

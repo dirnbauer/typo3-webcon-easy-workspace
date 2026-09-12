@@ -1,0 +1,14 @@
+{
+    "name": "webconsulting/news-stub",
+    "description": "Functional-test stub providing a workspace-aware tx_news_domain_model_news table (no EXT:news dependency).",
+    "type": "typo3-cms-extension",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "typo3/cms-core": "^14.3"
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "news_stub"
+        }
+    }
+}
