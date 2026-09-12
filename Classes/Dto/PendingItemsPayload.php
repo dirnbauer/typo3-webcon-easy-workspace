@@ -135,7 +135,7 @@ final readonly class PendingItemsPayload
      */
     public static function serializeItems(array $items, bool $includeDiff = false): array
     {
-        return array_map(static fn (PendingItem $item): array => $item->toClientArray($includeDiff), $items);
+        return array_map(static fn(PendingItem $item): array => $item->toClientArray($includeDiff), $items);
     }
 
     /**
@@ -145,7 +145,7 @@ final readonly class PendingItemsPayload
     public static function serializeGroups(array $groups, bool $includeDiff = false): array
     {
         return array_map(
-            static fn (array $group): array => [
+            static fn(array $group): array => [
                 'key' => $group['key'],
                 'label' => $group['label'],
                 'items' => self::serializeItems($group['items'], $includeDiff),

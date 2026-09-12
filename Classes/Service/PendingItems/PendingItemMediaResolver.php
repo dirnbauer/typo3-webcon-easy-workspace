@@ -84,7 +84,7 @@ final readonly class PendingItemMediaResolver
                 ->process(ProcessedFile::CONTEXT_IMAGEPREVIEW, ['width' => 96, 'height' => 72])
                 ->getPublicUrl();
             return $publicUrl !== null && $publicUrl !== '' ? $publicUrl : null;
-        } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
+        } catch (FileDoesNotExistException|ResourceDoesNotExistException) {
             return null;
         }
     }

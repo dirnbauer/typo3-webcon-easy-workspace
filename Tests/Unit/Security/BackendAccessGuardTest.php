@@ -32,8 +32,8 @@ final class BackendAccessGuardTest extends UnitTestCase
     #[Test]
     public function userPrefersRequestAttributeOverGlobal(): void
     {
-        $globalUser = $this->createStub(BackendUserAuthentication::class);
-        $requestUser = $this->createStub(BackendUserAuthentication::class);
+        $globalUser = self::createStub(BackendUserAuthentication::class);
+        $requestUser = self::createStub(BackendUserAuthentication::class);
         $GLOBALS['BE_USER'] = $globalUser;
         $request = (new ServerRequest())->withAttribute('backend.user', $requestUser);
 
@@ -46,7 +46,7 @@ final class BackendAccessGuardTest extends UnitTestCase
     #[Test]
     public function userFallsBackToGlobalWhenRequestCarriesNoUser(): void
     {
-        $globalUser = $this->createStub(BackendUserAuthentication::class);
+        $globalUser = self::createStub(BackendUserAuthentication::class);
         $GLOBALS['BE_USER'] = $globalUser;
 
         $subject = new BackendAccessGuard(new Context());
@@ -60,7 +60,7 @@ final class BackendAccessGuardTest extends UnitTestCase
         $subject = new BackendAccessGuard(new Context());
         self::assertSame(0, $subject->activeWorkspaceId());
 
-        $user = $this->createStub(BackendUserAuthentication::class);
+        $user = self::createStub(BackendUserAuthentication::class);
         $user->workspace = 0;
         $GLOBALS['BE_USER'] = $user;
 
@@ -70,7 +70,7 @@ final class BackendAccessGuardTest extends UnitTestCase
     #[Test]
     public function activeWorkspaceIdUsesUserWorkspaceWhenContextIsLive(): void
     {
-        $user = $this->createStub(BackendUserAuthentication::class);
+        $user = self::createStub(BackendUserAuthentication::class);
         $user->workspace = 2;
         $GLOBALS['BE_USER'] = $user;
 
@@ -82,7 +82,7 @@ final class BackendAccessGuardTest extends UnitTestCase
     #[Test]
     public function activeWorkspaceIdPrefersContextAspectWorkspace(): void
     {
-        $user = $this->createStub(BackendUserAuthentication::class);
+        $user = self::createStub(BackendUserAuthentication::class);
         $user->workspace = 2;
         $GLOBALS['BE_USER'] = $user;
         $context = new Context();
@@ -99,7 +99,7 @@ final class BackendAccessGuardTest extends UnitTestCase
         $subject = new BackendAccessGuard(new Context());
         self::assertFalse($subject->canModifyTable('tt_content'));
 
-        $user = $this->createStub(BackendUserAuthentication::class);
+        $user = self::createStub(BackendUserAuthentication::class);
         $user->method('check')->willReturnMap([['tables_modify', 'tt_content', true]]);
         $GLOBALS['BE_USER'] = $user;
 
@@ -110,7 +110,7 @@ final class BackendAccessGuardTest extends UnitTestCase
     #[Test]
     public function canModifyTableReturnsFalseWhenPermissionIsMissing(): void
     {
-        $user = $this->createStub(BackendUserAuthentication::class);
+        $user = self::createStub(BackendUserAuthentication::class);
         $user->method('check')->willReturn(false);
         $GLOBALS['BE_USER'] = $user;
 
@@ -123,7 +123,7 @@ final class BackendAccessGuardTest extends UnitTestCase
         $subject = new BackendAccessGuard(new Context());
         self::assertFalse($subject->canReadPage(0));
 
-        $GLOBALS['BE_USER'] = $this->createStub(BackendUserAuthentication::class);
+        $GLOBALS['BE_USER'] = self::createStub(BackendUserAuthentication::class);
 
         self::assertTrue($subject->canReadPage(0));
         self::assertTrue($subject->canReadPage(-1));
@@ -135,7 +135,7 @@ final class BackendAccessGuardTest extends UnitTestCase
         $subject = new BackendAccessGuard(new Context());
         self::assertFalse($subject->hasWorkspaceAccess(1));
 
-        $member = $this->createStub(BackendUserAuthentication::class);
+        $member = self::createStub(BackendUserAuthentication::class);
         $member->method('isAdmin')->willReturn(false);
         $member->method('checkWorkspace')->willReturnMap([[1, ['uid' => 1, '_ACCESS' => 'member']]]);
         $GLOBALS['BE_USER'] = $member;
@@ -147,7 +147,7 @@ final class BackendAccessGuardTest extends UnitTestCase
     #[Test]
     public function hasWorkspaceAccessDeniesNonMembers(): void
     {
-        $outsider = $this->createStub(BackendUserAuthentication::class);
+        $outsider = self::createStub(BackendUserAuthentication::class);
         $outsider->method('isAdmin')->willReturn(false);
         $outsider->method('checkWorkspace')->willReturn(false);
         $GLOBALS['BE_USER'] = $outsider;

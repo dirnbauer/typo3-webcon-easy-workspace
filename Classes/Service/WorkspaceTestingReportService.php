@@ -283,7 +283,7 @@ final readonly class WorkspaceTestingReportService
         $severity = $this->highestSeverity($items);
         $issueCount = count(array_filter(
             $items,
-            static fn (array $item): bool => Value::int($item['severityValue'] ?? null) > ContextualFeedbackSeverity::OK->value,
+            static fn(array $item): bool => Value::int($item['severityValue'] ?? null) > ContextualFeedbackSeverity::OK->value,
         ));
 
         return [

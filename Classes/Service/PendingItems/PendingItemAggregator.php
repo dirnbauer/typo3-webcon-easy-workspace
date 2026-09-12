@@ -8,8 +8,8 @@ use Webconsulting\WebconEasyWorkspace\Dto\PendingChangeRecord;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingChildChange;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingRecordReference;
-use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
+use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 
 final readonly class PendingItemAggregator
 {
@@ -29,7 +29,7 @@ final readonly class PendingItemAggregator
     {
         return array_values(array_filter(
             $items,
-            static fn (PendingItem $item): bool => $item->isChanged,
+            static fn(PendingItem $item): bool => $item->isChanged,
         ));
     }
 
@@ -322,7 +322,7 @@ final readonly class PendingItemAggregator
     {
         return array_values(array_filter(
             $records,
-            static fn (PendingRecordReference $record): bool => $record->table !== $table || $record->liveUid !== $liveUid,
+            static fn(PendingRecordReference $record): bool => $record->table !== $table || $record->liveUid !== $liveUid,
         ));
     }
 
@@ -334,7 +334,7 @@ final readonly class PendingItemAggregator
     {
         return array_values(array_filter(
             $records,
-            static fn (PendingChangeRecord $record): bool => $record->table !== $table || $record->liveUid !== $liveUid,
+            static fn(PendingChangeRecord $record): bool => $record->table !== $table || $record->liveUid !== $liveUid,
         ));
     }
 

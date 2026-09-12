@@ -19,8 +19,6 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  */
 final readonly class ConfigurationProvider
 {
-    public function __construct(private BackendAccessGuard $accessGuard) {}
-
     private const DEFAULTS = [
         // Master switch
         'enabled' => true,
@@ -49,6 +47,7 @@ final readonly class ConfigurationProvider
     ];
 
     private const NAMESPACE_KEY = 'webcon_easy_workspace.';
+    public function __construct(private BackendAccessGuard $accessGuard) {}
 
     /**
      * Returns the effective configuration for the current backend user.

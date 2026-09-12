@@ -162,7 +162,7 @@ final readonly class PendingItemLabelResolver
         }
         try {
             return $this->resourceFactory->getFileObject($fileUid)->getName();
-        } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
+        } catch (FileDoesNotExistException|ResourceDoesNotExistException) {
             return '';
         }
     }
@@ -178,7 +178,7 @@ final readonly class PendingItemLabelResolver
         }
         try {
             return $this->resourceFactory->getFileObject($uidLocal)->getName();
-        } catch (FileDoesNotExistException | ResourceDoesNotExistException) {
+        } catch (FileDoesNotExistException|ResourceDoesNotExistException) {
             return '';
         }
     }

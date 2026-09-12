@@ -34,7 +34,7 @@ final class ConfigurationProviderTest extends UnitTestCase
      */
     private function setUpBackendUserWith(array $tsConfigOptions, array $userSettings = []): void
     {
-        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser = self::createStub(BackendUserAuthentication::class);
         $backendUser->method('getTSConfig')->willReturn(
             $tsConfigOptions === [] ? [] : ['options.' => ['webcon_easy_workspace.' => $tsConfigOptions]],
         );

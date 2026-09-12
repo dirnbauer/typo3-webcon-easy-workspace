@@ -28,6 +28,7 @@ use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 #[Autoconfigure(public: true)]
 final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwareToolbarItemInterface
 {
+    private const MODULE_IDENTIFIER = 'webcon_easy_workspace_pending';
     private ServerRequestInterface $request;
 
     public function __construct(
@@ -38,8 +39,6 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly LocalizationService $localizationService,
         private readonly UriBuilder $uriBuilder,
     ) {}
-
-    private const MODULE_IDENTIFIER = 'webcon_easy_workspace_pending';
 
     public function setRequest(ServerRequestInterface $request): void
     {

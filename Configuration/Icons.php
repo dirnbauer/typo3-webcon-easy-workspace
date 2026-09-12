@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 
-$icon = static fn (string $name): array => [
+$icon = static fn(string $name): array => [
     'provider' => SvgIconProvider::class,
     'source' => 'EXT:webcon_easy_workspace/Resources/Public/Icons/' . $name . '.svg',
 ];

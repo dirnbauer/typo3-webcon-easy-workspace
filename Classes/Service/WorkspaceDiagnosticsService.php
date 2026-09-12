@@ -56,7 +56,7 @@ final readonly class WorkspaceDiagnosticsService
             );
         }
 
-        usort($issues, static fn (array $a, array $b): int => ($a['sort'] ?? 99) <=> ($b['sort'] ?? 99) ?: strcmp(Value::string($a['table'] ?? null), Value::string($b['table'] ?? null)));
+        usort($issues, static fn(array $a, array $b): int => ($a['sort'] ?? 99) <=> ($b['sort'] ?? 99) ?: strcmp(Value::string($a['table'] ?? null), Value::string($b['table'] ?? null)));
 
         return [
             'workspaceId' => $workspaceId,
@@ -144,7 +144,7 @@ final readonly class WorkspaceDiagnosticsService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return array_map(fn (array $row): array => $this->issue(
+        return array_map(fn(array $row): array => $this->issue(
             'unsupported-version-state',
             'critical',
             $table,
@@ -179,7 +179,7 @@ final readonly class WorkspaceDiagnosticsService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return array_map(fn (array $row): array => $this->issue(
+        return array_map(fn(array $row): array => $this->issue(
             'workspace-row-without-live-identity',
             'critical',
             $table,
@@ -257,7 +257,7 @@ final readonly class WorkspaceDiagnosticsService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return array_map(fn (array $row): array => $this->issue(
+        return array_map(fn(array $row): array => $this->issue(
             'duplicate-workspace-version',
             'warning',
             $table,
@@ -424,7 +424,7 @@ final readonly class WorkspaceDiagnosticsService
      */
     private function manualChecks(): array
     {
-        return array_map(fn (string $key): array => [
+        return array_map(fn(string $key): array => [
             'title' => $this->localizationService->translate('module.diagnostics.manual.' . $key . '.title'),
             'risk' => $this->localizationService->translate('module.diagnostics.manual.' . $key . '.risk'),
             'solve' => $this->localizationService->translate('module.diagnostics.manual.' . $key . '.solve'),

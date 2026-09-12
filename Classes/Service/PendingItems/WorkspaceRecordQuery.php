@@ -142,7 +142,7 @@ final readonly class WorkspaceRecordQuery
      */
     public function hasChangedRowsRelated(string $table, string $field, int|array $parentUid, int $workspaceId, ?int $languageUid = null): bool
     {
-        $parentUids = is_array($parentUid) ? array_values(array_filter($parentUid, static fn (int $uid): bool => $uid > 0)) : [$parentUid];
+        $parentUids = is_array($parentUid) ? array_values(array_filter($parentUid, static fn(int $uid): bool => $uid > 0)) : [$parentUid];
         if ($parentUids === [] || $workspaceId <= 0 || !TcaUtility::hasColumn($table, $field) || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
             return false;
         }

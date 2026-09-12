@@ -131,7 +131,7 @@ final readonly class PendingItem
             'contextualEditUrl' => $this->contextualEditUrl,
             'historyUrl' => $this->historyUrl,
             'historyDiffCount' => $this->historyDiffCount,
-            'childChanges' => array_map(static fn (PendingChildChange $child): array => $child->toArray(), $this->childChanges),
+            'childChanges' => array_map(static fn(PendingChildChange $child): array => $child->toArray(), $this->childChanges),
             'colPos' => $this->colPos,
             'colPosLabel' => $this->colPosLabel,
             'locateTable' => $this->locateTable,
@@ -147,9 +147,9 @@ final readonly class PendingItem
                 'kindLabel' => $this->kindLabel,
                 'badge' => $this->badge,
             ]]) : [],
-            'publishRecords' => array_map(static fn (PendingRecordReference $record): array => $record->toArray(), $this->publishRecords),
+            'publishRecords' => array_map(static fn(PendingRecordReference $record): array => $record->toArray(), $this->publishRecords),
             'changeRecords' => array_map(
-                static fn (PendingChangeRecord $record): array => $includeDiff ? $record->toArray() : [
+                static fn(PendingChangeRecord $record): array => $includeDiff ? $record->toArray() : [
                     'table' => $record->table,
                     'liveUid' => $record->liveUid,
                     'workspaceUid' => $record->workspaceUid,
