@@ -7,7 +7,7 @@ use Webconsulting\WebconEasyWorkspace\Controller\Backend\EasyWorkspaceModuleCont
 $moduleDefaults = [
     'access' => 'user',
     'workspaces' => 'offline',
-    'iconIdentifier' => 'module-workspaces',
+    'iconIdentifier' => 'wew-module',
     'routes' => [
         '_default' => [
             'target' => EasyWorkspaceModuleController::class . '::handleRequest',
@@ -22,7 +22,7 @@ return [
         'access' => 'user',
         'workspaces' => 'offline',
         'path' => '/module/content/easy-workspace',
-        'iconIdentifier' => 'module-workspaces',
+        'iconIdentifier' => 'wew-module',
         'labels' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/Modules/easy_workspace.xlf',
         'navigationComponent' => '@typo3/backend/tree/page-tree-element',
         'appearance' => [
