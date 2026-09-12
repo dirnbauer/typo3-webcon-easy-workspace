@@ -6,6 +6,7 @@ namespace Webconsulting\WebconEasyWorkspace\Backend\ToolbarItem;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Toolbar\RequestAwareToolbarItemInterface;
 use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
 use TYPO3\CMS\Backend\View\BackendViewFactory;
@@ -35,7 +36,10 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly BackendAccessGuard $accessGuard,
         private readonly ConfigurationProvider $configurationProvider,
         private readonly LocalizationService $localizationService,
+        private readonly UriBuilder $uriBuilder,
     ) {}
+
+    private const MODULE_IDENTIFIER = 'webcon_easy_workspace_pending';
 
     public function setRequest(ServerRequestInterface $request): void
     {
@@ -93,7 +97,10 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     public function getItem(): string
     {
         $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/components/wew-toolbar-menu.js');
-        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/easy-workspace.css');
+        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/tokens.css');
+        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/toolbar-menu.css');
+        // The diff/history modal opens in the top frame, so its styles ship with the toolbar.
+        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/diff.css');
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
         return $view->render('ToolbarItems/EasyWorkspaceItem');
     }
@@ -117,6 +124,8 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
             'activeWorkspaceId' => $this->accessGuard->activeWorkspaceId($this->request),
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
+            'moduleIdentifier' => self::MODULE_IDENTIFIER,
+            'moduleUrl' => $this->moduleUrl(),
             'labels' => $this->localizationService->labelsForJavaScript(),
         ]);
         $view->assign('configJson', json_encode($payload, JSON_THROW_ON_ERROR));
@@ -143,4 +152,16 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         return 45;
     }
 
+    /**
+     * Link target of the dropdown's "Open module" action. The page id is
+     * appended client-side; an unresolvable route yields an empty string.
+     */
+    private function moduleUrl(): string
+    {
+        try {
+            return (string)$this->uriBuilder->buildUriFromRoute(self::MODULE_IDENTIFIER);
+        } catch (\Throwable) {
+            return '';
+        }
+    }
 }

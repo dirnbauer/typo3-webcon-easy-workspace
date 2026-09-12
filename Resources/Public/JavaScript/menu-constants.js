@@ -8,6 +8,29 @@ export const ENDPOINTS = {
   historyRollback: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '',
 };
 
+// Cross-tab / cross-frame refresh channel (same origin). Messages are
+// `{ type: 'refresh', reason, workspaceId, stamp, instanceId }`.
+export const CHANNEL_NAME = 'webcon-easy-workspace';
+
+// Badge synchronisation timing. Every trigger funnels through one debounce;
+// the poll only runs while the tab is visible and backs off after errors.
+export const BADGE_DEBOUNCE_MS = 120;
+export const BADGE_POLL_INTERVAL_MS = 45_000;
+export const BADGE_POLL_JITTER_MS = 5_000;
+export const BADGE_POLL_BACKOFF_MS = 300_000;
+export const BADGE_ERROR_BACKOFF_THRESHOLD = 3;
+
+// Core document events that indicate a record or the navigation context
+// changed. Listened to on the top document and on the toolbar's own one.
+export const REFRESH_EVENTS = Object.freeze([
+  'typo3:datahandler:process',
+  'typo3:pagetree:refresh',
+  'typo3:workspace:changed',
+  'typo3:workspaces:refresh',
+  'typo3:module-state-storage:update:web',
+  'typo3:module-state-storage:update-with-tree-identifier:web',
+]);
+
 // Fallback defaults — overridden by the TSconfig-driven JSON the
 // toolbar item attaches via the `config` attribute on this element.
 export const DEFAULT_CONFIG = Object.freeze({
@@ -26,12 +49,14 @@ export const DEFAULT_CONFIG = Object.freeze({
   showSubelementsInToolbar: false,
   showSubelementsInModule: true,
   // Runtime-detected environment (NOT user-configurable). Set by
-  // EasyWorkspaceToolbarItem::getDropDown() via ExtensionManagementUtility::isLoaded.
+  // EasyWorkspaceToolbarItem::getDropDown().
   activeWorkspaceId: 0,
   pageUid: 0,
   newsUid: 0,
   hasVisualEditor: false,
   hasViewpage: false,
+  moduleIdentifier: 'webcon_easy_workspace_pending',
+  moduleUrl: '',
   labels: {
     'error.noPublishableRecords': 'No publishable records in selection.',
   },

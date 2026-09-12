@@ -2,113 +2,12 @@ import { collectIframes, isKnownPreviewFrame, tableLabel } from '@webconsulting/
 import { isKnownPreviewWindow } from '@webconsulting/webcon-easy-workspace/menu-preview-locate.js';
 
 /**
- * Use backend save lifecycles as refresh signals only. The toolbar
- * badge must show server-side workspace versions ready to publish,
- * not Visual Editor's temporary unsaved field count.
- */
-export function onBackendSaveMessage(host, event) {
-  if (!isTrustedBackendSaveMessage(host, event)) {
-    return;
-  }
-  host._refreshAfterBackendSave();
-}
-
-export function isTrustedBackendSaveMessage(host, event) {
-  const command = event.data?.command;
-  if (command === 've_saveEnded') {
-    if (isKnownPreviewWindow(host, event.source)) {
-      return true;
-    }
-    // saveEnded is posted from the preview iframe to the VE module frame.
-    // Accept same-origin payloads even when iframe discovery is briefly stale.
-    return isSameOriginMessage(event);
-  }
-  if (event.data?.actionName === 'typo3:editform:saved') {
-    return !event.origin || event.origin === window.location.origin;
-  }
-  return false;
-}
-
-function isSameOriginMessage(event) {
-  if (!event.origin) {
-    return true;
-  }
-  if (event.origin === window.location.origin) {
-    return true;
-  }
-  try {
-    return event.origin === window.top?.location?.origin;
-  } catch {
-    return false;
-  }
-}
-
-export function registerBackendSaveSignalListeners(host) {
-  if (!host._backendSaveMessageListener) {
-    return;
-  }
-
-  clearBackendSaveSignalListeners(host);
-  const controller = new AbortController();
-  host._backendSaveAbortController = controller;
-  const options = { signal: controller.signal };
-  const windows = new Set([window]);
-  const documents = new Set([document]);
-  try { windows.add(window.top); documents.add(window.top.document); } catch { /* cross-origin */ }
-  try { windows.add(window.parent); } catch { /* cross-origin */ }
-
-  for (const iframe of collectIframes()) {
-    // Listen on backend/module frames only. The preview iframe receives
-    // parent→child commands; attaching here is unnecessary and can race
-    // Visual Editor's strict postMessage routing during save.
-    if (isKnownPreviewFrame(iframe)) {
-      continue;
-    }
-    try { windows.add(iframe.contentWindow); } catch { /* cross-origin */ }
-  }
-  for (const targetWindow of windows) {
-    try {
-      targetWindow?.addEventListener('message', host._backendSaveMessageListener, options);
-    } catch { /* cross-origin frames stay opaque */ }
-  }
-
-  // Core emits this even when the module iframe was created after the toolbar.
-  // Rebind save messages to the current frames when navigation replaces them.
-  const handler = () => {
-    registerBackendSaveSignalListeners(host);
-    scheduleBackendRefresh(host);
-  };
-  const eventNames = [
-    'typo3-module-loaded',
-    'typo3:datahandler:process',
-    'typo3:pagetree:refresh',
-    'typo3:workspace:changed',
-    'typo3:workspaces:refresh',
-  ];
-  for (const targetDocument of documents) {
-    for (const eventName of eventNames) {
-      targetDocument.addEventListener(eventName, handler, options);
-    }
-  }
-}
-
-function scheduleBackendRefresh(host) {
-  if (host._backendRefreshTimer) {
-    window.clearTimeout(host._backendRefreshTimer);
-  }
-  host._backendRefreshTimer = window.setTimeout(() => {
-    host._backendRefreshTimer = null;
-    host._refreshAfterBackendSave();
-  }, 120);
-}
-
-export function clearBackendSaveSignalListeners(host) {
-  host._backendSaveAbortController?.abort();
-  host._backendSaveAbortController = null;
-}
-
-/**
- * Handle Visual Editor iframe messages from our FE helper module.
+ * Message protocol with the Visual Editor preview iframe: the preview
+ * asks which records carry workspace changes (to draw the per-element
+ * decline button) and posts back when the editor clicks it.
+ *
+ * Save signals no longer live here — BadgeSync (menu-badge.js) receives
+ * them through the BroadcastChannel and top-window messages.
  */
 export function onDeclineMessage(host, event) {
   const data = event.data;

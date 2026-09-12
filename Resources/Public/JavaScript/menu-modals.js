@@ -51,6 +51,7 @@ export function wireContextualEditModal(host, modal, item) {
   modal.addEventListener('typo3-modal-hidden', async () => {
     topWindow.removeEventListener('message', onMessage);
     if (!saved) return;
+    host.badge?.request('edit-saved');
     await host._refresh();
     reloadPreviewAndRefocus(host, item);
     Notification.success(
@@ -77,6 +78,8 @@ export function openDiffModal(host, item) {
         endpoint: ENDPOINTS.historyRollback,
         translate: (key, vars) => label(host, key, vars),
         onSuccess: async () => {
+          host.badge?.request('rollback');
+          host.badge?.broadcast('rollback');
           await host._refresh();
           reloadPreviewAndRefocus(host, item);
         },

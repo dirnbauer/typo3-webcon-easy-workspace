@@ -99,7 +99,9 @@ final readonly class EasyWorkspaceModuleController
 
         $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/easy-workspace-module.js');
         $this->pageRenderer->loadJavaScriptModule('@typo3/backend/element/contextual-record-edit-trigger.js');
-        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/easy-workspace.css');
+        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/tokens.css');
+        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/module.css');
+        $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/diff.css');
 
         $moduleTemplate->makeDocHeaderModuleMenu($this->buildModuleMenuParameters($pageUid, $newsUid));
 

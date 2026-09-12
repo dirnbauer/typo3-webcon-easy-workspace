@@ -1,0 +1,98 @@
+/*
+ * Easy Workspace design tokens.
+ *
+ * Every --wew-* value maps to a TYPO3 v14 backend token (--typo3-*), so the
+ * light/dark colour scheme and site-specific theme overrides propagate
+ * automatically. Extension styles only ever read --wew-* tokens.
+ */
+:root {
+    /* Typography */
+    --wew-font-family: var(--typo3-font-family, system-ui, sans-serif);
+    --wew-font-size: var(--typo3-font-size, .875rem);
+    --wew-font-size-sm: var(--typo3-font-size-small, .75rem);
+    --wew-font-size-xs: .6875rem;
+    --wew-line-height: var(--typo3-component-line-height, 1.5);
+
+    /* Spacing + shape */
+    --wew-space-1: .25rem;
+    --wew-space-2: .5rem;
+    --wew-space-3: .75rem;
+    --wew-space-4: 1rem;
+    --wew-radius: var(--typo3-component-border-radius, .25rem);
+    --wew-radius-sm: calc(var(--wew-radius) * .75);
+    --wew-radius-pill: 999px;
+    --wew-shadow: var(--typo3-component-box-shadow-flyout, 0 8px 24px rgba(0, 0, 0, .18));
+
+    /* Surfaces */
+    --wew-surface: var(--typo3-dropdown-bg, var(--typo3-component-bg));
+    --wew-surface-raised: var(--typo3-surface-container-low, var(--typo3-component-hover-bg));
+    --wew-surface-sunken: var(--typo3-surface-container-high, var(--typo3-component-hover-bg));
+    --wew-surface-hover: var(--typo3-dropdown-item-hover-bg, var(--typo3-component-hover-bg));
+    --wew-surface-selected: var(--typo3-surface-container-primary, var(--typo3-state-primary-bg));
+    --wew-surface-selected-text: var(--typo3-surface-container-primary-text, var(--typo3-component-color));
+
+    /* Text + lines */
+    --wew-text: var(--typo3-dropdown-color, var(--typo3-component-color));
+    --wew-text-muted: var(--typo3-text-color-variant, var(--typo3-component-variant-color));
+    --wew-link: var(--typo3-component-link-color);
+    --wew-link-hover: var(--typo3-component-link-hover-color);
+    --wew-border: var(--typo3-dropdown-border-color, var(--typo3-component-border-color));
+    --wew-border-strong: var(--typo3-component-hover-border-color, var(--wew-border));
+    --wew-focus-ring: var(--typo3-component-focus-border-color, var(--typo3-state-primary-border-color));
+
+    /* Brand + primary action */
+    --wew-primary: var(--typo3-state-primary-bg);
+    --wew-primary-text: var(--typo3-state-primary-color);
+    --wew-primary-border: var(--typo3-state-primary-border-color);
+    --wew-accent: var(--icon-color-accent, #ff8700);
+
+    /* Change types: new / changed / deleted / moved / notice (hidden) */
+    --wew-new-bg: var(--typo3-badge-success-bg);
+    --wew-new-fg: var(--typo3-badge-success-color);
+    --wew-new-border: var(--typo3-badge-success-border-color);
+    --wew-changed-bg: var(--typo3-badge-info-bg);
+    --wew-changed-fg: var(--typo3-badge-info-color);
+    --wew-changed-border: var(--typo3-badge-info-border-color);
+    --wew-deleted-bg: var(--typo3-badge-danger-bg);
+    --wew-deleted-fg: var(--typo3-badge-danger-color);
+    --wew-deleted-border: var(--typo3-badge-danger-border-color);
+    --wew-moved-bg: var(--typo3-badge-warning-bg);
+    --wew-moved-fg: var(--typo3-badge-warning-color);
+    --wew-moved-border: var(--typo3-badge-warning-border-color);
+    --wew-notice-bg: var(--typo3-badge-notice-bg);
+    --wew-notice-fg: var(--typo3-badge-notice-color);
+    --wew-notice-border: var(--typo3-badge-notice-border-color);
+
+    /* State surfaces used by the module and the diff modal */
+    --wew-state-info-bg: var(--typo3-state-info-bg);
+    --wew-state-info-fg: var(--typo3-state-info-color);
+    --wew-state-info-border: var(--typo3-state-info-border-color);
+    --wew-state-success-border: var(--typo3-state-success-border-color);
+    --wew-state-warning-bg: var(--typo3-state-warning-bg);
+    --wew-state-warning-fg: var(--typo3-state-warning-color);
+    --wew-state-warning-border: var(--typo3-state-warning-border-color);
+    --wew-state-danger-border: var(--typo3-state-danger-border-color);
+    --wew-state-notice-border: var(--typo3-state-notice-border-color);
+    --wew-state-default-bg: var(--typo3-state-default-bg);
+    --wew-state-default-fg: var(--typo3-state-default-color);
+    --wew-state-default-border: var(--typo3-state-default-border-color);
+
+    /* Derived tints (scheme-aware because they mix the current text colour) */
+    --wew-skeleton: color-mix(in srgb, var(--wew-text) 8%, transparent);
+    --wew-tint: color-mix(in srgb, var(--wew-text) 4%, transparent);
+
+    /* Motion */
+    --wew-motion-fast: 120ms;
+    --wew-motion: 180ms;
+    --wew-motion-slow: 320ms;
+    --wew-ease: cubic-bezier(.2, .7, .2, 1);
+    --wew-ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --wew-motion-fast: 0ms;
+        --wew-motion: 0ms;
+        --wew-motion-slow: 0ms;
+    }
+}
