@@ -3,14 +3,14 @@ parameters:
   phpVersion: 80400
 
   paths:
-    - ../../Classes
-    - ../../Configuration
-    - ../../Tests
-    - ../../Extensions/webcon_workspace_chatops/Classes
-    - ../../Extensions/webcon_workspace_chatops/Configuration
-    - ../../Extensions/webcon_workspace_chatops/ext_localconf.php
+    - Classes
+    - Configuration
+    - Tests
+    - Extensions/webcon_workspace_chatops/Classes
+    - Extensions/webcon_workspace_chatops/Configuration
+    - Extensions/webcon_workspace_chatops/ext_localconf.php
 
-  tmpDir: .cache/phpstan/
+  tmpDir: .Build/phpstan
 
   excludePaths:
     - '**/node_modules/*'

@@ -6,7 +6,6 @@
 /var/
 /typo3temp/
 /packages/
-/Build/phpstan/.cache/
 /.phpunit.result.cache
 /.phpstan.result.cache
 /.php-cs-fixer.cache

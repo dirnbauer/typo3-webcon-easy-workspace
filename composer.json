@@ -33,6 +33,7 @@
     "require-dev": {
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.0",
         "saschaegerer/phpstan-typo3": "^3.0.1",
         "typo3/coding-standards": "^0.9.0",
         "typo3/testing-framework": "^9.5"
@@ -56,7 +57,7 @@
         "lint": "find Classes Configuration Tests Extensions/webcon_workspace_chatops -name '*.php' -print0 | xargs -0 -n1 php -l",
         "cgl": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff",
         "cgl:fix": "php-cs-fixer fix --config=.php-cs-fixer.dist.php",
-        "phpstan": "phpstan analyse --configuration=Build/phpstan/phpstan.neon --memory-limit=1G",
+        "phpstan": "phpstan analyse --memory-limit=1G",
         "test:unit": "phpunit -c Build/phpunit/UnitTests.xml",
         "test:functional": "phpunit -c Build/phpunit/FunctionalTests.xml",
         "test": [
@@ -79,7 +80,7 @@
     "extra": {
         "typo3/cms": {
             "extension-key": "webcon_easy_workspace",
-            "version": "1.4.0",
+            "version": "1.5.0",
             "Package": {
                 "providesPackages": {}
             }
