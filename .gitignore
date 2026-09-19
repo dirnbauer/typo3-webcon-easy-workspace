@@ -9,6 +9,7 @@
 /.phpunit.result.cache
 /.phpstan.result.cache
 /.php-cs-fixer.cache
+/Build/Reports/
 
 # JavaScript
 node_modules/
