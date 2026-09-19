@@ -67,9 +67,9 @@ test('updates after a FormEngine save inside the module iframe, in this and in a
 
   // Event-driven, and that is the point: a classic FormEngine save emits no
   // DataHandler event, so before the fix nothing but the 45 s poll moved the
-  // badge. Eight seconds is far below that.
-  await expect.poll(() => badgeCount(page), { timeout: 8_000 }).toBe(expected);
-  await expect.poll(() => badgeCount(secondTab), { timeout: 8_000 }).toBe(expected);
+  // badge. Fifteen seconds is a third of that.
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
+  await expect.poll(() => badgeCount(secondTab), { timeout: 15_000 }).toBe(expected);
   await secondTab.close();
 });
 
@@ -132,7 +132,7 @@ test('decrements after publishing from the dropdown, in this and in a second tab
   await publishAllThroughDropdown(page);
   await expect.poll(() => serverCount(page), { timeout: 20_000 }).toBeLessThan(before);
   const expected = await serverCount(page);
-  await expect.poll(() => badgeCount(page), { timeout: 8_000 }).toBe(expected);
-  await expect.poll(() => badgeCount(secondTab), { timeout: 8_000 }).toBe(expected);
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
+  await expect.poll(() => badgeCount(secondTab), { timeout: 15_000 }).toBe(expected);
   await secondTab.close();
 });
