@@ -45,13 +45,28 @@ function createHost({ items = changedItems(5), workspaceId = 1, withDom = false 
   return host;
 }
 
+/**
+ * Minimal document stub. It honours `options.signal`, because BadgeSync
+ * relies on AbortController to detach the iframe listeners again.
+ */
 function createDoc() {
   return {
     hidden: false,
     listeners: {},
-    addEventListener(name, fn) { (this.listeners[name] ??= []).push(fn); },
-    removeEventListener() {},
-    dispatch(name) { for (const fn of this.listeners[name] || []) fn(new Event(name)); },
+    addEventListener(name, fn, options = {}) {
+      const bucket = (this.listeners[name] ??= []);
+      bucket.push(fn);
+      options?.signal?.addEventListener?.('abort', () => {
+        const index = bucket.indexOf(fn);
+        if (index >= 0) bucket.splice(index, 1);
+      });
+    },
+    removeEventListener(name, fn) {
+      const bucket = this.listeners[name] || [];
+      const index = bucket.indexOf(fn);
+      if (index >= 0) bucket.splice(index, 1);
+    },
+    dispatch(name) { for (const fn of [...(this.listeners[name] || [])]) fn(new Event(name)); },
   };
 }
 
@@ -243,7 +258,76 @@ describe('BadgeSync', () => {
     expect(badge.textContent).toBe('');
     expect(badge.hidden).toBe(true);
     expect(toolbarItem.hidden).toBe(true);
+    expect(toolbarItem.classList.contains('webcon-easy-workspace-toolbar--live')).toBe(true);
     document.body.innerHTML = '';
+  });
+
+  it('seeds itself from the server-rendered badge and keeps it when the request fails', async () => {
+    document.body.innerHTML = `
+      <li id="typo3-cms-backend-backend-toolbaritems-easyworkspacetoolbaritem" class="toolbar-item">
+        <button class="dropdown-toggle">
+          <span class="toolbar-item-badge badge" data-wew-workspace-badge data-wew-count="7" data-wew-workspace="3">7</span>
+        </button>
+        <div class="dropdown-menu"></div>
+      </li>`;
+    const host = createHost({ withDom: true, workspaceId: 0 });
+    document.querySelector('.dropdown-menu').append(host);
+    const badge = document.querySelector('[data-wew-workspace-badge]');
+    const toolbarItem = document.querySelector('.toolbar-item');
+    const { sync, fetchBadge } = createSync(host);
+    fetchBadge.mockRejectedValue(new Error('offline'));
+
+    sync.start();
+    // The server value survives the first paint …
+    expect(host.badgeCount).toBe(7);
+    expect(badge.textContent).toBe('7');
+    expect(toolbarItem.hidden).toBe(false);
+
+    // … and a failing request never blanks it or hides the item.
+    await vi.advanceTimersByTimeAsync(200);
+    expect(fetchBadge).toHaveBeenCalled();
+    expect(badge.textContent).toBe('7');
+    expect(toolbarItem.hidden).toBe(false);
+
+    sync.stop();
+    document.body.innerHTML = '';
+  });
+
+  it('refreshes when the module iframe finished loading (classic FormEngine save)', async () => {
+    const host = createHost();
+    const { sync, doc, fetchBadge } = createSync(host);
+    sync.start();
+    fetchBadge.mockClear();
+
+    doc.dispatch('typo3-module-loaded');
+    await vi.advanceTimersByTimeAsync(200);
+
+    expect(fetchBadge).toHaveBeenCalledTimes(1);
+  });
+
+  it('listens inside the module iframe and re-attaches on every module load', async () => {
+    const host = createHost();
+    const frameDoc = createDoc();
+    const topDoc = createDoc();
+    topDoc.querySelector = () => ({ contentDocument: frameDoc });
+    const { sync, fetchBadge } = createSync(host, { topDocument: topDoc });
+    sync.start();
+    fetchBadge.mockClear();
+
+    // An event Core dispatches on the module's own document only.
+    frameDoc.dispatch('typo3:datahandler:process');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(fetchBadge).toHaveBeenCalledTimes(1);
+
+    // After a module swap the listeners are attached exactly once, not twice.
+    topDoc.dispatch('typo3-module-loaded');
+    await vi.advanceTimersByTimeAsync(200);
+    fetchBadge.mockClear();
+    frameDoc.dispatch('typo3:pagetree:refresh');
+    await vi.advanceTimersByTimeAsync(200);
+    expect(fetchBadge).toHaveBeenCalledTimes(1);
+
+    sync.stop();
   });
 });
 
