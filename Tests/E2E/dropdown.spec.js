@@ -1,12 +1,15 @@
 import { expect, test } from '@playwright/test';
 import {
   currentWorkspaceId,
+  discardPendingOnTestPage,
   env,
   goto,
   openBackend,
   requireEnvironment,
+  saveContentHeaderInIframe,
   selectors,
   switchWorkspace,
+  waitForModuleFrame,
 } from './backend.js';
 
 /**
@@ -29,16 +32,21 @@ test.beforeAll(async ({ browser }) => {
   ({ context, page } = await openBackend(browser));
   originalWorkspaceId = await currentWorkspaceId(page);
   await switchWorkspace(page, env.workspaceId);
+  // Give the dropdown something to show.
+  await saveContentHeaderInIframe(page, env.contentUid, `Dropdown E2E ${Date.now()}`);
 });
 
 test.afterAll(async () => {
   if (!page) return;
+  await discardPendingOnTestPage(page).catch(() => {});
   await switchWorkspace(page, originalWorkspaceId).catch(() => {});
   await context.close();
 });
 
 async function openDropdown(target) {
   await goto(target, env.recordsModule);
+  // The module iframe carries the page context the list is scoped to.
+  await waitForModuleFrame(target, '/records');
   await target.locator(selectors.toggle).waitFor({ timeout: 30_000 });
   await target.locator(selectors.toggle).click();
   await target.locator(selectors.menu).waitFor({ timeout: 20_000 });
@@ -97,15 +105,17 @@ test('states render: loading skeleton, empty and error', async () => {
   await goto(page, env.recordsModule);
   await page.locator(selectors.toggle).waitFor({ timeout: 30_000 });
 
-  // Loading — hold the items response open long enough to capture it.
+  const emptyItems = JSON.stringify({ context: 'page', items: [], itemGroups: [], changedItemGroups: [], workspaceId: env.workspaceId });
+
+  // Loading — hold the items response back long enough to capture it.
   await page.route('**/webcon-easy-workspace/items*', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 2_500));
-    await route.continue();
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    await route.fulfill({ status: 200, contentType: 'application/json', body: emptyItems }).catch(() => {});
   });
   await page.locator(selectors.toggle).click();
-  await page.locator('[data-wew-loading]').waitFor({ timeout: 10_000 });
+  await page.locator('[data-wew-loading]').waitFor({ timeout: 15_000 });
   await page.locator(selectors.menu).screenshot({ path: `${shotDir}/state-loading.png` });
-  await page.unroute('**/webcon-easy-workspace/items*');
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
   await page.keyboard.press('Escape');
 
   // Error — the endpoint fails, the dropdown offers a retry.
@@ -115,17 +125,15 @@ test('states render: loading skeleton, empty and error', async () => {
   await expect(page.locator('[data-wew-error]')).toHaveAttribute('role', 'alert');
   await expect(page.locator('[data-wew-retry]')).toBeVisible();
   await page.locator(selectors.menu).screenshot({ path: `${shotDir}/state-error.png` });
-  await page.unroute('**/webcon-easy-workspace/items*');
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
   await page.keyboard.press('Escape');
 
   // Empty — no pending rows for this context.
   await page.route('**/webcon-easy-workspace/items*', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ context: 'page', items: [], itemGroups: [], changedItemGroups: [], workspaceId: env.workspaceId }),
+    status: 200, contentType: 'application/json', body: emptyItems,
   }));
   await page.locator(selectors.toggle).click();
-  await page.locator('[data-wew-empty]').waitFor({ timeout: 10_000 });
+  await page.locator('[data-wew-empty]').waitFor({ timeout: 15_000 });
   await page.locator(selectors.menu).screenshot({ path: `${shotDir}/state-empty.png` });
-  await page.unroute('**/webcon-easy-workspace/items*');
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
 });

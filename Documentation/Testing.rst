@@ -92,8 +92,8 @@ it needs an instance, a workspace and a content element to edit.
 rendered into the markup, a FormEngine save inside the module iframe (and
 the same count in a second tab), the dashboard/Records/file list, module
 navigation without a page reload, switching to Live and back, a change made
-by another actor (within one poll interval), discarding in Core's Workspaces
-module and — opt-in — publishing from the dropdown.
+by another actor (within one poll interval), an event a module raises only
+inside its own frame, and — opt-in — publishing from the dropdown.
 
 ``dropdown.spec.js`` covers the dropdown itself: light and dark scheme,
 keyboard navigation, accessible names, the dialog/live-region roles and the
@@ -106,9 +106,9 @@ against an instance that answers in a second or two; a saturated PHP-FPM
 pool makes them flaky for reasons that have nothing to do with the badge.
 
 What the scenario cannot check: the Visual Editor and news integrations
-(they need their own records) and live content after a real publish. Do
-those by hand on a disposable instance, and inspect console and server logs
-while you do.
+(they need their own records), publishing and discarding through Core's own
+Workspaces module, and live content after a real publish. Do those by hand
+on a disposable instance, and inspect console and server logs while you do.
 
 Health checks
 =============

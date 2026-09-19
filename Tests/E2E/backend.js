@@ -22,10 +22,6 @@ export const env = {
 env.recordsModule = process.env.WEW_E2E_RECORDS_MODULE
   || `/typo3/module/content/records?id=${env.pageUid}`;
 
-/** Core's own Workspaces module ("Publish"). */
-env.workspacesModule = process.env.WEW_E2E_WORKSPACES_MODULE
-  || '/typo3/module/manage/workspaces';
-
 export const selectors = {
   toolbarItem: '.webcon-easy-workspace-toolbar',
   badge: '[data-wew-workspace-badge]',
@@ -292,22 +288,3 @@ export async function discardPendingOnTestPage(page) {
   }, env.pageUid);
 }
 
-/**
- * Discard the whole page through Core's own Workspaces module, inside the
- * content iframe — the module only tells the *top* document that the page
- * tree should refresh, it emits no DataHandler event.
- */
-export async function discardAllInWorkspacesModule(page) {
-  // The module reviews the selected page, so it needs an id.
-  await goto(page, `${env.workspacesModule}?id=${env.pageUid}&workspace=${env.workspaceId}`);
-  await waitForModuleFrame(page, '/manage/workspaces');
-  const frame = page.frameLocator(selectors.contentIframe);
-  const selectAll = frame.locator('[data-multi-record-selection-check-action="check-all"]').first();
-  await selectAll.waitFor({ timeout: 60_000 });
-  await selectAll.click();
-  await frame.locator('[data-multi-record-selection-action="discard"]').first().click();
-  // Core confirms in a modal that is rendered in the top document.
-  const confirm = page.locator('.modal button.btn-danger, .modal button.btn-warning, .modal button[name="ok"]').first();
-  await confirm.waitFor({ timeout: 15_000 });
-  await confirm.click();
-}

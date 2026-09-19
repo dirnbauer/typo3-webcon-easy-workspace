@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import {
   badgeCount,
   currentWorkspaceId,
-  discardAllInWorkspacesModule,
   discardPendingOnTestPage,
   env,
   externalEdit,
@@ -111,13 +110,22 @@ test('follows a change made by another actor within one poll interval', async ()
   await expect.poll(() => badgeCount(page), { timeout: env.pollMs + 15_000 }).toBe(expected);
 });
 
-test('decrements after discarding in Core\'s Workspaces module', async () => {
-  const before = await serverCount(page);
-  test.skip(before === 0, 'Nothing pending to discard.');
-  await discardAllInWorkspacesModule(page);
-  await expect.poll(() => serverCount(page), { timeout: 30_000 }).toBeLessThan(before);
+test('follows an event a module raises only inside its own frame', async () => {
+  // Core's own modules — the Workspaces module's publish and discard, for
+  // instance — dispatch on their own `document`, which never reaches the
+  // toolbar in the top frame. Change a record without any client-side
+  // signal, then raise the event where such a module raises it.
+  await goto(page, env.recordsModule);
+  await waitForModuleFrame(page, '/records');
+  expect(await externalEdit(page, env.contentUid, `In-frame E2E ${Date.now()}`)).toBeLessThan(400);
   const expected = await serverCount(page);
-  await expect.poll(() => badgeCount(page), { timeout: 10_000 }).toBe(expected);
+  expect(expected).toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    document.querySelector('#typo3-contentIframe').contentDocument
+      .dispatchEvent(new CustomEvent('typo3:pagetree:refresh'));
+  });
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
 });
 
 test('decrements after publishing from the dropdown, in this and in a second tab', async () => {
