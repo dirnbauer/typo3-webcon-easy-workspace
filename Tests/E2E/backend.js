@@ -260,7 +260,11 @@ export async function publishAllThroughDropdown(page) {
  * repeatable and the live records stay untouched.
  */
 export async function discardPendingOnTestPage(page) {
-  await page.evaluate(async (pageUid) => {
+  // Settle on a page of our own first: switching the workspace reloads the
+  // frames, and an evaluate that starts during that navigation is lost.
+  await goto(page, '/typo3/module/dashboard');
+  await page.locator(selectors.toolbarItem).waitFor({ state: 'attached', timeout: 30_000 });
+  return page.evaluate(async (pageUid) => {
     const url = new URL(TYPO3.settings.ajaxUrls.webcon_easy_workspace_items, window.location.href);
     url.searchParams.set('pageUid', String(pageUid));
     const items = await (await fetch(url.toString(), { credentials: 'same-origin' })).json();
