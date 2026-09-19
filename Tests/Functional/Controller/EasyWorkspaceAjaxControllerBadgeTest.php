@@ -7,6 +7,8 @@ namespace Webconsulting\WebconEasyWorkspace\Tests\Functional\Controller;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Http\Stream;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
@@ -31,6 +33,8 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
     {
         $backendUser = $this->setUpBackendUser($userUid);
         $backendUser->setWorkspace($workspaceId);
+        // Core's BackendUserAuthenticator middleware does this for a real request.
+        $this->get(Context::class)->setAspect('workspace', new WorkspaceAspect($workspaceId));
 
         return $backendUser;
     }
@@ -64,7 +68,7 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function badgeReportsTheWholeWorkspaceCountWithAStableShape(): void
+    public function badgeReportsBothTheWorkspaceAndThePageCountWithAStableShape(): void
     {
         $backendUser = $this->backendUserInWorkspace(1, 1);
         $subject = $this->get(EasyWorkspaceAjaxController::class);
@@ -72,23 +76,39 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
         $payload = $this->json($subject->badgeAction($this->request($backendUser, query: ['pageUid' => 1])));
 
         self::assertSame(
-            ['context', 'workspaceId', 'workspaceTitle', 'changedCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
+            ['context', 'workspaceId', 'workspaceTitle', 'contextCount', 'changedCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
             array_keys($payload),
         );
         self::assertSame('page', $payload['context']);
         self::assertSame(1, $payload['workspaceId']);
         self::assertSame('Workspace One', $payload['workspaceTitle']);
+        self::assertSame(1, $payload['contextCount']);
         self::assertSame(1, $payload['changedCount']);
         self::assertSame(['tt_content' => 1], $payload['byTable']);
         self::assertSame(['new' => 0, 'changed' => 1, 'deleted' => 0, 'moved' => 0], $payload['byState']);
         self::assertIsString($payload['stamp']);
         self::assertSame(40, strlen($payload['stamp']));
 
-        // The count is context-free: without any page context the number is identical.
+        // The workspace total stays context-free; only contextCount drops out
+        // when the client reports no page, so the badge can fall back to it.
         $contextFree = $this->json($subject->badgeAction($this->request($backendUser)));
         self::assertSame('none', $contextFree['context']);
+        self::assertNull($contextFree['contextCount']);
         self::assertSame(1, $contextFree['changedCount']);
         self::assertSame($payload['stamp'], $contextFree['stamp']);
+    }
+
+    #[Test]
+    public function contextCountIgnoresChangesOnOtherPages(): void
+    {
+        $backendUser = $this->backendUserInWorkspace(1, 1);
+        $subject = $this->get(EasyWorkspaceAjaxController::class);
+
+        // Page 999 does not exist, so nothing of the workspace belongs to it.
+        $payload = $this->json($subject->badgeAction($this->request($backendUser, query: ['pageUid' => 999])));
+
+        self::assertSame(0, $payload['contextCount']);
+        self::assertSame(1, $payload['changedCount']);
     }
 
     #[Test]

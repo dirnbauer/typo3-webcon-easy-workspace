@@ -44,6 +44,7 @@ final readonly class LocalizationService
         'toolbar.publishing',
         'toolbar.publishToLive',
         'toolbar.badge.pending',
+        'toolbar.badge.pendingHere',
         'toolbar.dialog.aria',
         'toolbar.refresh',
         'toolbar.count.onPage',

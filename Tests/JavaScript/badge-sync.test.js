@@ -359,6 +359,7 @@ describe('normalizeBadgePayload', () => {
       workspaceId: 2,
       workspaceTitle: '',
       changedCount: 4,
+      contextCount: null,
       stamp: '',
       latestChangeAt: 0,
       byTable: { pages: 4 },
@@ -366,5 +367,24 @@ describe('normalizeBadgePayload', () => {
     });
     expect(normalizeBadgePayload(null)).toBeNull();
     expect(normalizeBadgePayload({ changedCount: -3 }).changedCount).toBe(0);
+    expect(normalizeBadgePayload({ changedCount: 9, contextCount: '2' }).contextCount).toBe(2);
+    expect(normalizeBadgePayload({ changedCount: 9, contextCount: 0 }).contextCount).toBe(0);
+  });
+});
+
+describe('BadgeSync badge number', () => {
+  it('shows the context count and falls back to the workspace total', () => {
+    const host = createHost();
+    const sync = new BadgeSync(host, { window: window, document, topDocument: document, topWindow: null });
+
+    sync.count = 7;
+    sync.contextCount = null;
+    expect(sync.badgeNumber()).toBe(7);
+
+    sync.contextCount = 2;
+    expect(sync.badgeNumber()).toBe(2);
+
+    sync.contextCount = 0;
+    expect(sync.badgeNumber()).toBe(0);
   });
 });

@@ -35,6 +35,16 @@ function selectionContextKey(pageUid, newsUid, workspaceId) {
   return `${workspaceId}:${contextType}:${contextUid}`;
 }
 
+/**
+ * Page/news context sent along with writes, so the badge block the server
+ * echoes back is already scoped to what the editor is looking at.
+ */
+function contextBody(host) {
+  const pageUid = Number(host.pageUid) || 0;
+  const newsUid = Number(host.newsUid) || 0;
+  return newsUid > 0 ? { newsUid } : { pageUid };
+}
+
 export function currentToolbarContext(host) {
   const { pageUid, newsUid } = detectContext(host);
   host.pageUid = pageUid;
@@ -139,7 +149,8 @@ export async function publish(host) {
       await refresh(host);
       return;
     }
-    const response = await new AjaxRequest(ENDPOINTS.publish).post({ selections: uniqueSelections }, JSON_HEADERS);
+    const response = await new AjaxRequest(ENDPOINTS.publish)
+      .post({ selections: uniqueSelections, ...contextBody(host) }, JSON_HEADERS);
     const result = await response.resolve();
     if (result?.badge) {
       host.badge?.apply(result.badge, { reason: 'publish', refreshList: false });
@@ -177,7 +188,7 @@ export async function discardItem(host, item) {
   const results = [];
   for (const record of discardRecordsForItem(host, item)) {
     const response = await new AjaxRequest(ENDPOINTS.discard)
-      .post({ table: record.table, workspaceUid: record.workspaceUid }, JSON_HEADERS);
+      .post({ table: record.table, workspaceUid: record.workspaceUid, ...contextBody(host) }, JSON_HEADERS);
     results.push(await response.resolve());
   }
   const last = results.at(-1);

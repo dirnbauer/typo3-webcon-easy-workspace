@@ -17,7 +17,8 @@ use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
-use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
+use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * Renders the "Easy Workspace" trigger in the top-right backend toolbar.
@@ -39,7 +40,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly ConfigurationProvider $configurationProvider,
         private readonly LocalizationService $localizationService,
         private readonly UriBuilder $uriBuilder,
-        private readonly WorkspaceChangeCounter $changeCounter,
+        private readonly PendingItemsService $pendingItemsService,
     ) {}
 
     public function setRequest(ServerRequestInterface $request): void
@@ -106,10 +107,38 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
         $view->assignMultiple([
             'activeWorkspaceId' => $workspaceId,
-            'pendingCount' => $workspaceId > 0 ? $this->changeCounter->count($workspaceId)->total : 0,
+            'pendingCount' => $this->firstPaintCount($workspaceId),
         ]);
 
         return $view->render('ToolbarItems/EasyWorkspaceItem');
+    }
+
+    /**
+     * Count for the very first paint, before BadgeSync takes over.
+     *
+     * The badge shows the changes of the page the editor is on, so the
+     * server can only pre-fill it when the backend request itself names a
+     * page (`?id=`). Without one it renders 0 and stays hidden until the
+     * first badge response — BadgeSync detects the page from the module
+     * state / iframe URL, which no server request can see.
+     */
+    private function firstPaintCount(int $workspaceId): int
+    {
+        if ($workspaceId <= 0) {
+            return 0;
+        }
+        $pageUid = isset($this->request)
+            ? Value::int($this->request->getQueryParams()['id'] ?? null)
+            : 0;
+        if ($pageUid <= 0) {
+            return 0;
+        }
+
+        return $this->pendingItemsService->countChangesForContext(
+            $pageUid,
+            0,
+            $this->configurationProvider->get($pageUid),
+        ) ?? 0;
     }
 
     /**

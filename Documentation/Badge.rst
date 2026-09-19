@@ -4,12 +4,22 @@
 Badge and refresh
 =================
 
-The toolbar badge shows the number of pending changes in the backend
-user's active workspace. It is **context-free**: the number is the same on
-the dashboard, in the list module or on any page, exactly like the count
-in the Workspaces module. Only the dropdown list is scoped to the page or
-news article the editor is working on; its header adds
-"N on this page · M elsewhere".
+The toolbar badge shows the number of pending changes **on the page (or
+news article) the editor is currently on** — the same rows the dropdown
+lists, not the whole workspace. Where no page can be resolved at all (a
+module outside the Web group, the dashboard) the badge falls back to the
+whole-workspace count, which is the only meaningful number there. The
+dropdown header always names both: "N on this page · M elsewhere".
+
+Two numbers are therefore computed per request:
+
+``changedCount``
+    The whole workspace — ``WorkspaceChangeCounter``, one aggregate query
+    per table (below).
+``contextCount``
+    The page or news article — ``PendingItemsService::countChangesForContext()``,
+    the same collection the ``/items`` list is built from, counted instead
+    of serialized. ``null`` when the client reported no context.
 
 ..  _badge-server:
 
@@ -50,6 +60,7 @@ and ``webcon_easy_workspace_has_changes``) return:
         "context": "page",
         "workspaceId": 4,
         "workspaceTitle": "Staging",
+        "contextCount": 2,
         "changedCount": 3,
         "byTable": {"pages": 1, "tt_content": 1, "tx_news_domain_model_news": 1},
         "byState": {"new": 1, "changed": 1, "deleted": 1, "moved": 0},
@@ -58,10 +69,12 @@ and ``webcon_easy_workspace_has_changes``) return:
     }
 
 ``context`` echoes the client context (``page``, ``news`` or ``none``);
-``pageUid``/``newsUid`` only select page TSconfig. ``/has-changes`` adds
-``hasChanges``. The ``publish`` and ``discard`` responses embed the same
-object under ``badge`` so the client never has to derive a count from a
-list. A user in Live receives ``workspaceId: 0`` and ``changedCount: 0``.
+``pageUid``/``newsUid`` select the page TSconfig **and** scope
+``contextCount``. ``/has-changes`` adds ``hasChanges``. The ``publish`` and
+``discard`` responses embed the same object under ``badge`` — their request
+bodies carry ``pageUid``/``newsUid`` too, so the echoed badge is already
+scoped — and the client never has to derive a count from a list. A user in
+Live receives ``workspaceId: 0`` and ``changedCount: 0``.
 
 ..  _badge-client:
 
@@ -69,8 +82,11 @@ Client: BadgeSync
 =================
 
 ``Resources/Public/JavaScript/menu-badge.js`` exports ``BadgeSync``, the
-only code that writes ``host.badgeCount``, the DOM badge and the toolbar
+only code that writes ``host.badgeCount`` (the workspace total, read by the
+header chip), ``host.contextCount``, the DOM badge and the toolbar
 visibility (hidden only when the server reports workspace ``0``).
+``BadgeSync.badgeNumber()`` is the single place that decides what the badge
+shows: ``contextCount``, or ``changedCount`` when it is ``null``.
 
 ..  _badge-seed:
 
@@ -83,8 +99,12 @@ First paint
           data-wew-workspace-badge data-wew-count="3" data-wew-workspace="4">3</span>
 
 ``BadgeSync.seed()`` adopts those attributes before the first request goes
-out. The badge is therefore correct in the very first paint, and a failing
-badge request can no longer blank it or hide the toolbar item. In Live the
+out, so a failing badge request can no longer blank the badge or hide the
+toolbar item. The server can only pre-fill the count when the backend
+request itself names a page (``?id=``); otherwise it renders ``0`` and the
+first ``/badge`` response fills in — the page is detected client-side from
+``ModuleStateStorage`` and the module iframe URL, which no server request
+can see. In Live the
 item carries ``webcon-easy-workspace-toolbar--live`` (``display: none``) so
 it is not visible before the script runs; ``BadgeSync`` keeps that class and
 the ``hidden`` property in sync afterwards.

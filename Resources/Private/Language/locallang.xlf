@@ -199,6 +199,12 @@
         <target state="translated">Mark for review</target>
       </segment>
     </unit>
+    <unit id="toolbar.badge.pendingHere">
+      <segment>
+        <source>{count, plural, one {# pending change on this page} other {# pending changes on this page}}</source>
+        <target state="translated">{count, plural, one {# pending change on this page} other {# pending changes on this page}}</target>
+      </segment>
+    </unit>
     <unit id="toolbar.badge.pending">
       <segment>
         <source>{count, plural, one {# pending workspace change} other {# pending workspace changes}}</source>

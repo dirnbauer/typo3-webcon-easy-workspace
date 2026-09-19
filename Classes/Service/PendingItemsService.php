@@ -6,6 +6,7 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
+use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
@@ -171,6 +172,31 @@ final readonly class PendingItemsService
                 'hasChanges' => false,
             ],
         };
+    }
+
+    /**
+     * Number of changed rows the dropdown would list for this context —
+     * the page (with its content elements and inline children) or the
+     * single news article. Returns null when there is no context, so the
+     * toolbar badge can fall back to the whole-workspace count.
+     *
+     * @param array<string, mixed> $config
+     */
+    public function countChangesForContext(int $pageUid, int $newsUid, array $config, ?int $languageUid = null): ?int
+    {
+        return match (ToolbarContext::resolve($pageUid, $newsUid)) {
+            ToolbarContext::News => $this->countChangedItems($this->payloadForNews($newsUid, PendingItemsMode::Changed, $config, $languageUid)),
+            ToolbarContext::Page => $this->countChangedItems($this->payloadForPage($pageUid, PendingItemsMode::Changed, $config, $languageUid)),
+            ToolbarContext::None => null,
+        };
+    }
+
+    private function countChangedItems(PendingItemsPayload $payload): int
+    {
+        return count(array_filter(
+            $payload->items,
+            static fn(PendingItem $item): bool => $item->isChanged,
+        ));
     }
 
     /**

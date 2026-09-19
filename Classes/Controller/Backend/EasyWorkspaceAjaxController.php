@@ -143,15 +143,16 @@ final readonly class EasyWorkspaceAjaxController
             return $this->accessDeniedJson();
         }
 
-        $payload = $this->badgePayload($request, ToolbarContext::resolve($pageUid, $newsUid));
+        $payload = $this->badgePayload($request, $pageUid, $newsUid, $config);
 
         return new JsonResponse($payload + ['hasChanges' => $payload['changedCount'] > 0]);
     }
 
     /**
-     * Whole-workspace change count of the acting user's workspace. The
-     * count is context-free (like the Workspaces module); pageUid/newsUid
-     * only select the page TSconfig and echo the client context back.
+     * Change counts of the acting user's workspace: `changedCount` for the
+     * whole workspace (the dropdown header's "N elsewhere") and
+     * `contextCount` for the page or news article the editor is on — the
+     * number the toolbar badge shows.
      */
     public function badgeAction(ServerRequestInterface $request): ResponseInterface
     {
@@ -167,7 +168,7 @@ final readonly class EasyWorkspaceAjaxController
             return $this->accessDeniedJson();
         }
 
-        return new JsonResponse($this->badgePayload($request, ToolbarContext::resolve($pageUid, $newsUid)));
+        return new JsonResponse($this->badgePayload($request, $pageUid, $newsUid, $config));
     }
 
     /**
@@ -175,10 +176,16 @@ final readonly class EasyWorkspaceAjaxController
      * in publish/discard responses so the client never derives the count
      * from a list.
      *
+     * `changedCount` is the whole workspace, `contextCount` only the page
+     * or news article the client reported — null when there is no context,
+     * which lets the badge fall back to the workspace total.
+     *
+     * @param array<string, mixed> $config Normalized config; resolved from TSconfig when empty.
      * @return array{
      *     context: string,
      *     workspaceId: int,
      *     workspaceTitle: string,
+     *     contextCount: int|null,
      *     changedCount: int,
      *     byTable: array<string, int>,
      *     byState: array{new: int, changed: int, deleted: int, moved: int},
@@ -186,8 +193,9 @@ final readonly class EasyWorkspaceAjaxController
      *     stamp: string
      * }
      */
-    private function badgePayload(ServerRequestInterface $request, ToolbarContext $context = ToolbarContext::None): array
+    private function badgePayload(ServerRequestInterface $request, int $pageUid = 0, int $newsUid = 0, array $config = []): array
     {
+        $context = ToolbarContext::resolve($pageUid, $newsUid);
         $workspaceId = $this->accessGuard->activeWorkspaceId($request);
         $count = $this->changeCounter->count($workspaceId);
 
@@ -195,6 +203,13 @@ final readonly class EasyWorkspaceAjaxController
             'context' => $context->value,
             'workspaceId' => $workspaceId,
             'workspaceTitle' => $workspaceId > 0 ? $this->workspaceRecordQuery->resolveWorkspaceTitle($workspaceId) : '',
+            'contextCount' => $workspaceId > 0 && $context !== ToolbarContext::None
+                ? $this->pendingItemsService->countChangesForContext(
+                    $pageUid,
+                    $newsUid,
+                    $config !== [] ? $config : $this->configurationProvider->get($pageUid > 0 ? $pageUid : null),
+                )
+                : null,
             ...$count->toArray(),
         ];
     }
@@ -421,19 +436,22 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse(['error' => $this->localizationService->translate('error.invalidSelections')], 400);
         }
 
+        $pageUid = Value::int($payload['pageUid'] ?? null);
+        $newsUid = Value::int($payload['newsUid'] ?? null);
+
         $selections = $this->publishSelectionNormalizer->fromAjaxJson($rawSelections);
         if ($selections === []) {
             return new JsonResponse([
                 'success' => false,
                 'published' => 0,
                 'errors' => [$this->localizationService->translate('error.noPublishableRecords')],
-                'badge' => $this->badgePayload($request),
+                'badge' => $this->badgePayload($request, $pageUid, $newsUid),
             ]);
         }
 
         $result = $this->publishService->publish($selections, $this->accessGuard->user($request));
 
-        return new JsonResponse($result + ['badge' => $this->badgePayload($request)]);
+        return new JsonResponse($result + ['badge' => $this->badgePayload($request, $pageUid, $newsUid)]);
     }
 
     public function discardAction(ServerRequestInterface $request): ResponseInterface
@@ -456,7 +474,11 @@ final readonly class EasyWorkspaceAjaxController
         }
         $result = $this->publishService->discard($table, $workspaceUid, $this->accessGuard->user($request));
 
-        return new JsonResponse($result + ['badge' => $this->badgePayload($request)]);
+        return new JsonResponse($result + ['badge' => $this->badgePayload(
+            $request,
+            Value::int($payload['pageUid'] ?? null),
+            Value::int($payload['newsUid'] ?? null),
+        )]);
     }
 
     public function previewLinkAction(ServerRequestInterface $request): ResponseInterface

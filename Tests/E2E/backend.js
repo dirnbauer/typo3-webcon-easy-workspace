@@ -139,8 +139,42 @@ export async function badgeCount(page) {
   }, selectors.badge);
 }
 
-/** Number of pending changes reported by the server for the active workspace. */
+/**
+ * The page the toolbar scopes to, resolved the way `detectContext()` does:
+ * the Web module state first, the top URL as a fallback. 0 when the backend
+ * has no page context at all.
+ */
+export async function currentPageUid(page) {
+  return page.evaluate(() => {
+    try {
+      const state = (top.ModuleStateStorage ?? window.ModuleStateStorage)?.current?.('web');
+      const identifier = Number.parseInt(String(state?.identifier ?? '0'), 10);
+      if (identifier > 0) return identifier;
+    } catch { /* cross-origin */ }
+    const fromUrl = Number.parseInt(new URLSearchParams(window.location.search).get('id') || '0', 10);
+    return fromUrl > 0 ? fromUrl : 0;
+  });
+}
+
+/**
+ * Pending changes the server reports for whatever the badge is scoped to:
+ * the current page, or the whole workspace where there is no page context.
+ */
 export async function serverCount(page) {
+  const pageUid = await currentPageUid(page);
+
+  return page.evaluate(async (uid) => {
+    const url = new URL(TYPO3.settings.ajaxUrls.webcon_easy_workspace_badge, window.location.href);
+    if (uid > 0) url.searchParams.set('pageUid', String(uid));
+    url.searchParams.set('_', String(Date.now()));
+    const response = await fetch(url.toString(), { credentials: 'same-origin' });
+    const payload = await response.json();
+    return Number(payload.contextCount ?? payload.changedCount ?? 0);
+  }, pageUid);
+}
+
+/** Pending changes of the whole active workspace, whatever page is open. */
+export async function workspaceCount(page) {
   return page.evaluate(async () => {
     const url = new URL(TYPO3.settings.ajaxUrls.webcon_easy_workspace_badge, window.location.href);
     url.searchParams.set('_', String(Date.now()));

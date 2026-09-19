@@ -15,11 +15,13 @@ import {
   serverRenderedBadge,
   switchWorkspace,
   waitForModuleFrame,
+  workspaceCount,
 } from './backend.js';
 
 /**
- * The toolbar badge must always show the server count of the active
- * workspace — without a reload, in every tab, in every module.
+ * The toolbar badge must always show the server count for the page the
+ * editor is on (the whole workspace where there is no page context) —
+ * without a reload, in every tab, in every module.
  *
  * Every case below is a stale-count report reproduced as a test. See
  * Documentation/Testing.rst for the environment variables.
@@ -47,11 +49,19 @@ test.afterAll(async () => {
   await context.close();
 });
 
-test('renders the server count into the toolbar markup, before any script runs', async () => {
-  await goto(page, '/typo3/module/dashboard');
+test('renders the page count into the toolbar markup, before any script runs', async () => {
+  // Only a backend URL that names a page (?id=) lets the server pre-fill the
+  // badge; the Records module is opened with one.
+  await goto(page, env.recordsModule);
   const expected = await serverCount(page);
   expect(await serverRenderedBadge(page)).toBe(expected);
   await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
+});
+
+test('shows the page count, not the whole workspace', async () => {
+  await goto(page, env.recordsModule);
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(await serverCount(page));
+  expect(await serverCount(page)).toBeLessThanOrEqual(await workspaceCount(page));
 });
 
 test('updates after a FormEngine save inside the module iframe, in this and in a second tab', async () => {
@@ -72,23 +82,22 @@ test('updates after a FormEngine save inside the module iframe, in this and in a
   await secondTab.close();
 });
 
-test('keeps the workspace-wide count on the dashboard, in Records and in the file list', async () => {
-  const expected = await serverCount(page);
+test('keeps a count on the dashboard, in Records and in the file list', async () => {
   for (const path of ['/typo3/module/dashboard', env.recordsModule, '/typo3/module/file/list']) {
     await goto(page, path);
     await page.locator(selectors.toolbarItem).waitFor({ state: 'attached' });
-    await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
+    // Re-read per module: the scope follows the page context each one has.
+    await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(await serverCount(page));
   }
 });
 
 test('keeps the count while navigating modules without a page reload', async () => {
-  const expected = await serverCount(page);
   await goto(page, '/typo3/module/dashboard');
   await waitForModuleFrame(page, '/dashboard');
   for (const path of [env.recordsModule, '/typo3/module/file/list', '/typo3/module/dashboard']) {
     await page.evaluate((url) => { document.querySelector('#typo3-contentIframe').contentWindow.location.assign(url); }, path);
     await waitForModuleFrame(page, new URL(path, 'https://x').pathname);
-    await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
+    await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(await serverCount(page));
   }
 });
 

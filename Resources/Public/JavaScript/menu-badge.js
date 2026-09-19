@@ -13,10 +13,14 @@ import {
 import { detectContext, label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 
 /**
- * BadgeSync — the ONLY writer of `host.badgeCount`.
+ * BadgeSync — the ONLY writer of `host.badgeCount` and `host.contextCount`.
  *
  * The server (`/badge`, and the `badge` block of publish/discard responses)
- * is the single source of truth for the whole-workspace change count. Every
+ * is the single source of truth for both counts: `changedCount` for the
+ * whole workspace (the header chip's "N elsewhere") and `contextCount` for
+ * the page or news article the editor is on. The toolbar badge shows the
+ * context count and falls back to the workspace total only where there is
+ * no page context at all (a module outside the Web group). Every
  * trigger — element connect, navigation, dropdown open, Core DataHandler
  * broadcasts, save messages, BroadcastChannel notifications from other
  * tabs/frames, visibility/focus, and the visible-tab poll — funnels through
@@ -41,6 +45,7 @@ export class BadgeSync {
     this.errorThreshold = options.errorThreshold ?? BADGE_ERROR_BACKOFF_THRESHOLD;
 
     this.count = 0;
+    this.contextCount = null;
     this.workspaceId = Math.max(0, Number(options.initialWorkspaceId) || 0);
     this.workspaceTitle = '';
     this.stamp = '';
@@ -70,9 +75,16 @@ export class BadgeSync {
     if (!badge) return;
     const count = parseInt(badge.getAttribute('data-wew-count') ?? '', 10);
     const workspaceId = parseInt(badge.getAttribute('data-wew-workspace') ?? '', 10);
-    if (Number.isFinite(count) && count >= 0) this.count = count;
+    // The server renders the page-scoped count (it only knows a page when
+    // the backend URL carries ?id=), so seed the context count from it and
+    // leave the workspace total to the first response.
+    if (Number.isFinite(count) && count >= 0) {
+      this.count = count;
+      this.contextCount = count > 0 ? count : null;
+    }
     if (Number.isFinite(workspaceId) && workspaceId >= 0) this.workspaceId = workspaceId;
     this.host.badgeCount = this.count;
+    this.host.contextCount = this.contextCount;
     this.host.workspaceId = this.workspaceId;
   }
 
@@ -205,10 +217,11 @@ export class BadgeSync {
   apply(payload, { reason = 'response', refreshList = true } = {}) {
     const next = normalizeBadgePayload(payload);
     if (!next) return;
-    const previousCount = this.count;
+    const previousCount = this.badgeNumber();
     const previousStamp = this.stamp;
 
     this.count = next.changedCount;
+    this.contextCount = next.contextCount;
     this.workspaceId = next.workspaceId;
     this.stamp = next.stamp;
     this.byState = next.byState;
@@ -217,10 +230,11 @@ export class BadgeSync {
     if (next.workspaceTitle) this.workspaceTitle = next.workspaceTitle;
 
     this.host.badgeCount = this.count;
+    this.host.contextCount = this.contextCount;
     this.host.workspaceId = this.workspaceId;
     if (next.workspaceTitle) this.host.workspaceTitle = next.workspaceTitle;
 
-    this.render({ pulse: this.count > previousCount && reason !== 'connect' });
+    this.render({ pulse: this.badgeNumber() > previousCount && reason !== 'connect' });
     this.syncVisibility();
 
     const stampChanged = previousStamp !== '' && previousStamp !== this.stamp;
@@ -319,15 +333,28 @@ export class BadgeSync {
     return Boolean(this.host._isDropdownOpen?.());
   }
 
+  /**
+   * What the toolbar badge shows: the changes of the page or news article
+   * the editor is on. Without a resolvable context (a module outside the
+   * Web group) there is no page to count, so the workspace total stands in.
+   */
+  badgeNumber() {
+    return this.contextCount === null ? this.count : this.contextCount;
+  }
+
   render({ pulse = false } = {}) {
     const badge = toolbarBadgeElement(this.host);
     if (!badge) return;
-    const count = this.workspaceId > 0 ? this.count : 0;
+    const count = this.workspaceId > 0 ? this.badgeNumber() : 0;
     badge.textContent = count > 0 ? String(count) : '';
     badge.hidden = count <= 0;
     badge.classList.toggle('hidden', count <= 0);
     if (count > 0) {
-      badge.setAttribute('aria-label', label(this.host, 'toolbar.badge.pending', { count }));
+      badge.setAttribute('aria-label', label(
+        this.host,
+        this.contextCount === null ? 'toolbar.badge.pending' : 'toolbar.badge.pendingHere',
+        { count },
+      ));
     } else {
       badge.removeAttribute('aria-label');
     }
@@ -354,11 +381,14 @@ export function normalizeBadgePayload(data) {
   if (!data || typeof data !== 'object') return null;
   const changedCount = Math.max(0, parseInt(String(data.changedCount ?? '0'), 10) || 0);
   const workspaceId = Math.max(0, parseInt(String(data.workspaceId ?? '0'), 10) || 0);
+  const rawContextCount = parseInt(String(data.contextCount ?? ''), 10);
+  const contextCount = Number.isFinite(rawContextCount) && rawContextCount >= 0 ? rawContextCount : null;
   const rawState = data.byState && typeof data.byState === 'object' ? data.byState : {};
   return {
     workspaceId,
     workspaceTitle: typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '',
     changedCount,
+    contextCount,
     stamp: typeof data.stamp === 'string' ? data.stamp : '',
     latestChangeAt: parseInt(String(data.latestChangeAt ?? '0'), 10) || 0,
     byTable: data.byTable && typeof data.byTable === 'object' && !Array.isArray(data.byTable) ? { ...data.byTable } : {},
