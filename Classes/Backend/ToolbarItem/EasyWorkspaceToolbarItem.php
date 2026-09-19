@@ -17,6 +17,7 @@ use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter;
 
 /**
  * Renders the "Easy Workspace" trigger in the top-right backend toolbar.
@@ -38,6 +39,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly ConfigurationProvider $configurationProvider,
         private readonly LocalizationService $localizationService,
         private readonly UriBuilder $uriBuilder,
+        private readonly WorkspaceChangeCounter $changeCounter,
     ) {}
 
     public function setRequest(ServerRequestInterface $request): void
@@ -100,8 +102,23 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/toolbar-menu.css');
         // The diff/history modal opens in the top frame, so its styles ship with the toolbar.
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/diff.css');
+        $workspaceId = $this->activeWorkspaceId();
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
+        $view->assignMultiple([
+            'activeWorkspaceId' => $workspaceId,
+            'pendingCount' => $workspaceId > 0 ? $this->changeCounter->count($workspaceId)->total : 0,
+        ]);
+
         return $view->render('ToolbarItems/EasyWorkspaceItem');
+    }
+
+    /**
+     * Core calls getAdditionalAttributes() and checkAccess() before
+     * setRequest(); the guard falls back to the BE_USER global then.
+     */
+    private function activeWorkspaceId(): int
+    {
+        return $this->accessGuard->activeWorkspaceId(isset($this->request) ? $this->request : null);
     }
 
     public function hasDropDown(): bool
@@ -120,7 +137,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // Keeping them server-rendered keeps the JS bundle locale-free
         // and lets editors switch backend language without rebuilds.
         $payload = array_replace($this->configurationProvider->get(), [
-            'activeWorkspaceId' => $this->accessGuard->activeWorkspaceId($this->request),
+            'activeWorkspaceId' => $this->activeWorkspaceId(),
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
             'moduleIdentifier' => self::MODULE_IDENTIFIER,
@@ -139,6 +156,12 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         $classes = ['webcon-easy-workspace-toolbar'];
         if (!$this->configurationProvider->get()['showSubelementsInToolbar']) {
             $classes[] = 'webcon-easy-workspace-toolbar--compact';
+        }
+        // Rendered but not shown while the user is in Live: the element has
+        // to stay in the DOM so entering a workspace reveals it without a
+        // page reload. BadgeSync keeps the class and `hidden` in sync.
+        if ($this->activeWorkspaceId() <= 0) {
+            $classes[] = 'webcon-easy-workspace-toolbar--live';
         }
 
         return [

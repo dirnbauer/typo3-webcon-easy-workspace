@@ -5,6 +5,9 @@
 
 /* ---- Host + dropdown shell ---- */
 .webcon-easy-workspace-toolbar--compact .toolbar-item-title { display: none; }
+/* In Live the item stays in the DOM (so entering a workspace reveals it
+   without a reload) but must not be visible before the script runs. */
+.webcon-easy-workspace-toolbar--live { display: none !important; }
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2) {
     width: min(540px, calc(100vw - 1rem));
     min-width: 420px;

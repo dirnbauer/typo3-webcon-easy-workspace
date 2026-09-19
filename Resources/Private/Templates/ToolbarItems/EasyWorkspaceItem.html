@@ -8,6 +8,25 @@
 <span class="toolbar-item-title">
     <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.item.title" />
 </span>
-<span class="toolbar-item-badge badge badge-pill badge-warning hidden" data-wew-workspace-badge></span>
+<f:comment>
+    The count is rendered by the server, so the badge is right in the first
+    paint and survives a failing badge request. BadgeSync seeds itself from
+    these attributes and is the only writer afterwards.
+</f:comment>
+<f:if condition="{pendingCount} > 0">
+    <f:then>
+        <span class="toolbar-item-badge badge badge-pill badge-warning"
+              data-wew-workspace-badge
+              data-wew-count="{pendingCount}"
+              data-wew-workspace="{activeWorkspaceId}"
+              aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:toolbar.badge.pending', arguments: {count: pendingCount})}">{pendingCount}</span>
+    </f:then>
+    <f:else>
+        <span class="toolbar-item-badge badge badge-pill badge-warning hidden"
+              data-wew-workspace-badge
+              data-wew-count="0"
+              data-wew-workspace="{activeWorkspaceId}"></span>
+    </f:else>
+</f:if>
 
 </html>
