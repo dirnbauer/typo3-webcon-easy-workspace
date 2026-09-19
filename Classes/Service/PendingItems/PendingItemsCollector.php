@@ -229,13 +229,17 @@ final readonly class PendingItemsCollector
             }
         }
 
+        // A news article's content elements are addressed through
+        // tx_news_related_news, not through a backend layout column: their
+        // colPos is a leftover, so neither a "Column 0" meta line nor a
+        // column group belongs on them.
         $items = $this->collectContentRows(
             $items,
             $scope->relatedContentRows,
             $workspaceId,
             $mode,
             $config,
-            [],
+            null,
             $languageUid,
             $maxItems,
         );
@@ -256,7 +260,8 @@ final readonly class PendingItemsCollector
      * @param list<PendingItem> $items
      * @param list<array<string, mixed>> $contentRows
      * @param array<string, mixed> $config
-     * @param array<int, string> $columnLabels
+     * @param array<int, string>|null $columnLabels Null for records that live
+     *        outside a backend layout column (a news article's elements).
      * @return list<PendingItem>
      */
     private function collectContentRows(
@@ -265,7 +270,7 @@ final readonly class PendingItemsCollector
         int $workspaceId,
         PendingItemsMode $mode,
         array $config,
-        array $columnLabels,
+        ?array $columnLabels,
         ?int $languageUid,
         int $maxItems,
     ): array {
@@ -276,7 +281,7 @@ final readonly class PendingItemsCollector
             }
             $item = $this->pendingItemAggregator->withRelatedChanges(
                 $item,
-                $this->inlineChildResolver->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels, $languageUid),
+                $this->inlineChildResolver->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels ?? [], $languageUid),
             );
             if ($this->includeItem($item, $mode)) {
                 $items[] = $item;

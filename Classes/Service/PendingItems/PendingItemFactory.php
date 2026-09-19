@@ -42,14 +42,17 @@ final readonly class PendingItemFactory
     /**
      * @param array<string, mixed> $row
      * @param array<string, mixed> $config
-     * @param array<int, string> $columnLabels
+     * @param array<int, string>|null $columnLabels Backend layout column titles,
+     *        or null when the record sits outside any column — a news
+     *        article's own content elements, for instance, whose colPos is a
+     *        leftover the editor never sees in a layout.
      */
     public function buildItem(
         string $table,
         array $row,
         bool $isPrimary,
         array $config = [],
-        array $columnLabels = [],
+        ?array $columnLabels = [],
         ?string $locateTable = null,
         ?int $locateLiveUid = null,
         ?int $locateWorkspaceUid = null,
@@ -108,7 +111,7 @@ final readonly class PendingItemFactory
 
         $colPos = null;
         $colPosLabel = null;
-        if ($table === 'tt_content' && array_key_exists('colPos', $row)) {
+        if ($table === 'tt_content' && $columnLabels !== null && array_key_exists('colPos', $row)) {
             $colPos = Value::int($row['colPos'] ?? null);
             $colPosLabel = $this->labelResolver->resolveColPosLabel($colPos, $columnLabels);
         }

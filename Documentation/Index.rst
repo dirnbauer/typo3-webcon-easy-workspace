@@ -101,6 +101,17 @@ News scope requires EXT:news and one of:
 News is never collected by scanning every article in a storage folder.
 Slug-only detail URLs need one of the explicit contexts above.
 
+A news collection is the article plus **every** content element linked
+through ``tx_news_domain_model_news.content_elements`` (foreign field
+``tt_content.tx_news_related_news``) — an article carries up to 99 of them,
+and the list, the count, the publish selection and the discard selection
+cover all of them, together with their own inline children and file
+references. Those elements are addressed through the relation, not through
+a backend layout column, so they carry no column label and form a single
+group instead of per-column ones. An article without any content element
+(the common case, where the body is ``bodytext``) still lists its own
+record.
+
 ..  _workspace-actions:
 
 Workspace actions

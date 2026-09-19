@@ -1,0 +1,28 @@
+"be_users"
+,"uid","pid","username","password","admin","deleted","disable"
+,1,0,"admin","",1,0,0
+"sys_workspace"
+,"uid","pid","title","adminusers","members","deleted"
+,1,0,"Workspace One","be_users_1","",0
+"pages"
+,"uid","pid","title","doktype","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,1,0,"Root",1,0,0,1700000000,0,0,0,0
+,10,1,"News folder",254,0,0,1700000000,0,0,0,0
+"tx_news_domain_model_news"
+,"uid","pid","title","content_elements","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,30,10,"Article with elements",3,0,0,1700000000,0,0,0,0
+,31,10,"Article with elements (draft)",3,0,0,1700000500,30,1,0,0
+,40,10,"Article without elements",0,0,0,1700000000,0,0,0,0
+,41,10,"Article without elements (draft)",0,0,0,1700000600,40,1,0,0
+,50,10,"Article with a discarded draft",1,0,0,1700000000,0,0,0,0
+,51,10,"Article with a discarded draft (draft)",1,1,0,1700000900,50,1,0,0
+"tt_content"
+,"uid","pid","header","tx_news_related_news","sorting","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,100,10,"Element one",30,10,0,0,1700000000,0,0,0,0
+,101,10,"Element two",30,20,0,0,1700000000,0,0,0,0
+,102,10,"Element three",30,30,0,0,1700000000,0,0,0,0
+,110,10,"Element one (draft)",30,10,0,0,1700000700,100,1,0,0
+,111,10,"Element two (draft)",30,20,0,0,1700000800,101,1,0,0
+,120,10,"Unrelated page content",0,40,0,0,1700000000,0,0,0,0
+,130,10,"Discarded element",50,10,0,0,1700000000,0,0,0,0
+,131,10,"Discarded element (draft)",50,10,1,0,1700001000,130,1,0,0
