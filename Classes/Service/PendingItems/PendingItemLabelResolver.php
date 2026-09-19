@@ -10,6 +10,7 @@ use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Schema\Exception\InvalidSchemaTypeException;
+use TYPO3\CMS\Core\Schema\SchemaLabelResolver;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
@@ -19,6 +20,7 @@ final readonly class PendingItemLabelResolver
 {
     public function __construct(
         private TcaSchemaFactory $tcaSchemaFactory,
+        private SchemaLabelResolver $schemaLabelResolver,
         private ResourceFactory $resourceFactory,
         private BackendLayoutView $backendLayoutView,
         private LocalizationService $localizationService,
@@ -115,7 +117,11 @@ final readonly class PendingItemLabelResolver
         }
 
         $value = Value::string($row[$typeField] ?? null);
-        $label = BackendUtility::getLabelFromItemlist($table, $typeField, $value);
+        // Core's BackendUtility::getLabelFromItemlist() is a deprecated
+        // forwarder to exactly this call; passing the row lets an
+        // itemsProcFunc-driven type field resolve, which the forwarder's
+        // empty default could not.
+        $label = $this->schemaLabelResolver->getLabelForFieldValue($table, $typeField, $value, $row);
         if ($label !== '') {
             return $this->localizationService->resolveLabel($label);
         }

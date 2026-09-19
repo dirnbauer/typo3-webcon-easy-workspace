@@ -2,6 +2,14 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.6.1] — 2026-09-19
+
+### Fixed
+
+- Resolving a record's type label no longer goes through `BackendUtility::getLabelFromItemlist()`, deprecated for removal in TYPO3 v15. The functional suite fails on deprecations, and 1.6.0's new tests were the first to cover that code path, so the release tag went out red. The call is now `SchemaLabelResolver->getLabelForFieldValue()`, injected rather than fetched statically. Core's method was a thin forwarder to exactly that call, so behaviour is unchanged except that the record row is passed along, which lets an itemsProcFunc-driven type field resolve where the forwarder's empty default could not.
+
+**Use 1.6.1, not 1.6.0** — same features, green gates.
+
 ## [1.6.0] — 2026-09-19
 
 ### Fixed
