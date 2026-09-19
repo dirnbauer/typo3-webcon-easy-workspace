@@ -214,7 +214,15 @@ export async function saveContentHeaderInIframe(page, contentUid, header) {
   await frame.locator(field).fill(header);
   // A classic FormEngine save: a full form POST inside the iframe. No
   // DataHandler event, no BroadcastChannel message — only an iframe load.
+  // Wait for the POST itself: on a loaded instance the button sits in its
+  // spinner state for a long time, and the typed value alone proves nothing.
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().includes('/record/edit'),
+    { timeout: 120_000 },
+  );
   await frame.locator('button[name="_savedok"]').click();
+  await saved;
+  await waitForModuleFrame(page, '/record/edit');
   await expect
     .poll(() => frame.locator(field).inputValue().catch(() => null), { timeout: 30_000 })
     .toBe(header);
