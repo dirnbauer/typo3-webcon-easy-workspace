@@ -198,7 +198,9 @@ export async function saveContentHeaderInIframe(page, contentUid, header) {
     document.querySelector('#typo3-contentIframe').contentWindow.location.assign(url.toString());
   }, { uid: contentUid, returnUrl: env.recordsModule });
 
-  const field = `[data-formengine-input-name="data[tt_content][${contentUid}][header]"]`;
+  // In a workspace FormEngine edits the *version* of the record, so the uid
+  // in the field name is not the live one. Match the field by its shape.
+  const field = '[data-formengine-input-name^="data[tt_content]"][data-formengine-input-name$="[header]"]';
   const frame = page.frameLocator(selectors.contentIframe);
   await openEditForm();
   try {
