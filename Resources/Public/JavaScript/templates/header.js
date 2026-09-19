@@ -20,9 +20,6 @@ export function renderHeader(host) {
 
   return html`
     <header class="wew-menu__head">
-      <span class="wew-menu__brand" aria-hidden="true">
-        <typo3-backend-icon identifier="wew-toolbar" size="small"></typo3-backend-icon>
-      </span>
       <div class="wew-menu__titles">
         <h2 class="wew-menu__title" id=${host.titleId}>${label(host, 'toolbar.title')}</h2>
         <div class="wew-menu__chips">

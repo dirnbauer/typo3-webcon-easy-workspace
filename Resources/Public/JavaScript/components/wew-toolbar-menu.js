@@ -56,7 +56,8 @@ const ROW_EXIT_MS = 200;
  *
  * Labels and TSconfig arrive from PHP as JSON on the `config` attribute.
  * The list is fetched per page/news context; the badge is owned by
- * BadgeSync and always reflects the whole workspace.
+ * BadgeSync and reflects the current page or news article (the header chip
+ * still names the whole-workspace total).
  */
 export class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
@@ -70,6 +71,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     pageUid: { type: Number },
     newsUid: { type: Number },
     badgeCount: { type: Number },
+    contextCount: { type: Number },
     publishing: { type: Boolean },
     splitOpen: { type: Boolean },
     selectionVersion: { type: Number },
@@ -99,6 +101,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.pageUid = 0;
     this.newsUid = 0;
     this.badgeCount = 0;
+    this.contextCount = null;
     this.badge = null;
     this.titleId = `wew-title-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -212,6 +215,17 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     const row = event.currentTarget.closest('[data-wew-row]');
     const item = findItemByKey(this, row?.getAttribute('data-wew-key') || '');
     if (item) toggle(this, item, event.currentTarget.checked);
+  }
+
+  /**
+   * Clicking anywhere on a changed row toggles its checkbox — the row-level
+   * click target editors expect from a publish list. The checkbox itself
+   * and the row action buttons keep their own handlers.
+   */
+  handleRowClick(event, item) {
+    if (!item?.isChanged) return;
+    if (event.target.closest('[data-wew-row-check], .wew-row__actions, a, button')) return;
+    toggle(this, item, !this.selection.has(key(this, item)));
   }
 
   handleSelectAll(event) {

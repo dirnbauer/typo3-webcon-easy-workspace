@@ -66,7 +66,8 @@ export function renderRow(host, item, index) {
         data-wew-row
         data-wew-key=${itemKey}
         data-table=${item.table}
-        data-change=${item.isChanged ? type : nothing}>
+        data-change=${item.isChanged ? type : nothing}
+        @click=${(event) => host.handleRowClick(event, item)}>
       <span class="wew-row__select">
         ${item.isChanged ? html`
           <input type="checkbox"

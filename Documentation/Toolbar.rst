@@ -15,11 +15,10 @@ Anatomy
 =======
 
 Header
-    Extension icon, the title, chips for the active workspace
-    (``enableWorkspaceChip``), the stage of the listed records ("Mixed
-    stages" when they differ) and the count
-    ("N on this page · M elsewhere", or "N pending in this workspace"
-    outside a page context), and a refresh button.
+    The title, chips for the active workspace (``enableWorkspaceChip``),
+    the stage of the listed records ("Mixed stages" when they differ) and
+    the count ("N on this page · M elsewhere", or "N pending in this
+    workspace" outside a page context), and a refresh button.
 
 Groups
     One group for the page or news article (record icon, title, rootline
@@ -27,12 +26,15 @@ Groups
     metadata records.
 
 Rows
-    Record icon or thumbnail, title, change-type pill (new / changed /
-    deleted / moved, icons ``wew-change-*``), a meta line with type,
-    column, author and relative time, optional related child records
-    (``showSubelementsInToolbar``), and hover actions: edit, changes and
-    history, discard (``enableRevert``) and show in preview
-    (``enableHoverHighlight``).
+    A selection checkbox, record icon or thumbnail, title, change-type pill
+    (new / changed / deleted / moved, icons ``wew-change-*``), a meta line
+    with type, column, author and relative time, optional related child
+    records (``showSubelementsInToolbar``), and the always-visible actions:
+    edit, changes and history, discard (``enableRevert``) and show in
+    preview (``enableHoverHighlight``).
+
+    Clicking anywhere on a row that is not a button toggles its checkbox,
+    so selecting elements to publish needs no aim.
 
 Footer
     Select-all checkbox with the ``selected/total`` counter, the primary
@@ -54,8 +56,8 @@ The container is a ``role="dialog"`` labelled by the title; the rows form a
 ``role="list"`` with a roving tabindex. :kbd:`ArrowUp` / :kbd:`ArrowDown`
 (:kbd:`Home` / :kbd:`End`) move between rows, :kbd:`Space` toggles the row
 selection, :kbd:`Enter` opens the editor and :kbd:`Escape` closes the split
-menu or the dropdown. Row actions carry ``aria-label``; the count chip is a
-polite live region.
+menu or the dropdown. Row actions carry ``aria-label`` and are visible
+without hovering; the count chip is a polite live region.
 
 ..  _toolbar-styling:
 
@@ -70,7 +72,7 @@ Styles live in four files under ``Resources/Public/Css/``:
     ``--typo3-state-*``), so light and dark schemes and site themes apply
     automatically. Extension styles only read ``--wew-*``.
 ``toolbar-menu.css``
-    The dropdown (min-width 420 px, max-height 70 vh, scroll fade via
+    The dropdown (width 440 px, min-width 320 px, max-height 62 vh, scroll fade via
     ``mask-image``, badge pulse, row enter/exit transitions using
     ``@starting-style`` and ``transition-behavior: allow-discrete``,
     ``prefers-reduced-motion`` support).
