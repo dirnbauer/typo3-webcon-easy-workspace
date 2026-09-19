@@ -227,6 +227,14 @@ export class BadgeSync {
     if (stampChanged && refreshList && this.isDropdownOpen()) {
       void this.host._refresh?.({ quiet: true });
     }
+    // Whoever noticed a change first tells the other tabs, so a save that
+    // Core announces only locally (a classic FormEngine save emits no
+    // BroadcastChannel message) does not leave them waiting for their poll.
+    // A tab that already holds this stamp ignores the message, so this
+    // cannot bounce back and forth.
+    if (stampChanged && !String(reason).startsWith('channel:')) {
+      this.broadcast(reason);
+    }
     this.host.requestUpdate?.();
     this.host.dispatchEvent?.(new CustomEvent('wew:badge', { detail: { ...next, reason } }));
   }

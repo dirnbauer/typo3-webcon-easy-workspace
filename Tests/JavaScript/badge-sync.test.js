@@ -293,6 +293,28 @@ describe('BadgeSync', () => {
     document.body.innerHTML = '';
   });
 
+  it('tells the other tabs when it noticed a change, without bouncing it back', async () => {
+    const host = createHost();
+    const { sync, channel } = createSync(host);
+    sync.start(); // opens the channel
+    sync.apply(payload({ changedCount: 1, stamp: 'one' }), { reason: 'connect' });
+    channel.postMessage.mockClear();
+
+    // A change this tab noticed itself is announced once.
+    sync.apply(payload({ changedCount: 2, stamp: 'two' }), { reason: 'typo3-module-loaded' });
+    expect(channel.postMessage).toHaveBeenCalledTimes(1);
+    expect(channel.postMessage.mock.calls[0][0]).toMatchObject({ type: 'refresh', stamp: 'two' });
+
+    // A change learned from another tab is not echoed back.
+    channel.postMessage.mockClear();
+    sync.apply(payload({ changedCount: 3, stamp: 'three' }), { reason: 'channel:discard' });
+    expect(channel.postMessage).not.toHaveBeenCalled();
+
+    // Neither is a response that changed nothing.
+    sync.apply(payload({ changedCount: 3, stamp: 'three' }), { reason: 'poll' });
+    expect(channel.postMessage).not.toHaveBeenCalled();
+  });
+
   it('refreshes when the module iframe finished loading (classic FormEngine save)', async () => {
     const host = createHost();
     const { sync, doc, fetchBadge } = createSync(host);
