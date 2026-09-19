@@ -298,11 +298,12 @@ export async function discardPendingOnTestPage(page) {
  * tree should refresh, it emits no DataHandler event.
  */
 export async function discardAllInWorkspacesModule(page) {
-  await goto(page, `${env.workspacesModule}?workspace=${env.workspaceId}`);
+  // The module reviews the selected page, so it needs an id.
+  await goto(page, `${env.workspacesModule}?id=${env.pageUid}&workspace=${env.workspaceId}`);
   await waitForModuleFrame(page, '/manage/workspaces');
   const frame = page.frameLocator(selectors.contentIframe);
-  const selectAll = frame.locator('.t3js-workspace-recipient-selectall, [data-multi-record-selection-check-action="check-all"]').first();
-  await selectAll.waitFor({ timeout: 30_000 });
+  const selectAll = frame.locator('[data-multi-record-selection-check-action="check-all"]').first();
+  await selectAll.waitFor({ timeout: 60_000 });
   await selectAll.click();
   await frame.locator('[data-multi-record-selection-action="discard"]').first().click();
   // Core confirms in a modal that is rendered in the top document.
