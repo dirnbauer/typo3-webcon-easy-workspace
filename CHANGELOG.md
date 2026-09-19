@@ -2,6 +2,24 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.5.0] — 2026-09-19
+
+### Fixed
+
+- The badge is right after a FormEngine save inside the module iframe. A classic save posts the whole form in the iframe, so Core emits neither a DataHandler event nor a `BroadcastChannel` message — the count stayed stale until the next poll (up to 45 s). `BadgeSync` now also listens for `typo3-module-loaded`, which every module and every iframe reload raises in the top document.
+- The badge is right after an action inside a Core module that dispatches its events on its own `document` (for example publishing or discarding in the Workspaces module). `BadgeSync` attaches the same listeners inside the module iframe and re-attaches them on every module load.
+- The badge no longer blinks to empty on every backend page load, and a failing `/badge` request can no longer blank it or hide the toolbar item: the count is rendered into the toolbar markup by the server (`data-wew-count`, `data-wew-workspace`) and `BadgeSync.seed()` adopts it before the first request.
+- In Live the toolbar item is no longer briefly visible before the script runs — the server ships `webcon-easy-workspace-toolbar--live` (`display: none`), and `BadgeSync` keeps it in sync with the `hidden` property.
+
+### Added
+
+- `Tests/E2E` — a Playwright scenario against a running installation, one reproduction per stale-count report: markup count, FormEngine save in the module iframe (and in a second tab), dashboard/Records/file list, module navigation without a page reload, Live and back, a change by another actor, discarding in Core's Workspaces module and, opt-in, publishing from the dropdown. `dropdown.spec.js` covers light/dark, keyboard navigation, accessible names and the loading/empty/error states, and writes the screenshots. Environment variables are documented in `Documentation/Testing.rst`; `npm run test:e2e`.
+- `Tests/Functional/Backend/EasyWorkspaceToolbarItemTest` for the server-rendered count, plus vitest coverage for the seed, the module-load trigger and the in-frame listeners.
+
+### Changed
+
+- PHPStan configuration moved to `phpstan.neon` in the repository root and gained `phpstan/phpstan-phpunit`. `composer phpstan` needs no `--configuration`.
+
 ## [1.4.0] — 2026-09-12
 
 ### Fixed

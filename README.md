@@ -20,12 +20,12 @@ The package is distributed through GitHub tags only (not on Packagist):
 
 ```bash
 composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-composer require webconsulting/webcon-easy-workspace:^1.4
+composer require webconsulting/webcon-easy-workspace:^1.5
 vendor/bin/typo3 extension:setup
 vendor/bin/typo3 cache:flush
 ```
 
-Use `^1.4`: the tags `v14.0.0`–`v14.0.2` predate `v1.3.9` and do not match a `^1.x` constraint. Existing installations should read the [upgrade notes](Documentation/Upgrading.rst) — 1.4.0 renames the CSS files and requires PHP 8.4.
+Use `^1.5`: the tags `v14.0.0`–`v14.0.2` predate `v1.3.9` and do not match a `^1.x` constraint. Existing installations should read the [upgrade notes](Documentation/Upgrading.rst) — 1.4.0 renames the CSS files and requires PHP 8.4.
 
 ## Configure
 

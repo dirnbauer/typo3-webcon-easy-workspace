@@ -72,13 +72,40 @@ Client: BadgeSync
 only code that writes ``host.badgeCount``, the DOM badge and the toolbar
 visibility (hidden only when the server reports workspace ``0``).
 
-Triggers, all funnelled through one 120 ms debounce:
+..  _badge-seed:
+
+First paint
+-----------
+
+``EasyWorkspaceToolbarItem`` renders the count into the toolbar markup::
+
+    <span class="toolbar-item-badge badge badge-pill badge-warning"
+          data-wew-workspace-badge data-wew-count="3" data-wew-workspace="4">3</span>
+
+``BadgeSync.seed()`` adopts those attributes before the first request goes
+out. The badge is therefore correct in the very first paint, and a failing
+badge request can no longer blank it or hide the toolbar item. In Live the
+item carries ``webcon-easy-workspace-toolbar--live`` (``display: none``) so
+it is not visible before the script runs; ``BadgeSync`` keeps that class and
+the ``hidden`` property in sync afterwards.
+
+Triggers
+--------
+
+All funnelled through one 120 ms debounce:
 
 * element connect, navigation events, dropdown open;
-* Core document events on the top frame and the toolbar's own frame:
-  ``typo3:datahandler:process``, ``typo3:pagetree:refresh``,
-  ``typo3:workspace:changed``, ``typo3:workspaces:refresh`` and
-  ``typo3:module-state-storage:*``;
+* Core document events on the top frame, the toolbar's own frame **and the
+  module iframe's document**: ``typo3:datahandler:process``,
+  ``typo3:pagetree:refresh``, ``typo3:workspace:changed``,
+  ``typo3:workspaces:refresh``, ``typo3:module-state-storage:*`` and
+  ``typo3-module-loaded``.
+
+  ``typo3-module-loaded`` is what catches a classic FormEngine save: it
+  posts the whole form inside the iframe, so it emits neither a DataHandler
+  event nor a ``BroadcastChannel`` message — the iframe load is the only
+  signal there is. The in-frame listeners are re-attached on every module
+  load and catch events a Core module dispatches on its own ``document``;
 * same-origin window messages ``typo3:editform:saved`` (FormEngine) and
   ``ve_saveEnded`` (Visual Editor), plus a ``wew-refresh`` message posted by
   the Visual Editor preview script for cross-origin previews;

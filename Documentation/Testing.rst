@@ -36,21 +36,74 @@ polling with error backoff, BroadcastChannel filtering, stamp-driven list
 refresh, DOM badge rendering) and the selection/grouping helpers. The
 runtime still uses TYPO3's import map; ``npm`` is a dev-only dependency.
 
-Browser checks
-==============
+..  _testing-browser:
 
-Use a disposable TYPO3 14.3.6+ instance with live and workspace versions of
-a page and content records. Check the toolbar and every Easy Workspace
-submodule, selection updates, diff/history, preview, publishing and discarding.
-Verify live content after mutations and inspect console/server logs.
-Optional Visual Editor and news integrations need their own representative
-records when installed.
+Browser scenario
+================
 
-Badge checks: the count must match the Workspaces module on the dashboard,
-in the list module and on a page; it must update after a FormEngine save, a
-Visual Editor save, a publish/discard from the module frame, a change made
-in a second tab and a CLI/MCP edit (within the 45 s poll). Keyboard: Arrow
-keys, Space, Enter and Escape in the dropdown; both light and dark schemes.
+``Tests/E2E`` holds a Playwright scenario that drives a **running** TYPO3
+installation. It is not part of ``composer test`` and CI does not run it:
+it needs an instance, a workspace and a content element to edit.
+
+..  code-block:: bash
+
+    npm ci
+    npx playwright install chromium
+    WEW_E2E_BASE_URL=https://example.ddev.site \
+    WEW_E2E_PASSWORD='…' \
+    WEW_E2E_WORKSPACE_ID=4 \
+    WEW_E2E_PAGE_UID=103 \
+    WEW_E2E_CONTENT_UID=1387 \
+    npm run test:e2e
+
+..  list-table::
+    :header-rows: 1
+
+    * - Variable
+      - Meaning
+    * - ``WEW_E2E_BASE_URL``
+      - Instance root, e.g. ``https://example.ddev.site`` (default
+        ``https://localhost``)
+    * - ``WEW_E2E_USERNAME`` / ``WEW_E2E_PASSWORD``
+      - Backend account, admin (default user ``admin``). Required.
+    * - ``WEW_E2E_WORKSPACE_ID``
+      - Workspace the scenario works in. Required.
+    * - ``WEW_E2E_PAGE_UID`` / ``WEW_E2E_CONTENT_UID``
+      - A page and one of its content elements. Required. Both stay
+        untouched: every version the run creates is discarded again.
+    * - ``WEW_E2E_RECORDS_MODULE``
+      - Module used as the iframe host, default
+        ``/typo3/module/content/records?id=<page>``. Point it elsewhere when
+        a third-party extension breaks that module.
+    * - ``WEW_E2E_ALLOW_PUBLISH``
+      - ``1`` also runs the publish case. It writes to **Live**; off by
+        default.
+    * - ``WEW_E2E_EXTERNAL_CMD``
+      - Shell command for the "another actor" case (receives ``WEW_UID`` and
+        ``WEW_HEADER``), e.g. a CLI or MCP write. Without it the change is
+        made through Core's DataHandler route from a detached fetch.
+    * - ``WEW_E2E_BROWSER``
+      - ``chromium`` (default), ``webkit`` or ``firefox``.
+    * - ``WEW_E2E_STATE``
+      - Cached session file, default ``.Build/playwright/state.json``. Core
+        rate-limits logins, so the session is reused for 30 minutes.
+
+``badge.spec.js`` is one reproduction per stale-count report: the count
+rendered into the markup, a FormEngine save inside the module iframe (and
+the same count in a second tab), the dashboard/Records/file list, module
+navigation without a page reload, switching to Live and back, a change made
+by another actor (within one poll interval), discarding in Core's Workspaces
+module and — opt-in — publishing from the dropdown.
+
+``dropdown.spec.js`` covers the dropdown itself: light and dark scheme,
+keyboard navigation, accessible names, the dialog/live-region roles and the
+loading, empty and error states. It writes the screenshots to
+``Build/Reports/screenshots`` (``WEW_E2E_SHOT_DIR``).
+
+What the scenario cannot check: the Visual Editor and news integrations
+(they need their own records) and live content after a real publish. Do
+those by hand on a disposable instance, and inspect console and server logs
+while you do.
 
 Health checks
 =============
