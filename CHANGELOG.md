@@ -9,6 +9,7 @@ All notable changes to Easy Workspace are documented in this file.
 - The badge is right after a FormEngine save inside the module iframe. A classic save posts the whole form in the iframe, so Core emits neither a DataHandler event nor a `BroadcastChannel` message — the count stayed stale until the next poll (up to 45 s). `BadgeSync` now also listens for `typo3-module-loaded`, which every module and every iframe reload raises in the top document.
 - The badge is right after an action inside a Core module that dispatches its events on its own `document` (for example publishing or discarding in the Workspaces module). `BadgeSync` attaches the same listeners inside the module iframe and re-attaches them on every module load.
 - The badge no longer blinks to empty on every backend page load, and a failing `/badge` request can no longer blank it or hide the toolbar item: the count is rendered into the toolbar markup by the server (`data-wew-count`, `data-wew-workspace`) and `BadgeSync.seed()` adopts it before the first request.
+- A change one tab noticed is announced to the others. Only the extension's own publish and discard posted on the `BroadcastChannel`, so a save Core announces locally left every other tab waiting for its 45 s poll. A tab that already holds the new stamp ignores the message, so it cannot bounce back and forth.
 - In Live the toolbar item is no longer briefly visible before the script runs — the server ships `webcon-easy-workspace-toolbar--live` (`display: none`), and `BadgeSync` keeps it in sync with the `hidden` property.
 
 ### Added

@@ -100,6 +100,11 @@ keyboard navigation, accessible names, the dialog/live-region roles and the
 loading, empty and error states. It writes the screenshots to
 ``Build/Reports/screenshots`` (``WEW_E2E_SHOT_DIR``).
 
+The event-driven cases allow 15 seconds — a third of the poll interval —
+so that a pass really proves the event path and not the poll. Run them
+against an instance that answers in a second or two; a saturated PHP-FPM
+pool makes them flaky for reasons that have nothing to do with the badge.
+
 What the scenario cannot check: the Visual Editor and news integrations
 (they need their own records) and live content after a real publish. Do
 those by hand on a disposable instance, and inspect console and server logs
