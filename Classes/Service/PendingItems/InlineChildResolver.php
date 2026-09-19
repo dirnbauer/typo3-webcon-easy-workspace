@@ -11,6 +11,7 @@ use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
+use Webconsulting\WebconEasyWorkspace\Service\RecordSchemaInspector;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -28,6 +29,7 @@ final readonly class InlineChildResolver
         private ConnectionPool $connectionPool,
         private WorkspaceRecordQuery $workspaceRecordQuery,
         private PendingItemFactory $pendingItemFactory,
+        private RecordSchemaInspector $schema,
     ) {}
 
     /**
@@ -102,8 +104,9 @@ final readonly class InlineChildResolver
                 $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
             ];
-            if (TcaUtility::hasColumn($table, 'deleted')) {
-                $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            $softDeleteField = $this->schema->softDeleteField($table);
+            if ($softDeleteField !== null) {
+                $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
             }
             if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
                 $constraints[] = $queryBuilder->expr()->eq(
@@ -456,8 +459,9 @@ final readonly class InlineChildResolver
                 : $queryBuilder->expr()->in($foreignField, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
             $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $softDeleteField = $this->schema->softDeleteField($table);
+        if ($softDeleteField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
         if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
             $constraints[] = $queryBuilder->expr()->eq(
@@ -496,8 +500,9 @@ final readonly class InlineChildResolver
                 $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageUid, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
             ];
-            if (TcaUtility::hasColumn($table, 'deleted')) {
-                $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            $softDeleteField = $this->schema->softDeleteField($table);
+            if ($softDeleteField !== null) {
+                $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
             }
             if ($inlineConfig['foreignTableField'] !== null && $inlineConfig['foreignTableField'] !== '') {
                 $constraints[] = $queryBuilder->expr()->eq(

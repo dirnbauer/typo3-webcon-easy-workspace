@@ -16,8 +16,17 @@ Responsibilities
 * The collector, scope objects, query service, factory and resolvers
   collect and present records; the aggregator handles deduplication.
 * ``WorkspaceTablePolicy`` determines eligible tables and the badge tables.
-* ``WorkspaceChangeCounter`` is the only place that counts changes; the
-  client never derives the badge from a list.
+* ``WorkspaceChangeCounter`` counts the whole workspace and
+  ``PendingItemsService::countChangesForContext()`` the current page or news
+  article; the client never derives the badge from a list.
+* ``RecordSchemaInspector`` answers every question about the system fields
+  workspace queries are built on. **Never** guard a query with
+  ``TcaUtility::hasColumn($table, 't3ver_wsid' | 't3ver_oid' | 'deleted' |
+  'tstamp')``: TYPO3 v14 does not list those in TCA ``columns``, so the check
+  is always false — a guarded query is silently never run and a
+  ``deleted = 0`` constraint behind such a check is silently never applied.
+  ``TcaUtility::hasColumn()`` is for real TCA columns only
+  (``sys_language_uid``, ``l10n_parent``, sort fields, relation fields).
 * ``PublishSelectedService`` validates and executes Core DataHandler actions.
 * Diagnostics remain read-only; seed data belongs in disposable databases.
 * The toolbar uses Lit; the backend module and diff dialog use Fluid.

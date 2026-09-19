@@ -11,6 +11,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Service\RecordSchemaInspector;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -31,6 +32,7 @@ final readonly class WorkspaceRecordQuery
     public function __construct(
         private ConnectionPool $connectionPool,
         private LocalizationService $localizationService,
+        private RecordSchemaInspector $schema,
     ) {}
 
     /**
@@ -110,7 +112,7 @@ final readonly class WorkspaceRecordQuery
 
     public function hasWorkspaceVersionForRecord(string $table, int $liveUid, int $workspaceId, ?int $languageUid = null): bool
     {
-        if ($liveUid <= 0 || $workspaceId <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($liveUid <= 0 || $workspaceId <= 0 || !$this->schema->isWorkspaceAware($table)) {
             return false;
         }
 
@@ -120,8 +122,9 @@ final readonly class WorkspaceRecordQuery
             $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
             $queryBuilder->expr()->eq('t3ver_oid', $queryBuilder->createNamedParameter($liveUid, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $softDeleteField = $this->schema->softDeleteField($table);
+        if ($softDeleteField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
         $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
         if ($languageConstraint !== null) {
@@ -143,7 +146,7 @@ final readonly class WorkspaceRecordQuery
     public function hasChangedRowsRelated(string $table, string $field, int|array $parentUid, int $workspaceId, ?int $languageUid = null): bool
     {
         $parentUids = is_array($parentUid) ? array_values(array_filter($parentUid, static fn(int $uid): bool => $uid > 0)) : [$parentUid];
-        if ($parentUids === [] || $workspaceId <= 0 || !TcaUtility::hasColumn($table, $field) || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($parentUids === [] || $workspaceId <= 0 || !TcaUtility::hasColumn($table, $field) || !$this->schema->isWorkspaceAware($table)) {
             return false;
         }
 
@@ -155,8 +158,9 @@ final readonly class WorkspaceRecordQuery
                 : $queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($parentUids, Connection::PARAM_INT_ARRAY)),
             $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $softDeleteField = $this->schema->softDeleteField($table);
+        if ($softDeleteField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
         $languageConstraint = $this->languageConstraint($queryBuilder, $table, $languageUid);
         if ($languageConstraint !== null) {
@@ -186,7 +190,7 @@ final readonly class WorkspaceRecordQuery
      */
     private function hasWorkspaceVersionForLiveRowsRelated(string $table, string $field, array $parentUids, int $workspaceId, ?int $languageUid): bool
     {
-        if ($parentUids === [] || !TcaUtility::hasColumn($table, 't3ver_oid')) {
+        if ($parentUids === [] || !$this->schema->isWorkspaceAware($table)) {
             return false;
         }
 
@@ -199,9 +203,10 @@ final readonly class WorkspaceRecordQuery
             $queryBuilder->expr()->eq('live.t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)),
             $queryBuilder->expr()->eq('workspaceVersion.t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('live.deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
-            $constraints[] = $queryBuilder->expr()->eq('workspaceVersion.deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $softDeleteField = $this->schema->softDeleteField($table);
+        if ($softDeleteField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq('live.' . $softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+            $constraints[] = $queryBuilder->expr()->eq('workspaceVersion.' . $softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
         $languageField = $this->languageField($table);
         if ($languageUid !== null && $languageUid >= 0 && $languageField !== null) {
@@ -294,7 +299,7 @@ final readonly class WorkspaceRecordQuery
      */
     public function listStandaloneWorkspaceRows(string $table, int $workspaceId, int $limit): array
     {
-        if ($workspaceId <= 0 || $limit <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($workspaceId <= 0 || $limit <= 0 || !$this->schema->isWorkspaceAware($table)) {
             return [];
         }
 
@@ -303,15 +308,16 @@ final readonly class WorkspaceRecordQuery
         $constraints = [
             $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $softDeleteField = $this->schema->softDeleteField($table);
+        if ($softDeleteField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
 
         $result = $queryBuilder
             ->select('*')
             ->from($table)
             ->where(...$constraints)
-            ->orderBy(TcaUtility::hasColumn($table, 'tstamp') ? 'tstamp' : 'uid', 'DESC')
+            ->orderBy($this->schema->updatedAtField($table) ?? 'uid', 'DESC')
             ->setMaxResults($limit)
             ->executeQuery();
 

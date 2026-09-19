@@ -24,6 +24,7 @@ final readonly class WorkspaceDiagnosticsService
         private ConnectionPool $connectionPool,
         private Context $context,
         private LocalizationService $localizationService,
+        private RecordSchemaInspector $schema,
     ) {}
 
     /**
@@ -375,8 +376,9 @@ final readonly class WorkspaceDiagnosticsService
         $constraints = [
             $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)),
         ];
-        if (TcaUtility::hasColumn($table, 'deleted')) {
-            $constraints[] = $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
+        $softDeleteField = $this->schema->softDeleteField($table);
+        if ($softDeleteField !== null) {
+            $constraints[] = $queryBuilder->expr()->eq($softDeleteField, $queryBuilder->createNamedParameter(0, Connection::PARAM_INT));
         }
         return (bool)$queryBuilder
             ->count('uid')
@@ -388,7 +390,7 @@ final readonly class WorkspaceDiagnosticsService
 
     private function countWorkspaceRows(string $table, int $workspaceId): int
     {
-        if ($workspaceId <= 0 || !TcaUtility::hasColumn($table, 't3ver_wsid')) {
+        if ($workspaceId <= 0 || !$this->schema->isWorkspaceAware($table)) {
             return 0;
         }
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
