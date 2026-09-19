@@ -82,14 +82,11 @@ export class BadgeSync {
     this.controller = new AbortController();
     const options = { signal: this.controller.signal };
 
-    // 1. Core document events (top frame + own frame, deduplicated).
+    // 1. Core document events (top frame + own frame, deduplicated) — and
+    //    the same events inside the module iframe, re-attached every time a
+    //    module finishes loading.
     for (const targetDocument of new Set([this.doc, this.topDoc].filter(Boolean))) {
       this.listen(targetDocument, options);
-    }
-
-    // 1b. …and the same events inside the module iframe, re-attached every
-    //     time a module finishes loading.
-    for (const targetDocument of new Set([this.doc, this.topDoc].filter(Boolean))) {
       try {
         targetDocument.addEventListener('typo3-module-loaded', () => this.attachFrame(), options);
       } catch { /* cross-origin top document */ }
