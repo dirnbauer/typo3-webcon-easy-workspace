@@ -22,6 +22,10 @@ export const env = {
 env.recordsModule = process.env.WEW_E2E_RECORDS_MODULE
   || `/typo3/module/content/records?id=${env.pageUid}`;
 
+/** Core's own Workspaces module ("Publish"). */
+env.workspacesModule = process.env.WEW_E2E_WORKSPACES_MODULE
+  || '/typo3/module/manage/workspaces';
+
 export const selectors = {
   toolbarItem: '.webcon-easy-workspace-toolbar',
   badge: '[data-wew-workspace-badge]',
@@ -294,8 +298,8 @@ export async function discardPendingOnTestPage(page) {
  * tree should refresh, it emits no DataHandler event.
  */
 export async function discardAllInWorkspacesModule(page) {
-  await goto(page, `/typo3/module/workspaces/review?workspace=${env.workspaceId}`);
-  await waitForModuleFrame(page, '/workspaces');
+  await goto(page, `${env.workspacesModule}?workspace=${env.workspaceId}`);
+  await waitForModuleFrame(page, '/manage/workspaces');
   const frame = page.frameLocator(selectors.contentIframe);
   const selectAll = frame.locator('.t3js-workspace-recipient-selectall, [data-multi-record-selection-check-action="check-all"]').first();
   await selectAll.waitFor({ timeout: 30_000 });
