@@ -20,8 +20,13 @@ export const BADGE_POLL_JITTER_MS = 5_000;
 export const BADGE_POLL_BACKOFF_MS = 300_000;
 export const BADGE_ERROR_BACKOFF_THRESHOLD = 3;
 
-// Core document events that indicate a record or the navigation context
-// changed. Listened to on the top document and on the toolbar's own one.
+// Core events that indicate a record or the navigation context changed.
+// Listened to on the top document, on the toolbar's own one and — see
+// BadgeSync.attachFrame() — inside the module iframe.
+//
+// `typo3-module-loaded` matters most: a classic FormEngine save posts the
+// whole form inside the iframe, so it emits no DataHandler event and no
+// BroadcastChannel message. The iframe load is the only signal there is.
 export const REFRESH_EVENTS = Object.freeze([
   'typo3:datahandler:process',
   'typo3:pagetree:refresh',
@@ -29,7 +34,13 @@ export const REFRESH_EVENTS = Object.freeze([
   'typo3:workspaces:refresh',
   'typo3:module-state-storage:update:web',
   'typo3:module-state-storage:update-with-tree-identifier:web',
+  'typo3-module-loaded',
 ]);
+
+// Core's module iframe. Events dispatched on *its* document (Core's own
+// modules use `document`, not `top.document`) never reach the toolbar, so
+// BadgeSync re-attaches to it whenever a module finishes loading.
+export const MODULE_IFRAME_SELECTOR = '#typo3-contentIframe';
 
 // Fallback defaults — overridden by the TSconfig-driven JSON the
 // toolbar item attaches via the `config` attribute on this element.

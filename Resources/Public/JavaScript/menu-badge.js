@@ -8,6 +8,7 @@ import {
   BADGE_POLL_BACKOFF_MS,
   BADGE_ERROR_BACKOFF_THRESHOLD,
   REFRESH_EVENTS,
+  MODULE_IFRAME_SELECTOR,
 } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import { detectContext, label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 
@@ -52,8 +53,27 @@ export class BadgeSync {
     this.debounceTimer = null;
     this.pollTimer = null;
     this.controller = null;
+    this.frameController = null;
     this.channel = null;
     this.started = false;
+  }
+
+  /**
+   * Adopt the count the server rendered into the toolbar markup.
+   *
+   * Without this the first paint of every backend page would blank a
+   * correct badge until the first response arrives — and keep it blank (and
+   * the toolbar item hidden) when that request fails.
+   */
+  seed() {
+    const badge = toolbarBadgeElement(this.host);
+    if (!badge) return;
+    const count = parseInt(badge.getAttribute('data-wew-count') ?? '', 10);
+    const workspaceId = parseInt(badge.getAttribute('data-wew-workspace') ?? '', 10);
+    if (Number.isFinite(count) && count >= 0) this.count = count;
+    if (Number.isFinite(workspaceId) && workspaceId >= 0) this.workspaceId = workspaceId;
+    this.host.badgeCount = this.count;
+    this.host.workspaceId = this.workspaceId;
   }
 
   start() {
@@ -64,12 +84,17 @@ export class BadgeSync {
 
     // 1. Core document events (top frame + own frame, deduplicated).
     for (const targetDocument of new Set([this.doc, this.topDoc].filter(Boolean))) {
-      for (const eventName of REFRESH_EVENTS) {
-        try {
-          targetDocument.addEventListener(eventName, () => this.request(eventName), options);
-        } catch { /* cross-origin top document */ }
-      }
+      this.listen(targetDocument, options);
     }
+
+    // 1b. …and the same events inside the module iframe, re-attached every
+    //     time a module finishes loading.
+    for (const targetDocument of new Set([this.doc, this.topDoc].filter(Boolean))) {
+      try {
+        targetDocument.addEventListener('typo3-module-loaded', () => this.attachFrame(), options);
+      } catch { /* cross-origin top document */ }
+    }
+    this.attachFrame();
 
     // 2. Save signals delivered as window messages (FormEngine modals post
     //    to the top window; the Visual Editor preview script posts a
@@ -90,15 +115,50 @@ export class BadgeSync {
       this.channel.onmessage = (event) => this.onChannelMessage(event);
     }
 
+    this.seed();
     this.render();
     this.syncVisibility();
     this.request('connect');
+  }
+
+  /**
+   * Attach REFRESH_EVENTS to one document.
+   */
+  listen(targetDocument, options) {
+    for (const eventName of REFRESH_EVENTS) {
+      try {
+        targetDocument.addEventListener(eventName, () => this.request(eventName), options);
+      } catch { /* cross-origin document */ }
+    }
+  }
+
+  /**
+   * (Re-)attach to the module iframe's document. Core's modules dispatch
+   * their events on their own `document`; without this the toolbar never
+   * sees a publish or discard done inside the Workspaces module.
+   */
+  attachFrame() {
+    this.frameController?.abort();
+    this.frameController = null;
+    if (!this.started) return;
+
+    let frameDocument = null;
+    try {
+      const iframe = (this.topDoc ?? this.doc)?.querySelector?.(MODULE_IFRAME_SELECTOR);
+      frameDocument = iframe?.contentDocument ?? null;
+    } catch { /* foreign origin */ }
+    if (!frameDocument || frameDocument === this.doc) return;
+
+    this.frameController = new AbortController();
+    this.listen(frameDocument, { signal: this.frameController.signal });
   }
 
   stop() {
     this.started = false;
     this.controller?.abort();
     this.controller = null;
+    this.frameController?.abort();
+    this.frameController = null;
     this.cancelDebounce();
     this.cancelPoll();
     try { this.channel?.close(); } catch { /* already closed */ }
@@ -277,7 +337,11 @@ export class BadgeSync {
   syncVisibility() {
     const toolbarHost = toolbarHostElement(this.host);
     if (!toolbarHost) return;
-    toolbarHost.hidden = this.workspaceId <= 0;
+    const live = this.workspaceId <= 0;
+    toolbarHost.hidden = live;
+    // The server ships the same class so the item is never visible in Live
+    // before this script runs; keep the two in sync from here on.
+    toolbarHost.classList.toggle('webcon-easy-workspace-toolbar--live', live);
   }
 }
 
