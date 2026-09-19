@@ -82,10 +82,10 @@ test('keeps the workspace-wide count on the dashboard, in Records and in the fil
 test('keeps the count while navigating modules without a page reload', async () => {
   const expected = await serverCount(page);
   await goto(page, '/typo3/module/dashboard');
-  await waitForModuleFrame(page);
+  await waitForModuleFrame(page, '/dashboard');
   for (const path of [env.recordsModule, '/typo3/module/file/list', '/typo3/module/dashboard']) {
     await page.evaluate((url) => { document.querySelector('#typo3-contentIframe').contentWindow.location.assign(url); }, path);
-    await waitForModuleFrame(page);
+    await waitForModuleFrame(page, new URL(path, 'https://x').pathname);
     await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
   }
 });

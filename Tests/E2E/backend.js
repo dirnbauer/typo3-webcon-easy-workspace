@@ -156,20 +156,27 @@ export async function serverRenderedBadge(page) {
   return match ? Number.parseInt(match[1].trim() || '0', 10) || 0 : null;
 }
 
-/** Resolve once the module iframe holds a fully loaded document. */
-export async function waitForModuleFrame(page) {
+/**
+ * Resolve once the module iframe holds a fully loaded document whose URL
+ * contains `marker`. Waiting for the URL matters: the `typo3-iframe-module`
+ * element owns `src` and re-applies it, so navigating the frame before its
+ * own load settled is silently undone.
+ */
+export async function waitForModuleFrame(page, marker = '') {
   await page.locator(selectors.contentIframe).waitFor({ timeout: 60_000 });
   await page.waitForFunction(
-    () => {
+    (expected) => {
       const iframe = document.querySelector('#typo3-contentIframe');
       try {
+        const href = iframe?.contentWindow?.location?.href ?? '';
         return iframe?.contentDocument?.readyState === 'complete'
-          && iframe.contentWindow.location.href !== 'about:blank';
+          && href !== 'about:blank'
+          && href.includes(expected);
       } catch {
         return false;
       }
     },
-    undefined,
+    marker,
     { timeout: 60_000 },
   );
 }
@@ -180,8 +187,8 @@ export async function waitForModuleFrame(page) {
  */
 export async function saveContentHeaderInIframe(page, contentUid, header) {
   await goto(page, env.recordsModule);
-  await waitForModuleFrame(page);
-  await page.evaluate(({ uid, returnUrl }) => {
+  await waitForModuleFrame(page, new URL(env.recordsModule, 'https://x').pathname);
+  const openEditForm = () => page.evaluate(({ uid, returnUrl }) => {
     const url = new URL(TYPO3.settings.FormEngine.moduleUrl, window.location.href);
     url.searchParams.set(`edit[tt_content][${uid}]`, 'edit');
     url.searchParams.set('returnUrl', returnUrl);
@@ -193,7 +200,15 @@ export async function saveContentHeaderInIframe(page, contentUid, header) {
 
   const field = `[data-formengine-input-name="data[tt_content][${contentUid}][header]"]`;
   const frame = page.frameLocator(selectors.contentIframe);
-  await frame.locator(field).waitFor({ timeout: 30_000 });
+  await openEditForm();
+  try {
+    await waitForModuleFrame(page, '/record/edit');
+  } catch {
+    // A saturated instance sometimes drops the first navigation.
+    await openEditForm();
+    await waitForModuleFrame(page, '/record/edit');
+  }
+  await frame.locator(field).waitFor({ timeout: 60_000 });
   await frame.locator(field).fill(header);
   // A classic FormEngine save: a full form POST inside the iframe. No
   // DataHandler event, no BroadcastChannel message — only an iframe load.
@@ -266,7 +281,7 @@ export async function discardPendingOnTestPage(page) {
  */
 export async function discardAllInWorkspacesModule(page) {
   await goto(page, `/typo3/module/workspaces/review?workspace=${env.workspaceId}`);
-  await waitForModuleFrame(page);
+  await waitForModuleFrame(page, '/workspaces');
   const frame = page.frameLocator(selectors.contentIframe);
   const selectAll = frame.locator('.t3js-workspace-recipient-selectall, [data-multi-record-selection-check-action="check-all"]').first();
   await selectAll.waitFor({ timeout: 30_000 });

@@ -173,7 +173,9 @@ webcon-easy-workspace-menu-v2 {
 .wew-menu__selectall-check { margin: 0; }
 .wew-menu__count { font-variant-numeric: tabular-nums; color: var(--wew-text-muted); }
 .wew-menu__foot-actions { display: inline-flex; align-items: center; gap: var(--wew-space-2); }
-.wew-menu__foot .btn { display: inline-flex; align-items: center; gap: .35em; }
+.wew-menu__foot .btn { display: inline-flex; align-items: center; gap: .35em; transition: transform var(--wew-motion-fast) var(--wew-ease); }
+/* Pressed feedback on the text buttons, matching the icon buttons. */
+.wew-menu__foot .btn:active:not(:disabled) { transform: scale(.985); }
 .wew-menu__publish { min-width: 7.5rem; justify-content: center; }
 .wew-menu__foot-meta { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: var(--wew-space-2); font-size: var(--wew-font-size-xs); color: var(--wew-text-muted); }
 .wew-menu__module-link { color: var(--wew-link); text-decoration: none; }
@@ -223,8 +225,8 @@ webcon-easy-workspace-menu-v2 {
 
 /* ---- Toolbar badge pulse on increment ---- */
 [data-wew-workspace-badge] { transform-origin: center; }
-.wew-badge--pulse { animation: wew-badge-pulse .5s var(--wew-ease-spring); }
-@keyframes wew-badge-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+.wew-badge--pulse { animation: wew-badge-pulse var(--wew-motion-slow, 320ms) var(--wew-ease-spring); }
+@keyframes wew-badge-pulse { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
 /* ---- Utilities ---- */
 .wew-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -241,6 +243,7 @@ webcon-easy-workspace-menu-v2 {
 
 /* ---- Reduced motion: no transitions, no shimmer, no pulse ---- */
 @media (prefers-reduced-motion: reduce) {
-    .wew-row, .wew-iconbtn, .wew-row__actions { transition: none; }
+    .wew-row, .wew-iconbtn, .wew-row__actions, .wew-menu__foot .btn { transition: none; }
+    .wew-menu__foot .btn:active:not(:disabled), .wew-iconbtn:active:not(:disabled) { transform: none; }
     .wew-badge--pulse, .wew-skeleton__check, .wew-skeleton__block, .wew-skeleton__line, .wew-menu__refresh.is-busy typo3-backend-icon { animation: none; }
 }
