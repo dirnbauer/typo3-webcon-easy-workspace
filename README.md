@@ -57,10 +57,11 @@ The toolbar is hidden in Live. Related inline records and file references are pu
 composer install
 composer test          # lint, cgl (dry run), PHPStan level 8, unit, functional (SQLite)
 npm ci && npm test     # vitest for the toolbar JavaScript
+npm run test:e2e       # Playwright, against a running installation (see Testing.rst)
 composer cgl:fix       # apply the TYPO3 coding standards
 ```
 
-The toolbar is a Lit element served through TYPO3's import map — there is no JavaScript build step. `vitest` aliases the import-map prefixes to the sources and to small mocks in `Tests/JavaScript/mocks`. Functional tests default to SQLite; CI runs them on MariaDB 10.11 with PHP 8.4 and 8.5. A disposable browser installation can be created with DDEV as described in [Documentation/Testing.rst](Documentation/Testing.rst).
+The toolbar is a Lit element served through TYPO3's import map — there is no JavaScript build step. `vitest` aliases the import-map prefixes to the sources and to small mocks in `Tests/JavaScript/mocks`. Functional tests default to SQLite; CI runs them on MariaDB 10.11 with PHP 8.4 and 8.5. The Playwright scenario in `Tests/E2E` drives a running installation and is not part of `composer test`; its environment is documented in [Documentation/Testing.rst](Documentation/Testing.rst).
 
 ## Docs
 
