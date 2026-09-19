@@ -8,6 +8,18 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.5
+================
+
+No migration. 1.5.0 fixes the remaining cases in which the badge went
+stale (:ref:`badge`) and adds a browser scenario (:ref:`testing-browser`).
+
+One thing to know if you style the toolbar item: it now carries
+``webcon-easy-workspace-toolbar--live`` (``display: none``) while the user
+is in Live, and the badge ships ``data-wew-count`` and
+``data-wew-workspace``. Overrides that assumed an always-visible item or an
+always-empty badge in the server markup need adapting.
+
 Upgrading to 1.4
 ================
 
