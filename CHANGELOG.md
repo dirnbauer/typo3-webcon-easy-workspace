@@ -2,6 +2,24 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.6.0] — 2026-09-19
+
+### Fixed
+
+- **Workspace probes and soft-delete filters were dead code on TYPO3 v14.** `t3ver_wsid`, `t3ver_oid`, `deleted` and `tstamp` are no longer TCA `columns` in v14 — they are schema capabilities — so every guard written as `TcaUtility::hasColumn($table, 't3ver_wsid')` evaluated to false forever. Consequences: `/has-changes` reported "no changes" for every page and every news article; standalone `sys_file_metadata` drafts were never listed; and each `deleted = 0` constraint that sat behind the same check was silently dropped, so discarded (soft-deleted) drafts counted as pending. A new `RecordSchemaInspector` answers these questions through `TcaSchemaFactory`, and `WorkspaceRecordQuery`, `InlineChildResolver` and `WorkspaceDiagnosticsService` use it. `Tests/Functional/Service/RecordSchemaInspectorTest` pins the trap so the old form cannot come back.
+- A news article's content elements no longer claim a backend layout column. They are addressed through `tx_news_related_news`, not through a layout, so their `colPos` is a leftover — it produced a meaningless "Column 0" in the meta line and split one article's elements into per-column groups.
+
+### Added
+
+- `Tests/Functional/Service/PendingItemsServiceNewsTest` covers a news article with several content elements end to end: all of them are listed (changed and, in All mode, unchanged), all reach the publish selection, the count matches, discarded drafts are excluded, and an article without content elements still lists its own record. The `news_stub` test extension gained the real `content_elements` inline relation so the relation is actually exercised.
+
+### Changed
+
+- The toolbar badge counts the current page or news article instead of the whole workspace. Editors read the badge as "what is pending here", so a workspace-wide number made every page look busy. The server now returns both counts (`contextCount` next to `changedCount`); the dropdown header keeps naming both as "N on this page · M elsewhere", and the badge falls back to the workspace total only where no page can be resolved at all (a module outside the Web group). `publish` and `discard` post their page/news context so the badge they echo back is already scoped.
+- The dropdown is smaller: 440 px instead of 540 px wide (min-width 320 px), max-height 62 vh, tighter header, rows, footer and empty state, and the decorative extension tile in the header is gone. The toolbar icon — two offset squares with an arrow, for "a workspace version being pushed to Live" — now carries its own tooltip, so it no longer has to be guessed.
+- Row actions (edit, changes, discard, show in preview) are always visible and drawn as buttons with a border. They used to fade in on hover, which hid from an editor what a row can do until they pointed at it.
+- The selection checkbox in front of a row is bigger, uses the backend's accent colour and has a real hit area, and clicking anywhere on a row that is not a button toggles it.
+
 ## [1.5.0] — 2026-09-19
 
 ### Fixed

@@ -4,7 +4,7 @@
 
 Easy Workspace adds a workspace publishing dropdown to the TYPO3 backend toolbar and a **Content → Easy Workspace** module. Editors see the pending changes of the page (or news article) they are working on, review diffs and history, and publish or discard selected records without leaving their context. Publishing, staging, discarding and rollback use TYPO3 Core APIs (DataHandler, RecordHistory).
 
-The toolbar badge counts every pending change of the active workspace — like the Workspaces module — and stays current after saves in any frame, other tabs, CLI or MCP edits. See [Documentation/Badge.rst](Documentation/Badge.rst) for how the count is computed and refreshed.
+The toolbar badge counts the pending changes of the page (or news article) the editor is on — not the whole workspace — and stays current after saves in any frame, other tabs, CLI or MCP edits. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
 
 ## Requirements
 
@@ -46,7 +46,7 @@ Editors get personal switches (use the toolbar, show related records) in **User 
 
 1. Switch to a custom workspace and open a page or news article.
 2. Open **Workspace publish** in the toolbar. The header shows the workspace, the stage and "N on this page · M elsewhere".
-3. Select rows (Space), open the editor (Enter), inspect changes and history, discard a draft, or locate the element in the preview.
+3. Tick the checkbox in front of a row — or click anywhere on the row — to select it for publishing. Open the editor, inspect changes and history, discard a draft, or locate the element in the preview through the row's buttons (keyboard: Space selects, Enter opens the editor).
 4. **Publish N** publishes the selection; **Preview** opens or copies a workspace preview link; **Open module** switches to the full review queue with request-review / approve-and-publish stages.
 
 The toolbar is hidden in Live. Related inline records and file references are published together with their parent even when their details are hidden. Discard only resolves drafts of the active workspace.

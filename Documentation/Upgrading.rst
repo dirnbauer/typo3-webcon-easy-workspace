@@ -8,6 +8,30 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.6
+================
+
+No migration. The toolbar badge now counts the **current page or news
+article** instead of the whole workspace (:ref:`badge`); 1.4.0 had moved it
+the other way, and editors read it as "what is pending here". The
+whole-workspace number is still in the dropdown header
+("N on this page · M elsewhere") and still in the payload as
+``changedCount`` — the badge reads the new ``contextCount`` and falls back
+to ``changedCount`` where no page can be resolved. Integrations that read
+``changedCount`` keep working unchanged.
+
+The dropdown is narrower (440 px, min-width 320 px) and denser, its header
+no longer renders the extension tile, and the row actions are permanent
+instead of hover-revealed (no ``opacity`` transition on
+``.wew-row__actions``). Site stylesheets that positioned the dropdown by
+its old 540 px width or restyled ``.wew-menu__brand`` need adapting.
+
+Two behaviours change because a v14 trap was fixed (see the changelog):
+``/has-changes`` answered ``false`` for every context and now answers
+truthfully, and discarded (soft-deleted) drafts no longer count as pending.
+Integrations that worked around the first by ignoring ``hasChanges`` can
+stop doing so.
+
 Upgrading to 1.5
 ================
 
