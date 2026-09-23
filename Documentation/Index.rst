@@ -30,7 +30,7 @@ Install from the GitHub VCS repository in a TYPO3 project:
 ..  code-block:: bash
 
     composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-    composer require webconsulting/webcon-easy-workspace:^1.5
+    composer require webconsulting/webcon-easy-workspace:^1.7
     vendor/bin/typo3 extension:setup
     vendor/bin/typo3 cache:flush
 

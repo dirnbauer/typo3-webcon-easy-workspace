@@ -20,12 +20,12 @@ The package is distributed through GitHub tags only (not on Packagist):
 
 ```bash
 composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-composer require webconsulting/webcon-easy-workspace:^1.5
+composer require webconsulting/webcon-easy-workspace:^1.7
 vendor/bin/typo3 extension:setup
 vendor/bin/typo3 cache:flush
 ```
 
-Use `^1.5`: the tags `v14.0.0`–`v14.0.2` predate `v1.3.9` and do not match a `^1.x` constraint. Existing installations should read the [upgrade notes](Documentation/Upgrading.rst) — 1.4.0 renames the CSS files and requires PHP 8.4.
+Existing installations should read the [upgrade notes](Documentation/Upgrading.rst) — 1.4.0 renames the CSS files and requires PHP 8.4. The old `v14.0.x` tags no longer exist (they predate the renumbering to 1.x).
 
 ## Configure
 
@@ -42,11 +42,13 @@ options.webcon_easy_workspace {
 
 Editors get personal switches (use the toolbar, show related records) in **User Settings**. The [configuration reference](Documentation/Configuration.rst) lists every option; feature flags are enforced server-side.
 
+Toolbar and module draw only on TYPO3's backend tokens and Core markup (`.form-check`, cards, tables, flash messages), so they follow the backend theme and the light or dark colour scheme.
+
 ## Use
 
 1. Switch to a custom workspace and open a page or news article.
 2. Open **Workspace publish** in the toolbar. The header shows the workspace, the stage and "N on this page · M elsewhere".
-3. Tick the checkbox in front of a row — or click anywhere on the row — to select it for publishing. Open the editor, inspect changes and history, discard a draft, or locate the element in the preview through the row's buttons (keyboard: Space selects, Enter opens the editor).
+3. Tick the checkbox in front of a row — or click anywhere on the row — to select it for publishing. Open the editor, inspect changes and history, discard a draft, or locate the element in the preview through the row's buttons (keyboard: arrow keys move, Space selects, Enter opens the editor, Tab reaches the row's buttons).
 4. **Publish N** publishes the selection; **Preview** opens or copies a workspace preview link; **Open module** switches to the full review queue with request-review / approve-and-publish stages.
 
 The toolbar is hidden in Live. Related inline records and file references are published together with their parent even when their details are hidden. Discard only resolves drafts of the active workspace.

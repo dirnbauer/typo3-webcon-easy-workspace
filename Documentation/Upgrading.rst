@@ -8,6 +8,33 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.7
+================
+
+No migration. Things to know if you override the toolbar's markup or styles:
+
+- The row and select-all checkboxes are wrapped in Core's ``.form-check``
+  (``span.form-check.wew-row__check-wrap`` and
+  ``div.form-check.wew-menu__selectall``). Core defines the checkbox tokens
+  on that wrapper; without it the boxes rendered invisible.
+  ``.wew-menu__selectall-check``, ``.wew-menu__selectall-label`` and
+  ``.wew-sr-only`` are gone (the hint uses Core's ``.visually-hidden``).
+- The action buttons of the active row are tabbable
+  (``tabindex="0"``), the others stay ``-1``.
+- The module no longer flushes the flash message queue itself; Core's
+  ``Module`` layout renders publish, review and discard messages. The
+  ``FlashMessage`` partial was removed.
+- ``IFRAME_HIGHLIGHT_STYLE`` left ``menu-constants.js``; the preview
+  outline is built by ``highlightStyle()`` in ``menu-preview-locate.js``
+  from the backend's tokens.
+
+The Git tags ``v14.0.0``–``v14.0.2`` were deleted from both remotes, and
+the GitHub release of 14.0.0 with them: 14.0.0 was the first release
+before the version line was renumbered to 1.x, and 14.0.1/14.0.2 pointed
+at the commits of 1.3.5 and 1.3.6. Composer no longer offers 14.0.2 as the
+"latest" version; a constraint on ``^14.0`` no longer resolves, use
+``^1.7``.
+
 Upgrading to 1.6
 ================
 
@@ -47,9 +74,7 @@ always-empty badge in the server markup need adapting.
 Upgrading to 1.4
 ================
 
-1.4.0 requires **PHP 8.4 or 8.5**. Update the constraint to ``^1.4``: the
-older tags ``v14.0.0``–``v14.0.2`` predate ``v1.3.9`` and never match a
-``^1.x`` constraint.
+1.4.0 requires **PHP 8.4 or 8.5**. Update the constraint to ``^1.4``.
 
 **Breaking: CSS files renamed.** ``Resources/Public/Css/easy-workspace.css``
 was replaced by ``tokens.css``, ``toolbar-menu.css``, ``module.css`` and

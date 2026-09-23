@@ -26,7 +26,8 @@ Groups
     metadata records.
 
 Rows
-    A selection checkbox, record icon or thumbnail, title, change-type pill
+    A selection checkbox (a Core ``.form-check``), record icon or
+    thumbnail, title, change-type pill
     (new / changed / deleted / moved, icons ``wew-change-*``), a meta line
     with type, column, author and relative time, optional related child
     records (``showSubelementsInToolbar``), and the always-visible actions:
@@ -41,11 +42,15 @@ Footer
     ``Publish N`` button, a Preview split button (open in a new tab or copy
     the preview link, ``enablePreviewLink``) and an "Open module" link that
     switches the content frame to the Easy Workspace module for the current
-    page.
+    page. Select-all and ``Publish N`` are only shown while there is
+    something to select.
 
 States
     Loading skeleton (three rows), empty ("Nothing pending"), no context
     and error with a retry button.
+
+A selected row keeps a light tint; the checkbox carries the state, since
+every changed row starts selected.
 
 ..  _toolbar-keyboard:
 
@@ -56,8 +61,13 @@ The container is a ``role="dialog"`` labelled by the title; the rows form a
 ``role="list"`` with a roving tabindex. :kbd:`ArrowUp` / :kbd:`ArrowDown`
 (:kbd:`Home` / :kbd:`End`) move between rows, :kbd:`Space` toggles the row
 selection, :kbd:`Enter` opens the editor and :kbd:`Escape` closes the split
-menu or the dropdown. Row actions carry ``aria-label`` and are visible
-without hovering; the count chip is a polite live region.
+menu or the dropdown.
+
+The action buttons of the active row are in the tab order: :kbd:`Tab` walks
+from the row into edit, changes, discard and preview, then on to the
+footer. :kbd:`ArrowRight` / :kbd:`ArrowLeft` step into and out of the
+actions as well. Row actions carry ``aria-label`` and are visible without
+hovering; the count chip is a polite live region.
 
 ..  _toolbar-styling:
 
@@ -82,7 +92,11 @@ Styles live in four files under ``Resources/Public/Css/``:
     The diff and history modal (loaded by both the toolbar and the module).
 
 Override tokens in your own backend stylesheet, for example
-``:root { --wew-accent: var(--typo3-state-primary-bg); }``.
+``:root { --wew-accent: var(--typo3-state-primary-bg); }``. No file carries
+a hard-coded colour. The outline and the discard tag that the toolbar draws
+into preview frames (whose documents do not load the backend stylesheet)
+use the backend's primary, success and danger colours, resolved in the
+toolbar's own document and handed over as computed values.
 
 ..  _toolbar-files:
 
