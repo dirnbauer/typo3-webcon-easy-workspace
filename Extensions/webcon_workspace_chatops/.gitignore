@@ -1,6 +1,0 @@
-.DS_Store
-/.Build/
-/vendor/
-/var/
-/.phpunit.result.cache
-/.php-cs-fixer.cache

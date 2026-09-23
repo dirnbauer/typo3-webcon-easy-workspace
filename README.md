@@ -73,7 +73,7 @@ The toolbar is a Lit element served through TYPO3's import map — there is no J
 - [Testing](Documentation/Testing.rst) · [Diagnostics](Documentation/Diagnostics.rst) · [Contributing](Documentation/Contributing.rst)
 - [Changelog](CHANGELOG.md)
 
-[Workspace ChatOps](Extensions/webcon_workspace_chatops/README.md) is a separate, optional extension in this repository. Report vulnerabilities through [private GitHub Security Advisories](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new).
+Report vulnerabilities through [private GitHub Security Advisories](https://github.com/dirnbauer/typo3-webcon-easy-workspace/security/advisories/new).
 
 ## License
 

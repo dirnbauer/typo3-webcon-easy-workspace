@@ -49,12 +49,11 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Webconsulting\\WebconEasyWorkspace\\Tests\\": "Tests/",
-            "Webconsulting\\WebconWorkspaceChatops\\": "Extensions/webcon_workspace_chatops/Classes/"
+            "Webconsulting\\WebconEasyWorkspace\\Tests\\": "Tests/"
         }
     },
     "scripts": {
-        "lint": "find Classes Configuration Tests Extensions/webcon_workspace_chatops -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "lint": "find Classes Configuration Tests -name '*.php' -print0 | xargs -0 -n1 php -l",
         "cgl": "php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff",
         "cgl:fix": "php-cs-fixer fix --config=.php-cs-fixer.dist.php",
         "phpstan": "phpstan analyse --memory-limit=1G",
@@ -80,7 +79,7 @@
     "extra": {
         "typo3/cms": {
             "extension-key": "webcon_easy_workspace",
-            "version": "1.7.0",
+            "version": "1.7.1",
             "Package": {
                 "providesPackages": {}
             }

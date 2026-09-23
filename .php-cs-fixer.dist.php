@@ -9,12 +9,7 @@ $config->getFinder()
     ->in(__DIR__ . '/Classes')
     ->in(__DIR__ . '/Configuration')
     ->in(__DIR__ . '/Tests')
-    ->in(__DIR__ . '/Extensions/webcon_workspace_chatops/Classes')
-    ->in(__DIR__ . '/Extensions/webcon_workspace_chatops/Configuration')
-    ->append([
-        __DIR__ . '/Extensions/webcon_workspace_chatops/ext_localconf.php',
-        __FILE__,
-    ]);
+    ->append([__FILE__]);
 $config->setCacheFile(__DIR__ . '/.php-cs-fixer.cache');
 
 return $config;

@@ -8,6 +8,16 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.7.1
+==================
+
+No migration. The copy of the Workspace ChatOps extension that sat in
+``Extensions/webcon_workspace_chatops`` was removed. It was never installed
+by Composer (the package only loaded its classes for its own tests) and has
+been superseded by the separate ``webconsulting/webcon-mcp-chat-bridge``
+extension. Installations that registered that folder by hand as a local path
+repository must switch to the chat bridge.
+
 Upgrading to 1.7
 ================
 
@@ -124,9 +134,6 @@ administrators. Live UIDs from preview controls resolve only inside the
 active workspace. Repeated discards remain harmless. Integrations must
 select the intended workspace before calling mutation services; stale user
 record fields or a different Context aspect no longer select a workspace.
-
-The optional ChatOps package also requires Core 14.3.6+. Install or update it
-separately; Easy Workspace does not enable it automatically.
 
 From TYPO3 12 or 13
 ==================

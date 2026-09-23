@@ -2,6 +2,13 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.7.1] — 2026-09-23
+
+### Removed
+
+- The embedded copy of the Workspace ChatOps extension (`Extensions/webcon_workspace_chatops`) and its unit test. It was a June 2026 snapshot that Composer never installed; the extension lives on as the separate `webconsulting/webcon-mcp-chat-bridge` package. The three later changes made to the copy here (input normalization with the `Value` utility, the 14.3.6 constraint, `#[\Override]` attributes) were handed over to that repository on the branch `import-from-easy-workspace`, with their history, before the removal.
+- The copy's entries in `composer.json` (`autoload-dev`, `lint`), `phpstan.neon` and `.php-cs-fixer.dist.php`.
+
 ## [1.7.0] — 2026-09-23
 
 ### Fixed
