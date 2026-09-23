@@ -1,0 +1,13 @@
+# Development-only files stay out of the archive Composer installs.
+/.ddev export-ignore
+/.gitattributes export-ignore
+/.github export-ignore
+/.gitignore export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/Build export-ignore
+/Tests export-ignore
+/package-lock.json export-ignore
+/package.json export-ignore
+/phpstan.neon export-ignore
+/playwright.config.js export-ignore
+/vitest.config.js export-ignore
