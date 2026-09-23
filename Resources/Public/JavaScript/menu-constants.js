@@ -73,16 +73,3 @@ export const DEFAULT_CONFIG = Object.freeze({
   },
 });
 
-// Inline highlight styles applied to the iframe element. Hard-coded
-// colors because the iframe document has its own CSS scope and v14
-// backend custom properties don't propagate there.
-export const IFRAME_HIGHLIGHT_STYLE = {
-  outline: '3px solid #4a90e2',
-  outlineOffset: '2px',
-  boxShadow: '0 0 0 6px rgba(74, 144, 226, 0.22)',
-  transition: 'outline 0.15s ease, box-shadow 0.15s ease',
-  scrollMarginTop: '40px',
-  scrollMarginBottom: '40px',
-  // Faint background tint while hovered so the entire CE area is obvious.
-  backgroundColor: '',
-};

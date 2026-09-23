@@ -1,5 +1,4 @@
 import Notification from '@typo3/backend/notification.js';
-import { IFRAME_HIGHLIGHT_STYLE } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import {
   collectIframes,
   discardTagSubtitleKey,
@@ -20,17 +19,49 @@ const VE_TOOLBAR_FORCE_STYLE = {
   'pointer-events': 'auto',
 };
 
-// Transient green outline confirming the element a mutation just touched
-// (revert, save, or rollback). Hard-coded colors: the preview document has
-// its own CSS scope, so backend custom properties do not reach it.
-const CONFIRM_FLASH_STYLE = {
-  outline: '3px solid #3aae6a',
-  outlineOffset: '2px',
-  boxShadow: '0 0 0 6px rgba(58, 174, 106, 0.22)',
-  transition: 'outline 0.2s ease, box-shadow 0.2s ease',
-  scrollMarginTop: '48px',
-  scrollMarginBottom: '48px',
-};
+/**
+ * The preview document has its own CSS scope: the backend's design tokens do
+ * not reach it. Resolve a token in the backend document and hand the preview
+ * the computed colour, so outlines and tags follow the backend's theme and
+ * colour scheme instead of a hard-coded palette.
+ */
+export function backendColor(token, doc = document) {
+  const probe = doc.createElement('span');
+  probe.style.display = 'none';
+  probe.style.color = `var(${token})`;
+  (doc.body || doc.documentElement).append(probe);
+  const color = doc.defaultView?.getComputedStyle(probe).color || '';
+  probe.remove();
+  return color || 'currentColor';
+}
+
+function outlineStyle(token, { transition, scrollMargin }) {
+  const color = backendColor(token);
+  return {
+    outline: `3px solid ${color}`,
+    outlineOffset: '2px',
+    boxShadow: `0 0 0 6px color-mix(in srgb, ${color} 22%, transparent)`,
+    transition,
+    scrollMarginTop: scrollMargin,
+    scrollMarginBottom: scrollMargin,
+  };
+}
+
+/** Outline of the element the row's eye button located. */
+export function highlightStyle() {
+  return outlineStyle('--typo3-state-primary-border-color', {
+    transition: 'outline 0.15s ease, box-shadow 0.15s ease',
+    scrollMargin: '40px',
+  });
+}
+
+/** Transient outline confirming the element a mutation just touched (revert, save, rollback). */
+export function confirmFlashStyle() {
+  return outlineStyle('--typo3-state-success-border-color', {
+    transition: 'outline 0.2s ease, box-shadow 0.2s ease',
+    scrollMargin: '48px',
+  });
+}
 const CONFIRM_FLASH_DURATION = 1600;
 const LOCATE_TOP_RESERVE = 96;
 const LOCATE_MIN_TOP_RESERVE = 48;
@@ -289,11 +320,12 @@ export function highlightInIframe(host, item, { announce = false, behavior = 'sm
     return;
   }
 
+  const style = highlightStyle();
   const previous = {};
-  for (const key of Object.keys(IFRAME_HIGHLIGHT_STYLE)) {
+  for (const key of Object.keys(style)) {
     previous[key] = el.style[key];
   }
-  Object.assign(el.style, IFRAME_HIGHLIGHT_STYLE);
+  Object.assign(el.style, style);
   host._iframeHighlight = { el, isVeWrapper: false, previous };
 }
 
@@ -398,11 +430,12 @@ function refocusAfterReload(iframe, item, prior) {
 }
 
 function flashConfirmation(el, isVeWrapper, win) {
+  const style = confirmFlashStyle();
   const previous = {};
-  for (const key of Object.keys(CONFIRM_FLASH_STYLE)) {
+  for (const key of Object.keys(style)) {
     previous[key] = el.style[key];
   }
-  Object.assign(el.style, CONFIRM_FLASH_STYLE);
+  Object.assign(el.style, style);
 
   const veRestore = isVeWrapper ? revealVeToolbar(el) : null;
 
@@ -440,24 +473,25 @@ export function previewDiscard(host, item) {
     const subtitle = label(host, discardTagSubtitleKey(item), { title: item.title || '' });
     const tag = doc.createElement('div');
     tag.className = 'wew-discard-tag';
+    const danger = backendColor('--typo3-state-danger-bg');
+    const onDanger = backendColor('--typo3-state-danger-color');
     Object.assign(tag.style, {
       position: 'absolute',
       zIndex: '999999',
       padding: '4px 9px 5px',
       fontSize: '11px',
       lineHeight: '1.25',
-      background: 'rgba(220, 53, 69, 0.78)',
-      color: '#fff',
-      border: '1px solid rgba(255, 255, 255, 0.32)',
+      background: `color-mix(in srgb, ${danger} 88%, transparent)`,
+      color: onDanger,
+      border: `1px solid color-mix(in srgb, ${onDanger} 32%, transparent)`,
       borderRadius: '3px',
-      boxShadow: '0 3px 12px rgba(0, 0, 0, 0.28)',
+      boxShadow: `0 3px 12px color-mix(in srgb, ${danger} 30%, transparent)`,
       backdropFilter: 'blur(4px) saturate(135%)',
       WebkitBackdropFilter: 'blur(4px) saturate(135%)',
       pointerEvents: 'none',
       whiteSpace: 'normal',
       maxWidth: 'min(360px, calc(100vw - 32px))',
       fontFamily: 'inherit',
-      textShadow: '0 1px 1px rgba(0, 0, 0, 0.38)',
     });
     const titleEl = doc.createElement('div');
     titleEl.textContent = title;
