@@ -32,11 +32,11 @@
     },
     "require-dev": {
         "phpstan/extension-installer": "^1.4",
-        "phpstan/phpstan": "^2.1",
-        "phpstan/phpstan-phpunit": "^2.0",
-        "saschaegerer/phpstan-typo3": "^3.0.1",
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-phpunit": "^2.0.18",
+        "saschaegerer/phpstan-typo3": "^3.1",
         "typo3/coding-standards": "^0.9.0",
-        "typo3/testing-framework": "^9.5"
+        "typo3/testing-framework": "^9.7"
     },
     "suggest": {
         "georgringer/news": "Adds news-bundle publishing (news record + content elements via tx_news_related_news).",
