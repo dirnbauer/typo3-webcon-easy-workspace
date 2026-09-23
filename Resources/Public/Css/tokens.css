@@ -21,7 +21,7 @@
     --wew-radius: var(--typo3-component-border-radius, .25rem);
     --wew-radius-sm: calc(var(--wew-radius) * .75);
     --wew-radius-pill: 999px;
-    --wew-shadow: var(--typo3-component-box-shadow-flyout, 0 8px 24px rgba(0, 0, 0, .18));
+    --wew-shadow: var(--typo3-component-box-shadow-flyout);
 
     /* Surfaces */
     --wew-surface: var(--typo3-dropdown-bg, var(--typo3-component-bg));
@@ -35,6 +35,7 @@
     --wew-text: var(--typo3-dropdown-color, var(--typo3-component-color));
     --wew-text-muted: var(--typo3-text-color-variant, var(--typo3-component-variant-color));
     --wew-link: var(--typo3-component-link-color);
+    --wew-text-danger: var(--typo3-text-color-danger);
     --wew-link-hover: var(--typo3-component-link-hover-color);
     --wew-border: var(--typo3-dropdown-border-color, var(--typo3-component-border-color));
     --wew-border-strong: var(--typo3-component-hover-border-color, var(--wew-border));
@@ -44,7 +45,7 @@
     --wew-primary: var(--typo3-state-primary-bg);
     --wew-primary-text: var(--typo3-state-primary-color);
     --wew-primary-border: var(--typo3-state-primary-border-color);
-    --wew-accent: var(--icon-color-accent, #ff8700);
+    --wew-accent: var(--icon-color-accent);
 
     /* Change types: new / changed / deleted / moved / notice (hidden) */
     --wew-new-bg: var(--typo3-badge-success-bg);

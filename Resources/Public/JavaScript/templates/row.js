@@ -70,13 +70,15 @@ export function renderRow(host, item, index) {
         @click=${(event) => host.handleRowClick(event, item)}>
       <span class="wew-row__select">
         ${item.isChanged ? html`
-          <input type="checkbox"
-                 class="form-check-input wew-row__check"
-                 tabindex="-1"
-                 .checked=${selected}
-                 aria-label=${label(host, 'toolbar.row.select', { title: item.title })}
-                 data-wew-row-check
-                 @change=${(event) => host.handleRowCheck(event)} />` : nothing}
+          <span class="form-check wew-row__check-wrap">
+            <input type="checkbox"
+                   class="form-check-input wew-row__check"
+                   tabindex="-1"
+                   .checked=${selected}
+                   aria-label=${label(host, 'toolbar.row.select', { title: item.title })}
+                   data-wew-row-check
+                   @change=${(event) => host.handleRowCheck(event)} />
+          </span>` : nothing}
       </span>
       ${item.thumbnailUrl ? html`
         <span class="wew-row__thumb"><img src=${item.thumbnailUrl} alt="" loading="lazy" /></span>` : html`

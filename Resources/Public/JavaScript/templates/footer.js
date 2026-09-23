@@ -36,9 +36,37 @@ function renderPreviewSplit(host) {
   `;
 }
 
+/**
+ * Select-all as a Core `.form-check` (the wrapper defines the checkbox
+ * tokens; a bare `.form-check-input` renders without a box).
+ */
+function renderSelectAll(host, { total, selectedCount, allChecked, someChecked }) {
+  const inputId = `${host.titleId}-select-all`;
+  return html`
+    <div class="form-check wew-menu__selectall">
+      <input type="checkbox"
+             class="form-check-input"
+             id=${inputId}
+             .checked=${allChecked}
+             .indeterminate=${someChecked}
+             aria-label=${allChecked ? label(host, 'toolbar.deselectAllChanges') : label(host, 'toolbar.selectAllChanges')}
+             data-wew-select-all
+             @change=${(event) => host.handleSelectAll(event)} />
+      <label class="form-check-label" for=${inputId}>
+        ${allChecked ? label(host, 'toolbar.deselectAll') : label(host, 'toolbar.selectAll')}
+        <span class="wew-menu__count" data-wew-selection-count><strong>${selectedCount}</strong>/${total}</span>
+      </label>
+    </div>
+  `;
+}
+
 export function renderFooter(host) {
-  const { total, selectedCount, allChecked, someChecked } = footerState(host);
+  const state = footerState(host);
+  const { total, selectedCount } = state;
   const showPreview = configBool(host, 'enablePreviewLink', true) && host.pageUid > 0;
+  // Nothing to select (empty page, no page, failed request): the selection
+  // controls would only be disabled noise next to the empty state.
+  const showSelection = total > 0;
   const publishLabel = host.publishing
     ? label(host, 'toolbar.publishing')
     : (selectedCount > 0 ? label(host, 'toolbar.publishCount', { count: selectedCount }) : label(host, 'toolbar.publishToLive'));
@@ -46,31 +74,21 @@ export function renderFooter(host) {
 
   return html`
     <footer class="wew-menu__foot" data-wew-footer>
-      <label class="wew-menu__selectall ${total === 0 ? 'is-disabled' : ''}">
-        <input type="checkbox"
-               class="form-check-input wew-menu__selectall-check"
-               .checked=${allChecked}
-               .indeterminate=${someChecked}
-               ?disabled=${total === 0}
-               aria-label=${allChecked ? label(host, 'toolbar.deselectAllChanges') : label(host, 'toolbar.selectAllChanges')}
-               data-wew-select-all
-               @change=${(event) => host.handleSelectAll(event)} />
-        <span class="wew-menu__selectall-label">${allChecked ? label(host, 'toolbar.deselectAll') : label(host, 'toolbar.selectAll')}</span>
-        ${total > 0 ? html`<span class="wew-menu__count" data-wew-selection-count><strong>${selectedCount}</strong>/${total}</span>` : nothing}
-      </label>
+      ${showSelection ? renderSelectAll(host, state) : html`<span></span>`}
       <div class="wew-menu__foot-actions">
         ${showPreview ? renderPreviewSplit(host) : nothing}
-        <button type="button"
-                class="btn btn-primary btn-sm wew-menu__publish"
-                data-wew-publish
-                ?disabled=${selectedCount <= 0 || host.publishing}
-                @click=${() => host.handlePublish()}>
-          <typo3-backend-icon identifier="wew-publish" size="small"></typo3-backend-icon>
-          <span>${publishLabel}</span>
-        </button>
+        ${showSelection ? html`
+          <button type="button"
+                  class="btn btn-primary btn-sm wew-menu__publish"
+                  data-wew-publish
+                  ?disabled=${selectedCount <= 0 || host.publishing}
+                  @click=${() => host.handlePublish()}>
+            <typo3-backend-icon identifier="wew-publish" size="small"></typo3-backend-icon>
+            <span>${publishLabel}</span>
+          </button>` : nothing}
       </div>
       <div class="wew-menu__foot-meta">
-        <span class="wew-sr-only">${label(host, 'toolbar.keyboardHint')}</span>
+        <span class="visually-hidden">${label(host, 'toolbar.keyboardHint')}</span>
         ${href ? html`
           <a class="wew-menu__module-link" href=${href} data-wew-open-module @click=${(event) => host.handleOpenModule(event)}>
             <typo3-backend-icon identifier="wew-module" size="small"></typo3-backend-icon>
