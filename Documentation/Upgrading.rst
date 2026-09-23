@@ -8,6 +8,12 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.7.2
+==================
+
+No migration. The decline button in the Visual Editor now appears for
+editors in a workspace; it had never loaded (see the changelog).
+
 Upgrading to 1.7.1
 ==================
 

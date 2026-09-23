@@ -2,6 +2,17 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.7.2] — 2026-09-23
+
+### Fixed
+
+- The Visual Editor's decline button never loaded: its middleware read the
+  backend user from a `backend.user` request attribute, which TYPO3 never
+  sets. It now asks `BackendAccessGuard`, which falls back to
+  `$GLOBALS['BE_USER']`, where the frontend authenticator puts the user.
+  New functional tests build the request as TYPO3 does (no attribute) and
+  cover workspace, live, no edit mode and no backend user.
+
 ## [1.7.1] — 2026-09-23
 
 ### Removed

@@ -8,8 +8,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Page\AssetCollector;
+use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 
 final readonly class VisualEditorDeclineButtonMiddleware implements MiddlewareInterface
@@ -17,6 +17,7 @@ final readonly class VisualEditorDeclineButtonMiddleware implements MiddlewareIn
     public function __construct(
         private AssetCollector $assetCollector,
         private LocalizationService $localizationService,
+        private BackendAccessGuard $guard,
     ) {}
 
     #[\Override]
@@ -50,10 +51,12 @@ final readonly class VisualEditorDeclineButtonMiddleware implements MiddlewareIn
             return false;
         }
 
-        // Set by the frontend backend-user-authentication middleware,
-        // which this middleware is registered after.
-        $backendUser = $request->getAttribute('backend.user');
+        // The frontend backend-user authenticator, which this middleware runs
+        // after, fills $GLOBALS['BE_USER'] — it sets no "backend.user" request
+        // attribute, so reading only that attribute kept the button off for
+        // every editor. The guard checks both.
+        $backendUser = $this->guard->user($request);
 
-        return $backendUser instanceof BackendUserAuthentication && $backendUser->workspace > 0;
+        return $backendUser !== null && $backendUser->workspace > 0;
     }
 }
