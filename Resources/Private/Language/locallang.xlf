@@ -2133,8 +2133,8 @@
     </unit>
     <unit id="toolbar.keyboardHint">
       <segment>
-        <source>Arrow keys move, Space selects, Enter edits, Escape closes.</source>
-        <target state="translated">Arrow keys move, Space selects, Enter edits, Escape closes.</target>
+        <source>Arrow keys move, Space selects, Enter edits, Tab reaches the row actions, Escape closes.</source>
+        <target state="translated">Arrow keys move, Space selects, Enter edits, Tab reaches the row actions, Escape closes.</target>
       </segment>
     </unit>
     <unit id="change.new">

@@ -64,7 +64,7 @@
     <unit id="toolbar.title">
       <segment>
         <source>Workspace</source>
-        <target state="translated">Arbeitsbereich</target>
+        <target state="translated">Workspace</target>
       </segment>
     </unit>
     <unit id="toolbar.item.title">
@@ -76,7 +76,7 @@
     <unit id="toolbar.activeWorkspace">
       <segment>
         <source>Active workspace</source>
-        <target state="translated">Aktiver Arbeitsbereich</target>
+        <target state="translated">Aktiver Workspace</target>
       </segment>
     </unit>
     <unit id="toolbar.loading">
@@ -238,7 +238,7 @@
     <unit id="module.liveWorkspace">
       <segment>
         <source>Switch to a workspace to use Easy Workspace.</source>
-        <target state="translated">Wechseln Sie in einen Arbeitsbereich, um Easy Workspace zu verwenden.</target>
+        <target state="translated">Wechseln Sie in einen Workspace, um Easy Workspace zu verwenden.</target>
       </segment>
     </unit>
     <unit id="module.section.pending">
@@ -1810,7 +1810,7 @@
     <unit id="error.recordNotFound">
       <segment>
         <source>Record not found or not accessible in this workspace.</source>
-        <target state="translated">Datensatz wurde nicht gefunden oder ist in diesem Arbeitsbereich nicht zugänglich.</target>
+        <target state="translated">Datensatz wurde nicht gefunden oder ist in diesem Workspace nicht zugänglich.</target>
       </segment>
     </unit>
     <unit id="error.invalidArguments">
@@ -1876,13 +1876,13 @@
     <unit id="error.publishFromLive">
       <segment>
         <source>Cannot publish from the live workspace.</source>
-        <target state="translated">Aus dem Live-Arbeitsbereich kann nicht veröffentlicht werden.</target>
+        <target state="translated">Aus dem Live-Workspace kann nicht veröffentlicht werden.</target>
       </segment>
     </unit>
     <unit id="error.selectionWrongWorkspace">
       <segment>
         <source>Selection contained records that do not belong to the active workspace.</source>
-        <target state="translated">Die Auswahl enthielt Datensätze, die nicht zum aktiven Arbeitsbereich gehören.</target>
+        <target state="translated">Die Auswahl enthielt Datensätze, die nicht zum aktiven Workspace gehören.</target>
       </segment>
     </unit>
     <unit id="error.noPublishableRecords">
@@ -1894,7 +1894,7 @@
     <unit id="error.recordWrongWorkspace">
       <segment>
         <source>Record does not belong to the active workspace.</source>
-        <target state="translated">Datensatz gehört nicht zum aktiven Arbeitsbereich.</target>
+        <target state="translated">Datensatz gehört nicht zum aktiven Workspace.</target>
       </segment>
     </unit>
     <unit id="error.discardNotApplied">
@@ -2133,8 +2133,8 @@
     </unit>
     <unit id="toolbar.keyboardHint">
       <segment>
-        <source>Arrow keys move, Space selects, Enter edits, Escape closes.</source>
-        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Escape schließt.</target>
+        <source>Arrow keys move, Space selects, Enter edits, Tab reaches the row actions, Escape closes.</source>
+        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Tab erreicht die Aktionen der Zeile, Escape schließt.</target>
       </segment>
     </unit>
     <unit id="change.new">
