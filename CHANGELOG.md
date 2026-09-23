@@ -2,6 +2,32 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.7.0] — 2026-09-23
+
+### Fixed
+
+- **The selection checkboxes in the toolbar dropdown were invisible.** Core's `.form-check-input` takes its box, border and check mark from tokens that only a `.form-check` wrapper defines; the dropdown used the input bare, so rows and "Select all" showed an empty gap. Both now use Core's `.form-check` markup.
+- The dropdown's error state painted its message in the danger *badge* text colour — white on the light surface. It uses `--typo3-text-color-danger`.
+- The row actions (changes, discard, show in preview) could not be reached without a mouse: they had `tabindex="-1"` and no key led to them. The active row's buttons now join the tab order, and ArrowRight/ArrowLeft step into and out of them.
+- The module's selection summary reached the page as raw ICU (`{count, plural, …}`) until the script replaced it; the template passed a positional argument where the message needs `count`.
+- Publish, review and discard messages in the module are rendered by Core's `Module` layout again (with icons and Core's markup), instead of being flushed by the controller and redrawn as bare Bootstrap alerts.
+
+### Changed
+
+- A selected row keeps only a light tint; with every changed row preselected, the old full tint turned the list into one coloured block. Without anything to select, the footer hides "Select all" and "Publish N" instead of showing them disabled.
+- No hard-coded colour is left: `tokens.css` lost its hex fallbacks, and the outline, confirmation flash and discard tag drawn into preview frames use the backend's primary, success and danger colours, resolved in the toolbar's document and handed over as computed values.
+- German labels say "Workspace" throughout (seven still said "Arbeitsbereich").
+- PHP 8.4 idioms: typed class constants, `new Foo()->bar()`, `array_any()`, first-class callables, and `#[\Override]` on every implementing/overriding method (PHPStan now enforces it). The module's three sections are a `ModuleSection` enum instead of a string list, a map and two `match` blocks.
+- Development: vitest 5, jsdom 30, Playwright 1.63, PHPStan ^2.2, testing-framework ^9.7; CI uses actions/checkout and setup-node v7 and Node 24; `.gitattributes` keeps development files out of the Composer archive.
+
+### Added
+
+- Functional test for the module controller (rendered through `ModuleTemplate`: heading, checkboxes, flash messages, formatted summary, records section) and JavaScript tests for the keyboard handling and the footer and row templates.
+
+### Removed
+
+- The Git tags `v14.0.0`–`v14.0.2` and the GitHub release "Easy Workspace 14.0.0". They predate the renumbering to 1.x and made Composer report 14.0.2 as the newest version.
+
 ## [1.6.1] — 2026-09-19
 
 ### Fixed
