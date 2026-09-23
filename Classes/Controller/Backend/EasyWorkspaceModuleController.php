@@ -19,6 +19,7 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Enum\ModuleSection;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\EasyWorkspaceModuleDocHeaderBuilder;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
@@ -31,15 +32,6 @@ use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 #[AsController]
 final readonly class EasyWorkspaceModuleController
 {
-    private const SECTIONS = ['pending', 'all', 'diagnostics'];
-
-    private const MODULE_SECTIONS = [
-        'webcon_easy_workspace' => 'pending',
-        'webcon_easy_workspace_pending' => 'pending',
-        'webcon_easy_workspace_records' => 'all',
-        'webcon_easy_workspace_diagnostics' => 'diagnostics',
-    ];
-
     public function __construct(
         private ModuleTemplateFactory $moduleTemplateFactory,
         private PageRenderer $pageRenderer,
@@ -117,17 +109,18 @@ final readonly class EasyWorkspaceModuleController
 
         $canRender = $config['enabled'] && $activeWorkspaceId > 0;
         $disabledMessage = $this->disabledMessage($config['enabled'], $activeWorkspaceId);
-        $hasContext = $section === 'diagnostics' || $pageUid > 0 || $newsUid > 0;
+        $hasContext = $section === ModuleSection::Diagnostics || $pageUid > 0 || $newsUid > 0;
 
         $viewData = [
             'moduleTitle' => $this->localizationService->translate('module.title'),
             'moduleDescription' => $this->localizationService->translate('module.description'),
-            'sectionTitle' => $this->localizationService->translate($this->sectionTitleKey($section)),
-            'sectionDescription' => $this->localizationService->translate($this->sectionDescriptionKey($section)),
+            'sectionTitle' => $this->localizationService->translate($section->titleKey()),
+            'sectionDescription' => $this->localizationService->translate($section->descriptionKey()),
             'pageTitle' => $pageTitle,
             'canRenderEasyWorkspace' => $canRender,
             'disabledMessage' => $disabledMessage,
-            'section' => $section,
+            'section' => $section->value,
+            'sectionPartial' => $section->partialName(),
             'canSeeDiagnostics' => $this->accessGuard->user($request)?->isAdmin() ?? false,
             'moduleUrls' => $this->buildModuleUrls($pageUid, $newsUid),
             'flashMessages' => $this->flushFlashMessages(),
@@ -274,64 +267,44 @@ final readonly class EasyWorkspaceModuleController
     }
 
     /**
-     * @return array{pending: string, all: string, diagnostics: string}
+     * @return array<value-of<ModuleSection>, string>
      */
     private function buildModuleUrls(int $pageUid, int $newsUid): array
     {
         $parameters = $this->buildModuleMenuParameters($pageUid, $newsUid);
+        $urls = [];
+        foreach (ModuleSection::cases() as $section) {
+            $urls[$section->value] = (string)$this->backendUriBuilder->buildUriFromRoute($section->moduleIdentifier(), $parameters);
+        }
 
-        return [
-            'pending' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_pending', $parameters),
-            'all' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_records', $parameters),
-            'diagnostics' => (string)$this->backendUriBuilder->buildUriFromRoute('webcon_easy_workspace_diagnostics', $parameters),
-        ];
+        return $urls;
     }
 
-    private function resolveSection(ServerRequestInterface $request): string
+    private function resolveSection(ServerRequestInterface $request): ModuleSection
     {
         $section = $this->requestedSection($request);
         // Diagnostics expose schema-level scan details (orphaned rows,
         // raw repair SQL) — admin only, mirroring the module registration.
-        if ($section === 'diagnostics' && !($this->accessGuard->user($request)?->isAdmin() ?? false)) {
-            return 'pending';
+        if ($section->isAdminOnly() && !($this->accessGuard->user($request)?->isAdmin() ?? false)) {
+            return ModuleSection::Pending;
         }
 
         return $section;
     }
 
-    private function requestedSection(ServerRequestInterface $request): string
+    private function requestedSection(ServerRequestInterface $request): ModuleSection
     {
         $path = rtrim($request->getUri()->getPath(), '/');
         if (str_ends_with($path, '/module/content/easy-workspace')) {
-            return 'pending';
+            return ModuleSection::Pending;
         }
 
         $module = $request->getAttribute('module');
         if ($module instanceof ModuleInterface) {
-            return self::MODULE_SECTIONS[$module->getIdentifier()] ?? 'pending';
+            return ModuleSection::fromModuleIdentifier($module->getIdentifier());
         }
 
-        $candidate = Value::string($request->getQueryParams()['section'] ?? null);
-
-        return in_array($candidate, self::SECTIONS, true) ? $candidate : 'pending';
-    }
-
-    private function sectionTitleKey(string $section): string
-    {
-        return match ($section) {
-            'all' => 'module.section.all',
-            'diagnostics' => 'module.section.testsDiagnostics',
-            default => 'module.section.pending',
-        };
-    }
-
-    private function sectionDescriptionKey(string $section): string
-    {
-        return match ($section) {
-            'all' => 'module.all.subtitle',
-            'diagnostics' => 'module.testsDiagnostics.subtitle',
-            default => 'module.pending.subtitle',
-        };
+        return ModuleSection::tryFrom(Value::string($request->getQueryParams()['section'] ?? null)) ?? ModuleSection::Pending;
     }
 
     /**
@@ -437,7 +410,7 @@ final readonly class EasyWorkspaceModuleController
             return $module->getIdentifier();
         }
 
-        return 'webcon_easy_workspace_pending';
+        return ModuleSection::Pending->moduleIdentifier();
     }
 
     private function enqueueFlash(string $message, ContextualFeedbackSeverity $severity, string $title = ''): void
@@ -508,7 +481,7 @@ final readonly class EasyWorkspaceModuleController
             $rootLine = BackendUtility::BEgetRootLine($pageUid, $backendUser->getPagePermsClause(Permission::PAGE_SHOW));
 
             return array_values(array_map(
-                static fn(array $row): array => Value::stringKeyArray($row),
+                Value::stringKeyArray(...),
                 array_filter($rootLine, is_array(...)),
             ));
         } catch (\Throwable) {

@@ -11,6 +11,7 @@ use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
 final class WorkspaceTablePolicyTest extends UnitTestCase
 {
+    #[\Override]
     protected function tearDown(): void
     {
         unset($GLOBALS['TCA']);
@@ -45,7 +46,7 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
     {
         $GLOBALS['TCA'] = [];
 
-        self::assertFalse((new WorkspaceTablePolicy())->isAllowed('tx_unknown_table'));
+        self::assertFalse(new WorkspaceTablePolicy()->isAllowed('tx_unknown_table'));
     }
 
     #[Test]
@@ -60,7 +61,7 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
             ],
         ];
 
-        self::assertTrue((new WorkspaceTablePolicy())->isAllowed('tx_child_table'));
+        self::assertTrue(new WorkspaceTablePolicy()->isAllowed('tx_child_table'));
     }
 
     #[Test]
@@ -85,7 +86,7 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
             ],
         ];
 
-        self::assertTrue((new WorkspaceTablePolicy())->isAllowed('tx_child_table'));
+        self::assertTrue(new WorkspaceTablePolicy()->isAllowed('tx_child_table'));
     }
 
     #[Test]
@@ -98,7 +99,7 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
             ],
         ];
 
-        self::assertFalse((new WorkspaceTablePolicy())->isAllowed('tx_some_table'));
+        self::assertFalse(new WorkspaceTablePolicy()->isAllowed('tx_some_table'));
     }
 
     #[Test]
@@ -111,7 +112,7 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
             ],
         ];
 
-        self::assertTrue((new WorkspaceTablePolicy())->isAllowed('sys_file_reference'));
+        self::assertTrue(new WorkspaceTablePolicy()->isAllowed('sys_file_reference'));
     }
 
     #[Test]
@@ -133,6 +134,6 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
         $GLOBALS['TCA'] = [];
 
         self::assertTrue($subject->isAllowed('tx_child_table'));
-        self::assertFalse((new WorkspaceTablePolicy())->isAllowed('tx_child_table'));
+        self::assertFalse(new WorkspaceTablePolicy()->isAllowed('tx_child_table'));
     }
 }

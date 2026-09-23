@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use Webconsulting\WebconEasyWorkspace\Enum\ModuleSection;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -24,9 +25,9 @@ final readonly class ModuleSectionViewDataFactory
      * @param array<string, mixed> $config
      * @return array<string, mixed>
      */
-    public function build(string $section, int $pageUid, int $newsUid, array $config, int $activeWorkspaceId): array
+    public function build(ModuleSection $section, int $pageUid, int $newsUid, array $config, int $activeWorkspaceId): array
     {
-        if ($section === 'diagnostics') {
+        if ($section === ModuleSection::Diagnostics) {
             $diagnostics = $this->workspaceDiagnosticsService->scan($activeWorkspaceId);
             $diagnostics['testing'] = $this->workspaceTestingReportService->buildFromScan($diagnostics);
 

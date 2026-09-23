@@ -12,7 +12,7 @@ namespace Webconsulting\WebconEasyWorkspace\Dto;
  */
 final readonly class WorkspaceChangeCount
 {
-    public const EMPTY_STATES = ['new' => 0, 'changed' => 0, 'deleted' => 0, 'moved' => 0];
+    public const array EMPTY_STATES = ['new' => 0, 'changed' => 0, 'deleted' => 0, 'moved' => 0];
 
     /**
      * @param array<string, int> $byTable

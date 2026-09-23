@@ -10,9 +10,9 @@ use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 
 final readonly class LocalizationService
 {
-    private const FILE = 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:';
+    private const string FILE = 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:';
 
-    private const JS_LABEL_KEYS = [
+    private const array JS_LABEL_KEYS = [
         'discardTag.title',
         'discardTag.subtitle',
         'discardTag.title.modified',

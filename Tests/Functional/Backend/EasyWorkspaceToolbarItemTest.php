@@ -30,6 +30,7 @@ final class EasyWorkspaceToolbarItemTest extends FunctionalTestCase
         __DIR__ . '/../Fixtures/Extensions/news_stub',
     ];
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,7 +48,7 @@ final class EasyWorkspaceToolbarItemTest extends FunctionalTestCase
 
         $toolbarItem = $this->get(EasyWorkspaceToolbarItem::class);
         $toolbarItem->setRequest(
-            (new ServerRequest('https://typo3-testing.local/typo3/main'))
+            new ServerRequest('https://typo3-testing.local/typo3/main')
                 ->withAttribute('applicationType', SystemEnvironmentBuilder::REQUESTTYPE_BE)
                 ->withAttribute('backend.user', $backendUser)
                 ->withQueryParams($pageUid > 0 ? ['id' => $pageUid] : []),

@@ -42,7 +42,7 @@ final readonly class RecordDiffService
      *
      * @var list<string>
      */
-    private const SKIP_FIELDS = [
+    private const array SKIP_FIELDS = [
         'uid', 'pid', 'tstamp', 'crdate', 'sorting',
         't3ver_wsid', 't3ver_oid', 't3ver_state', 't3ver_stage', 't3ver_count',
         // Both spellings: l18n_diffsource is the v14 canonical name,
@@ -61,7 +61,7 @@ final readonly class RecordDiffService
      * client; the JS displays them with the full value in `title=""`
      * so editors can hover for context.
      */
-    private const VALUE_TRUNCATE_CHARS = 160;
+    private const int VALUE_TRUNCATE_CHARS = 160;
 
     public function __construct(
         private TcaSchemaFactory $tcaSchemaFactory,

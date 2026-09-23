@@ -17,11 +17,13 @@ final readonly class TeamsNotifier implements ChannelNotifierInterface
         private LocalizationService $localizationService,
     ) {}
 
+    #[\Override]
     public function provider(): ChatProvider
     {
         return ChatProvider::Teams;
     }
 
+    #[\Override]
     public function send(WorkspaceEventPayload $payload, array $configuration, array $recipients = []): NotificationResult
     {
         $webhookUrl = trim(Value::string($configuration['webhookUrl'] ?? null));

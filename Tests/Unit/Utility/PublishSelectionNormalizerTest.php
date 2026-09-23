@@ -13,6 +13,7 @@ final class PublishSelectionNormalizerTest extends UnitTestCase
 {
     private PublishSelectionNormalizer $subject;
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -20,6 +21,7 @@ final class PublishSelectionNormalizerTest extends UnitTestCase
         $this->subject = new PublishSelectionNormalizer(new WorkspaceTablePolicy());
     }
 
+    #[\Override]
     protected function tearDown(): void
     {
         unset($GLOBALS['TCA']);

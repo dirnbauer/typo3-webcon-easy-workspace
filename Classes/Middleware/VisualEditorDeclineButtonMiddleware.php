@@ -19,6 +19,7 @@ final readonly class VisualEditorDeclineButtonMiddleware implements MiddlewareIn
         private LocalizationService $localizationService,
     ) {}
 
+    #[\Override]
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if ($this->shouldLoad($request)) {

@@ -27,7 +27,7 @@ final readonly class WorkspaceChangeCounter
      *
      * @var list<int>
      */
-    private const COUNTED_STATES = [0, 1, 2, 4];
+    private const array COUNTED_STATES = [0, 1, 2, 4];
 
     public function __construct(
         private ConnectionPool $connectionPool,

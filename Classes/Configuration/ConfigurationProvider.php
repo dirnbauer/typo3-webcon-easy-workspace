@@ -19,7 +19,7 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  */
 final readonly class ConfigurationProvider
 {
-    private const DEFAULTS = [
+    private const array DEFAULTS = [
         // Master switch
         'enabled' => true,
         // Per-user defaults
@@ -46,7 +46,7 @@ final readonly class ConfigurationProvider
         'publishStageId' => -10,
     ];
 
-    private const NAMESPACE_KEY = 'webcon_easy_workspace.';
+    private const string NAMESPACE_KEY = 'webcon_easy_workspace.';
     public function __construct(private BackendAccessGuard $accessGuard) {}
 
     /**

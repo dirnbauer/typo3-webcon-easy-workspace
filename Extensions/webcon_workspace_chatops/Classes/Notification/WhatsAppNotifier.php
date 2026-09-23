@@ -13,11 +13,13 @@ final readonly class WhatsAppNotifier implements ChannelNotifierInterface
 {
     public function __construct(private RequestFactory $requestFactory) {}
 
+    #[\Override]
     public function provider(): ChatProvider
     {
         return ChatProvider::WhatsApp;
     }
 
+    #[\Override]
     public function send(WorkspaceEventPayload $payload, array $configuration, array $recipients = []): NotificationResult
     {
         $apiBaseUrl = rtrim(Value::string($configuration['apiBaseUrl'] ?? null), '/');

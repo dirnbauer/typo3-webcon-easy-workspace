@@ -22,6 +22,7 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
 
     protected array $testExtensionsToLoad = ['webconsulting/webcon-easy-workspace'];
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,7 +45,7 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
      */
     private function request(BackendUserAuthentication $backendUser, string $method = 'GET', array $query = [], string $jsonBody = ''): ServerRequest
     {
-        $request = (new ServerRequest('https://typo3-testing.local/typo3/ajax/webcon-easy-workspace', $method))
+        $request = new ServerRequest('https://typo3-testing.local/typo3/ajax/webcon-easy-workspace', $method)
             ->withAttribute('backend.user', $backendUser)
             ->withQueryParams($query);
         if ($jsonBody !== '') {

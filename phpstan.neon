@@ -16,7 +16,7 @@ parameters:
     - '**/node_modules/*'
 
   treatPhpDocTypesAsCertain: false
-  checkMissingOverrideMethodAttribute: false
+  checkMissingOverrideMethodAttribute: true
 
   typo3:
     containerXmlPath: null

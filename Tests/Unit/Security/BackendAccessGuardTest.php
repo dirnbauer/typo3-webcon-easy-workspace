@@ -14,6 +14,7 @@ use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 
 final class BackendAccessGuardTest extends UnitTestCase
 {
+    #[\Override]
     protected function tearDown(): void
     {
         unset($GLOBALS['BE_USER']);
@@ -35,7 +36,7 @@ final class BackendAccessGuardTest extends UnitTestCase
         $globalUser = self::createStub(BackendUserAuthentication::class);
         $requestUser = self::createStub(BackendUserAuthentication::class);
         $GLOBALS['BE_USER'] = $globalUser;
-        $request = (new ServerRequest())->withAttribute('backend.user', $requestUser);
+        $request = new ServerRequest()->withAttribute('backend.user', $requestUser);
 
         $subject = new BackendAccessGuard(new Context());
 
@@ -114,7 +115,7 @@ final class BackendAccessGuardTest extends UnitTestCase
         $user->method('check')->willReturn(false);
         $GLOBALS['BE_USER'] = $user;
 
-        self::assertFalse((new BackendAccessGuard(new Context()))->canModifyTable('tt_content'));
+        self::assertFalse(new BackendAccessGuard(new Context())->canModifyTable('tt_content'));
     }
 
     #[Test]
@@ -152,6 +153,6 @@ final class BackendAccessGuardTest extends UnitTestCase
         $outsider->method('checkWorkspace')->willReturn(false);
         $GLOBALS['BE_USER'] = $outsider;
 
-        self::assertFalse((new BackendAccessGuard(new Context()))->hasWorkspaceAccess(1));
+        self::assertFalse(new BackendAccessGuard(new Context())->hasWorkspaceAccess(1));
     }
 }

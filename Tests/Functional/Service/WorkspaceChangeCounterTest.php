@@ -20,6 +20,7 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
         __DIR__ . '/../Fixtures/Extensions/news_stub',
     ];
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();

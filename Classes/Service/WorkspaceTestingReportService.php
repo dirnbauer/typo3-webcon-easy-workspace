@@ -10,7 +10,7 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 final readonly class WorkspaceTestingReportService
 {
-    private const ISSUE_DEFINITIONS = [
+    private const array ISSUE_DEFINITIONS = [
         'live-row-version-fields' => [
             'key' => 'module.testing.issue.liveRowVersionFields',
             'severity' => 'error',

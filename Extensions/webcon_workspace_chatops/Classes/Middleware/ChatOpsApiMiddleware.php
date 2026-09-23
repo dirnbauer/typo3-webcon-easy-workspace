@@ -18,6 +18,7 @@ final readonly class ChatOpsApiMiddleware implements MiddlewareInterface
         private ChatOpsApiController $controller,
     ) {}
 
+    #[\Override]
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (rtrim($request->getUri()->getPath(), '/') !== rtrim($this->configuration->apiPath(), '/')) {

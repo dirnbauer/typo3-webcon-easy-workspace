@@ -21,7 +21,7 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
 )]
 final class SeedWorkspaceDiagnosticsCommand extends Command
 {
-    private const MARKER = '[WEW diagnostics seed]';
+    private const string MARKER = '[WEW diagnostics seed]';
 
     public function __construct(
         private readonly ConnectionPool $connectionPool,
@@ -29,6 +29,7 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
         parent::__construct();
     }
 
+    #[\Override]
     protected function configure(): void
     {
         $this
@@ -37,6 +38,7 @@ final class SeedWorkspaceDiagnosticsCommand extends Command
             ->addOption('workspace', null, InputOption::VALUE_REQUIRED, 'Workspace uid used for seeded rows.', '1');
     }
 
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

@@ -15,6 +15,7 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Enum\ModuleSection;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
@@ -30,7 +31,6 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
 #[Autoconfigure(public: true)]
 final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwareToolbarItemInterface
 {
-    private const MODULE_IDENTIFIER = 'webcon_easy_workspace_pending';
     private ServerRequestInterface $request;
 
     public function __construct(
@@ -43,11 +43,13 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly PendingItemsService $pendingItemsService,
     ) {}
 
+    #[\Override]
     public function setRequest(ServerRequestInterface $request): void
     {
         $this->request = $request;
     }
 
+    #[\Override]
     public function checkAccess(): bool
     {
         // Core calls checkAccess() (via array_filter) *before* setRequest()
@@ -87,15 +89,13 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
             return true;
         }
 
-        foreach (array_keys(GeneralUtility::makeInstance(WorkspaceService::class)->getAvailableWorkspaces()) as $workspaceId) {
-            if ((int)$workspaceId > 0) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(
+            array_keys(GeneralUtility::makeInstance(WorkspaceService::class)->getAvailableWorkspaces()),
+            static fn(int|string $workspaceId): bool => (int)$workspaceId > 0,
+        );
     }
 
+    #[\Override]
     public function getItem(): string
     {
         $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/components/wew-toolbar-menu.js');
@@ -147,14 +147,16 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
      */
     private function activeWorkspaceId(): int
     {
-        return $this->accessGuard->activeWorkspaceId(isset($this->request) ? $this->request : null);
+        return $this->accessGuard->activeWorkspaceId($this->request ?? null);
     }
 
+    #[\Override]
     public function hasDropDown(): bool
     {
         return true;
     }
 
+    #[\Override]
     public function getDropDown(): string
     {
         $view = $this->backendViewFactory->create($this->request, ['webconsulting/webcon-easy-workspace']);
@@ -169,7 +171,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
             'activeWorkspaceId' => $this->activeWorkspaceId(),
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),
             'hasViewpage' => ExtensionManagementUtility::isLoaded('viewpage'),
-            'moduleIdentifier' => self::MODULE_IDENTIFIER,
+            'moduleIdentifier' => ModuleSection::Pending->moduleIdentifier(),
             'moduleUrl' => $this->moduleUrl(),
             'labels' => $this->localizationService->labelsForJavaScript(),
         ]);
@@ -180,6 +182,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     /**
      * @return array<string, string>
      */
+    #[\Override]
     public function getAdditionalAttributes(): array
     {
         $classes = ['webcon-easy-workspace-toolbar'];
@@ -198,6 +201,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         ];
     }
 
+    #[\Override]
     public function getIndex(): int
     {
         return 45;
@@ -210,7 +214,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
     private function moduleUrl(): string
     {
         try {
-            return (string)$this->uriBuilder->buildUriFromRoute(self::MODULE_IDENTIFIER);
+            return (string)$this->uriBuilder->buildUriFromRoute(ModuleSection::Pending->moduleIdentifier());
         } catch (\Throwable) {
             return '';
         }

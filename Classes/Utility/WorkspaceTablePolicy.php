@@ -17,7 +17,7 @@ final class WorkspaceTablePolicy
      *
      * @var list<string>
      */
-    public const PRIMARY_TABLES = [
+    public const array PRIMARY_TABLES = [
         'pages',
         'tt_content',
         'tx_news_domain_model_news',
@@ -32,7 +32,7 @@ final class WorkspaceTablePolicy
      *
      * @var list<string>
      */
-    public const BADGE_TABLES = [
+    public const array BADGE_TABLES = [
         'pages',
         'tt_content',
         'tx_news_domain_model_news',
@@ -43,7 +43,7 @@ final class WorkspaceTablePolicy
      *
      * @var list<string>
      */
-    public const PUBLISH_ORDER = [
+    public const array PUBLISH_ORDER = [
         'pages',
         'tx_news_domain_model_news',
         'tt_content',

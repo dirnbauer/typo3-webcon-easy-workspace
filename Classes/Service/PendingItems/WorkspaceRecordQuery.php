@@ -25,7 +25,7 @@ final readonly class WorkspaceRecordQuery
      *
      * @var list<string>
      */
-    public const STANDALONE_WORKSPACE_TABLES = [
+    public const array STANDALONE_WORKSPACE_TABLES = [
         'sys_file_metadata',
     ];
 
@@ -378,11 +378,10 @@ final readonly class WorkspaceRecordQuery
         if ($workspaceId <= 0) {
             return false;
         }
-        foreach (self::STANDALONE_WORKSPACE_TABLES as $table) {
-            if ($this->listStandaloneWorkspaceRows($table, $workspaceId, 1) !== []) {
-                return true;
-            }
-        }
-        return false;
+
+        return array_any(
+            self::STANDALONE_WORKSPACE_TABLES,
+            fn(string $table): bool => $this->listStandaloneWorkspaceRows($table, $workspaceId, 1) !== [],
+        );
     }
 }

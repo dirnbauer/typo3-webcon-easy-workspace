@@ -16,12 +16,14 @@ final class ConfigurationProviderTest extends UnitTestCase
 {
     private ConfigurationProvider $subject;
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
         $this->subject = new ConfigurationProvider(new BackendAccessGuard(new Context()));
     }
 
+    #[\Override]
     protected function tearDown(): void
     {
         unset($GLOBALS['BE_USER']);

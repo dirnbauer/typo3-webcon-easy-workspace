@@ -116,7 +116,7 @@ final readonly class PendingItemFactory
             $colPosLabel = $this->labelResolver->resolveColPosLabel($colPos, $columnLabels);
         }
 
-        return (new PendingItem(
+        return new PendingItem(
             table: $table,
             liveUid: $liveUid,
             workspaceUid: $workspaceUid,
@@ -148,7 +148,7 @@ final readonly class PendingItemFactory
             latestChangeUserUid: $latestChange['userUid'],
             latestChangeUser: $latestChange['user'],
             stageId: Value::int($row['t3ver_stage'] ?? null),
-        ))->withPublishMetadata();
+        )->withPublishMetadata();
     }
 
     private function hasEditorVisibleWorkspaceChange(string $table, int $workspaceUid): bool

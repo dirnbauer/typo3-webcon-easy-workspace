@@ -12,9 +12,9 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 final readonly class WorkspaceDiagnosticsService
 {
-    private const VALID_VERSION_STATES = [0, 1, 2, 4];
+    private const array VALID_VERSION_STATES = [0, 1, 2, 4];
 
-    private const SEVERITY_LABEL_KEYS = [
+    private const array SEVERITY_LABEL_KEYS = [
         'critical' => 'module.diagnostics.severity.critical',
         'warning' => 'module.diagnostics.severity.warning',
         'info' => 'module.diagnostics.severity.info',

@@ -19,6 +19,7 @@ use TYPO3\CMS\Core\View\ViewFactoryInterface;
 use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use TYPO3\CMS\Workspaces\Service\StagesService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
+use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
@@ -107,7 +108,7 @@ final readonly class EasyWorkspaceAjaxController
      * Stage chip for the dropdown header: the common stage of all changed
      * rows, or a "mixed" marker when the list spans several stages.
      *
-     * @param list<\Webconsulting\WebconEasyWorkspace\Dto\PendingItem> $items
+     * @param list<PendingItem> $items
      * @return array{id: int|null, label: string}|null
      */
     private function stageSummary(array $items): ?array

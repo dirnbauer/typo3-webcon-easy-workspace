@@ -21,6 +21,7 @@ final class PublishSelectedServiceTest extends FunctionalTestCase
 
     protected array $testExtensionsToLoad = ['webconsulting/webcon-easy-workspace'];
 
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
