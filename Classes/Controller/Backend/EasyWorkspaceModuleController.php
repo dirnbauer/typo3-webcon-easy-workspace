@@ -123,7 +123,6 @@ final readonly class EasyWorkspaceModuleController
             'sectionPartial' => $section->partialName(),
             'canSeeDiagnostics' => $this->accessGuard->user($request)?->isAdmin() ?? false,
             'moduleUrls' => $this->buildModuleUrls($pageUid, $newsUid),
-            'flashMessages' => $this->flushFlashMessages(),
             'config' => $config,
             'hasContext' => $hasContext,
             'pageUid' => $pageUid,
@@ -417,25 +416,6 @@ final readonly class EasyWorkspaceModuleController
     {
         $queue = $this->flashMessageService->getMessageQueueByIdentifier();
         $queue->enqueue(new FlashMessage($message, $title, $severity, true));
-    }
-
-    /**
-     * @return list<array{title: string, message: string, severity: int}>
-     */
-    private function flushFlashMessages(): array
-    {
-        $queue = $this->flashMessageService->getMessageQueueByIdentifier();
-        $messages = $queue->getAllMessagesAndFlush();
-        $rendered = [];
-        foreach ($messages as $message) {
-            $rendered[] = [
-                'title' => $message->getTitle(),
-                'message' => $message->getMessage(),
-                'severity' => $message->getSeverity()->value,
-            ];
-        }
-
-        return $rendered;
     }
 
     /**
