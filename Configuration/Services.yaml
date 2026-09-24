@@ -17,3 +17,16 @@ services:
   # Retrieved from the container in functional tests.
   Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService:
     public: true
+
+  # DataHandler instantiates its hooks through GeneralUtility::makeInstance().
+  Webconsulting\WebconEasyWorkspace\Hooks\WorkspaceRevisionHook:
+    public: true
+
+  cache.webcon_easy_workspace:
+    class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
+    factory: ['@TYPO3\CMS\Core\Cache\CacheManager', 'getCache']
+    arguments: ['webcon_easy_workspace']
+
+  Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary:
+    arguments:
+      $cache: '@cache.webcon_easy_workspace'

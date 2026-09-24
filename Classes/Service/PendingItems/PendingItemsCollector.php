@@ -24,6 +24,7 @@ final readonly class PendingItemsCollector
         private PendingItemFactory $pendingItemFactory,
         private InlineChildResolver $inlineChildResolver,
         private PendingItemAggregator $pendingItemAggregator,
+        private WorkspaceVersionPresence $presence,
     ) {}
 
     /**
@@ -36,6 +37,7 @@ final readonly class PendingItemsCollector
         if ($workspaceId <= 0 || $pageUid <= 0) {
             return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'hasChanges' => false];
         }
+        $this->presence->reset();
 
         return [
             'workspaceId' => $workspaceId,
@@ -55,6 +57,7 @@ final readonly class PendingItemsCollector
         if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
             return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'hasChanges' => false];
         }
+        $this->presence->reset();
 
         return [
             'workspaceId' => $workspaceId,
@@ -151,20 +154,23 @@ final readonly class PendingItemsCollector
         ?int $languageUid,
         bool $hasNews,
     ): PendingItemsPayload {
+        $this->presence->reset();
         $scope = $this->resolvePageScope($pageUid, $workspaceId, $languageUid);
         $maxItems = Value::int($config['maxItems'] ?? 200);
         $items = [];
-        $columnLabels = $this->pendingItemFactory->resolveColumnLabels($pageUid);
+        // Column titles only label and group rows; a count does not need
+        // the backend layout.
+        $columnLabels = PendingItemFactory::isCountOnly($config) ? [] : $this->pendingItemFactory->resolveColumnLabels($pageUid);
 
         if ($scope->pageRow !== null) {
-            $pageItem = $this->pendingItemFactory->buildItem('pages', $scope->pageRow, isPrimary: true, config: $config);
-            if ($pageItem !== null) {
-                $pageItem = $this->pendingItemAggregator->withRelatedChanges(
-                    $pageItem,
-                    $this->inlineChildResolver->resolveInlineChildItems('pages', $scope->pageRow, $workspaceId, $mode, $config, languageUid: $languageUid),
-                );
-                if ($this->includeItem($pageItem, $mode)) {
-                    $items[] = $pageItem;
+            $childItems = $this->inlineChildResolver->resolveInlineChildItems('pages', $scope->pageRow, $workspaceId, $mode, $config, languageUid: $languageUid);
+            if ($this->canBeListed($scope->pageRow, $childItems, $mode)) {
+                $pageItem = $this->pendingItemFactory->buildItem('pages', $scope->pageRow, isPrimary: true, config: $config);
+                if ($pageItem !== null) {
+                    $pageItem = $this->pendingItemAggregator->withRelatedChanges($pageItem, $childItems);
+                    if ($this->includeItem($pageItem, $mode)) {
+                        $items[] = $pageItem;
+                    }
                 }
             }
         }
@@ -218,6 +224,7 @@ final readonly class PendingItemsCollector
         array $config,
         ?int $languageUid,
     ): PendingItemsPayload {
+        $this->presence->reset();
         $scope = $this->resolveNewsScope($newsUid, $workspaceId, $languageUid);
         $maxItems = Value::int($config['maxItems'] ?? 200);
         $items = [];
@@ -274,15 +281,26 @@ final readonly class PendingItemsCollector
         ?int $languageUid,
         int $maxItems,
     ): array {
-        foreach ($contentRows as $row) {
+        $childRows = $this->inlineChildResolver->prefetchInlineChildRows('tt_content', $contentRows, $workspaceId, $mode, $languageUid);
+        foreach ($contentRows as $index => $row) {
+            $childItems = $this->inlineChildResolver->resolveInlineChildItems(
+                'tt_content',
+                $row,
+                $workspaceId,
+                $mode,
+                $config,
+                $columnLabels ?? [],
+                $languageUid,
+                $childRows[$index] ?? [],
+            );
+            if (!$this->canBeListed($row, $childItems, $mode)) {
+                continue;
+            }
             $item = $this->pendingItemFactory->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
             if ($item === null) {
                 continue;
             }
-            $item = $this->pendingItemAggregator->withRelatedChanges(
-                $item,
-                $this->inlineChildResolver->resolveInlineChildItems('tt_content', $row, $workspaceId, $mode, $config, $columnLabels ?? [], $languageUid),
-            );
+            $item = $this->pendingItemAggregator->withRelatedChanges($item, $childItems);
             if ($this->includeItem($item, $mode)) {
                 $items[] = $item;
             }
@@ -291,6 +309,28 @@ final readonly class PendingItemsCollector
             }
         }
         return $items;
+    }
+
+    /**
+     * Whether building the row's item can make any difference.
+     *
+     * In "changed" mode a row is listed only when it is changed itself or
+     * carries changed children. buildItem() calls a row changed only when
+     * it is a workspace row (t3ver_wsid) or an overlaid one (_ORIG_uid), and
+     * $childItems already holds nothing but changed children — so for a
+     * live row without them the item would be built only to be dropped.
+     * That is most rows of most pages, and each build resolves thumbnails,
+     * labels and URLs.
+     *
+     * @param array<string, mixed> $row
+     * @param list<PendingItem> $childItems
+     */
+    private function canBeListed(array $row, array $childItems, PendingItemsMode $mode): bool
+    {
+        return $mode->includesUnchanged()
+            || $childItems !== []
+            || isset($row['_ORIG_uid'])
+            || Value::int($row['t3ver_wsid'] ?? null) > 0;
     }
 
     /**

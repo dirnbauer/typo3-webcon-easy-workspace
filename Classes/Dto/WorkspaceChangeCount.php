@@ -8,7 +8,9 @@ namespace Webconsulting\WebconEasyWorkspace\Dto;
  * Whole-workspace change count as reported by the toolbar badge.
  *
  * The stamp is a cheap fingerprint of the workspace state: the client
- * compares it to decide whether an open dropdown list has to re-fetch.
+ * compares it to decide whether an open dropdown list has to re-fetch and
+ * whether another tab has to be told, and the server keys the cached page
+ * count by it.
  */
 final readonly class WorkspaceChangeCount
 {
@@ -33,11 +35,14 @@ final readonly class WorkspaceChangeCount
     }
 
     /**
-     * Deterministic fingerprint of (workspace, total, newest tstamp).
+     * Deterministic fingerprint of (workspace, total, newest tstamp) and,
+     * when given, the DataHandler revision of the workspace — which moves
+     * for inline children, file references and metadata as well, where the
+     * row fingerprint alone does not.
      */
-    public static function stamp(int $workspaceId, int $total, int $latestChangeAt): string
+    public static function stamp(int $workspaceId, int $total, int $latestChangeAt, string $revision = ''): string
     {
-        return sha1($workspaceId . '|' . $total . '|' . $latestChangeAt);
+        return sha1($workspaceId . '|' . $total . '|' . $latestChangeAt . ($revision !== '' ? '|' . $revision : ''));
     }
 
     /**

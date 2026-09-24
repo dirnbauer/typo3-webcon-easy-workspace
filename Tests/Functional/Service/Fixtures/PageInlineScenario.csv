@@ -1,0 +1,60 @@
+"be_users"
+,"uid","pid","username","password","admin","deleted","disable"
+,1,0,"admin","",1,0,0
+"sys_workspace"
+,"uid","pid","title","adminusers","members","deleted"
+,1,0,"Workspace One","be_users_1","",0
+,2,0,"Workspace Two","be_users_1","",0
+"pages"
+,"uid","pid","title","doktype","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,1,0,"Root",1,0,0,1700000000,0,0,0,0
+,2,1,"Inline page",1,0,0,1700000000,0,0,0,0
+,3,1,"Other page",1,0,0,1700000000,0,0,0,0
+,4,1,"Quiet page",1,0,0,1700000000,0,0,0,0
+,5,1,"Inline page (draft)",1,0,0,1700000100,2,1,0,0
+"tt_content"
+,"uid","pid","CType","header","colPos","sorting","sys_language_uid","l18n_parent","hidden","deleted","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,10,2,"text","Unchanged text",0,10,0,0,0,0,1700000000,0,0,0,0
+,11,2,"text","Edited text",0,20,0,0,0,0,1700000000,0,0,0,0
+,12,2,"text","Edited text (draft)",0,20,0,0,0,0,1700000200,11,1,0,0
+,13,2,"text","Touched but unchanged",0,30,0,0,0,0,1700000000,0,0,0,0
+,14,2,"text","Touched but unchanged",0,30,0,0,0,0,1700000300,13,1,0,0
+,15,2,"text","New element",0,40,0,0,0,0,1700000400,0,1,1,0
+,16,2,"text","Deleted element",0,50,0,0,0,0,1700000000,0,0,0,0
+,17,2,"text","Deleted element",0,50,0,0,0,0,1700000500,16,1,2,0
+,18,2,"easyws_collection","Collection with an edited item",1,60,0,0,0,0,1700000000,0,0,0,0
+,19,2,"easyws_collection","Collection with a new item",1,70,0,0,0,0,1700000000,0,0,0,0
+,20,2,"easyws_collection","Collection without changes",1,80,0,0,0,0,1700000000,0,0,0,0
+,21,2,"easyws_collection","Hidden collection with an edited item",1,90,0,0,1,0,1700000000,0,0,0,0
+,22,2,"easyws_collection","Collection with a new item in an extra field",1,100,0,0,0,0,1700000000,0,0,0,0
+,23,3,"text","Moved from the other page",0,10,0,0,0,0,1700000000,0,0,0,0
+,24,2,"text","Moved from the other page",0,110,0,0,0,0,1700000600,23,1,4,0
+,25,2,"text","Übersetzter Text",0,10,1,10,0,0,1700000000,0,0,0,0
+,26,2,"text","Übersetzter Text (Entwurf)",0,10,1,10,0,0,1700000700,25,1,0,0
+,27,2,"text","Element with a new image",0,120,0,0,0,0,1700000000,0,0,0,0
+,28,2,"text","Discarded draft",0,130,0,0,0,0,1700000000,0,0,0,0
+,29,2,"text","Discarded draft (draft)",0,130,0,0,0,1,1700000800,28,1,0,0
+,40,3,"text","Other page element",0,20,0,0,0,0,1700000000,0,0,0,0
+,41,3,"text","Other page element (draft)",0,20,0,0,0,0,1700000900,40,1,0,0
+,42,3,"text","Workspace two only",0,30,0,0,0,0,1700000000,0,0,0,0
+,43,3,"text","Workspace two only (draft)",0,30,0,0,0,0,1700001000,42,2,0,0
+,50,4,"easyws_collection","Quiet collection",0,10,0,0,0,0,1700000000,0,0,0,0
+"tx_easyws_item"
+,"uid","pid","header","foreign_table_parent_uid","fieldname","sorting","sys_language_uid","hidden","deleted","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,30,2,"Item A",18,"easyws_items",10,0,0,0,1700000000,0,0,0,0
+,31,2,"Item A (draft)",18,"easyws_items",10,0,0,0,1700001100,30,1,0,0
+,32,2,"Item new",19,"easyws_items",10,0,0,0,1700001200,0,1,1,0
+,33,2,"Item unchanged",20,"easyws_items",10,0,0,0,1700000000,0,0,0,0
+,34,2,"Hidden parent item",21,"easyws_items",10,0,0,0,1700000000,0,0,0,0
+,35,2,"Hidden parent item (draft)",21,"easyws_items",10,0,0,0,1700001300,34,1,0,0
+,36,2,"Extra field item",22,"easyws_extra_3",10,0,0,0,1700001400,0,1,1,0
+,37,4,"Quiet item",50,"easyws_items",10,0,0,0,1700000000,0,0,0,0
+"sys_file_reference"
+,"uid","pid","uid_local","uid_foreign","tablenames","fieldname","title","sorting_foreign","deleted","hidden","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,70,3,0,3,"pages","media","",1,0,0,0,0,0,0
+,71,3,0,3,"pages","media","Draft caption",1,0,0,70,1,0,0
+,72,2,0,27,"tt_content","image","",1,0,0,0,1,1,0
+"sys_file_metadata"
+,"uid","pid","file","title","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,60,0,0,"Metadata live",0,0,0,0
+,61,0,0,"Metadata (draft)",60,1,0,0

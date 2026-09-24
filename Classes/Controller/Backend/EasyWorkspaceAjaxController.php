@@ -20,9 +20,11 @@ use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use TYPO3\CMS\Workspaces\Service\StagesService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
+use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChangeCount;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
+use Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary;
 use Webconsulting\WebconEasyWorkspace\Service\ContextRecordResolver;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\WorkspaceRecordQuery;
@@ -59,6 +61,7 @@ final readonly class EasyWorkspaceAjaxController
         private WorkspaceChangeCounter $changeCounter,
         private WorkspaceRecordQuery $workspaceRecordQuery,
         private ContextRecordResolver $contextRecordResolver,
+        private ContextChangeSummary $contextChangeSummary,
         private StagesService $stagesService,
         private LoggerInterface $logger,
     ) {}
@@ -101,6 +104,13 @@ final readonly class EasyWorkspaceAjaxController
             'contextRecord' => $this->contextRecordResolver->resolve($context, $pageUid, $newsUid, $request),
             'stage' => $this->stageSummary($payload->items),
             ...$payload->toToolbarClientArray($context, includeDiff: false),
+            // The list already holds this page's count: the client applies it
+            // instead of asking /badge a second time.
+            'badge' => $this->badgePayloadFromSummary(
+                $request,
+                $context,
+                PendingItemsService::changeSummary($payload->items),
+            ),
         ]);
     }
 
@@ -174,12 +184,15 @@ final readonly class EasyWorkspaceAjaxController
 
     /**
      * Shared badge payload: served by /badge and /has-changes and embedded
-     * in publish/discard responses so the client never derives the count
-     * from a list.
+     * in items, publish and discard responses so the client never derives
+     * the count from a list and never needs a second request.
      *
      * `changedCount` is the whole workspace, `contextCount` only the page
      * or news article the client reported — null when there is no context,
-     * which lets the badge fall back to the workspace total.
+     * which lets the badge fall back to the workspace total. `records` names
+     * the changed rows of that context (the Visual Editor draws its decline
+     * buttons from it). `stamp` moves with every write that can change a
+     * count; the page summary is cached under it.
      *
      * @param array<string, mixed> $config Normalized config; resolved from TSconfig when empty.
      * @return array{
@@ -187,6 +200,7 @@ final readonly class EasyWorkspaceAjaxController
      *     workspaceId: int,
      *     workspaceTitle: string,
      *     contextCount: int|null,
+     *     records: list<array{table: string, liveUid: int, workspaceUid: int}>,
      *     changedCount: int,
      *     byTable: array<string, int>,
      *     byState: array{new: int, changed: int, deleted: int, moved: int},
@@ -199,18 +213,53 @@ final readonly class EasyWorkspaceAjaxController
         $context = ToolbarContext::resolve($pageUid, $newsUid);
         $workspaceId = $this->accessGuard->activeWorkspaceId($request);
         $count = $this->changeCounter->count($workspaceId);
+        $summary = $workspaceId > 0 && $context !== ToolbarContext::None
+            ? $this->contextChangeSummary->forContext(
+                $workspaceId,
+                $count->stamp,
+                $pageUid,
+                $newsUid,
+                $config !== [] ? $config : $this->configurationProvider->get($pageUid > 0 ? $pageUid : null),
+            )
+            : null;
 
+        return $this->composeBadgePayload($context, $workspaceId, $count, $summary);
+    }
+
+    /**
+     * @param array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>} $summary
+     * @return array<string, mixed>
+     */
+    private function badgePayloadFromSummary(ServerRequestInterface $request, ToolbarContext $context, array $summary): array
+    {
+        $workspaceId = $this->accessGuard->activeWorkspaceId($request);
+
+        return $this->composeBadgePayload($context, $workspaceId, $this->changeCounter->count($workspaceId), $workspaceId > 0 ? $summary : null);
+    }
+
+    /**
+     * @param array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}|null $summary
+     * @return array{
+     *     context: string,
+     *     workspaceId: int,
+     *     workspaceTitle: string,
+     *     contextCount: int|null,
+     *     records: list<array{table: string, liveUid: int, workspaceUid: int}>,
+     *     changedCount: int,
+     *     byTable: array<string, int>,
+     *     byState: array{new: int, changed: int, deleted: int, moved: int},
+     *     latestChangeAt: int,
+     *     stamp: string
+     * }
+     */
+    private function composeBadgePayload(ToolbarContext $context, int $workspaceId, WorkspaceChangeCount $count, ?array $summary): array
+    {
         return [
             'context' => $context->value,
             'workspaceId' => $workspaceId,
             'workspaceTitle' => $workspaceId > 0 ? $this->workspaceRecordQuery->resolveWorkspaceTitle($workspaceId) : '',
-            'contextCount' => $workspaceId > 0 && $context !== ToolbarContext::None
-                ? $this->pendingItemsService->countChangesForContext(
-                    $pageUid,
-                    $newsUid,
-                    $config !== [] ? $config : $this->configurationProvider->get($pageUid > 0 ? $pageUid : null),
-                )
-                : null,
+            'contextCount' => $summary['count'] ?? null,
+            'records' => $summary['records'] ?? [],
             ...$count->toArray(),
         ];
     }

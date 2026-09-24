@@ -19,6 +19,15 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  */
 final readonly class PendingItemFactory
 {
+    /**
+     * Internal config flag (never read from TSconfig): the caller only needs
+     * to know which rows are changed — the badge count and the record list
+     * the Visual Editor draws decline buttons for. Items are then built
+     * without thumbnails, URLs and the sys_history timeline, none of which
+     * decides whether a row is changed or which record it is.
+     */
+    public const string COUNT_ONLY = 'countOnly';
+
     public function __construct(
         private PendingItemLabelResolver $labelResolver,
         private PendingItemMediaResolver $mediaResolver,
@@ -29,6 +38,14 @@ final readonly class PendingItemFactory
         private LocalizationService $localizationService,
         private WorkspaceRecordQuery $workspaceRecordQuery,
     ) {}
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    public static function isCountOnly(array $config): bool
+    {
+        return ($config[self::COUNT_ONLY] ?? false) === true;
+    }
 
     /**
      * @param array<string, mixed> $config
@@ -95,12 +112,13 @@ final readonly class PendingItemFactory
             };
         }
 
-        $enableThumbnails = !isset($config['enableThumbnails']) || (bool)$config['enableThumbnails'];
-        $editUrl = $this->urlBuilder->buildEditUrl($table, $liveUid);
-        $contextualEditUrl = $this->urlBuilder->buildContextualEditUrl($table, $liveUid);
-        $historyUrl = $this->urlBuilder->buildRecordHistoryUrl($table, $workspaceUid);
+        $countOnly = self::isCountOnly($config);
+        $enableThumbnails = !$countOnly && (!isset($config['enableThumbnails']) || (bool)$config['enableThumbnails']);
+        $editUrl = $countOnly ? null : $this->urlBuilder->buildEditUrl($table, $liveUid);
+        $contextualEditUrl = $countOnly ? null : $this->urlBuilder->buildContextualEditUrl($table, $liveUid);
+        $historyUrl = $countOnly ? null : $this->urlBuilder->buildRecordHistoryUrl($table, $workspaceUid);
 
-        $timeline = $isChanged ? $this->historyTimelineService->build($table, $workspaceUid) : [];
+        $timeline = $isChanged && !$countOnly ? $this->historyTimelineService->build($table, $workspaceUid) : [];
         $latestChange = $this->timelineResolver->latestChangeFromTimeline($timeline, Value::int($row['tstamp'] ?? null));
         $changeBadges = $isChanged
             ? $this->timelineResolver->changeBadgesFromTimeline($timeline, $kindKey, $kindLabel, $badge)

@@ -77,9 +77,11 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
         $payload = $this->json($subject->badgeAction($this->request($backendUser, query: ['pageUid' => 1])));
 
         self::assertSame(
-            ['context', 'workspaceId', 'workspaceTitle', 'contextCount', 'changedCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
+            ['context', 'workspaceId', 'workspaceTitle', 'contextCount', 'records', 'changedCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
             array_keys($payload),
         );
+        // The changed rows behind contextCount, for the Visual Editor's decline buttons.
+        self::assertSame([['table' => 'tt_content', 'liveUid' => 1, 'workspaceUid' => 2]], $payload['records']);
         self::assertSame('page', $payload['context']);
         self::assertSame(1, $payload['workspaceId']);
         self::assertSame('Workspace One', $payload['workspaceTitle']);
@@ -95,6 +97,7 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
         $contextFree = $this->json($subject->badgeAction($this->request($backendUser)));
         self::assertSame('none', $contextFree['context']);
         self::assertNull($contextFree['contextCount']);
+        self::assertSame([], $contextFree['records']);
         self::assertSame(1, $contextFree['changedCount']);
         self::assertSame($payload['stamp'], $contextFree['stamp']);
     }

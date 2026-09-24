@@ -10,6 +10,7 @@ use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItems\PendingItemFactory;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\PendingItemsCollector;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\WorkspaceRecordQuery;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
@@ -184,19 +185,50 @@ final readonly class PendingItemsService
      */
     public function countChangesForContext(int $pageUid, int $newsUid, array $config, ?int $languageUid = null): ?int
     {
-        return match (ToolbarContext::resolve($pageUid, $newsUid)) {
-            ToolbarContext::News => $this->countChangedItems($this->payloadForNews($newsUid, PendingItemsMode::Changed, $config, $languageUid)),
-            ToolbarContext::Page => $this->countChangedItems($this->payloadForPage($pageUid, PendingItemsMode::Changed, $config, $languageUid)),
-            ToolbarContext::None => null,
-        };
+        return $this->changesForContext($pageUid, $newsUid, $config, $languageUid)['count'] ?? null;
     }
 
-    private function countChangedItems(PendingItemsPayload $payload): int
+    /**
+     * The changed rows the dropdown would list for this context, reduced to
+     * what the badge needs: their number, and which records they are (the
+     * Visual Editor preview draws its decline buttons from that list).
+     * Null when there is no context.
+     *
+     * Built in count-only mode — the same collection as the dropdown, minus
+     * thumbnails, URLs and history timelines.
+     *
+     * @param array<string, mixed> $config
+     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}|null
+     */
+    public function changesForContext(int $pageUid, int $newsUid, array $config, ?int $languageUid = null): ?array
     {
-        return count(array_filter(
-            $payload->items,
-            static fn(PendingItem $item): bool => $item->isChanged,
-        ));
+        $config = [PendingItemFactory::COUNT_ONLY => true] + $config;
+        $payload = match (ToolbarContext::resolve($pageUid, $newsUid)) {
+            ToolbarContext::News => $this->payloadForNews($newsUid, PendingItemsMode::Changed, $config, $languageUid),
+            ToolbarContext::Page => $this->payloadForPage($pageUid, PendingItemsMode::Changed, $config, $languageUid),
+            ToolbarContext::None => null,
+        };
+        if ($payload === null) {
+            return null;
+        }
+
+        return self::changeSummary($payload->items);
+    }
+
+    /**
+     * @param list<PendingItem> $items
+     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}
+     */
+    public static function changeSummary(array $items): array
+    {
+        $records = [];
+        foreach ($items as $item) {
+            if ($item->isChanged) {
+                $records[] = ['table' => $item->table, 'liveUid' => $item->liveUid, 'workspaceUid' => $item->workspaceUid];
+            }
+        }
+
+        return ['count' => count($records), 'records' => $records];
     }
 
     /**

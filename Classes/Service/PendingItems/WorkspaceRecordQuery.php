@@ -10,6 +10,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
+use TYPO3\CMS\Core\Versioning\VersionState;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordSchemaInspector;
 use Webconsulting\WebconEasyWorkspace\Utility\TcaUtility;
@@ -29,10 +30,20 @@ final readonly class WorkspaceRecordQuery
         'sys_file_metadata',
     ];
 
+    /**
+     * Uids per version lookup of overlayRows(). MySQL/MariaDB plan an IN
+     * list of more than eq_range_index_dive_limit (200) values from index
+     * statistics, and the statistics of t3ver_oid — 0 on nearly every row —
+     * make a full scan look cheaper: 80 ms instead of 1 ms on a page of 284
+     * elements. Staying below the limit keeps the plan an index range.
+     */
+    private const int OVERLAY_CHUNK_SIZE = 100;
+
     public function __construct(
         private ConnectionPool $connectionPool,
         private LocalizationService $localizationService,
         private RecordSchemaInspector $schema,
+        private WorkspaceVersionPresence $presence,
     ) {}
 
     /**
@@ -112,7 +123,7 @@ final readonly class WorkspaceRecordQuery
 
     public function hasWorkspaceVersionForRecord(string $table, int $liveUid, int $workspaceId, ?int $languageUid = null): bool
     {
-        if ($liveUid <= 0 || $workspaceId <= 0 || !$this->schema->isWorkspaceAware($table)) {
+        if ($liveUid <= 0 || $workspaceId <= 0 || !$this->schema->isWorkspaceAware($table) || !$this->presence->hasVersions($table, $workspaceId)) {
             return false;
         }
 
@@ -147,6 +158,10 @@ final readonly class WorkspaceRecordQuery
     {
         $parentUids = is_array($parentUid) ? array_values(array_filter($parentUid, static fn(int $uid): bool => $uid > 0)) : [$parentUid];
         if ($parentUids === [] || $workspaceId <= 0 || !TcaUtility::hasColumn($table, $field) || !$this->schema->isWorkspaceAware($table)) {
+            return false;
+        }
+        // Both queries below only ever match rows of the workspace.
+        if (!$this->presence->hasVersions($table, $workspaceId)) {
             return false;
         }
 
@@ -286,12 +301,112 @@ final readonly class WorkspaceRecordQuery
         $result = $queryBuilder->executeQuery();
         $rows = [];
         while ($row = $result->fetchAssociative()) {
-            BackendUtility::workspaceOL($table, $row, $workspaceId);
-            if (is_array($row)) {
-                $rows[] = Value::stringKeyArray($row);
+            $rows[] = Value::stringKeyArray($row);
+        }
+        return $this->overlayRows($table, $rows, $workspaceId);
+    }
+
+    /**
+     * BackendUtility::workspaceOL() for a list of rows, with one version
+     * lookup for all of them instead of one per row.
+     *
+     * workspaceOL() changes a row only when getWorkspaceVersionOfRecord()
+     * finds a version: a non-deleted row of the workspace whose t3ver_oid
+     * is the row's uid, or the row itself when it is a new placeholder.
+     * The lookup below uses exactly that condition for all uids at once, and
+     * workspaceOL() then runs for the rows it found — so every row comes
+     * back as workspaceOL() would have returned it. On a page without
+     * versions that is 1 query instead of 1 per content element (each of
+     * them selecting 940 named columns on a Content Blocks tt_content).
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    public function overlayRows(string $table, array $rows, int $workspaceId): array
+    {
+        if ($rows === [] || $workspaceId <= 0 || !$this->schema->isWorkspaceAware($table)) {
+            return $rows;
+        }
+        $versioned = $this->uidsWithWorkspaceVersion(
+            $table,
+            array_values(array_filter(array_map(static fn(array $row): int => Value::int($row['uid'] ?? null), $rows), static fn(int $uid): bool => $uid > 0)),
+            $workspaceId,
+        );
+        if ($versioned === []) {
+            return $rows;
+        }
+
+        $overlaid = [];
+        foreach ($rows as $row) {
+            if (isset($versioned[Value::int($row['uid'] ?? null)])) {
+                BackendUtility::workspaceOL($table, $row, $workspaceId);
+                if (!is_array($row)) {
+                    continue;
+                }
+                $row = Value::stringKeyArray($row);
+            }
+            $overlaid[] = $row;
+        }
+        return $overlaid;
+    }
+
+    /**
+     * @param list<int> $uids
+     * @return array<int, true> The uids of $uids that have a version in the workspace.
+     */
+    private function uidsWithWorkspaceVersion(string $table, array $uids, int $workspaceId): array
+    {
+        if ($uids === [] || !$this->presence->hasVersions($table, $workspaceId)) {
+            return [];
+        }
+
+        $versioned = [];
+        $newPlaceholder = VersionState::NEW_PLACEHOLDER->value;
+        foreach (array_chunk(array_values(array_unique($uids)), self::OVERLAY_CHUNK_SIZE) as $chunk) {
+            // Two lookups instead of one `t3ver_oid IN … OR (uid IN … AND …)`:
+            // an OR across two columns makes MySQL/MariaDB scan the table —
+            // 80 ms on a 940-column tt_content — while each half is an index
+            // lookup on its own.
+            // 1. Versions of the rows: core's (t3ver_oid, t3ver_wsid) index.
+            $queryBuilder = $this->versionLookupQueryBuilder($table);
+            $result = $queryBuilder
+                ->select('t3ver_oid')
+                ->from($table)
+                ->where(
+                    $queryBuilder->expr()->in('t3ver_oid', $queryBuilder->createNamedParameter($chunk, Connection::PARAM_INT_ARRAY)),
+                    $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+                )
+                ->executeQuery();
+            while (($liveUid = $result->fetchOne()) !== false) {
+                $versioned[Value::int($liveUid)] = true;
+            }
+            // 2. Rows that are new placeholders of the workspace: the primary key.
+            $queryBuilder = $this->versionLookupQueryBuilder($table);
+            $result = $queryBuilder
+                ->select('uid')
+                ->from($table)
+                ->where(
+                    $queryBuilder->expr()->in('uid', $queryBuilder->createNamedParameter($chunk, Connection::PARAM_INT_ARRAY)),
+                    $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+                    $queryBuilder->expr()->eq('t3ver_state', $queryBuilder->createNamedParameter($newPlaceholder, Connection::PARAM_INT)),
+                )
+                ->executeQuery();
+            while (($uid = $result->fetchOne()) !== false) {
+                $versioned[Value::int($uid)] = true;
             }
         }
-        return $rows;
+        unset($versioned[0]);
+
+        return $versioned;
+    }
+
+    private function versionLookupQueryBuilder(string $table): QueryBuilder
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        // Same restriction as BackendUtility::getWorkspaceVersionOfRecord().
+        $queryBuilder->getRestrictions()->removeAll()->add(new DeletedRestriction());
+
+        return $queryBuilder;
     }
 
     /**
@@ -299,7 +414,7 @@ final readonly class WorkspaceRecordQuery
      */
     public function listStandaloneWorkspaceRows(string $table, int $workspaceId, int $limit): array
     {
-        if ($workspaceId <= 0 || $limit <= 0 || !$this->schema->isWorkspaceAware($table)) {
+        if ($workspaceId <= 0 || $limit <= 0 || !$this->schema->isWorkspaceAware($table) || !$this->presence->hasVersions($table, $workspaceId)) {
             return [];
         }
 

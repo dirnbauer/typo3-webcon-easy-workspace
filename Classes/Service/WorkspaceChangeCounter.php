@@ -9,6 +9,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Versioning\VersionState;
+use Webconsulting\WebconEasyWorkspace\Database\WorkspaceVersionConstraint;
 use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChangeCount;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
@@ -18,7 +19,9 @@ use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
  *
  * Counts every pending version of one workspace with a single aggregate
  * query per counted table (COUNT + MAX(tstamp), grouped by t3ver_state).
- * No records are materialised, so the badge stays cheap enough to poll.
+ * No records are materialised, and the workspace constraint is phrased for
+ * core's (t3ver_oid, t3ver_wsid) index, so each query is an index range scan
+ * instead of a full scan of a wide tt_content.
  */
 final readonly class WorkspaceChangeCounter
 {
@@ -32,6 +35,7 @@ final readonly class WorkspaceChangeCounter
     public function __construct(
         private ConnectionPool $connectionPool,
         private TcaSchemaFactory $tcaSchemaFactory,
+        private WorkspaceRevision $revision,
     ) {}
 
     public function count(int $workspaceId): WorkspaceChangeCount
@@ -39,6 +43,9 @@ final readonly class WorkspaceChangeCounter
         if ($workspaceId <= 0) {
             return WorkspaceChangeCount::empty($workspaceId);
         }
+        // Read before counting: a write racing this request then moves the
+        // stamp on the next request instead of hiding behind this one.
+        $revision = $this->revision->current($workspaceId);
 
         $byTable = [];
         $byState = WorkspaceChangeCount::EMPTY_STATES;
@@ -64,7 +71,7 @@ final readonly class WorkspaceChangeCounter
             byTable: $byTable,
             byState: $byState,
             latestChangeAt: $latestChangeAt,
-            stamp: WorkspaceChangeCount::stamp($workspaceId, $total, $latestChangeAt),
+            stamp: WorkspaceChangeCount::stamp($workspaceId, $total, $latestChangeAt, $revision),
         );
     }
 
@@ -96,7 +103,7 @@ final readonly class WorkspaceChangeCounter
         $queryBuilder->getRestrictions()->removeAll();
 
         $constraints = [
-            $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
+            WorkspaceVersionConstraint::rowsOf($queryBuilder, $workspaceId),
             $queryBuilder->expr()->in('t3ver_state', $queryBuilder->createNamedParameter(self::COUNTED_STATES, Connection::PARAM_INT_ARRAY)),
         ];
         if ($schema->hasCapability(TcaSchemaCapability::SoftDelete)) {

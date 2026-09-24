@@ -17,8 +17,9 @@ use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Enum\ModuleSection;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
+use Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
-use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
+use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
@@ -40,7 +41,8 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         private readonly ConfigurationProvider $configurationProvider,
         private readonly LocalizationService $localizationService,
         private readonly UriBuilder $uriBuilder,
-        private readonly PendingItemsService $pendingItemsService,
+        private readonly ContextChangeSummary $contextChangeSummary,
+        private readonly WorkspaceChangeCounter $changeCounter,
     ) {}
 
     #[\Override]
@@ -134,11 +136,13 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
             return 0;
         }
 
-        return $this->pendingItemsService->countChangesForContext(
+        return $this->contextChangeSummary->forContext(
+            $workspaceId,
+            $this->changeCounter->count($workspaceId)->stamp,
             $pageUid,
             0,
             $this->configurationProvider->get($pageUid),
-        ) ?? 0;
+        )['count'] ?? 0;
     }
 
     /**
