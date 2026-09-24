@@ -12,7 +12,8 @@ export const env = {
   pageUid: Number(process.env.WEW_E2E_PAGE_UID || 0),
   contentUid: Number(process.env.WEW_E2E_CONTENT_UID || 0),
   // The badge poll interval plus jitter; the "external actor" case has to wait for it.
-  pollMs: Number(process.env.WEW_E2E_POLL_MS || 45_000),
+  // How long the idle check watches for (unwanted) badge requests.
+  idleMs: Number(process.env.WEW_E2E_IDLE_MS || 20_000),
   // Publishing writes to Live. Opt in explicitly before running that case
   // against an installation whose content you care about.
   allowPublish: process.env.WEW_E2E_ALLOW_PUBLISH === '1',

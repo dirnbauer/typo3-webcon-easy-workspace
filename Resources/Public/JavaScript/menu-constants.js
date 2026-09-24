@@ -8,33 +8,41 @@ export const ENDPOINTS = {
   historyRollback: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '',
 };
 
-// Cross-tab / cross-frame refresh channel (same origin). Messages are
-// `{ type: 'refresh', reason, workspaceId, stamp, instanceId }`.
+// Cross-tab refresh channel (same origin). Messages are
+// `{ type: 'refresh', reason, workspaceId, stamp, instanceId, contextKey, payload }`;
+// a tab on the same page adopts `payload` instead of asking the server.
 export const CHANNEL_NAME = 'webcon-easy-workspace';
 
-// Badge synchronisation timing. Every trigger funnels through one debounce;
-// the poll only runs while the tab is visible and backs off after errors.
+// Badge synchronisation. Event-driven only — no poll, no focus or
+// visibility trigger (see BadgeSync). Every trigger funnels through one
+// debounce, so a burst of save signals becomes one request.
 export const BADGE_DEBOUNCE_MS = 120;
-export const BADGE_POLL_INTERVAL_MS = 45_000;
-export const BADGE_POLL_JITTER_MS = 5_000;
-export const BADGE_POLL_BACKOFF_MS = 300_000;
-export const BADGE_ERROR_BACKOFF_THRESHOLD = 3;
+// After a page-tree or module-state navigation, how long to wait for the
+// module to finish loading (its `typo3-module-loaded` asks at once) before
+// asking anyway — the Visual Editor changes pages inside its own frame.
+export const BADGE_NAVIGATION_SETTLE_MS = 1500;
 
-// Core events that indicate a record or the navigation context changed.
+// Core events after which the count may have changed: a save, a publish,
+// a workspace switch, or a module that finished loading. That last one
+// matters most: a classic FormEngine save posts the whole form inside the
+// iframe, so it emits no DataHandler event and no BroadcastChannel message.
+// The iframe load is the only signal there is.
+//
 // Listened to on the top document, on the toolbar's own one and — see
 // BadgeSync.attachFrame() — inside the module iframe.
-//
-// `typo3-module-loaded` matters most: a classic FormEngine save posts the
-// whole form inside the iframe, so it emits no DataHandler event and no
-// BroadcastChannel message. The iframe load is the only signal there is.
-export const REFRESH_EVENTS = Object.freeze([
+export const CHANGE_EVENTS = Object.freeze([
   'typo3:datahandler:process',
   'typo3:pagetree:refresh',
   'typo3:workspace:changed',
   'typo3:workspaces:refresh',
+  'typo3-module-loaded',
+]);
+
+// Core events that mean "the editor selected something": they only cause a
+// request when the page or news article actually changed.
+export const NAVIGATION_EVENTS = Object.freeze([
   'typo3:module-state-storage:update:web',
   'typo3:module-state-storage:update-with-tree-identifier:web',
-  'typo3-module-loaded',
 ]);
 
 // Core's module iframe. Events dispatched on *its* document (Core's own

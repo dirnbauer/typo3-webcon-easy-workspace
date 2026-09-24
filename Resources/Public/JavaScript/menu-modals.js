@@ -51,8 +51,9 @@ export function wireContextualEditModal(host, modal, item) {
   modal.addEventListener('typo3-modal-hidden', async () => {
     topWindow.removeEventListener('message', onMessage);
     if (!saved) return;
-    host.badge?.request('edit-saved');
-    await host._refresh();
+    // One request for list and badge (the FormEngine save message that
+    // arrived meanwhile joins it through BadgeSync's debounce).
+    await (host.badge ? host.badge.request('edit-saved', { list: true }) : host._refresh());
     reloadPreviewAndRefocus(host, item);
     Notification.success(
       label(host, 'edit.saved.title'),
@@ -78,9 +79,9 @@ export function openDiffModal(host, item) {
         endpoint: ENDPOINTS.historyRollback,
         translate: (key, vars) => label(host, key, vars),
         onSuccess: async () => {
-          host.badge?.request('rollback');
-          host.badge?.broadcast('rollback');
-          await host._refresh();
+          // The rollback moved the stamp: the list response's badge block
+          // updates the count and tells the other tabs.
+          await (host.badge ? host.badge.request('rollback', { list: true }) : host._refresh());
           reloadPreviewAndRefocus(host, item);
         },
       });

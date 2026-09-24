@@ -110,13 +110,29 @@ test('hides the toolbar item in Live and restores the count when switching back'
   await expect.poll(() => badgeCount(page), { timeout: 10_000 }).toBe(expected);
 });
 
-test('follows a change made by another actor within one poll interval', async () => {
+test('asks nothing while idle and shows a change by another actor at the next navigation', async () => {
   const before = await serverCount(page);
   const status = await externalEdit(page, env.contentUid, `External E2E ${Date.now()}`);
   expect(status).toBeLessThan(400);
   const expected = await serverCount(page);
   expect(expected).toBeGreaterThanOrEqual(before);
-  await expect.poll(() => badgeCount(page), { timeout: env.pollMs + 15_000 }).toBe(expected);
+
+  // No poll, no focus or visibility trigger: an idle editor costs nothing.
+  const badgeRequests = [];
+  const onRequest = (request) => {
+    if (request.url().includes('webcon-easy-workspace/badge') || request.url().includes('webcon-easy-workspace/items')) {
+      badgeRequests.push(request.url());
+    }
+  };
+  page.on('request', onRequest);
+  await page.bringToFront();
+  await page.waitForTimeout(env.idleMs);
+  page.off('request', onRequest);
+  expect(badgeRequests).toEqual([]);
+
+  // The next navigation picks the change up.
+  await page.evaluate(() => (top.TYPO3?.Backend?.ContentContainer ?? top.TYPO3?.ModuleMenu?.App)?.refresh?.() ?? top.TYPO3?.ModuleMenu?.App?.reloadFrames?.());
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
 });
 
 test('follows an event a module raises only inside its own frame', async () => {

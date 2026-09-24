@@ -28,23 +28,14 @@ const root = document.querySelector('[data-wew-module]');
 const LABELS = parseLabelMap(root);
 const HISTORY_ROLLBACK_ENDPOINT = TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '';
 
+// The module publishes and discards through form posts that reload this
+// frame. The toolbar of this tab re-counts on that load by itself
+// (`typo3-module-loaded`) and hands a changed count to the other tabs, so
+// the module does not announce anything: a message from here made every
+// open tab ask the server on every module load.
 if (root) {
   init(root);
   initDocHeader(root);
-  announceModuleLoad();
-}
-
-/**
- * The module publishes/discards through form posts that reload this
- * frame. Tell the toolbar badge (top frame) to re-count on every load.
- */
-function announceModuleLoad() {
-  try {
-    if (typeof BroadcastChannel !== 'function') return;
-    const channel = new BroadcastChannel('webcon-easy-workspace');
-    channel.postMessage({ type: 'refresh', reason: 'module-loaded', workspaceId: 0, stamp: '', instanceId: 'module' });
-    channel.close();
-  } catch { /* channel unavailable */ }
 }
 
 function parseLabelMap(container) {

@@ -3,29 +3,41 @@ import {
   ENDPOINTS,
   CHANNEL_NAME,
   BADGE_DEBOUNCE_MS,
-  BADGE_POLL_INTERVAL_MS,
-  BADGE_POLL_JITTER_MS,
-  BADGE_POLL_BACKOFF_MS,
-  BADGE_ERROR_BACKOFF_THRESHOLD,
-  REFRESH_EVENTS,
+  BADGE_NAVIGATION_SETTLE_MS,
+  CHANGE_EVENTS,
+  NAVIGATION_EVENTS,
   MODULE_IFRAME_SELECTOR,
 } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import { detectContext, label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 
 /**
- * BadgeSync — the ONLY writer of `host.badgeCount` and `host.contextCount`.
+ * BadgeSync — the ONLY writer of `host.badgeCount` and `host.contextCount`,
+ * and the only place that decides when the toolbar talks to the server.
  *
- * The server (`/badge`, and the `badge` block of publish/discard responses)
- * is the single source of truth for both counts: `changedCount` for the
- * whole workspace (the header chip's "N elsewhere") and `contextCount` for
- * the page or news article the editor is on. The toolbar badge shows the
- * context count and falls back to the workspace total only where there is
- * no page context at all (a module outside the Web group). Every
- * trigger — element connect, navigation, dropdown open, Core DataHandler
- * broadcasts, save messages, BroadcastChannel notifications from other
- * tabs/frames, visibility/focus, and the visible-tab poll — funnels through
- * one debounce. A request-id guard drops stale responses, and the server
- * `stamp` decides whether an open list has to re-fetch.
+ * The server (`/badge`, and the `badge` block of items, publish and discard
+ * responses) is the single source of truth: `contextCount` for the page or
+ * news article the editor is on (what the badge shows), `changedCount` for
+ * the whole workspace, `records` for the changed rows of the page, and a
+ * `stamp` that moves with every write that can change a count.
+ *
+ * Event-driven, never periodic. A request goes out only when
+ *  - the element connects,
+ *  - something was saved: Core's DataHandler/page-tree/workspace events, a
+ *    FormEngine save, a Visual Editor save (`wew-refresh`, bridged by
+ *    visual-editor-decline-button.js from VE's `ve_saveEnded`), a module
+ *    finishing to load (the only trace a classic FormEngine save leaves),
+ *  - the editor moved to another page or news article,
+ *  - another tab of this browser announced a change it could not hand over,
+ *  - the toolbar itself needs its list (dropdown open, refresh button, after
+ *    its own publish/discard/edit).
+ * Focus, visibility and time never cause one. Changes by other editors show
+ * up with the next navigation or save.
+ *
+ * Every trigger funnels through one debounce, and at most one request is in
+ * flight; triggers arriving meanwhile collapse into a single follow-up. Each
+ * run fetches either `/badge` or — when the list is wanted — the list, whose
+ * response carries the same badge block, so a burst of signals (a VE save
+ * emits several) costs exactly one request.
  */
 export class BadgeSync {
   constructor(host, options = {}) {
@@ -35,28 +47,30 @@ export class BadgeSync {
     this.topDoc = options.topDocument ?? safeTopDocument(this.win);
     this.topWin = options.topWindow ?? safeTopWindow(this.win);
     this.fetchBadge = options.fetchBadge ?? fetchBadgePayload;
+    this.fetchList = options.fetchList ?? null;
     this.createChannel = options.createChannel ?? createBroadcastChannel;
-    this.random = options.random ?? Math.random;
     this.instanceId = options.instanceId ?? randomId();
     this.debounceMs = options.debounceMs ?? BADGE_DEBOUNCE_MS;
-    this.pollInterval = options.pollInterval ?? BADGE_POLL_INTERVAL_MS;
-    this.pollJitter = options.pollJitter ?? BADGE_POLL_JITTER_MS;
-    this.pollBackoff = options.pollBackoff ?? BADGE_POLL_BACKOFF_MS;
-    this.errorThreshold = options.errorThreshold ?? BADGE_ERROR_BACKOFF_THRESHOLD;
+    this.settleMs = options.settleMs ?? BADGE_NAVIGATION_SETTLE_MS;
 
     this.count = 0;
     this.contextCount = null;
+    this.records = null;
     this.workspaceId = Math.max(0, Number(options.initialWorkspaceId) || 0);
     this.workspaceTitle = '';
     this.stamp = '';
     this.byState = { new: 0, changed: 0, deleted: 0, moved: 0 };
     this.byTable = {};
     this.latestChangeAt = 0;
+
     this.requestId = 0;
     this.errorStreak = 0;
-    this.pendingReason = '';
+    this.pending = null; // { reason, list, stamp, waiters } — collected by the debounce
+    this.followUp = null; // same shape — collected while a request is in flight
+    this.inFlight = null;
     this.debounceTimer = null;
-    this.pollTimer = null;
+    this.settleTimer = null;
+    this.lastContextKey = null;
     this.controller = null;
     this.frameController = null;
     this.channel = null;
@@ -106,19 +120,15 @@ export class BadgeSync {
     this.attachFrame();
 
     // 2. Save signals delivered as window messages (FormEngine modals post
-    //    to the top window; the Visual Editor preview script posts a
-    //    `wew-refresh` fallback for cross-origin previews).
+    //    to the top window; our Visual Editor script bridges VE's save end
+    //    as `wew-refresh`).
     for (const targetWindow of new Set([this.win, this.topWin].filter(Boolean))) {
       try {
         targetWindow.addEventListener('message', (event) => this.onWindowMessage(event), options);
       } catch { /* cross-origin */ }
     }
 
-    // 3. Visibility + focus: pause the poll while hidden, catch up on return.
-    this.doc.addEventListener('visibilitychange', () => this.onVisibilityChange(), options);
-    this.win.addEventListener('focus', () => this.request('focus'), options);
-
-    // 4. Same-origin BroadcastChannel (other tabs, module frame, VE preview).
+    // 3. Same-origin BroadcastChannel: other tabs of this browser.
     this.channel = this.createChannel(CHANNEL_NAME);
     if (this.channel) {
       this.channel.onmessage = (event) => this.onChannelMessage(event);
@@ -131,12 +141,17 @@ export class BadgeSync {
   }
 
   /**
-   * Attach REFRESH_EVENTS to one document.
+   * Attach the change and navigation events to one document.
    */
   listen(targetDocument, options) {
-    for (const eventName of REFRESH_EVENTS) {
+    for (const eventName of CHANGE_EVENTS) {
       try {
         targetDocument.addEventListener(eventName, () => this.request(eventName), options);
+      } catch { /* cross-origin document */ }
+    }
+    for (const eventName of NAVIGATION_EVENTS) {
+      try {
+        targetDocument.addEventListener(eventName, () => this.navigate(eventName), options);
       } catch { /* cross-origin document */ }
     }
   }
@@ -169,52 +184,131 @@ export class BadgeSync {
     this.frameController?.abort();
     this.frameController = null;
     this.cancelDebounce();
-    this.cancelPoll();
+    this.cancelSettle();
     try { this.channel?.close(); } catch { /* already closed */ }
     this.channel = null;
-    this.requestId += 1; // invalidate in-flight responses
+    this.requestId += 1; // invalidate the in-flight response
+    for (const batch of [this.pending, this.followUp]) {
+      batch?.waiters.forEach((resolve) => resolve());
+    }
+    this.pending = null;
+    this.followUp = null;
   }
 
   /**
-   * Debounced entry point for every trigger.
+   * Debounced entry point for every trigger. Resolves once the request that
+   * covers this trigger has been applied (or failed).
+   *
+   * @param {string} reason
+   * @param {{list?: boolean, stamp?: string}} options `list` asks for the
+   *        dropdown list as well; `stamp` is the workspace stamp a channel
+   *        message announced (a follow-up is dropped when the response
+   *        already carries it).
+   * @returns {Promise<void>}
    */
-  request(reason = 'manual') {
-    if (!this.started) return;
-    this.pendingReason = reason;
-    this.cancelDebounce();
-    this.debounceTimer = this.win.setTimeout(() => {
-      this.debounceTimer = null;
-      void this.run(this.pendingReason);
-    }, this.debounceMs);
+  request(reason = 'manual', { list = false, stamp = '' } = {}) {
+    if (!this.started) return Promise.resolve();
+    this.cancelSettle();
+    return new Promise((resolve) => {
+      if (this.inFlight) {
+        this.followUp = mergeBatch(this.followUp, reason, list, stamp, resolve);
+        return;
+      }
+      this.pending = mergeBatch(this.pending, reason, list, stamp, resolve);
+      this.cancelDebounce();
+      this.debounceTimer = this.win.setTimeout(() => {
+        this.debounceTimer = null;
+        const batch = this.pending;
+        this.pending = null;
+        if (batch) void this.run(batch);
+      }, this.debounceMs);
+    });
   }
 
   /**
-   * Fetch immediately (bypasses the debounce). Resolves after the response
-   * has been applied or discarded.
+   * A navigation event: only a different page or news article needs a new
+   * count. The module that shows it is usually still loading, and its
+   * `typo3-module-loaded` would ask again — so wait for that (it cancels
+   * this timer through request()) and fall back to asking after a pause
+   * for navigation that loads no module (the Visual Editor changing pages
+   * inside its own frame).
    */
-  async run(reason = 'manual') {
-    const requestId = ++this.requestId;
-    this.cancelPoll();
-    try {
-      const payload = await this.fetchBadge(this.query());
-      if (requestId !== this.requestId) return; // stale — a newer request is in flight or resolved
-      this.errorStreak = 0;
-      this.apply(payload, { reason });
-    } catch (error) {
-      if (requestId !== this.requestId) return;
-      this.errorStreak += 1;
-      console.warn('[easy-workspace] badge request failed', error);
-    } finally {
-      if (requestId === this.requestId) this.schedulePoll();
+  navigate(reason = 'navigation') {
+    if (!this.started || this.settleTimer !== null) return;
+    if (this.contextKey() === this.lastContextKey) return;
+    this.settleTimer = this.win.setTimeout(() => {
+      this.settleTimer = null;
+      void this.request(reason);
+    }, this.settleMs);
+  }
+
+  /**
+   * Ask now if the page or news article changed since the last request —
+   * for signals that arrive when the new context is already known (a
+   * preview frame finished loading).
+   */
+  checkContext(reason = 'context') {
+    if (this.started && this.contextKey() !== this.lastContextKey) {
+      void this.request(reason);
     }
   }
 
   /**
-   * Apply a server payload (from /badge or embedded in publish/discard
-   * responses). Writes host.badgeCount, updates the DOM badge and the
-   * toolbar visibility, and re-fetches an open list when the stamp moved.
+   * Fetch for one batch of triggers. Never more than one at a time.
    */
-  apply(payload, { reason = 'response', refreshList = true } = {}) {
+  async run(batch) {
+    if (this.inFlight) {
+      this.followUp = mergeBatches(this.followUp, batch);
+      return this.inFlight;
+    }
+    const requestId = ++this.requestId;
+    const contextKey = this.contextKey();
+    this.lastContextKey = contextKey;
+    const useList = batch.list || this.isDropdownOpen();
+    const task = (async () => {
+      try {
+        const payload = useList && this.fetchList
+          ? await this.fetchList({ reason: batch.reason })
+          : await this.fetchBadge(this.query());
+        if (requestId !== this.requestId) return; // stopped meanwhile
+        this.errorStreak = 0;
+        // A list response already is the fresh list.
+        if (payload) this.apply(payload, { reason: batch.reason, refreshList: false, contextKey });
+      } catch (error) {
+        if (requestId !== this.requestId) return;
+        this.errorStreak += 1;
+        console.warn('[easy-workspace] badge request failed', error);
+      }
+    })();
+    this.inFlight = task;
+    try {
+      await task;
+    } finally {
+      this.inFlight = null;
+      batch.waiters.forEach((resolve) => resolve());
+      const followUp = this.followUp;
+      this.followUp = null;
+      if (followUp && this.started) {
+        const coveredByResponse = followUp.stamp !== '' && followUp.stamp === this.stamp && !followUp.list;
+        if (coveredByResponse) {
+          followUp.waiters.forEach((resolve) => resolve());
+        } else {
+          void this.run(followUp);
+        }
+      } else {
+        followUp?.waiters.forEach((resolve) => resolve());
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Apply a server payload (from /badge, a list response, a channel message
+   * or embedded in publish/discard responses). Writes host.badgeCount,
+   * updates the DOM badge and the toolbar visibility, and — when the stamp
+   * moved — refreshes an open list and tells the other tabs.
+   */
+  apply(payload, { reason = 'response', refreshList = true, contextKey = null } = {}) {
     const next = normalizeBadgePayload(payload);
     if (!next) return;
     const previousCount = this.badgeNumber();
@@ -222,15 +316,21 @@ export class BadgeSync {
 
     this.count = next.changedCount;
     this.contextCount = next.contextCount;
+    this.records = next.records;
     this.workspaceId = next.workspaceId;
     this.stamp = next.stamp;
     this.byState = next.byState;
     this.byTable = next.byTable;
     this.latestChangeAt = next.latestChangeAt;
     if (next.workspaceTitle) this.workspaceTitle = next.workspaceTitle;
+    // The page this answer belongs to: the one asked for, or — for answers
+    // that come with a response of the toolbar's own action or from another
+    // tab on the same page — the current one.
+    this.lastContextKey = contextKey ?? this.contextKey();
 
     this.host.badgeCount = this.count;
     this.host.contextCount = this.contextCount;
+    this.host.changedRecords = this.records;
     this.host.workspaceId = this.workspaceId;
     if (next.workspaceTitle) this.host.workspaceTitle = next.workspaceTitle;
 
@@ -239,24 +339,23 @@ export class BadgeSync {
 
     const stampChanged = previousStamp !== '' && previousStamp !== this.stamp;
     if (stampChanged && refreshList && this.isDropdownOpen()) {
-      void this.host._refresh?.({ quiet: true });
+      void this.request('list-stale', { list: true });
     }
-    // Whoever noticed a change first tells the other tabs, so a save that
-    // Core announces only locally (a classic FormEngine save emits no
-    // BroadcastChannel message) does not leave them waiting for their poll.
-    // A tab that already holds this stamp ignores the message, so this
-    // cannot bounce back and forth.
+    // Whoever noticed a change first tells the other tabs — with the payload,
+    // so a tab on the same page adopts it without asking the server. A tab
+    // that already holds this stamp ignores the message, so this cannot
+    // bounce back and forth.
     if (stampChanged && !String(reason).startsWith('channel:')) {
-      this.broadcast(reason);
+      this.broadcast(reason, next);
     }
     this.host.requestUpdate?.();
     this.host.dispatchEvent?.(new CustomEvent('wew:badge', { detail: { ...next, reason } }));
   }
 
   /**
-   * Tell other tabs/frames that this instance changed the workspace.
+   * Tell other tabs/frames that this instance saw the workspace change.
    */
-  broadcast(reason = 'change') {
+  broadcast(reason = 'change', payload = null) {
     try {
       this.channel?.postMessage({
         type: 'refresh',
@@ -264,6 +363,8 @@ export class BadgeSync {
         workspaceId: this.workspaceId,
         stamp: this.stamp,
         instanceId: this.instanceId,
+        contextKey: this.contextKey(),
+        payload,
       });
     } catch { /* channel closed */ }
   }
@@ -271,46 +372,30 @@ export class BadgeSync {
   onChannelMessage(event) {
     const message = event?.data;
     if (!message || message.type !== 'refresh' || message.instanceId === this.instanceId) return;
-    if (typeof message.stamp === 'string' && message.stamp !== '' && message.stamp === this.stamp) return;
-    this.request(`channel:${message.reason || 'unknown'}`);
+    const stamp = typeof message.stamp === 'string' ? message.stamp : '';
+    if (stamp !== '' && stamp === this.stamp) return;
+    const reason = `channel:${message.reason || 'unknown'}`;
+    // Same page, same workspace: the other tab's answer is ours as well.
+    if (message.payload && typeof message.contextKey === 'string'
+      && message.contextKey === this.contextKey()
+      && Number(message.workspaceId) === this.workspaceId
+    ) {
+      this.apply(message.payload, { reason });
+      return;
+    }
+    void this.request(reason, { stamp });
   }
 
   onWindowMessage(event) {
     const data = event?.data;
     if (!data || typeof data !== 'object') return;
     if (data.type === 'wew-refresh') {
-      this.request(`message:${data.reason || 'refresh'}`);
+      void this.request(`message:${data.reason || 'refresh'}`);
       return;
     }
     if (!isSameOrigin(event, this.win)) return;
     if (data.actionName === 'typo3:editform:saved' || data.command === 've_saveEnded') {
-      this.request(`message:${data.actionName || data.command}`);
-    }
-  }
-
-  onVisibilityChange() {
-    if (this.doc.hidden) {
-      this.cancelPoll();
-      return;
-    }
-    this.request('visible');
-  }
-
-  schedulePoll() {
-    this.cancelPoll();
-    if (!this.started || this.pollInterval <= 0 || this.doc.hidden) return;
-    const base = this.errorStreak >= this.errorThreshold ? this.pollBackoff : this.pollInterval;
-    const delay = base + Math.floor(this.random() * this.pollJitter);
-    this.pollTimer = this.win.setTimeout(() => {
-      this.pollTimer = null;
-      this.request('poll');
-    }, delay);
-  }
-
-  cancelPoll() {
-    if (this.pollTimer !== null) {
-      this.win.clearTimeout(this.pollTimer);
-      this.pollTimer = null;
+      void this.request(`message:${data.actionName || data.command}`);
     }
   }
 
@@ -321,12 +406,28 @@ export class BadgeSync {
     }
   }
 
+  cancelSettle() {
+    if (this.settleTimer !== null) {
+      this.win.clearTimeout(this.settleTimer);
+      this.settleTimer = null;
+    }
+  }
+
   query() {
     const { pageUid, newsUid } = detectContext(this.host);
     const query = { _: Date.now() };
     if (newsUid > 0) query.newsUid = newsUid;
     else if (pageUid > 0) query.pageUid = pageUid;
     return query;
+  }
+
+  /**
+   * Identity of the page or news article the editor is on.
+   */
+  contextKey() {
+    const { pageUid, newsUid } = detectContext(this.host);
+    if (newsUid > 0) return `news:${newsUid}`;
+    return pageUid > 0 ? `page:${pageUid}` : 'none';
   }
 
   isDropdownOpen() {
@@ -377,6 +478,31 @@ export class BadgeSync {
   }
 }
 
+/**
+ * Collect triggers into one batch: the last reason names it, the list is
+ * wanted when any trigger wanted it, and a channel stamp only survives when
+ * every trigger carried the same one.
+ */
+function mergeBatch(batch, reason, list, stamp, resolve) {
+  if (!batch) {
+    return { reason, list: Boolean(list), stamp: stamp || '', waiters: [resolve] };
+  }
+  batch.reason = reason;
+  batch.list = batch.list || Boolean(list);
+  batch.stamp = batch.stamp !== '' && batch.stamp === stamp ? stamp : '';
+  batch.waiters.push(resolve);
+  return batch;
+}
+
+function mergeBatches(target, batch) {
+  if (!target) return batch;
+  target.reason = batch.reason;
+  target.list = target.list || batch.list;
+  target.stamp = target.stamp !== '' && target.stamp === batch.stamp ? target.stamp : '';
+  target.waiters.push(...batch.waiters);
+  return target;
+}
+
 export function normalizeBadgePayload(data) {
   if (!data || typeof data !== 'object') return null;
   const changedCount = Math.max(0, parseInt(String(data.changedCount ?? '0'), 10) || 0);
@@ -389,6 +515,15 @@ export function normalizeBadgePayload(data) {
     workspaceTitle: typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '',
     changedCount,
     contextCount,
+    records: Array.isArray(data.records)
+      ? data.records
+        .filter((record) => record && typeof record === 'object' && typeof record.table === 'string')
+        .map((record) => ({
+          table: record.table,
+          liveUid: parseInt(String(record.liveUid ?? '0'), 10) || 0,
+          workspaceUid: parseInt(String(record.workspaceUid ?? '0'), 10) || 0,
+        }))
+      : null,
     stamp: typeof data.stamp === 'string' ? data.stamp : '',
     latestChangeAt: parseInt(String(data.latestChangeAt ?? '0'), 10) || 0,
     byTable: data.byTable && typeof data.byTable === 'object' && !Array.isArray(data.byTable) ? { ...data.byTable } : {},

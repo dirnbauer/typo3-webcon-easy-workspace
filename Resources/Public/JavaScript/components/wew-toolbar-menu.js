@@ -18,7 +18,7 @@ import {
   previewDiscard,
   reloadPreviewAndRefocus,
 } from '@webconsulting/webcon-easy-workspace/menu-preview-locate.js';
-import { onDeclineMessage } from '@webconsulting/webcon-easy-workspace/menu-decline-sync.js';
+import { onDeclineMessage, broadcastDeclineState } from '@webconsulting/webcon-easy-workspace/menu-decline-sync.js';
 import { openEditModal, openDiffModal } from '@webconsulting/webcon-easy-workspace/menu-modals.js';
 import {
   refresh,
@@ -112,15 +112,19 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.workspaceId = this._configuredWorkspaceId();
     this.classList.toggle('wew-menu-host--compact-toolbar', !configBool(this, 'showSubelementsInToolbar'));
 
-    this.badge = new BadgeSync(this, { initialWorkspaceId: this.workspaceId });
+    // BadgeSync decides when to ask the server. While the list is wanted
+    // (dropdown open, refresh button, after an action) it fetches the list
+    // instead of /badge — the list response carries the badge block, so one
+    // request serves both. The list itself is never fetched in the
+    // background: the Visual Editor's decline buttons are drawn from the
+    // badge's `records`.
+    this._badgeListener = () => broadcastDeclineState(this);
+    this.addEventListener('wew:badge', this._badgeListener);
+    this.badge = new BadgeSync(this, {
+      initialWorkspaceId: this.workspaceId,
+      fetchList: ({ reason }) => this._refresh({ quiet: reason !== 'manual' }),
+    });
     this.badge.start();
-    this._refresh();
-
-    this._navListener = () => this._refresh({ quiet: true });
-    for (const targetDocument of this._documents()) {
-      targetDocument.addEventListener('typo3:module-state-storage:update:web', this._navListener);
-      targetDocument.addEventListener('typo3:module-state-storage:update-with-tree-identifier:web', this._navListener);
-    }
 
     const dropdownHost = toolbarHost(this);
     if (dropdownHost) {
@@ -147,11 +151,8 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this._clearIframeHighlight();
     this.badge?.stop();
     this.badge = null;
-    if (this._navListener) {
-      for (const targetDocument of this._documents()) {
-        targetDocument.removeEventListener('typo3:module-state-storage:update:web', this._navListener);
-        targetDocument.removeEventListener('typo3:module-state-storage:update-with-tree-identifier:web', this._navListener);
-      }
+    if (this._badgeListener) {
+      this.removeEventListener('wew:badge', this._badgeListener);
     }
     if (this._declineMessageListener) {
       window.removeEventListener('message', this._declineMessageListener);
@@ -162,15 +163,16 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     super.disconnectedCallback();
   }
 
-  _documents() {
-    const documents = new Set([document]);
-    try { if (window.top?.document) documents.add(window.top.document); } catch { /* cross-origin */ }
-    return documents;
+  _onOpen() {
+    this._refreshList('open');
   }
 
-  _onOpen() {
-    this.badge?.request('open');
-    this._refresh({ quiet: true });
+  /**
+   * Refresh the list through BadgeSync, so it shares the debounce and the
+   * single in-flight request with every other trigger.
+   */
+  _refreshList(reason) {
+    return this.badge ? this.badge.request(reason, { list: true }) : this._refresh({ quiet: reason !== 'manual' });
   }
 
   _isDropdownOpen() { return isDropdownOpen(this); }
@@ -207,8 +209,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
   // ---- Event handlers used by the templates ------------------------------
 
   handleRefresh() {
-    this.badge?.request('manual');
-    this._refresh();
+    this._refreshList('manual');
   }
 
   handleRowCheck(event) {
@@ -318,8 +319,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
           if (result.success) {
             Notification.success(this._label('discard.success.title'), this._label(discardSuccessMessageKey(item), { title: item.title }), 4);
             await this._animateRowsLeaving([key(this, item)]);
-            this.badge?.broadcast('discard');
-            await this._refresh({ quiet: true });
+            await this._refreshList('discard');
             reloadPreviewAndRefocus(this, item);
           } else {
             Notification.error(this._label('discard.error.title'), result.errors.join(' / '));

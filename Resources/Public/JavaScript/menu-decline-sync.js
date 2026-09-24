@@ -6,8 +6,9 @@ import { isKnownPreviewWindow } from '@webconsulting/webcon-easy-workspace/menu-
  * asks which records carry workspace changes (to draw the per-element
  * decline button) and posts back when the editor clicks it.
  *
- * Save signals no longer live here — BadgeSync (menu-badge.js) receives
- * them through the BroadcastChannel and top-window messages.
+ * Save signals do not live here — BadgeSync (menu-badge.js) receives them
+ * as top-window messages, and its responses (`wew:badge`) re-broadcast the
+ * state to every preview.
  */
 export function onDeclineMessage(host, event) {
   const data = event.data;
@@ -15,6 +16,11 @@ export function onDeclineMessage(host, event) {
   if (!isKnownPreviewWindow(host, event.source)) return;
 
   if (data.type === 'wew-decline-state-request') {
+    // A preview (re)loaded — possibly on another page or news article than
+    // the one the badge last counted (the Visual Editor navigates inside
+    // its own frame). The answer below is the current state; when the page
+    // changed, the badge response that follows broadcasts the new one.
+    host.badge?.checkContext?.('preview');
     sendDeclineState(host, event.source, event.origin);
     return;
   }
@@ -36,17 +42,23 @@ export function onDeclineMessage(host, event) {
   host._confirmAndDiscard(item);
 }
 
+/**
+ * The changed records of the current page: from the badge (`records`,
+ * refreshed with every badge response) — the list is only loaded while the
+ * dropdown is used — falling back to the list for older servers.
+ */
 export function declineStatePayload(host) {
+  const records = Array.isArray(host.changedRecords)
+    ? host.changedRecords
+    : (host.items || []).filter((item) => item?.isChanged);
   return {
     type: 'wew-decline-state',
     workspaceId: host.workspaceId || 0,
-    records: host.items
-      .filter((item) => item?.isChanged)
-      .map((item) => ({
-        table: item.table,
-        liveUid: item.liveUid,
-        workspaceUid: item.workspaceUid,
-      })),
+    records: records.map((record) => ({
+      table: record.table,
+      liveUid: record.liveUid,
+      workspaceUid: record.workspaceUid,
+    })),
   };
 }
 

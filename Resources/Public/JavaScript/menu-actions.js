@@ -62,7 +62,10 @@ function contextQuery(context, extra = {}) {
 
 /**
  * Refresh the context-scoped list. Never touches the badge count — that
- * is BadgeSync's job (menu-badge.js).
+ * is BadgeSync's job (menu-badge.js): the response's `badge` block is
+ * returned for BadgeSync to apply, which is also how BadgeSync uses this as
+ * its fetcher while the list is wanted. Resolves to null when there is no
+ * list (no context, stale or failed request).
  */
 export async function refresh(host, options = {}) {
   const requestId = nextRefreshRequestId(host);
@@ -72,7 +75,7 @@ export async function refresh(host, options = {}) {
     host.changedItemGroups = [];
     resetSelection(host);
     notifyView(host);
-    return;
+    return null;
   }
   const quiet = Boolean(options.quiet);
   const settled = host.state === 'loaded' || host.state === 'empty' || host.state === 'no-context';
@@ -90,7 +93,7 @@ export async function refresh(host, options = {}) {
     resetSelection(host);
     notifyView(host);
     broadcastDeclineState(host);
-    return;
+    return null;
   }
 
   try {
@@ -99,7 +102,7 @@ export async function refresh(host, options = {}) {
       .get();
     const data = await response.resolve();
     if (!isCurrentRefreshRequest(host, requestId)) {
-      return;
+      return null;
     }
     host.context = data.context;
     host.items = Array.isArray(data.items) ? data.items : [];
@@ -115,16 +118,29 @@ export async function refresh(host, options = {}) {
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
     notifyView(host);
     broadcastDeclineState(host);
+    return data.badge && typeof data.badge === 'object' ? data.badge : null;
   } catch (error) {
     if (!isCurrentRefreshRequest(host, requestId)) {
-      return;
+      return null;
     }
     console.error('[easy-workspace] items request failed', error);
     host.state = 'error';
     host.changedItemGroups = [];
     resetSelection(host);
     notifyView(host);
+    return null;
   }
+}
+
+/**
+ * Refresh the list through BadgeSync when there is one, so the request
+ * shares its debounce and single in-flight slot and applies the badge
+ * block the list carries.
+ */
+function refreshList(host, reason, quiet = true) {
+  return host.badge?.request
+    ? host.badge.request(reason, { list: true })
+    : refresh(host, { quiet });
 }
 
 export function configuredWorkspaceId(host) {
@@ -146,7 +162,7 @@ export async function publish(host) {
     );
     if (uniqueSelections.length === 0) {
       Notification.warning(label(host, 'publish.warning.title'), label(host, 'error.noPublishableRecords'));
-      await refresh(host);
+      await refreshList(host, 'publish', false);
       return;
     }
     const response = await new AjaxRequest(ENDPOINTS.publish)
@@ -161,8 +177,8 @@ export async function publish(host) {
         label(host, 'publish.success.message', { count: Number(result.published || 0) }),
       );
       await host._animateRowsLeaving?.(selectedItems.map((i) => key(host, i)));
-      host.badge?.broadcast('publish');
-      await refresh(host, { quiet: true });
+      // apply() above already told the other tabs when the stamp moved.
+      await refreshList(host, 'publish');
     } else {
       const errors = Array.isArray(result?.errors) && result.errors.length
         ? result.errors.join(' / ')

@@ -110,19 +110,15 @@ function scan(root = document) {
 }
 
 // Tell the backend toolbar (BadgeSync) that a Visual Editor save finished.
-// Same-origin previews reach it through the BroadcastChannel; cross-origin
-// previews fall back to a top-window message. Both are debounced there.
-const REFRESH_CHANNEL = 'webcon-easy-workspace';
-
+//
+// VE's save button posts `ve_saveEnded` only down into its preview frames,
+// never up to the backend, so this script is the bridge: one top-window
+// message, which reaches the toolbar of this tab whatever the preview's
+// origin. That tab fetches the new count once and hands it to the other
+// tabs over the BroadcastChannel — with the payload, so a tab on the same
+// page does not ask the server again. Posting to the channel from here as
+// well would make every other tab fetch before that answer arrives.
 function announceSave(reason) {
-  const message = { type: 'refresh', reason, workspaceId: 0, stamp: '', instanceId: 've-preview' };
-  try {
-    if (typeof BroadcastChannel === 'function') {
-      const channel = new BroadcastChannel(REFRESH_CHANNEL);
-      channel.postMessage(message);
-      channel.close();
-    }
-  } catch { /* channel unavailable */ }
   try {
     (window.top || window.parent)?.postMessage({ type: 'wew-refresh', reason }, '*');
   } catch { /* no reachable parent */ }
