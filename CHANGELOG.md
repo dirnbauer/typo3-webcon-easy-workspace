@@ -2,6 +2,82 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.7.3] — 2026-09-24
+
+Editing in the Visual Editor was slow on production because of this
+extension: every badge request of a Content Blocks page took 2.3 s of server
+time, and while an editor worked the toolbar sent one every three to four
+seconds per open tab — enough to keep one of six PHP workers busy for good.
+
+### Fixed
+
+- **A page count cost 15,000 queries.** Content Blocks defines every
+  collection field as a base `tt_content` column, so each element carries a
+  few hundred inline fields whatever its CType, and each of them was asked
+  for changed children, per element — 15,393 queries and 2.3 s for the badge
+  of a 40-element page without a single change; the list (`/items`) cost the
+  same. The collection now resolves the field configuration once per type,
+  fetches the children of all elements with one query per relation, skips
+  every table that holds no row of the workspace (one `UNION ALL` finds
+  those), overlays only rows that have a version, and does not build items
+  for rows that cannot be listed. On that page: badge 30 queries and ~30 ms
+  (6 ms from the cache), list ~35 ms. Results are unchanged — a new snapshot
+  test pins every list, group and count of a scenario with edits,
+  new/delete/move placeholders, translations, hidden elements, discarded
+  drafts, collection children and file references to what 1.7.2 returned,
+  and a comparison of 115 payloads (2,628 rows) from the production copy
+  found no difference.
+- `TcaUtility::table()` copied the whole `$GLOBALS['TCA']` on every call and
+  `hasColumn()` all columns of the table; on a Content Blocks site that was
+  most of the remaining PHP time. Both look the entry up directly.
+- The whole-workspace count scanned `tt_content` (80 ms on 940 columns): no
+  index starts with `t3ver_wsid`. The workspace condition is now phrased for
+  Core's `(t3ver_oid, t3ver_wsid)` index (0.4 ms); IN lists stay below
+  MySQL's `eq_range_index_dive_limit` for the same reason.
+- The badge stamp did not move when a collection item, a file reference or
+  file metadata was edited, so other tabs were not told and an open list did
+  not refresh. A DataHandler hook now moves a per-workspace revision (in
+  `sys_registry`) after every write to a workspace-aware table, and the stamp
+  includes it.
+
+### Changed
+
+- **The badge no longer polls.** It asks the server when something was saved
+  (Core DataHandler, page-tree and workspace events, a FormEngine save, a
+  Visual Editor save, a module finishing to load), when the editor moves to
+  another page or news article, and when another tab of the browser reports
+  a change — never on a timer, on focus or on tab visibility. Changes made by
+  other editors, the CLI or an MCP client appear at the next navigation or
+  save in the open backend, not by themselves.
+- One request at a time: every trigger goes through the debounce, at most
+  one request is in flight per tab, and signals arriving meanwhile become a
+  single follow-up — a Visual Editor save (several signals) costs one
+  request. A scripted five-minute editing session now makes 13 requests;
+  1.7.2 made 98.
+- While the dropdown is open, a refresh fetches the list instead of
+  `/badge`; the `/items` response now carries the same `badge` block, so
+  list and count come from one request. The list is no longer fetched in the
+  background on every navigation.
+- The badge payload has `records` — the changed rows of the page — and the
+  Visual Editor's decline buttons are drawn from it instead of from the list.
+- A tab that noticed a change hands its answer to the other tabs over the
+  `BroadcastChannel`; a tab on the same page applies it without asking the
+  server. The Visual Editor preview script and the backend module no longer
+  post to the channel themselves (each made every open tab ask the server);
+  the preview bridges VE's `ve_saveEnded`, which VE sends only into its
+  preview frames, as one message to the toolbar of its own tab.
+- The page count is cached per page under the workspace stamp (cache
+  `webcon_easy_workspace`, file backend, group `system`), so module switches
+  and returning to a page cost a cache read.
+
+### Added
+
+- `Tests/Functional/Fixtures/Extensions/inline_stub` (a Content Blocks-shaped
+  `tt_content` with 26 inline fields), `PendingItemsServicePageSnapshotTest`,
+  `PageCollectionCostTest` (query counts through a Doctrine driver
+  middleware), `WorkspaceRevisionTest`; vitest for the trigger matrix and the
+  five-minute session.
+
 ## [1.7.2] — 2026-09-23
 
 ### Fixed

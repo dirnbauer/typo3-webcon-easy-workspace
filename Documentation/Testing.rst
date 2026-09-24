@@ -20,6 +20,18 @@ The badge counter tests load a tiny fixture extension
 workspace-aware ``tx_news_domain_model_news`` table, so EXT:news is not a
 dev dependency.
 
+``Tests/Functional/Fixtures/Extensions/inline_stub`` shapes ``tt_content``
+like a Content Blocks installation: 26 inline fields into two workspace-aware
+collection tables, one CType with a ``columnsOverrides`` entry.
+``PendingItemsServicePageSnapshotTest`` compares every list, group, count and
+probe of ``PageInlineScenario.csv`` against a snapshot recorded with 1.7.2 —
+record a new one only for an intended change
+(``EASYWS_UPDATE_SNAPSHOT=1``). ``PageCollectionCostTest`` counts queries
+through a Doctrine driver middleware (``Fixtures/Database/QueryCounter``)
+and pins that children are fetched once per relation and that tables
+without workspace rows are never asked; ``WorkspaceRevisionTest`` pins when
+the stamp moves and how long the cached page count lives.
+
 JavaScript
 ----------
 
@@ -30,10 +42,13 @@ JavaScript
 
 ``vitest`` (jsdom) aliases the ``@webconsulting/webcon-easy-workspace/``
 and ``@typo3/*`` import-map prefixes to the sources and to mocks in
-``Tests/JavaScript/mocks``. The suite covers ``BadgeSync`` (server count
-wins over the list count, stale responses, debounce, visibility-paused
-polling with error backoff, BroadcastChannel filtering, stamp-driven list
-refresh, DOM badge rendering) and the selection/grouping helpers. The
+``Tests/JavaScript/mocks``. The suite pins the ``BadgeSync`` trigger matrix
+(which signals ask the server and which — focus, visibility, time — never
+do), navigation settling, debounce and single-flight follow-ups, payload
+sharing between tabs, list-instead-of-badge while the dropdown is open, DOM
+badge rendering, and a scripted five-minute Visual Editor session
+(``editing-session.test.js``: 13 requests; 1.7.2 made 98). It also covers
+the selection/grouping helpers. The
 runtime still uses TYPO3's import map; ``npm`` is a dev-only dependency.
 
 ..  _testing-browser:
@@ -92,18 +107,20 @@ it needs an instance, a workspace and a content element to edit.
 rendered into the markup, a FormEngine save inside the module iframe (and
 the same count in a second tab), the dashboard/Records/file list, module
 navigation without a page reload, switching to Live and back, a change made
-by another actor (within one poll interval), an event a module raises only
-inside its own frame, and — opt-in — publishing from the dropdown.
+by another actor (no request while idle, picked up at the next navigation),
+an event a module raises only inside its own frame, and — opt-in —
+publishing from the dropdown.
 
 ``dropdown.spec.js`` covers the dropdown itself: light and dark scheme,
 keyboard navigation, accessible names, the dialog/live-region roles and the
 loading, empty and error states. It writes the screenshots to
 ``Build/Reports/screenshots`` (``WEW_E2E_SHOT_DIR``).
 
-The event-driven cases allow 15 seconds — a third of the poll interval —
-so that a pass really proves the event path and not the poll. Run them
-against an instance that answers in a second or two; a saturated PHP-FPM
-pool makes them flaky for reasons that have nothing to do with the badge.
+The event-driven cases allow 15 seconds; there is no poll that could make
+them pass by accident. The idle check watches for ``WEW_E2E_IDLE_MS``
+(default 20 s). Run them against an instance that answers in a second or
+two; a saturated PHP-FPM pool makes them flaky for reasons that have nothing
+to do with the badge.
 
 What the scenario cannot check: the Visual Editor and news integrations
 (they need their own records), publishing and discarding through Core's own

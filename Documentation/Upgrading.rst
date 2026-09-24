@@ -8,6 +8,25 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.7.3
+==================
+
+Flush the caches after the update (new ``ext_localconf.php``, new services).
+Nothing to migrate; things to know:
+
+- The badge no longer polls and ignores focus and tab visibility: changes
+  made by other editors, the CLI or an MCP client appear at the next
+  navigation or save in an open backend (see :ref:`badge`).
+- A DataHandler hook (``processDatamapClass`` / ``processCmdmapClass``, key
+  ``webcon_easy_workspace``) keeps a revision per workspace in
+  ``sys_registry`` (namespace ``webcon_easy_workspace``).
+- New cache ``webcon_easy_workspace`` (``SimpleFileBackend`` in
+  ``var/cache/data``, group ``system``). Override it in
+  ``$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']``
+  like any other cache.
+- The badge payload has ``records``; the ``/items`` response has ``badge``.
+  Clients that read these endpoints themselves can ignore both.
+
 Upgrading to 1.7.2
 ==================
 

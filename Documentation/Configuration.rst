@@ -24,10 +24,11 @@ The personal switches apply to both entry points: the top-right toolbar
 dropdown and the Easy Workspace backend module below the TYPO3 Workspaces
 publish module.
 
-The toolbar badge has no options: it always counts the whole active
-workspace and refreshes on Core events, save messages, a browser
-``BroadcastChannel`` and a visible-tab poll (see :ref:`badge`). The
-dropdown content stays scoped to the current page or news article.
+The toolbar badge has no options: it counts the pending changes of the
+current page or news article (the whole workspace where there is no page)
+and refreshes on saves, navigation and changes reported by other tabs of
+the browser — never on a timer (see :ref:`badge`). The dropdown content
+stays scoped to the current page or news article.
 
 The module and toolbar share the same service layer and configuration flags.
 The module is server-rendered with Fluid and TYPO3 submodule routes for the

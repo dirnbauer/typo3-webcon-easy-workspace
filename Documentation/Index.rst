@@ -63,17 +63,19 @@ Both entry points share ``PendingItemsService`` and its collection pipeline:
                                                         └→ aggregation
     Publish / review / discard → PublishSelectedService → Core DataHandler
     Badge / has-changes ───────→ WorkspaceChangeCounter (COUNT + MAX per table)
+                                 + ContextChangeSummary (page count, cached per stamp)
 
 The toolbar loads ``components/wew-toolbar-menu.js`` directly. All extension
 JavaScript imports use the registered ``@webconsulting/webcon-easy-workspace/``
 prefix so TYPO3 versions their URLs. There are no numbered entrypoints,
 manual cache timestamps, or alternative Fluid dropdown renderer.
 
-The badge is a whole-workspace count served by ``WorkspaceChangeCounter``
-and owned on the client by ``BadgeSync`` (see :ref:`badge`): Core
-DataHandler broadcasts, save messages, a same-origin ``BroadcastChannel``,
-tab visibility and a visible-tab poll all feed one debounced request; the
-server ``stamp`` decides whether an open list re-fetches. Core's workspace
+The badge counts the current page or news article (``ContextChangeSummary``)
+next to the whole-workspace total (``WorkspaceChangeCounter``) and is owned
+on the client by ``BadgeSync`` (see :ref:`badge`). It is event-driven: saves,
+navigation to another page and changes reported by other tabs feed one
+debounced, single-flight request — no poll, no focus or visibility
+trigger; the server ``stamp`` decides whether an open list re-fetches. Core's workspace
 dependency event still filters references whose source or target has
 actually been removed.
 
