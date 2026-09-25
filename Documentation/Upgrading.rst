@@ -8,6 +8,18 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.8.0
+==================
+
+Flush the caches after the update. Nothing to migrate; what editors see
+changes to match the Workspaces module:
+
+- Changed collection items and file references of unchanged elements are
+  rows of their own, and they count.
+- Versions identical to the live record are listed.
+- The counts depend on the editor's table and page permissions, as the
+  module's do.
+
 Upgrading to 1.7.3
 ==================
 

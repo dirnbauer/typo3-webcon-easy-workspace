@@ -2,6 +2,52 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.8.0] — 2026-09-25
+
+Easy Workspace now shows the Workspaces module's data instead of collecting
+its own. The two disagreed: a change that only touched a collection item or
+a file reference of an unchanged element — a new picture in a Desiderio
+feature item, say — was missing from the workspace count, so the header chip
+said "nothing pending" on every other page while the change waited to be
+published.
+
+### Changed
+
+- **Changes come from core.** `WorkspaceService::selectVersionsInWorkspace()`
+  finds the workspace's versions with the editor's table and page
+  permissions, and `CollectionService` nests the records that depend on
+  another one below it — the Workspaces module's own code path
+  (`CoreWorkspaceChanges`). The badge, the dropdown and the module list the
+  module's rows; the header's total is the module's count.
+  `WorkspacesModuleParityTest` checks both against the module's grid.
+- A changed collection item or file reference of an **unchanged** element is
+  a row of its own, as in the module, instead of being shown under its
+  element. A changed element still carries its changed children.
+- A version whose fields equal the live record's is listed, as in the
+  module. It used to be hidden as "no editor-visible change".
+- Records stored on the page that are neither pages nor content elements
+  (a news record in a page, for instance) are listed for that page.
+- A move is listed on the page the record was moved to.
+- Publish, discard, diff and history accept every workspace-aware table; the
+  editor's rights are checked by DataHandler and core.
+- The whole-workspace count and the page summary are cached per editor,
+  because core's list depends on the editor's permissions.
+
+### Removed
+
+- The own collection and counting: `InlineChildResolver`,
+  `WorkspaceVersionPresence`, the page and news scopes, the standalone-row
+  lookups, `WorkspaceVersionConstraint` and the per-table count queries
+  (3,400 lines).
+
+### Performance
+
+Core asks every workspace-aware table, and a Content Blocks installation has
+hundreds. On the lab (Desiderio home page) an uncached badge takes 150 to
+460 ms and the list 180 to 250 ms, against about 30 ms with 1.7.3's own
+queries; a cached badge takes 3 to 9 ms. The cache is valid until the next
+DataHandler write in the workspace.
+
 ## [1.7.3] — 2026-09-24
 
 Editing in the Visual Editor was slow on production because of this

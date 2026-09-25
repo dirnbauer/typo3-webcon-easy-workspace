@@ -4,7 +4,7 @@
 
 Easy Workspace adds a workspace publishing dropdown to the TYPO3 backend toolbar and a **Content → Easy Workspace** module. Editors see the pending changes of the page (or news article) they are working on, review diffs and history, and publish or discard selected records without leaving their context. Publishing, staging, discarding and rollback use TYPO3 Core APIs (DataHandler, RecordHistory).
 
-The toolbar badge counts the pending changes of the page (or news article) the editor is on — its content elements and their inline children included — not the whole workspace. It updates when something is saved in any frame or another tab of the browser, and when the editor moves to another page; it never polls, so changes made by other editors, the CLI or an MCP client appear at the next navigation or save. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
+The toolbar badge counts the pending changes of the page (or news article) the editor is on — the same changes the Workspaces module lists for it, collection items and file references included — not the whole workspace. It updates when something is saved in any frame or another tab of the browser, and when the editor moves to another page; it never polls, so changes made by other editors, the CLI or an MCP client appear at the next navigation or save. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
 
 ## Requirements
 
