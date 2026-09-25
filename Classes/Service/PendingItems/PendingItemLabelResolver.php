@@ -125,7 +125,12 @@ final readonly class PendingItemLabelResolver
         if ($label !== '') {
             return $this->localizationService->resolveLabel($label);
         }
-        return $value;
+        // A type value without a label (a Content Blocks collection table
+        // typed by its identifier) reads better as the table's title than
+        // as the raw value.
+        $tableTitle = $this->resolveTableLabel($table);
+
+        return $tableTitle !== $table ? $tableTitle : $value;
     }
 
     /**

@@ -35,6 +35,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -95,6 +97,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 1,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -155,6 +159,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -215,6 +221,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -275,6 +283,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -335,6 +345,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "deleted",
@@ -395,6 +407,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -439,7 +453,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -455,6 +469,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -499,7 +515,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Reference",
-                "typeLabel": "0",
+                "typeLabel": "File Reference",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -515,6 +531,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -575,6 +593,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -635,6 +655,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -695,6 +717,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -755,6 +779,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -879,6 +905,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -939,6 +967,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -973,6 +1003,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 1,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1033,6 +1065,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1093,6 +1127,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1153,6 +1189,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -1213,6 +1251,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "deleted",
@@ -1273,6 +1313,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -1333,6 +1375,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1367,6 +1411,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1401,6 +1447,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1435,6 +1483,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1469,6 +1519,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1503,6 +1555,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1537,6 +1591,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1555,7 +1611,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -1571,6 +1627,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1615,7 +1673,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Reference",
-                "typeLabel": "0",
+                "typeLabel": "File Reference",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -1631,6 +1689,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -1691,6 +1751,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1751,6 +1813,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1811,6 +1875,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -1871,6 +1937,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -2016,6 +2084,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 1,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2076,6 +2146,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -2166,6 +2238,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2210,7 +2284,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -2226,6 +2300,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2270,7 +2346,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Reference",
-                "typeLabel": "0",
+                "typeLabel": "File Reference",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -2286,6 +2362,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2390,6 +2468,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2424,6 +2504,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -2484,6 +2566,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2544,6 +2628,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2562,7 +2648,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -2578,6 +2664,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2622,7 +2710,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Reference",
-                "typeLabel": "0",
+                "typeLabel": "File Reference",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -2638,6 +2726,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2748,7 +2838,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -2764,6 +2854,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2852,6 +2944,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2886,6 +2980,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2904,7 +3000,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -2920,6 +3016,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3018,7 +3116,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -3034,6 +3132,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3106,7 +3206,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -3122,6 +3222,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3228,6 +3330,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3288,6 +3392,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 1,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3348,6 +3454,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3408,6 +3516,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3468,6 +3578,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -3528,6 +3640,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "deleted",
@@ -3588,6 +3702,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -3632,7 +3748,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Metadata",
-                "typeLabel": "0",
+                "typeLabel": "File Metadata",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -3648,6 +3764,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3692,7 +3810,7 @@
                 "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "File Reference",
-                "typeLabel": "0",
+                "typeLabel": "File Reference",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
@@ -3708,6 +3826,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -3768,6 +3888,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3828,6 +3950,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3888,6 +4012,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -3948,6 +4074,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -4072,6 +4200,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -4132,6 +4262,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 1,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -4192,6 +4324,8 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
+                "languageUid": 0,
+                "parent": null,
                 "changeBadges": [
                     {
                         "kindKey": "modified",

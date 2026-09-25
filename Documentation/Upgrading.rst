@@ -8,6 +8,27 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.9.0
+==================
+
+Flush the caches after the update (new services). Nothing to migrate;
+things to know:
+
+- The dropdown lists the changes of other languages apart from the ones
+  the editor's module shows (see :ref:`toolbar-languages`). ``/items`` takes
+  a ``module`` parameter and returns ``languages`` and ``viewLanguages``; it
+  no longer returns ``itemGroups`` / ``changedItemGroups`` and its items
+  carry ``languageUid`` and ``parent`` but no ``changeRecords`` or
+  ``changeBadges``. The module's payloads are unchanged apart from the two
+  new item keys.
+- Core's version selection runs once per editor and workspace revision; the
+  rows and each page's nested tree are cached in ``webcon_easy_workspace``
+  next to the counts.
+- The toolbar's change-type pills, icon buttons and empty-state art are
+  replaced by Core's ``.badge``, ``.btn-borderless`` and icons; a site
+  stylesheet that targeted ``.wew-pill`` or ``.wew-iconbtn`` has nothing to
+  target any more.
+
 Upgrading to 1.8.0
 ==================
 

@@ -4,7 +4,7 @@
 
 Easy Workspace adds a workspace publishing dropdown to the TYPO3 backend toolbar and a **Content → Easy Workspace** module. Editors see the pending changes of the page (or news article) they are working on, review diffs and history, and publish or discard selected records without leaving their context. Publishing, staging, discarding and rollback use TYPO3 Core APIs (DataHandler, RecordHistory).
 
-The toolbar badge counts the pending changes of the page (or news article) the editor is on — the same changes the Workspaces module lists for it, collection items and file references included — not the whole workspace. It updates when something is saved in any frame or another tab of the browser, and when the editor moves to another page; it never polls, so changes made by other editors, the CLI or an MCP client appear at the next navigation or save. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
+The dropdown knows which language the editor is looking at: the changes the page shows in the current view come first, the changes of other languages follow under their language, still selected and published together — the page only shows them after a language switch, and the dropdown says so. The toolbar badge counts the pending changes of the page (or news article) the editor is on — the same changes the Workspaces module lists for it, collection items and file references included — not the whole workspace. It updates when something is saved in any frame or another tab of the browser, and when the editor moves to another page; it never polls, so changes made by other editors, the CLI or an MCP client appear at the next navigation or save. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
 
 ## Requirements
 
@@ -20,7 +20,7 @@ The package is distributed through GitHub tags only (not on Packagist):
 
 ```bash
 composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-composer require webconsulting/webcon-easy-workspace:^1.7
+composer require webconsulting/webcon-easy-workspace:^1.9
 vendor/bin/typo3 extension:setup
 vendor/bin/typo3 cache:flush
 ```
@@ -47,7 +47,7 @@ Toolbar and module draw only on TYPO3's backend tokens and Core markup (`.form-c
 ## Use
 
 1. Switch to a custom workspace and open a page or news article.
-2. Open **Workspace publish** in the toolbar. The header shows the workspace, the stage and "N on this page · M elsewhere".
+2. Open **Workspace publish** in the toolbar. The header names the workspace and the stage and sums up the numbers ("N changes on this page · M more elsewhere in the workspace").
 3. Tick the checkbox in front of a row — or click anywhere on the row — to select it for publishing. Open the editor, inspect changes and history, discard a draft, or locate the element in the preview through the row's buttons (keyboard: arrow keys move, Space selects, Enter opens the editor, Tab reaches the row's buttons).
 4. **Publish N** publishes the selection; **Preview** opens or copies a workspace preview link; **Open module** switches to the full review queue with request-review / approve-and-publish stages.
 

@@ -30,7 +30,7 @@ Install from the GitHub VCS repository in a TYPO3 project:
 ..  code-block:: bash
 
     composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-    composer require webconsulting/webcon-easy-workspace:^1.7
+    composer require webconsulting/webcon-easy-workspace:^1.9
     vendor/bin/typo3 extension:setup
     vendor/bin/typo3 cache:flush
 
@@ -62,8 +62,10 @@ Both entry points share ``PendingItemsService`` and its collection pipeline:
                                                         ├→ item factory/resolvers
                                                         └→ aggregation
     Publish / review / discard → PublishSelectedService → Core DataHandler
-    Badge / has-changes ───────→ WorkspaceChangeCounter (COUNT + MAX per table)
-                                 + ContextChangeSummary (page count, cached per stamp)
+    Badge / has-changes ───────→ WorkspaceChangeCounter + ContextChangeSummary
+                                 (both from CoreWorkspaceChanges: one core scan
+                                 per editor and revision, cached)
+    Languages ─────────────────→ LanguageContext (site languages, module data)
 
 The toolbar loads ``components/wew-toolbar-menu.js`` directly. All extension
 JavaScript imports use the registered ``@webconsulting/webcon-easy-workspace/``

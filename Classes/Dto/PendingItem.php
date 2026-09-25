@@ -12,6 +12,8 @@ final readonly class PendingItem
      * @param list<PendingChildChange> $childChanges
      * @param list<PendingRecordReference> $publishRecords
      * @param list<PendingChangeRecord> $changeRecords
+     * @param int|null $languageUid The record's language; null for a table without one.
+     * @param array{table: string, uid: int, title: string}|null $parent The record this one is part of — a collection item's or file reference's element.
      */
     public function __construct(
         public string $table,
@@ -47,7 +49,22 @@ final readonly class PendingItem
         public int $latestChangeUserUid = 0,
         public string $latestChangeUser = '',
         public int $stageId = 0,
+        public ?int $languageUid = null,
+        public ?array $parent = null,
     ) {}
+
+    /**
+     * A copy with some constructor arguments replaced.
+     *
+     * @param array<string, mixed> $overrides Keyed by constructor argument name.
+     */
+    public function with(array $overrides): self
+    {
+        /** @var array<string, mixed> $arguments */
+        $arguments = array_replace(get_object_vars($this), $overrides);
+
+        return new self(...$arguments);
+    }
 
     public function withPublishMetadata(): self
     {
@@ -55,41 +72,10 @@ final readonly class PendingItem
             return $this;
         }
 
-        return new self(
-            table: $this->table,
-            liveUid: $this->liveUid,
-            workspaceUid: $this->workspaceUid,
-            title: $this->title,
-            kindKey: $this->kindKey,
-            kindLabel: $this->kindLabel,
-            badge: $this->badge,
-            iconIdentifier: $this->iconIdentifier,
-            thumbnailUrl: $this->thumbnailUrl,
-            isPrimary: $this->isPrimary,
-            isChanged: $this->isChanged,
-            isHidden: $this->isHidden,
-            tableLabel: $this->tableLabel,
-            typeLabel: $this->typeLabel,
-            editUrl: $this->editUrl,
-            contextualEditUrl: $this->contextualEditUrl,
-            historyUrl: $this->historyUrl,
-            diff: $this->diff,
-            changeBadges: $this->changeBadges,
-            childChanges: $this->childChanges,
-            publishRecords: [PendingRecordReference::fromPendingItem($this)],
-            changeRecords: [PendingChangeRecord::fromPendingItem($this)],
-            historyDiffCount: $this->historyDiffCount,
-            colPos: $this->colPos,
-            colPosLabel: $this->colPosLabel,
-            locateTable: $this->locateTable,
-            locateLiveUid: $this->locateLiveUid,
-            locateWorkspaceUid: $this->locateWorkspaceUid,
-            tstamp: $this->tstamp,
-            latestChangeAt: $this->latestChangeAt,
-            latestChangeUserUid: $this->latestChangeUserUid,
-            latestChangeUser: $this->latestChangeUser,
-            stageId: $this->stageId,
-        );
+        return $this->with([
+            'publishRecords' => [PendingRecordReference::fromPendingItem($this)],
+            'changeRecords' => [PendingChangeRecord::fromPendingItem($this)],
+        ]);
     }
 
     public function identityUid(): int
@@ -106,7 +92,7 @@ final readonly class PendingItem
     }
 
     /**
-     * Lightweight serialization for toolbar JS glue (no field diffs).
+     * Serialization for the backend module (no field diffs unless asked).
      *
      * @return array<string, mixed>
      */
@@ -142,6 +128,8 @@ final readonly class PendingItem
             'latestChangeUserUid' => $this->latestChangeUserUid,
             'latestChangeUser' => $this->latestChangeUser,
             'stageId' => $this->stageId,
+            'languageUid' => $this->languageUid,
+            'parent' => $this->parent,
             'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,
@@ -164,6 +152,46 @@ final readonly class PendingItem
                 ],
                 $this->changeRecords,
             ),
+        ];
+    }
+
+    /**
+     * What the toolbar dropdown renders and acts on — nothing more. The
+     * module's serialization repeats every change record with its URLs;
+     * the dropdown only needs the records it publishes.
+     *
+     * @return array<string, mixed>
+     */
+    public function toToolbarArray(): array
+    {
+        return [
+            'table' => $this->table,
+            'liveUid' => $this->liveUid,
+            'workspaceUid' => $this->workspaceUid,
+            'title' => $this->title,
+            'kindKey' => $this->kindKey,
+            'iconIdentifier' => $this->iconIdentifier,
+            'thumbnailUrl' => $this->thumbnailUrl,
+            'isPrimary' => $this->isPrimary,
+            'isChanged' => $this->isChanged,
+            'isHidden' => $this->isHidden,
+            'tableLabel' => $this->tableLabel,
+            'typeLabel' => $this->typeLabel,
+            'editUrl' => $this->editUrl,
+            'contextualEditUrl' => $this->contextualEditUrl,
+            'historyUrl' => $this->historyUrl,
+            'historyDiffCount' => $this->historyDiffCount,
+            'childChanges' => array_map(static fn(PendingChildChange $child): array => $child->toToolbarArray(), $this->childChanges),
+            'colPosLabel' => $this->colPosLabel,
+            'locateTable' => $this->locateTable,
+            'locateLiveUid' => $this->locateLiveUid,
+            'locateWorkspaceUid' => $this->locateWorkspaceUid,
+            'tstamp' => $this->tstamp,
+            'latestChangeAt' => $this->latestChangeAt,
+            'latestChangeUser' => $this->latestChangeUser,
+            'languageUid' => $this->languageUid,
+            'parent' => $this->parent,
+            'publishRecords' => array_map(static fn(PendingRecordReference $record): array => $record->toArray(), $this->publishRecords),
         ];
     }
 }

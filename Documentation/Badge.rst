@@ -30,8 +30,8 @@ tab visibility (see :ref:`badge-triggers`).
 Two numbers are computed per request:
 
 ``changedCount``
-    The whole workspace — ``WorkspaceChangeCounter``, one aggregate query
-    per table (below).
+    The whole workspace — ``WorkspaceChangeCounter``, the number of core's
+    top-level rows (below).
 ``contextCount``
     The page or news article — ``ContextChangeSummary``, which runs the same
     collection the ``/items`` list is built from in count-only mode and
@@ -50,11 +50,19 @@ Easy Workspace shows the Workspaces module's data and keeps no list of its
 own. ``CoreWorkspaceChanges`` asks core the way the module does:
 
 - ``WorkspaceService::selectVersionsInWorkspace()`` finds the versions of the
-  workspace (for one page, or for the whole workspace), with the editor's
-  table and page permissions;
+  whole workspace, with the editor's table and page permissions. Core asks
+  every workspace-aware table, so this runs **once per editor and
+  revision**; the rows are cached (see :ref:`badge-page`). A page's rows
+  are the subset core would select for the page — the page the version
+  lives on (the target page of a move), the page record and its
+  translations, and the root-level records of tables that ignore the
+  root-level restriction — the rules of ``selectVersionsInWorkspace()``
+  with a page id, which ``WorkspacesModuleParityTest`` holds against the
+  module's own grid.
 - ``CollectionService`` nests every record that depends on another one below
   it — collection items, file references, inline children — the step
-  ``GridDataService`` runs before it renders the module's grid.
+  ``GridDataService`` runs before it renders the module's grid. A page's
+  nested tree is cached for the revision as well.
 
 An entry is one row of that grid's top level; the versions nested below it
 come with it and are published with it. A changed collection item or file
@@ -90,11 +98,11 @@ stamp includes both. Clients compare the stamp instead of diffing lists.
 Caching
 -------
 
-Core's list depends on the editor's permissions, so the whole-workspace
-count and the page summary (count and changed records) are cached per
-editor in ``webcon_easy_workspace`` (``SimpleFileBackend``, group
-``system``) — one entry per editor and workspace, or per editor and page,
-overwritten in place. An entry is valid while the revision it was built at
+Core's list depends on the editor's permissions, so the workspace's rows,
+a page's nested tree, the whole-workspace count and the page summary (count
+and changed records) are cached per editor in ``webcon_easy_workspace``
+(``SimpleFileBackend``, group ``system``) — one entry per editor and
+workspace, or per editor and page, overwritten in place. An entry is valid while the revision it was built at
 is current, and for five minutes at most, which bounds how long a write that
 bypasses DataHandler stays unseen.
 

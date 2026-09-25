@@ -52,27 +52,42 @@ final class WorkspacesModuleParityTest extends FunctionalTestCase
         );
     }
 
+    /**
+     * The page with every kind of change, the page an element was moved
+     * away from, and a page without changes: a page's rows are taken from
+     * one scan of the whole workspace, so each has to match what core
+     * selects for that page alone.
+     */
     #[Test]
     public function aPageListsTheModulesRowsForThatPage(): void
     {
-        $grid = $this->moduleGrid(2);
-        $moduleRows = [];
-        foreach ($grid['data'] as $row) {
-            if ((int)($row['Workspaces_CollectionLevel'] ?? 0) === 0) {
-                $moduleRows[] = $row['table'] . ':' . $row['uid'];
+        foreach ([2, 3, 4] as $pageUid) {
+            $grid = $this->moduleGrid($pageUid);
+            $moduleRows = [];
+            foreach ($grid['data'] as $row) {
+                if ((int)($row['Workspaces_CollectionLevel'] ?? 0) === 0) {
+                    $moduleRows[] = $row['table'] . ':' . $row['uid'];
+                }
             }
+
+            $items = $this->get(PendingItemsService::class)->payloadForPage($pageUid, PendingItemsMode::Changed)->items;
+            $toolbarRows = array_map(static fn($item): string => $item->table . ':' . $item->workspaceUid, $items);
+
+            sort($moduleRows);
+            sort($toolbarRows);
+            self::assertSame($moduleRows, $toolbarRows, 'page ' . $pageUid);
         }
 
-        $items = $this->get(PendingItemsService::class)->payloadForPage(2, PendingItemsMode::Changed)->items;
-        $toolbarRows = array_map(static fn($item): string => $item->table . ':' . $item->workspaceUid, $items);
-
-        sort($moduleRows);
-        sort($toolbarRows);
-        self::assertSame($moduleRows, $toolbarRows);
+        $toolbarRows = array_map(
+            static fn($item): string => $item->table . ':' . $item->workspaceUid,
+            $this->get(PendingItemsService::class)->payloadForPage(2, PendingItemsMode::Changed)->items,
+        );
         // The changes that did not count before: collection item A's draft
         // and element 27's new image, both of elements without a draft.
         self::assertContains('tx_easyws_item:31', $toolbarRows);
         self::assertContains('sys_file_reference:72', $toolbarRows);
+        // The move is listed on its target page only.
+        self::assertContains('tt_content:24', $toolbarRows);
     }
 
     /**

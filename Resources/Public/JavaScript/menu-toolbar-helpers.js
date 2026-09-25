@@ -55,26 +55,75 @@ export function relativeTime(host, timestampSeconds, nowMs = Date.now()) {
 }
 
 /**
- * Group the changed rows for rendering: one group for the page or news
- * record the list is scoped to, plus one for workspace-wide file
- * metadata rows that have no page.
+ * The site language of a row, or null for a record without a language
+ * field (or one of a language the site no longer knows).
  *
- * @returns {Array<{key: string, icon: string, title: string, path: string, rows: object[]}>}
+ * @returns {{uid: number, title: string, flag: string}|null}
+ */
+export function rowLanguage(host, item) {
+  const uid = item?.languageUid;
+  if (!Number.isInteger(uid) || uid < 0) return null;
+  return host.languages?.[uid] || null;
+}
+
+/**
+ * The languages the editor's module shows, or null when the module shows
+ * no particular language.
+ */
+export function viewLanguages(host) {
+  return Array.isArray(host.viewLanguages) && host.viewLanguages.length > 0 ? host.viewLanguages : null;
+}
+
+/**
+ * Whether the page, as the editor currently sees it, shows this row. A row
+ * without a language, or a module without a language, is always in view.
+ */
+export function isInView(host, item) {
+  const view = viewLanguages(host);
+  const language = rowLanguage(host, item);
+  return view === null || language === null || view.includes(language.uid);
+}
+
+/**
+ * The language a row is measured against: the one language of the view,
+ * or the default language when the view shows several or none.
+ */
+export function primaryViewLanguage(host) {
+  const view = viewLanguages(host);
+  return view !== null && view.length === 1 ? view[0] : 0;
+}
+
+/**
+ * Group the changed rows for rendering: the page or news record the list
+ * is scoped to — its rows in the current view first, then the rows of
+ * other languages, one group per language — and, when present, the
+ * workspace-wide file metadata rows that have no page.
+ *
+ * @returns {Array<{key: string, icon: string, title: string, path: string, rows: object[], otherLanguages: Array<{key: string, language: {uid: number, title: string, flag: string}, rows: object[]}>}>}
  */
 export function groupRows(host) {
-  const rows = (host.changedItemGroups || []).flatMap((group) => (Array.isArray(group.items) ? group.items : []));
+  const rows = (host.items || []).filter((item) => item?.isChanged);
   const standalone = rows.filter((row) => row.table === 'sys_file_metadata');
   const contextRows = rows.filter((row) => row.table !== 'sys_file_metadata');
   const groups = [];
   if (contextRows.length > 0) {
     const record = host.contextRecord || {};
     const isNews = host.newsUid > 0;
+    const byLanguage = new Map();
+    for (const row of contextRows.filter((row) => !isInView(host, row))) {
+      const language = rowLanguage(host, row);
+      if (!byLanguage.has(language.uid)) {
+        byLanguage.set(language.uid, { key: `language:${language.uid}`, language, rows: [] });
+      }
+      byLanguage.get(language.uid).rows.push(row);
+    }
     groups.push({
       key: 'context',
       icon: record.iconIdentifier || (isNews ? 'content-news' : 'apps-pagetree-page-default'),
       title: record.title || label(host, isNews ? 'context.news' : 'context.page', { uid: isNews ? host.newsUid : host.pageUid }),
       path: record.path || '',
-      rows: contextRows,
+      rows: contextRows.filter((row) => isInView(host, row)),
+      otherLanguages: Array.from(byLanguage.values()).sort((a, b) => a.language.uid - b.language.uid),
     });
   }
   if (standalone.length > 0) {
@@ -84,6 +133,7 @@ export function groupRows(host) {
       title: label(host, 'toolbar.group.files'),
       path: '',
       rows: standalone,
+      otherLanguages: [],
     });
   }
   return groups;

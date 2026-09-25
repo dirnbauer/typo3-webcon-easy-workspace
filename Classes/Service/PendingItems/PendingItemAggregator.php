@@ -136,15 +136,14 @@ final readonly class PendingItemAggregator
             $preservedBadges = $base->changeBadges;
             $preservedPublishRecords = $this->withoutConceptualPublishRecords($base->publishRecords, $incoming->table, $incoming->liveUid);
             $preservedChangeRecords = $this->withoutConceptualChangeRecords($base->changeRecords, $incoming->table, $incoming->liveUid);
-            $base = $this->replaceCoreFields($base, $incoming);
-            $base = $this->withAggregatedFields(
-                $base,
-                isChanged: true,
-                childChanges: $base->childChanges,
-                changeBadges: $preservedBadges,
-                publishRecords: $preservedPublishRecords,
-                changeRecords: $preservedChangeRecords,
-            );
+            // The newer version's fields, with what was aggregated so far.
+            $base = $incoming->with([
+                'isChanged' => true,
+                'childChanges' => $base->childChanges,
+                'changeBadges' => $preservedBadges,
+                'publishRecords' => $preservedPublishRecords,
+                'changeRecords' => $preservedChangeRecords,
+            ]);
         }
 
         $childChanges = $this->mergeChildChanges(
@@ -154,14 +153,13 @@ final readonly class PendingItemAggregator
                 : $incoming->childChanges,
         );
 
-        return $this->withAggregatedFields(
-            $base,
-            isChanged: $base->isChanged || $incomingChanged,
-            childChanges: $childChanges,
-            changeBadges: $this->mergeChangeBadges($base->changeBadges, $incoming->changeBadges),
-            publishRecords: $this->mergeRecordReferences($base->publishRecords, $incoming->publishRecords),
-            changeRecords: $this->mergeChangeRecords($base->changeRecords, $incoming->changeRecords),
-        );
+        return $base->with([
+            'isChanged' => $base->isChanged || $incomingChanged,
+            'childChanges' => $childChanges,
+            'changeBadges' => $this->mergeChangeBadges($base->changeBadges, $incoming->changeBadges),
+            'publishRecords' => $this->mergeRecordReferences($base->publishRecords, $incoming->publishRecords),
+            'changeRecords' => $this->mergeChangeRecords($base->changeRecords, $incoming->changeRecords),
+        ]);
     }
 
     /**
@@ -252,95 +250,5 @@ final readonly class PendingItemAggregator
             $records,
             static fn(PendingChangeRecord $record): bool => $record->table !== $table || $record->liveUid !== $liveUid,
         ));
-    }
-
-    private function replaceCoreFields(PendingItem $base, PendingItem $incoming): PendingItem
-    {
-        return new PendingItem(
-            table: $incoming->table,
-            liveUid: $incoming->liveUid,
-            workspaceUid: $incoming->workspaceUid,
-            title: $incoming->title,
-            kindKey: $incoming->kindKey,
-            kindLabel: $incoming->kindLabel,
-            badge: $incoming->badge,
-            iconIdentifier: $incoming->iconIdentifier,
-            thumbnailUrl: $incoming->thumbnailUrl,
-            isPrimary: $incoming->isPrimary,
-            isChanged: $incoming->isChanged,
-            isHidden: $incoming->isHidden,
-            tableLabel: $incoming->tableLabel,
-            typeLabel: $incoming->typeLabel,
-            editUrl: $incoming->editUrl,
-            contextualEditUrl: $incoming->contextualEditUrl,
-            historyUrl: $incoming->historyUrl,
-            diff: $incoming->diff,
-            changeBadges: $incoming->changeBadges,
-            childChanges: $incoming->childChanges,
-            publishRecords: $incoming->publishRecords,
-            changeRecords: $incoming->changeRecords,
-            historyDiffCount: $incoming->historyDiffCount,
-            colPos: $incoming->colPos,
-            colPosLabel: $incoming->colPosLabel,
-            locateTable: $incoming->locateTable,
-            locateLiveUid: $incoming->locateLiveUid,
-            locateWorkspaceUid: $incoming->locateWorkspaceUid,
-            tstamp: $incoming->tstamp,
-            latestChangeAt: $incoming->latestChangeAt,
-            latestChangeUserUid: $incoming->latestChangeUserUid,
-            latestChangeUser: $incoming->latestChangeUser,
-            stageId: $incoming->stageId,
-        );
-    }
-
-    /**
-     * @param list<PendingChildChange> $childChanges
-     * @param list<array{kindKey: string, kindLabel: string, badge: string}> $changeBadges
-     * @param list<PendingRecordReference> $publishRecords
-     * @param list<PendingChangeRecord> $changeRecords
-     */
-    private function withAggregatedFields(
-        PendingItem $item,
-        bool $isChanged,
-        array $childChanges,
-        array $changeBadges,
-        array $publishRecords,
-        array $changeRecords,
-    ): PendingItem {
-        return new PendingItem(
-            table: $item->table,
-            liveUid: $item->liveUid,
-            workspaceUid: $item->workspaceUid,
-            title: $item->title,
-            kindKey: $item->kindKey,
-            kindLabel: $item->kindLabel,
-            badge: $item->badge,
-            iconIdentifier: $item->iconIdentifier,
-            thumbnailUrl: $item->thumbnailUrl,
-            isPrimary: $item->isPrimary,
-            isChanged: $isChanged,
-            isHidden: $item->isHidden,
-            tableLabel: $item->tableLabel,
-            typeLabel: $item->typeLabel,
-            editUrl: $item->editUrl,
-            contextualEditUrl: $item->contextualEditUrl,
-            historyUrl: $item->historyUrl,
-            diff: $item->diff,
-            changeBadges: $changeBadges,
-            childChanges: $childChanges,
-            publishRecords: $publishRecords,
-            changeRecords: $changeRecords,
-            historyDiffCount: $item->historyDiffCount,
-            colPos: $item->colPos,
-            colPosLabel: $item->colPosLabel,
-            locateTable: $item->locateTable,
-            locateLiveUid: $item->locateLiveUid,
-            locateWorkspaceUid: $item->locateWorkspaceUid,
-            tstamp: $item->tstamp,
-            latestChangeAt: $item->latestChangeAt,
-            latestChangeUserUid: $item->latestChangeUserUid,
-            latestChangeUser: $item->latestChangeUser,
-            stageId: $item->stageId,
-        );
     }
 }

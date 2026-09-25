@@ -2,6 +2,55 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.9.0] — 2026-09-25
+
+The dropdown tells the changes of the language the editor is looking at
+from the ones of other languages, reads as one page instead of a stack of
+chips, and asks the server a lot less.
+
+### Added
+
+- **Languages.** Every row carries its language. The list is split into the
+  rows the page shows in the editor's current view — the languages selected
+  in the page module or the Visual Editor, read from core's module data —
+  and, set apart under their language, the rows the page only shows after
+  a language switch. Those stay selected and publish with the rest; the
+  section says why they are not to be seen. In a module without a language
+  (a record list) every row is listed, the rows of other languages with a
+  flag chip. `/items` takes `module` (the identifier of the module in the
+  content frame) and returns `languages` (the site's) and `viewLanguages`.
+- A collection item or file reference listed on its own names the element
+  it belongs to ("in …"), from core's reference index.
+
+### Changed
+
+- **Header.** The workspace name is the title, one sentence sums up the
+  numbers ("3 changes on this page · 12 more elsewhere in the workspace"),
+  the stage is a labelled badge.
+- **Rows.** Change types are core badges (as in the module), actions are
+  core's borderless buttons, the empty and error states use core icons; no
+  own pills, frames, mask gradients or shimmer.
+- The type line of a Content Blocks collection row shows the table's title
+  instead of the raw type value.
+- `/items` returns the items once, in what the dropdown renders; the
+  module's groups and the per-record change lists with their URLs stay with
+  the module (a page of five changes: 8 KB instead of 50 KB).
+
+### Performance
+
+- **One core scan per revision.** `WorkspaceService::selectVersionsInWorkspace()`
+  runs for the whole workspace once per editor and revision; the workspace
+  total, a page's count and a page's list are taken from that scan (a page's
+  rows are the subset core selects for the page: the page the version lives
+  on, the page record and its translations, root-level records of tables
+  that ignore the root-level restriction). A page's nested tree is cached
+  as well. Lab, page with 10 changes in four languages: badge after a write
+  1,801 → 1,332 queries (about 550 → 450 ms), list on open 1,044 → 280
+  queries (286 → 130 ms); a cached badge stays at 6 queries.
+- The list's per-row history reads the change log once without formatting
+  or diffing every field of every entry (`RecordHistoryTimelineService::summary()`),
+  and backend user names are read once per request.
+
 ## [1.8.0] — 2026-09-25
 
 Easy Workspace now shows the Workspaces module's data instead of collecting

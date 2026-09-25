@@ -95,7 +95,9 @@ final readonly class PendingItemTimelineResolver
     }
 
     /**
-     * @param list<array{actionKey: string, diffs: list<array{field: string}>}> $timeline
+     * Distinct fields the record's edits touched (see RecordHistoryTimelineService::summary()).
+     *
+     * @param list<array{actionKey: string, fields: list<string>}> $timeline
      */
     public function countModifiedFieldsInTimeline(array $timeline): int
     {
@@ -104,11 +106,8 @@ final readonly class PendingItemTimelineResolver
             if (Value::string($entry['actionKey'] ?? null) !== 'modified') {
                 continue;
             }
-            foreach ($this->listArray($entry['diffs'] ?? null) as $diff) {
-                if (!is_array($diff)) {
-                    continue;
-                }
-                $field = Value::string($diff['field'] ?? null);
+            foreach ($this->listArray($entry['fields'] ?? null) as $field) {
+                $field = Value::string($field);
                 if ($field !== '') {
                     $fields[$field] = true;
                 }

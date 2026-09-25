@@ -120,13 +120,20 @@ final readonly class PendingItemsPayload
     }
 
     /**
-     * @return array<string, mixed>
+     * The dropdown's list: the items, once, in what the dropdown needs. The
+     * module's groups repeat every item and stay with the module.
+     *
+     * @return array{workspaceId: int, workspaceTitle: string, pageUid?: int, newsUid?: int, items: list<array<string, mixed>>, mode: string}
      */
-    public function toToolbarClientArray(ToolbarContext $context, bool $includeDiff = false): array
+    public function toToolbarArray(ToolbarContext $context): array
     {
-        return $context === ToolbarContext::News
-            ? $this->toNewsClientArray($includeDiff)
-            : $this->toPageClientArray($includeDiff);
+        return [
+            'workspaceId' => $this->workspaceId,
+            'workspaceTitle' => $this->workspaceTitle,
+            ...($context === ToolbarContext::News ? ['newsUid' => $this->newsUid ?? 0] : ['pageUid' => $this->pageUid ?? 0]),
+            'items' => array_map(static fn(PendingItem $item): array => $item->toToolbarArray(), $this->items),
+            'mode' => $this->mode->value,
+        ];
     }
 
     /**

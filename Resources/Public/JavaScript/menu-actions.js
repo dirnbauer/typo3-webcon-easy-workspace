@@ -2,7 +2,7 @@ import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
 
 import { ENDPOINTS } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
-import { detectContext, label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
+import { detectContext, detectModule, label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 import { broadcastDeclineState } from '@webconsulting/webcon-easy-workspace/menu-decline-sync.js';
 import {
   key,
@@ -61,6 +61,36 @@ function contextQuery(context, extra = {}) {
 }
 
 /**
+ * The site's languages of the list, keyed by language id.
+ */
+function languageMap(raw) {
+  const map = {};
+  for (const language of Array.isArray(raw) ? raw : []) {
+    const uid = Number(language?.uid);
+    if (!Number.isInteger(uid) || uid < 0) continue;
+    map[uid] = { uid, title: String(language.title || ''), flag: String(language.flag || '') };
+  }
+  return map;
+}
+
+/**
+ * The languages the editor's module shows, or null when it shows no
+ * particular language (a record list, the dashboard).
+ */
+function viewLanguageList(raw) {
+  if (!Array.isArray(raw)) return null;
+  const ids = raw.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id >= 0);
+  return ids.length > 0 ? ids : [0];
+}
+
+function clearList(host) {
+  host.items = [];
+  host.languages = {};
+  host.viewLanguages = null;
+  host.viewModule = '';
+}
+
+/**
  * Refresh the context-scoped list. Never touches the badge count — that
  * is BadgeSync's job (menu-badge.js): the response's `badge` block is
  * returned for BadgeSync to apply, which is also how BadgeSync uses this as
@@ -71,8 +101,7 @@ export async function refresh(host, options = {}) {
   const requestId = nextRefreshRequestId(host);
   if (!ENDPOINTS.items) {
     host.state = 'error';
-    host.items = [];
-    host.changedItemGroups = [];
+    clearList(host);
     resetSelection(host);
     notifyView(host);
     return null;
@@ -86,8 +115,7 @@ export async function refresh(host, options = {}) {
   const context = currentToolbarContext(host);
   if (!context.hasContext) {
     host.state = 'no-context';
-    host.items = [];
-    host.changedItemGroups = [];
+    clearList(host);
     host.contextRecord = null;
     host.stage = null;
     resetSelection(host);
@@ -98,7 +126,7 @@ export async function refresh(host, options = {}) {
 
   try {
     const response = await new AjaxRequest(ENDPOINTS.items)
-      .withQueryArguments(contextQuery(context))
+      .withQueryArguments(contextQuery(context, { module: detectModule() }))
       .get();
     const data = await response.resolve();
     if (!isCurrentRefreshRequest(host, requestId)) {
@@ -106,7 +134,9 @@ export async function refresh(host, options = {}) {
     }
     host.context = data.context;
     host.items = Array.isArray(data.items) ? data.items : [];
-    host.changedItemGroups = Array.isArray(data.changedItemGroups) ? data.changedItemGroups : [];
+    host.languages = languageMap(data.languages);
+    host.viewLanguages = viewLanguageList(data.viewLanguages);
+    host.viewModule = typeof data.viewModule === 'string' ? data.viewModule : '';
     host.contextRecord = data.contextRecord && typeof data.contextRecord === 'object' ? data.contextRecord : null;
     host.stage = data.stage && typeof data.stage === 'object' ? data.stage : null;
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
@@ -125,7 +155,7 @@ export async function refresh(host, options = {}) {
     }
     console.error('[easy-workspace] items request failed', error);
     host.state = 'error';
-    host.changedItemGroups = [];
+    clearList(host);
     resetSelection(host);
     notifyView(host);
     return null;

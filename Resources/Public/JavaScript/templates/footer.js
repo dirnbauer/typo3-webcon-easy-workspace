@@ -43,7 +43,7 @@ function renderPreviewSplit(host) {
 function renderSelectAll(host, { total, selectedCount, allChecked, someChecked }) {
   const inputId = `${host.titleId}-select-all`;
   return html`
-    <div class="form-check wew-menu__selectall">
+    <div class="wew-menu__selectall form-check">
       <input type="checkbox"
              class="form-check-input"
              id=${inputId}
@@ -54,8 +54,8 @@ function renderSelectAll(host, { total, selectedCount, allChecked, someChecked }
              @change=${(event) => host.handleSelectAll(event)} />
       <label class="form-check-label" for=${inputId}>
         ${allChecked ? label(host, 'toolbar.deselectAll') : label(host, 'toolbar.selectAll')}
-        <span class="wew-menu__count" data-wew-selection-count><strong>${selectedCount}</strong>/${total}</span>
       </label>
+      <span class="wew-menu__count" data-wew-selection-count>${label(host, 'toolbar.selection.count', { selected: selectedCount, total })}</span>
     </div>
   `;
 }

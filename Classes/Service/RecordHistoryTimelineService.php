@@ -49,7 +49,58 @@ final readonly class RecordHistoryTimelineService
         private DiffUtility $diffUtility,
         private Context $context,
         private LocalizationService $localizationService,
+        private BackendUserNames $userNames,
     ) {}
+
+    /**
+     * The record's workspace edits reduced to when, by whom, what kind, and
+     * which fields — for a list row, which names the latest change and the
+     * kinds of change but shows no values. Reads the same change log as
+     * build() without formatting or diffing a single value.
+     *
+     * @param int $uid The workspace-version uid
+     * @return list<array{historyUid: int, tstamp: int, actionKey: string, userUid: int, user: string, fields: list<string>}>
+     */
+    public function summary(string $table, int $uid): array
+    {
+        $history = new RecordHistory(sprintf('%s:%d', $table, $uid));
+        $history->setMaxSteps(0);
+        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
+        $columns = Value::stringKeyArray(TcaUtility::table($table)['columns'] ?? null);
+        $entries = [];
+        foreach ($history->getChangeLog() as $rawLog) {
+            $log = Value::stringKeyArray($rawLog);
+            if ($workspaceId > 0 && Value::int($log['workspace'] ?? null) !== $workspaceId) {
+                continue;
+            }
+            $historyUid = Value::int($log['uid'] ?? null);
+            if ($historyUid <= 0) {
+                continue;
+            }
+            $old = Value::stringKeyArray($log['oldRecord'] ?? null);
+            $new = Value::stringKeyArray($log['newRecord'] ?? null);
+            $fields = [];
+            foreach (array_unique([...array_keys($old), ...array_keys($new)]) as $field) {
+                if (in_array($field, self::SKIP_FIELDS, true) || !isset($columns[$field])) {
+                    continue;
+                }
+                if (Value::string($old[$field] ?? null) !== Value::string($new[$field] ?? null)) {
+                    $fields[] = $field;
+                }
+            }
+            $userId = Value::int($log['userid'] ?? null);
+            $entries[] = [
+                'historyUid' => $historyUid,
+                'tstamp' => Value::int($log['tstamp'] ?? null),
+                'actionKey' => $this->resolveActionKey(Value::int($log['actiontype'] ?? null)),
+                'userUid' => $userId,
+                'user' => $this->userNames->name($userId),
+                'fields' => $fields,
+            ];
+        }
+
+        return $entries;
+    }
 
     /**
      * Build a timeline for $table/$uid scoped to the current
@@ -170,7 +221,7 @@ final readonly class RecordHistoryTimelineService
                 'action' => $action,
                 'actionKey' => $actionKey,
                 'userUid' => $userId,
-                'user' => $this->resolveUser($userId),
+                'user' => $this->userNames->name($userId),
                 'table' => $entryTable,
                 'uid' => $entryUid,
                 'tableLabel' => $this->resolveTableLabel($entryTable),
@@ -298,23 +349,6 @@ final readonly class RecordHistoryTimelineService
             'deleted' => $this->localizationService->translate('history.action.deleted'),
             default => $this->localizationService->translate('history.action.changed'),
         };
-    }
-
-    private function resolveUser(int $userId): string
-    {
-        if ($userId <= 0) {
-            return $this->localizationService->translate('history.user.system');
-        }
-        $row = BackendUtility::getRecord('be_users', $userId, 'realName, username');
-        if (!is_array($row)) {
-            return $this->localizationService->translate('history.user.fallback', ['uid' => $userId]);
-        }
-        $realName = trim(Value::string($row['realName'] ?? null));
-        $username = trim(Value::string($row['username'] ?? null));
-        if ($realName !== '' && $username !== '') {
-            return sprintf('%s (%s)', $realName, $username);
-        }
-        return $realName !== '' ? $realName : ($username !== '' ? $username : $this->localizationService->translate('history.user.fallback', ['uid' => $userId]));
     }
 
     private function resolveTableLabel(string $table): string

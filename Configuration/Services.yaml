@@ -17,6 +17,10 @@ services:
   # Retrieved from the container in functional tests.
   Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService:
     public: true
+  Webconsulting\WebconEasyWorkspace\Service\LanguageContext:
+    public: true
+  Webconsulting\WebconEasyWorkspace\Service\LocalizationService:
+    public: true
 
   # DataHandler instantiates its hooks through GeneralUtility::makeInstance().
   Webconsulting\WebconEasyWorkspace\Hooks\WorkspaceRevisionHook:
@@ -32,5 +36,10 @@ services:
       $cache: '@cache.webcon_easy_workspace'
 
   Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter:
+    arguments:
+      $cache: '@cache.webcon_easy_workspace'
+
+  Webconsulting\WebconEasyWorkspace\Service\PendingItems\CoreWorkspaceChanges:
+    public: true
     arguments:
       $cache: '@cache.webcon_easy_workspace'

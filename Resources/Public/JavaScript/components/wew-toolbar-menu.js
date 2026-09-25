@@ -40,7 +40,7 @@ import {
 import { onListFocusIn, onListKeydown } from '@webconsulting/webcon-easy-workspace/menu-keyboard.js';
 import { groupRows, findItemByKey } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
 import { renderHeader } from '@webconsulting/webcon-easy-workspace/templates/header.js';
-import { renderGroup } from '@webconsulting/webcon-easy-workspace/templates/group.js';
+import { renderGroup, groupRowCount } from '@webconsulting/webcon-easy-workspace/templates/group.js';
 import { renderFooter } from '@webconsulting/webcon-easy-workspace/templates/footer.js';
 import {
   renderLoading,
@@ -56,14 +56,17 @@ const ROW_EXIT_MS = 200;
  *
  * Labels and TSconfig arrive from PHP as JSON on the `config` attribute.
  * The list is fetched per page/news context; the badge is owned by
- * BadgeSync and reflects the current page or news article (the header chip
- * still names the whole-workspace total).
+ * BadgeSync and reflects the current page or news article (the header
+ * still names the whole-workspace total). Rows of languages the editor's
+ * module does not show are listed apart, under their language.
  */
 export class WebconEasyWorkspaceMenu extends LitElement {
   static properties = {
     state: { type: String },
     items: { type: Array },
-    changedItemGroups: { type: Array },
+    languages: { type: Object },
+    viewLanguages: { type: Array },
+    viewModule: { type: String },
     contextRecord: { type: Object },
     stage: { type: Object },
     workspaceId: { type: Number },
@@ -85,7 +88,9 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     super();
     this.state = 'loading';
     this.items = [];
-    this.changedItemGroups = [];
+    this.languages = {};
+    this.viewLanguages = null;
+    this.viewModule = '';
     this.contextRecord = null;
     this.stage = null;
     this.selection = new Set();
@@ -366,7 +371,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
           <ul class="wew-list" role="list" @keydown=${this.handleListKeydown} @focusin=${this.handleListFocusIn}>
             ${groups.map((group) => {
               const rendered = renderGroup(this, group, offset);
-              offset += group.rows.length;
+              offset += groupRowCount(group);
               return rendered;
             })}
           </ul>

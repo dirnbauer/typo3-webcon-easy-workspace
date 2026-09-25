@@ -44,6 +44,23 @@ final readonly class PendingChildChange
     }
 
     /**
+     * @return array{table: string, workspaceUid: int, liveUid: int, title: string, kindKey: string, kindLabel: string, tableLabel: string, thumbnailUrl: string|null}
+     */
+    public function toToolbarArray(): array
+    {
+        return [
+            'table' => $this->table,
+            'workspaceUid' => $this->workspaceUid,
+            'liveUid' => $this->liveUid,
+            'title' => $this->title,
+            'kindKey' => $this->kindKey,
+            'kindLabel' => $this->kindLabel,
+            'tableLabel' => $this->tableLabel,
+            'thumbnailUrl' => $this->thumbnailUrl,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

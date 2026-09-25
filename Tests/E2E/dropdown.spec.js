@@ -105,7 +105,7 @@ test('states render: loading skeleton, empty and error', async () => {
   await goto(page, env.recordsModule);
   await page.locator(selectors.toggle).waitFor({ timeout: 30_000 });
 
-  const emptyItems = JSON.stringify({ context: 'page', items: [], itemGroups: [], changedItemGroups: [], workspaceId: env.workspaceId });
+  const emptyItems = JSON.stringify({ context: 'page', items: [], languages: [], viewLanguages: null, workspaceId: env.workspaceId });
 
   // Loading — hold the items response back long enough to capture it.
   await page.route('**/webcon-easy-workspace/items*', async (route) => {

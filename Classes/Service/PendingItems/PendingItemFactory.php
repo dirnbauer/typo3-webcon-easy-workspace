@@ -34,6 +34,7 @@ final readonly class PendingItemFactory
         private RecordHistoryTimelineService $historyTimelineService,
         private LocalizationService $localizationService,
         private WorkspaceRecordQuery $workspaceRecordQuery,
+        private RecordParentResolver $parentResolver,
     ) {}
 
     /**
@@ -60,6 +61,8 @@ final readonly class PendingItemFactory
      *        or null when the record sits outside any column — a news
      *        article's own content elements, for instance, whose colPos is a
      *        leftover the editor never sees in a layout.
+     * @param bool $resolveParent Name the element a collection item or file
+     *        reference belongs to; off for records listed below their element.
      */
     public function buildItem(
         string $table,
@@ -70,6 +73,7 @@ final readonly class PendingItemFactory
         ?string $locateTable = null,
         ?int $locateLiveUid = null,
         ?int $locateWorkspaceUid = null,
+        bool $resolveParent = true,
     ): ?PendingItem {
         $rawUid = Value::int($row['uid'] ?? null);
         if ($rawUid <= 0 || Value::int($row['deleted'] ?? null) !== 0) {
@@ -113,7 +117,7 @@ final readonly class PendingItemFactory
         $contextualEditUrl = $countOnly ? null : $this->urlBuilder->buildContextualEditUrl($table, $liveUid);
         $historyUrl = $countOnly ? null : $this->urlBuilder->buildRecordHistoryUrl($table, $workspaceUid);
 
-        $timeline = $isChanged && !$countOnly ? $this->historyTimelineService->build($table, $workspaceUid) : [];
+        $timeline = $isChanged && !$countOnly ? $this->historyTimelineService->summary($table, $workspaceUid) : [];
         $latestChange = $this->timelineResolver->latestChangeFromTimeline($timeline, Value::int($row['tstamp'] ?? null));
         $changeBadges = $isChanged
             ? $this->timelineResolver->changeBadgesFromTimeline($timeline, $kindKey, $kindLabel, $badge)
@@ -128,6 +132,11 @@ final readonly class PendingItemFactory
             $colPos = Value::int($row['colPos'] ?? null);
             $colPosLabel = $this->labelResolver->resolveColPosLabel($colPos, $columnLabels);
         }
+        $languageField = $this->workspaceRecordQuery->languageField($table);
+        $languageUid = $languageField !== null && isset($row[$languageField]) ? Value::int($row[$languageField]) : null;
+        $parent = $resolveParent && !$countOnly
+            ? $this->parentResolver->parentOf($table, $liveUid, $workspaceUid, Value::int($row['t3ver_wsid'] ?? null))
+            : null;
 
         return new PendingItem(
             table: $table,
@@ -161,6 +170,8 @@ final readonly class PendingItemFactory
             latestChangeUserUid: $latestChange['userUid'],
             latestChangeUser: $latestChange['user'],
             stageId: Value::int($row['t3ver_stage'] ?? null),
+            languageUid: $languageUid,
+            parent: $parent,
         )->withPublishMetadata();
     }
 

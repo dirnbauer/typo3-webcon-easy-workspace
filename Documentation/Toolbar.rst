@@ -15,42 +15,74 @@ Anatomy
 =======
 
 Header
-    The title, chips for the active workspace (``enableWorkspaceChip``),
-    the stage of the listed records ("Mixed stages" when they differ) and
-    the count ("N on this page · M elsewhere", or "N pending in this
-    workspace" outside a page context), and a refresh button.
+    The workspace name as the title (``enableWorkspaceChip``; "Workspace"
+    without it), one sentence with the numbers ("N changes on this page ·
+    M more elsewhere in the workspace", or "N pending in this workspace"
+    outside a page context), the stage of the listed records as a Core
+    badge ("Mixed stages" when they differ) and a refresh button.
 
 Groups
     One group for the page or news article (record icon, title, rootline
     path, row count) and, when present, one for workspace-wide file
-    metadata records.
+    metadata records. Within the page group the rows are ordered by
+    language, see :ref:`toolbar-languages`.
 
 Rows
     A selection checkbox (a Core ``.form-check``), record icon or
-    thumbnail, title, change-type pill
-    (new / changed / deleted / moved, icons ``wew-change-*``), a meta line
-    with type, column, author and relative time, optional related child
-    records (``showSubelementsInToolbar``), and the always-visible actions:
-    edit, changes and history, discard (``enableRevert``) and show in
-    preview (``enableHoverHighlight``).
+    thumbnail, title, the change type as a Core badge (new / changed /
+    deleted / moved, the module's classes), a meta line with type, column,
+    the element a collection item or file reference belongs to ("in …"),
+    author and relative time, optional related child records
+    (``showSubelementsInToolbar``), and the always-visible actions as Core
+    borderless buttons: edit, changes and history, discard (``enableRevert``)
+    and show in preview (``enableHoverHighlight``; not offered for a row the
+    page does not show in the current language).
 
     Clicking anywhere on a row that is not a button toggles its checkbox,
     so selecting elements to publish needs no aim.
 
 Footer
-    Select-all checkbox with the ``selected/total`` counter, the primary
-    ``Publish N`` button, a Preview split button (open in a new tab or copy
-    the preview link, ``enablePreviewLink``) and an "Open module" link that
-    switches the content frame to the Easy Workspace module for the current
-    page. Select-all and ``Publish N`` are only shown while there is
-    something to select.
+    Select-all checkbox with "N of M selected", the primary ``Publish N``
+    button, a Preview split button (open in a new tab or copy the preview
+    link, ``enablePreviewLink``) and an "Open module" link that switches the
+    content frame to the Easy Workspace module for the current page.
+    Select-all and ``Publish N`` are only shown while there is something to
+    select.
 
 States
     Loading skeleton (three rows), empty ("Nothing pending"), no context
-    and error with a retry button.
+    and error with a retry button, each with a Core icon.
 
 A selected row keeps a light tint; the checkbox carries the state, since
 every changed row starts selected.
+
+..  _toolbar-languages:
+
+Languages
+=========
+
+A page with translations has changes the editor cannot see in the module's
+current language. The list tells them apart:
+
+- Every row carries the record's language (``languageUid``). The response
+  names the site's languages (``languages``: id, title, flag icon) and the
+  languages the editor's module shows (``viewLanguages``): the page module
+  and the Visual Editor keep their selected languages in core's module data
+  (``languages``, as ``PageContextFactory`` validates it); the client sends
+  the module's identifier (``module``, from Core's module router element)
+  and the server reads that module's data. A module without a language —
+  a record list, the dashboard — reports ``null``.
+- Rows of the view's languages come first, under a "shown in this view"
+  line when other languages follow. The rows the page shows only after a
+  language switch come next under "Other languages", one sub-header per
+  language (flag, title, count) and a hint that says why they are not to be
+  seen and that they publish with the rest. They start selected like every
+  other row; select-all and ``Publish N`` count them.
+- A language chip appears on a row only where its language is not obvious:
+  in a view of several languages, or in a module without one, on every row
+  that is not in the view's (or the default) language.
+
+The badge is not affected: it counts the page's changes in every language.
 
 ..  _toolbar-keyboard:
 
@@ -82,10 +114,12 @@ Styles live in four files under ``Resources/Public/Css/``:
     ``--typo3-state-*``), so light and dark schemes and site themes apply
     automatically. Extension styles only read ``--wew-*``.
 ``toolbar-menu.css``
-    The dropdown (width 440 px, min-width 320 px, max-height 62 vh, scroll fade via
-    ``mask-image``, badge pulse, row enter/exit transitions using
-    ``@starting-style`` and ``transition-behavior: allow-discrete``,
-    ``prefers-reduced-motion`` support).
+    The dropdown's layout (width 460 px, min-width 320 px, max-height
+    64 vh, badge pulse, row enter/exit transitions using ``@starting-style``
+    and ``transition-behavior: allow-discrete``, ``prefers-reduced-motion``
+    support). Badges, buttons and checkboxes are Core's own classes
+    (``.badge``, ``.btn-borderless``, ``.form-check``); the file draws no
+    gradient and no shadow of its own.
 ``module.css``
     The backend module.
 ``diff.css``
@@ -112,7 +146,8 @@ JavaScript modules
 ``menu-actions.js``
     List refresh, publish, discard, preview and module navigation.
 ``menu-selection.js``, ``menu-toolbar-helpers.js``
-    Selection state, grouping, change types, relative time.
+    Selection state, grouping by language and view, change types, relative
+    time.
 ``menu-dropdown.js``, ``menu-keyboard.js``
     Popover/Bootstrap plumbing and the roving tabindex.
 ``menu-decline-sync.js``

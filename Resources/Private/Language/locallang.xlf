@@ -2185,5 +2185,101 @@
         <target state="translated">{count, plural, one {# day ago} other {# days ago}}</target>
       </segment>
     </unit>
+    <unit id="toolbar.stage.label">
+      <segment>
+        <source>Stage: {stage}</source>
+        <target state="translated">Stage: {stage}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.page">
+      <segment>
+        <source>{count, plural, one {# change on this page} other {# changes on this page}}</source>
+        <target state="translated">{count, plural, one {# change on this page} other {# changes on this page}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.news">
+      <segment>
+        <source>{count, plural, one {# change in this article} other {# changes in this article}}</source>
+        <target state="translated">{count, plural, one {# change in this article} other {# changes in this article}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.elsewhere">
+      <segment>
+        <source>{count, plural, one {# more elsewhere in the workspace} other {# more elsewhere in the workspace}}</source>
+        <target state="translated">{count, plural, one {# more elsewhere in the workspace} other {# more elsewhere in the workspace}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.otherLanguages">
+      <segment>
+        <source>{count, plural, one {# of them in another language} other {# of them in other languages}}</source>
+        <target state="translated">{count, plural, one {# of them in another language} other {# of them in other languages}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.selection.count">
+      <segment>
+        <source>{selected} of {total} selected</source>
+        <target state="translated">{selected} of {total} selected</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.inView">
+      <segment>
+        <source>{language} · shown in this view</source>
+        <target state="translated">{language} · shown in this view</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.inViewMany">
+      <segment>
+        <source>Shown in this view</source>
+        <target state="translated">Shown in this view</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.other">
+      <segment>
+        <source>Other languages</source>
+        <target state="translated">Other languages</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.otherHint">
+      <segment>
+        <source>Not visible while the page is shown in {language}. They publish together with the rest; switch the language to see them on the page.</source>
+        <target state="translated">Not visible while the page is shown in {language}. They publish together with the rest; switch the language to see them on the page.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.otherHintMany">
+      <segment>
+        <source>Not visible in the current view. They publish together with the rest; switch the language to see them on the page.</source>
+        <target state="translated">Not visible in the current view. They publish together with the rest; switch the language to see them on the page.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.count">
+      <segment>
+        <source>{count, plural, one {# change} other {# changes}}</source>
+        <target state="translated">{count, plural, one {# change} other {# changes}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.language">
+      <segment>
+        <source>Language: {language}</source>
+        <target state="translated">Language: {language}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.partOf">
+      <segment>
+        <source>in {title}</source>
+        <target state="translated">in {title}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.notInView">
+      <segment>
+        <source>Only visible on the page in the {language} view</source>
+        <target state="translated">Only visible on the page in the {language} view</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.children">
+      <segment>
+        <source>{count, plural, one {# related change} other {# related changes}}</source>
+        <target state="translated">{count, plural, one {# related change} other {# related changes}}</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

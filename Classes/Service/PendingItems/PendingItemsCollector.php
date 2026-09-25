@@ -247,6 +247,7 @@ final readonly class PendingItemsCollector
                 locateTable: $entry->table === 'tt_content' ? 'tt_content' : null,
                 locateLiveUid: $entry->liveUid,
                 locateWorkspaceUid: $entry->workspaceUid,
+                resolveParent: false,
             );
             if ($item !== null) {
                 $items[] = $item;

@@ -118,6 +118,24 @@ export function configBool(host, key, fallback = false) {
   return Boolean(value);
 }
 
+/**
+ * Identifier of the backend module in the content frame, from Core's
+ * module router element (`<typo3-backend-module-router module="…">`). The
+ * server reads that module's selected languages from its module data.
+ */
+export function detectModule() {
+  const roots = [document];
+  try {
+    if (window.top?.document && window.top.document !== document) roots.push(window.top.document);
+  } catch { /* cross-origin */ }
+  for (const root of roots) {
+    const router = root.querySelector?.('typo3-backend-module-router');
+    const module = router?.getAttribute?.('module') || router?.module;
+    if (module) return String(module);
+  }
+  return '';
+}
+
 export function detectContext(host) {
   const configuredNewsUid = parseInt(String(host._config.newsUid || '0'), 10);
   if (configuredNewsUid > 0) {

@@ -26,6 +26,7 @@ use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary;
 use Webconsulting\WebconEasyWorkspace\Service\ContextRecordResolver;
+use Webconsulting\WebconEasyWorkspace\Service\LanguageContext;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\WorkspaceRecordQuery;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
@@ -63,14 +64,23 @@ final readonly class EasyWorkspaceAjaxController
         private ContextRecordResolver $contextRecordResolver,
         private ContextChangeSummary $contextChangeSummary,
         private StagesService $stagesService,
+        private LanguageContext $languageContext,
         private LoggerInterface $logger,
     ) {}
 
+    /**
+     * The dropdown's list for the page or news article the client reports,
+     * with the languages behind it: the site's languages and the ones the
+     * client's module (`module`, the backend module router's identifier)
+     * currently shows — so the dropdown can set apart the changes of other
+     * languages, which the page shows only after a language switch.
+     */
     public function itemsAction(ServerRequestInterface $request): ResponseInterface
     {
         $query = $request->getQueryParams();
         $newsUid = Value::int($query['newsUid'] ?? null);
         $pageUid = Value::int($query['pageUid'] ?? null);
+        $module = Value::string($query['module'] ?? null);
         $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
 
         if (!$config['enabled']) {
@@ -90,8 +100,6 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse([
                 'context' => ToolbarContext::None->value,
                 'items' => [],
-                'itemGroups' => [],
-                'changedItemGroups' => [],
                 'workspaceId' => 0,
             ]);
         }
@@ -103,7 +111,10 @@ final readonly class EasyWorkspaceAjaxController
             'context' => $context->value,
             'contextRecord' => $this->contextRecordResolver->resolve($context, $pageUid, $newsUid, $request),
             'stage' => $this->stageSummary($payload->items),
-            ...$payload->toToolbarClientArray($context, includeDiff: false),
+            'languages' => array_values($this->languageContext->languagesForPage($this->sitePageUid($context, $pageUid, $newsUid))),
+            'viewLanguages' => $this->languageContext->viewLanguages($module),
+            'viewModule' => $module,
+            ...$payload->toToolbarArray($context),
             // The list already holds this page's count: the client applies it
             // instead of asking /badge a second time.
             'badge' => $this->badgePayloadFromSummary(
@@ -112,6 +123,20 @@ final readonly class EasyWorkspaceAjaxController
                 PendingItemsService::changeSummary($payload->items),
             ),
         ]);
+    }
+
+    /**
+     * The page whose site names the languages: the page itself, or the
+     * folder a news article is stored in.
+     */
+    private function sitePageUid(ToolbarContext $context, int $pageUid, int $newsUid): int
+    {
+        if ($context === ToolbarContext::Page) {
+            return $pageUid;
+        }
+        $news = $newsUid > 0 ? BackendUtility::getRecord('tx_news_domain_model_news', $newsUid, 'pid') : null;
+
+        return is_array($news) ? Value::int($news['pid'] ?? null) : 0;
     }
 
     /**
