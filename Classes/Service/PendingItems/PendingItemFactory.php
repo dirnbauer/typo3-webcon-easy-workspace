@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service\PendingItems;
 
-use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
-use Webconsulting\WebconEasyWorkspace\Service\RecordDiffService;
 use Webconsulting\WebconEasyWorkspace\Service\RecordHistoryTimelineService;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -34,7 +32,6 @@ final readonly class PendingItemFactory
         private PendingItemUrlBuilder $urlBuilder,
         private PendingItemTimelineResolver $timelineResolver,
         private RecordHistoryTimelineService $historyTimelineService,
-        private RecordDiffService $recordDiffService,
         private LocalizationService $localizationService,
         private WorkspaceRecordQuery $workspaceRecordQuery,
     ) {}
@@ -84,14 +81,12 @@ final readonly class PendingItemFactory
             return null;
         }
 
+        // A version is a change, as it is for the Workspaces module — also
+        // one whose fields match the live record.
         $isChanged = isset($row['_ORIG_uid']) || Value::int($row['t3ver_wsid'] ?? null) > 0;
         if ($isChanged) {
             $workspaceUid = Value::int($row['_ORIG_uid'] ?? $row['uid'] ?? null);
             $liveUid = Value::int($row['t3ver_oid'] ?? null) ?: Value::int($row['uid'] ?? null);
-            if (!$this->hasEditorVisibleWorkspaceChange($table, $workspaceUid)) {
-                $isChanged = false;
-                $workspaceUid = $liveUid;
-            }
         } else {
             $workspaceUid = $rawUid;
             $liveUid = $rawUid;
@@ -167,20 +162,6 @@ final readonly class PendingItemFactory
             latestChangeUser: $latestChange['user'],
             stageId: Value::int($row['t3ver_stage'] ?? null),
         )->withPublishMetadata();
-    }
-
-    private function hasEditorVisibleWorkspaceChange(string $table, int $workspaceUid): bool
-    {
-        if ($workspaceUid <= 0) {
-            return false;
-        }
-
-        $versionRow = BackendUtility::getRecord($table, $workspaceUid);
-        if (!is_array($versionRow)) {
-            return true;
-        }
-
-        return $this->recordDiffService->hasEditorVisibleChanges($table, Value::stringKeyArray($versionRow));
     }
 
     /**

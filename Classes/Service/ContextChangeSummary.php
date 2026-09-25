@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
@@ -44,6 +45,8 @@ final readonly class ContextChangeSummary
             $workspaceId,
             $context->value,
             $context === ToolbarContext::News ? $newsUid : $pageUid,
+            // Core lists what the editor may see, so each editor has their own.
+            $this->userUid(),
             // The only settings that change what is listed.
             ($config['showHidden'] ?? true) ? '1' : '0',
             Value::int($config['maxItems'] ?? 200),
@@ -65,5 +68,12 @@ final readonly class ContextChangeSummary
         }
 
         return $summary;
+    }
+
+    private function userUid(): int
+    {
+        $user = $GLOBALS['BE_USER'] ?? null;
+
+        return $user instanceof BackendUserAuthentication ? Value::int($user->user['uid'] ?? null) : 0;
     }
 }

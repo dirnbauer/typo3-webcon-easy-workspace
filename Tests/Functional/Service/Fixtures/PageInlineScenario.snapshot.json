@@ -187,6 +187,66 @@
             },
             {
                 "table": "tt_content",
+                "liveUid": 13,
+                "workspaceUid": 14,
+                "title": "Touched but unchanged",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-x-content-text",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Page Content",
+                "typeLabel": "Regular Text Element",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": 0,
+                "colPosLabel": "Normal",
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700000300,
+                "latestChangeAt": 1700000300,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tt_content",
+                        "liveUid": 13,
+                        "workspaceUid": 14
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tt_content",
+                        "liveUid": 13,
+                        "workspaceUid": 14,
+                        "title": "Touched but unchanged",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tt_content",
                 "liveUid": 15,
                 "workspaceUid": 15,
                 "title": "New element",
@@ -366,391 +426,6 @@
                 ]
             },
             {
-                "table": "tt_content",
-                "liveUid": 27,
-                "workspaceUid": 27,
-                "title": "Element with a new image",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Regular Text Element",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72,
-                        "title": "N/A",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "File Reference",
-                        "typeLabel": "0",
-                        "thumbnailUrl": null,
-                        "tstamp": 0,
-                        "latestChangeAt": 0,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 0,
-                "colPosLabel": "Normal",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72,
-                        "title": "N/A",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 18,
-                "workspaceUid": 18,
-                "title": "Collection with an edited item",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31,
-                        "title": "Item A (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001100,
-                        "latestChangeAt": 1700001100,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31,
-                        "title": "Item A (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 19,
-                "workspaceUid": 19,
-                "title": "Collection with a new item",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32,
-                        "title": "Item new",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001200,
-                        "latestChangeAt": 1700001200,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32,
-                        "title": "Item new",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 21,
-                "workspaceUid": 21,
-                "title": "Hidden collection with an edited item",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": true,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35,
-                        "title": "Hidden parent item (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001300,
-                        "latestChangeAt": 1700001300,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35,
-                        "title": "Hidden parent item (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 22,
-                "workspaceUid": 22,
-                "title": "Collection with a new item in an extra field",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36,
-                        "title": "Extra field item",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001400,
-                        "latestChangeAt": 1700001400,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36,
-                        "title": "Extra field item",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
                 "table": "sys_file_metadata",
                 "liveUid": 60,
                 "workspaceUid": 61,
@@ -809,6 +484,306 @@
                         "historyUrl": "<url>"
                     }
                 ]
+            },
+            {
+                "table": "sys_file_reference",
+                "liveUid": 72,
+                "workspaceUid": 72,
+                "title": "N/A",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "File Reference",
+                "typeLabel": "0",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 0,
+                "latestChangeAt": 0,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "sys_file_reference",
+                        "liveUid": 72,
+                        "workspaceUid": 72
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "sys_file_reference",
+                        "liveUid": 72,
+                        "workspaceUid": 72,
+                        "title": "N/A",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 30,
+                "workspaceUid": 31,
+                "title": "Item A (draft)",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001100,
+                "latestChangeAt": 1700001100,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 30,
+                        "workspaceUid": 31
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 30,
+                        "workspaceUid": 31,
+                        "title": "Item A (draft)",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 34,
+                "workspaceUid": 35,
+                "title": "Hidden parent item (draft)",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001300,
+                "latestChangeAt": 1700001300,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 34,
+                        "workspaceUid": 35
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 34,
+                        "workspaceUid": 35,
+                        "title": "Hidden parent item (draft)",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 32,
+                "workspaceUid": 32,
+                "title": "Item new",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001200,
+                "latestChangeAt": 1700001200,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 32,
+                        "workspaceUid": 32
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 32,
+                        "workspaceUid": 32,
+                        "title": "Item new",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 36,
+                "workspaceUid": 36,
+                "title": "Extra field item",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001400,
+                "latestChangeAt": 1700001400,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 36,
+                        "workspaceUid": 36
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 36,
+                        "workspaceUid": 36,
+                        "title": "Extra field item",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
             }
         ],
         "itemGroups": [
@@ -817,7 +792,12 @@
                 "label": null,
                 "items": [
                     "pages:2/5",
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:72/72",
+                    "tx_easyws_item:30/31",
+                    "tx_easyws_item:34/35",
+                    "tx_easyws_item:32/32",
+                    "tx_easyws_item:36/36"
                 ]
             },
             {
@@ -826,20 +806,10 @@
                 "items": [
                     "tt_content:25/26",
                     "tt_content:11/12",
+                    "tt_content:13/14",
                     "tt_content:15/15",
                     "tt_content:16/17",
-                    "tt_content:23/24",
-                    "tt_content:27/27"
-                ]
-            },
-            {
-                "key": "column:1",
-                "label": "Column 1",
-                "items": [
-                    "tt_content:18/18",
-                    "tt_content:19/19",
-                    "tt_content:21/21",
-                    "tt_content:22/22"
+                    "tt_content:23/24"
                 ]
             }
         ],
@@ -849,7 +819,12 @@
                 "label": null,
                 "items": [
                     "pages:2/5",
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:72/72",
+                    "tx_easyws_item:30/31",
+                    "tx_easyws_item:34/35",
+                    "tx_easyws_item:32/32",
+                    "tx_easyws_item:36/36"
                 ]
             },
             {
@@ -858,20 +833,10 @@
                 "items": [
                     "tt_content:25/26",
                     "tt_content:11/12",
+                    "tt_content:13/14",
                     "tt_content:15/15",
                     "tt_content:16/17",
-                    "tt_content:23/24",
-                    "tt_content:27/27"
-                ]
-            },
-            {
-                "key": "column:1",
-                "label": "Column 1",
-                "items": [
-                    "tt_content:18/18",
-                    "tt_content:19/19",
-                    "tt_content:21/21",
-                    "tt_content:22/22"
+                    "tt_content:23/24"
                 ]
             }
         ],
@@ -1101,15 +1066,15 @@
             {
                 "table": "tt_content",
                 "liveUid": 13,
-                "workspaceUid": 13,
+                "workspaceUid": 14,
                 "title": "Touched but unchanged",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
                 "iconIdentifier": "mimetypes-x-content-text",
                 "thumbnailUrl": null,
                 "isPrimary": false,
-                "isChanged": false,
+                "isChanged": true,
                 "isHidden": false,
                 "tableLabel": "Page Content",
                 "typeLabel": "Regular Text Element",
@@ -1128,9 +1093,35 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
-                "changeBadges": [],
-                "publishRecords": [],
-                "changeRecords": []
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tt_content",
+                        "liveUid": 13,
+                        "workspaceUid": 14
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tt_content",
+                        "liveUid": 13,
+                        "workspaceUid": 14,
+                        "title": "Touched but unchanged",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
             },
             {
                 "table": "tt_content",
@@ -1323,7 +1314,7 @@
                 "iconIdentifier": "mimetypes-x-content-text",
                 "thumbnailUrl": null,
                 "isPrimary": false,
-                "isChanged": true,
+                "isChanged": false,
                 "isHidden": false,
                 "tableLabel": "Page Content",
                 "typeLabel": "Regular Text Element",
@@ -1331,24 +1322,7 @@
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
                 "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72,
-                        "title": "N/A",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "File Reference",
-                        "typeLabel": "0",
-                        "thumbnailUrl": null,
-                        "tstamp": 0,
-                        "latestChangeAt": 0,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
+                "childChanges": [],
                 "colPos": 0,
                 "colPosLabel": "Normal",
                 "locateTable": null,
@@ -1359,35 +1333,9 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72,
-                        "title": "N/A",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
+                "changeBadges": [],
+                "publishRecords": [],
+                "changeRecords": []
             },
             {
                 "table": "tt_content",
@@ -1434,7 +1382,7 @@
                 "iconIdentifier": "mimetypes-x-content-text",
                 "thumbnailUrl": null,
                 "isPrimary": false,
-                "isChanged": true,
+                "isChanged": false,
                 "isHidden": false,
                 "tableLabel": "Page Content",
                 "typeLabel": "Collection (stub)",
@@ -1442,24 +1390,7 @@
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
                 "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31,
-                        "title": "Item A (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001100,
-                        "latestChangeAt": 1700001100,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
+                "childChanges": [],
                 "colPos": 1,
                 "colPosLabel": "Column 1",
                 "locateTable": null,
@@ -1470,35 +1401,9 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31,
-                        "title": "Item A (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
+                "changeBadges": [],
+                "publishRecords": [],
+                "changeRecords": []
             },
             {
                 "table": "tt_content",
@@ -1511,7 +1416,7 @@
                 "iconIdentifier": "mimetypes-x-content-text",
                 "thumbnailUrl": null,
                 "isPrimary": false,
-                "isChanged": true,
+                "isChanged": false,
                 "isHidden": false,
                 "tableLabel": "Page Content",
                 "typeLabel": "Collection (stub)",
@@ -1519,24 +1424,7 @@
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
                 "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32,
-                        "title": "Item new",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001200,
-                        "latestChangeAt": 1700001200,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
+                "childChanges": [],
                 "colPos": 1,
                 "colPosLabel": "Column 1",
                 "locateTable": null,
@@ -1547,35 +1435,9 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32,
-                        "title": "Item new",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
+                "changeBadges": [],
+                "publishRecords": [],
+                "changeRecords": []
             },
             {
                 "table": "tt_content",
@@ -1622,7 +1484,7 @@
                 "iconIdentifier": "mimetypes-x-content-text",
                 "thumbnailUrl": null,
                 "isPrimary": false,
-                "isChanged": true,
+                "isChanged": false,
                 "isHidden": true,
                 "tableLabel": "Page Content",
                 "typeLabel": "Collection (stub)",
@@ -1630,24 +1492,7 @@
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
                 "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35,
-                        "title": "Hidden parent item (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001300,
-                        "latestChangeAt": 1700001300,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
+                "childChanges": [],
                 "colPos": 1,
                 "colPosLabel": "Column 1",
                 "locateTable": null,
@@ -1658,35 +1503,9 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35,
-                        "title": "Hidden parent item (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
+                "changeBadges": [],
+                "publishRecords": [],
+                "changeRecords": []
             },
             {
                 "table": "tt_content",
@@ -1699,7 +1518,7 @@
                 "iconIdentifier": "mimetypes-x-content-text",
                 "thumbnailUrl": null,
                 "isPrimary": false,
-                "isChanged": true,
+                "isChanged": false,
                 "isHidden": false,
                 "tableLabel": "Page Content",
                 "typeLabel": "Collection (stub)",
@@ -1707,24 +1526,7 @@
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
                 "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36,
-                        "title": "Extra field item",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001400,
-                        "latestChangeAt": 1700001400,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
+                "childChanges": [],
                 "colPos": 1,
                 "colPosLabel": "Column 1",
                 "locateTable": null,
@@ -1735,35 +1537,9 @@
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36,
-                        "title": "Extra field item",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
+                "changeBadges": [],
+                "publishRecords": [],
+                "changeRecords": []
             },
             {
                 "table": "sys_file_metadata",
@@ -1824,6 +1600,306 @@
                         "historyUrl": "<url>"
                     }
                 ]
+            },
+            {
+                "table": "sys_file_reference",
+                "liveUid": 72,
+                "workspaceUid": 72,
+                "title": "N/A",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "File Reference",
+                "typeLabel": "0",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 0,
+                "latestChangeAt": 0,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "sys_file_reference",
+                        "liveUid": 72,
+                        "workspaceUid": 72
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "sys_file_reference",
+                        "liveUid": 72,
+                        "workspaceUid": 72,
+                        "title": "N/A",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 30,
+                "workspaceUid": 31,
+                "title": "Item A (draft)",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001100,
+                "latestChangeAt": 1700001100,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 30,
+                        "workspaceUid": 31
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 30,
+                        "workspaceUid": 31,
+                        "title": "Item A (draft)",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 34,
+                "workspaceUid": 35,
+                "title": "Hidden parent item (draft)",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001300,
+                "latestChangeAt": 1700001300,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 34,
+                        "workspaceUid": 35
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 34,
+                        "workspaceUid": 35,
+                        "title": "Hidden parent item (draft)",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 32,
+                "workspaceUid": 32,
+                "title": "Item new",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001200,
+                "latestChangeAt": 1700001200,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 32,
+                        "workspaceUid": 32
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 32,
+                        "workspaceUid": 32,
+                        "title": "Item new",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 36,
+                "workspaceUid": 36,
+                "title": "Extra field item",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001400,
+                "latestChangeAt": 1700001400,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 36,
+                        "workspaceUid": 36
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 36,
+                        "workspaceUid": 36,
+                        "title": "Extra field item",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
             }
         ],
         "itemGroups": [
@@ -1832,7 +1908,12 @@
                 "label": null,
                 "items": [
                     "pages:2/5",
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:72/72",
+                    "tx_easyws_item:30/31",
+                    "tx_easyws_item:34/35",
+                    "tx_easyws_item:32/32",
+                    "tx_easyws_item:36/36"
                 ]
             },
             {
@@ -1842,7 +1923,7 @@
                     "tt_content:10/10",
                     "tt_content:25/26",
                     "tt_content:11/12",
-                    "tt_content:13/13",
+                    "tt_content:13/14",
                     "tt_content:15/15",
                     "tt_content:16/17",
                     "tt_content:23/24",
@@ -1868,7 +1949,12 @@
                 "label": null,
                 "items": [
                     "pages:2/5",
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:72/72",
+                    "tx_easyws_item:30/31",
+                    "tx_easyws_item:34/35",
+                    "tx_easyws_item:32/32",
+                    "tx_easyws_item:36/36"
                 ]
             },
             {
@@ -1877,27 +1963,17 @@
                 "items": [
                     "tt_content:25/26",
                     "tt_content:11/12",
+                    "tt_content:13/14",
                     "tt_content:15/15",
                     "tt_content:16/17",
-                    "tt_content:23/24",
-                    "tt_content:27/27"
-                ]
-            },
-            {
-                "key": "column:1",
-                "label": "Column 1",
-                "items": [
-                    "tt_content:18/18",
-                    "tt_content:19/19",
-                    "tt_content:21/21",
-                    "tt_content:22/22"
+                    "tt_content:23/24"
                 ]
             }
         ],
         "hasNews": false,
         "mode": "all"
     },
-    "page:2:count": 12,
+    "page:2:count": 13,
     "page:2:hasChanges": {
         "workspaceId": 1,
         "pageUid": 2,
@@ -1971,185 +2047,6 @@
                 ]
             },
             {
-                "table": "sys_file_metadata",
-                "liveUid": 60,
-                "workspaceUid": 61,
-                "title": "[No title]",
-                "kindKey": "modified",
-                "kindLabel": "Modified",
-                "badge": "info",
-                "iconIdentifier": "mimetypes-other-other",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "File Metadata",
-                "typeLabel": "0",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [],
-                "colPos": null,
-                "colPosLabel": null,
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 0,
-                "latestChangeAt": 0,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61,
-                        "title": "[No title]",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            }
-        ],
-        "itemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "sys_file_metadata:60/61"
-                ]
-            },
-            {
-                "key": "column:0",
-                "label": "Normal",
-                "items": [
-                    "tt_content:25/26"
-                ]
-            }
-        ],
-        "changedItemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "sys_file_metadata:60/61"
-                ]
-            },
-            {
-                "key": "column:0",
-                "label": "Normal",
-                "items": [
-                    "tt_content:25/26"
-                ]
-            }
-        ],
-        "hasNews": false,
-        "mode": "changed"
-    },
-    "page:3:changed": {
-        "workspaceId": 1,
-        "workspaceTitle": "Workspace One",
-        "pageUid": 3,
-        "languageUid": null,
-        "items": [
-            {
-                "table": "pages",
-                "liveUid": 3,
-                "workspaceUid": 3,
-                "title": "Other page",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "apps-pagetree-page-default",
-                "thumbnailUrl": null,
-                "isPrimary": true,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page",
-                "typeLabel": "Standard Page",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 70,
-                        "workspaceUid": 71,
-                        "title": "N/A",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "File Reference",
-                        "typeLabel": "0",
-                        "thumbnailUrl": null,
-                        "tstamp": 0,
-                        "latestChangeAt": 0,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": null,
-                "colPosLabel": null,
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 70,
-                        "workspaceUid": 71
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 70,
-                        "workspaceUid": 71,
-                        "title": "N/A",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
                 "table": "tt_content",
                 "liveUid": 23,
                 "workspaceUid": 24,
@@ -2208,7 +2105,37 @@
                         "historyUrl": "<url>"
                     }
                 ]
-            },
+            }
+        ],
+        "itemGroups": [
+            {
+                "key": "column:0",
+                "label": "Normal",
+                "items": [
+                    "tt_content:25/26",
+                    "tt_content:23/24"
+                ]
+            }
+        ],
+        "changedItemGroups": [
+            {
+                "key": "column:0",
+                "label": "Normal",
+                "items": [
+                    "tt_content:25/26",
+                    "tt_content:23/24"
+                ]
+            }
+        ],
+        "hasNews": false,
+        "mode": "changed"
+    },
+    "page:3:changed": {
+        "workspaceId": 1,
+        "workspaceTitle": "Workspace One",
+        "pageUid": 3,
+        "languageUid": null,
+        "items": [
             {
                 "table": "tt_content",
                 "liveUid": 40,
@@ -2328,97 +2255,34 @@
                         "historyUrl": "<url>"
                     }
                 ]
-            }
-        ],
-        "itemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "pages:3/3",
-                    "sys_file_metadata:60/61"
-                ]
             },
             {
-                "key": "column:0",
-                "label": "Normal",
-                "items": [
-                    "tt_content:23/24",
-                    "tt_content:40/41"
-                ]
-            }
-        ],
-        "changedItemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "pages:3/3",
-                    "sys_file_metadata:60/61"
-                ]
-            },
-            {
-                "key": "column:0",
-                "label": "Normal",
-                "items": [
-                    "tt_content:23/24",
-                    "tt_content:40/41"
-                ]
-            }
-        ],
-        "hasNews": false,
-        "mode": "changed"
-    },
-    "page:3:all": {
-        "workspaceId": 1,
-        "workspaceTitle": "Workspace One",
-        "pageUid": 3,
-        "languageUid": null,
-        "items": [
-            {
-                "table": "pages",
-                "liveUid": 3,
-                "workspaceUid": 3,
-                "title": "Other page",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "apps-pagetree-page-default",
+                "table": "sys_file_reference",
+                "liveUid": 70,
+                "workspaceUid": 71,
+                "title": "N/A",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
                 "thumbnailUrl": null,
-                "isPrimary": true,
+                "isPrimary": false,
                 "isChanged": true,
                 "isHidden": false,
-                "tableLabel": "Page",
-                "typeLabel": "Standard Page",
+                "tableLabel": "File Reference",
+                "typeLabel": "0",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
                 "historyUrl": "<url>",
                 "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 70,
-                        "workspaceUid": 71,
-                        "title": "N/A",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "File Reference",
-                        "typeLabel": "0",
-                        "thumbnailUrl": null,
-                        "tstamp": 0,
-                        "latestChangeAt": 0,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
+                "childChanges": [],
                 "colPos": null,
                 "colPosLabel": null,
                 "locateTable": null,
                 "locateLiveUid": null,
                 "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
+                "tstamp": 0,
+                "latestChangeAt": 0,
                 "latestChangeUserUid": 0,
                 "latestChangeUser": "",
                 "stageId": 0,
@@ -2451,6 +2315,84 @@
                         "historyUrl": "<url>"
                     }
                 ]
+            }
+        ],
+        "itemGroups": [
+            {
+                "key": "records",
+                "label": null,
+                "items": [
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:70/71"
+                ]
+            },
+            {
+                "key": "column:0",
+                "label": "Normal",
+                "items": [
+                    "tt_content:40/41"
+                ]
+            }
+        ],
+        "changedItemGroups": [
+            {
+                "key": "records",
+                "label": null,
+                "items": [
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:70/71"
+                ]
+            },
+            {
+                "key": "column:0",
+                "label": "Normal",
+                "items": [
+                    "tt_content:40/41"
+                ]
+            }
+        ],
+        "hasNews": false,
+        "mode": "changed"
+    },
+    "page:3:all": {
+        "workspaceId": 1,
+        "workspaceTitle": "Workspace One",
+        "pageUid": 3,
+        "languageUid": null,
+        "items": [
+            {
+                "table": "pages",
+                "liveUid": 3,
+                "workspaceUid": 3,
+                "title": "Other page",
+                "kindKey": "live",
+                "kindLabel": "Live",
+                "badge": "secondary",
+                "iconIdentifier": "apps-pagetree-page-default",
+                "thumbnailUrl": null,
+                "isPrimary": true,
+                "isChanged": false,
+                "isHidden": false,
+                "tableLabel": "Page",
+                "typeLabel": "Standard Page",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700000000,
+                "latestChangeAt": 1700000000,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [],
+                "publishRecords": [],
+                "changeRecords": []
             },
             {
                 "table": "tt_content",
@@ -2665,66 +2607,12 @@
                         "historyUrl": "<url>"
                     }
                 ]
-            }
-        ],
-        "itemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "pages:3/3",
-                    "sys_file_metadata:60/61"
-                ]
             },
             {
-                "key": "column:0",
-                "label": "Normal",
-                "items": [
-                    "tt_content:23/24",
-                    "tt_content:40/41",
-                    "tt_content:42/42"
-                ]
-            }
-        ],
-        "changedItemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "pages:3/3",
-                    "sys_file_metadata:60/61"
-                ]
-            },
-            {
-                "key": "column:0",
-                "label": "Normal",
-                "items": [
-                    "tt_content:23/24",
-                    "tt_content:40/41"
-                ]
-            }
-        ],
-        "hasNews": false,
-        "mode": "all"
-    },
-    "page:3:count": 4,
-    "page:3:hasChanges": {
-        "workspaceId": 1,
-        "pageUid": 3,
-        "languageUid": null,
-        "hasChanges": true
-    },
-    "page:3:language1": {
-        "workspaceId": 1,
-        "workspaceTitle": "Workspace One",
-        "pageUid": 3,
-        "languageUid": 1,
-        "items": [
-            {
-                "table": "sys_file_metadata",
-                "liveUid": 60,
-                "workspaceUid": 61,
-                "title": "[No title]",
+                "table": "sys_file_reference",
+                "liveUid": 70,
+                "workspaceUid": 71,
+                "title": "N/A",
                 "kindKey": "modified",
                 "kindLabel": "Modified",
                 "badge": "info",
@@ -2733,7 +2621,7 @@
                 "isPrimary": false,
                 "isChanged": true,
                 "isHidden": false,
-                "tableLabel": "File Metadata",
+                "tableLabel": "File Reference",
                 "typeLabel": "0",
                 "editUrl": "<url>",
                 "contextualEditUrl": "<url>",
@@ -2759,17 +2647,17 @@
                 ],
                 "publishRecords": [
                     {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61
+                        "table": "sys_file_reference",
+                        "liveUid": 70,
+                        "workspaceUid": 71
                     }
                 ],
                 "changeRecords": [
                     {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61,
-                        "title": "[No title]",
+                        "table": "sys_file_reference",
+                        "liveUid": 70,
+                        "workspaceUid": 71,
+                        "title": "N/A",
                         "kindKey": "modified",
                         "kindLabel": "Modified",
                         "badge": "info",
@@ -2786,7 +2674,18 @@
                 "key": "records",
                 "label": null,
                 "items": [
-                    "sys_file_metadata:60/61"
+                    "pages:3/3",
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:70/71"
+                ]
+            },
+            {
+                "key": "column:0",
+                "label": "Normal",
+                "items": [
+                    "tt_content:23/24",
+                    "tt_content:40/41",
+                    "tt_content:42/42"
                 ]
             }
         ],
@@ -2795,10 +2694,37 @@
                 "key": "records",
                 "label": null,
                 "items": [
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:70/71"
+                ]
+            },
+            {
+                "key": "column:0",
+                "label": "Normal",
+                "items": [
+                    "tt_content:23/24",
+                    "tt_content:40/41"
                 ]
             }
         ],
+        "hasNews": false,
+        "mode": "all"
+    },
+    "page:3:count": 3,
+    "page:3:hasChanges": {
+        "workspaceId": 1,
+        "pageUid": 3,
+        "languageUid": null,
+        "hasChanges": true
+    },
+    "page:3:language1": {
+        "workspaceId": 1,
+        "workspaceTitle": "Workspace One",
+        "pageUid": 3,
+        "languageUid": 1,
+        "items": [],
+        "itemGroups": [],
+        "changedItemGroups": [],
         "hasNews": false,
         "mode": "changed"
     },
@@ -3066,86 +2992,9 @@
         "workspaceTitle": "Workspace One",
         "pageUid": 4,
         "languageUid": 1,
-        "items": [
-            {
-                "table": "sys_file_metadata",
-                "liveUid": 60,
-                "workspaceUid": 61,
-                "title": "[No title]",
-                "kindKey": "modified",
-                "kindLabel": "Modified",
-                "badge": "info",
-                "iconIdentifier": "mimetypes-other-other",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "File Metadata",
-                "typeLabel": "0",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [],
-                "colPos": null,
-                "colPosLabel": null,
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 0,
-                "latestChangeAt": 0,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61,
-                        "title": "[No title]",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            }
-        ],
-        "itemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "sys_file_metadata:60/61"
-                ]
-            }
-        ],
-        "changedItemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "sys_file_metadata:60/61"
-                ]
-            }
-        ],
+        "items": [],
+        "itemGroups": [],
+        "changedItemGroups": [],
         "hasNews": false,
         "mode": "changed"
     },
@@ -3337,86 +3186,9 @@
         "workspaceTitle": "Workspace One",
         "pageUid": 999,
         "languageUid": 1,
-        "items": [
-            {
-                "table": "sys_file_metadata",
-                "liveUid": 60,
-                "workspaceUid": 61,
-                "title": "[No title]",
-                "kindKey": "modified",
-                "kindLabel": "Modified",
-                "badge": "info",
-                "iconIdentifier": "mimetypes-other-other",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "File Metadata",
-                "typeLabel": "0",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [],
-                "colPos": null,
-                "colPosLabel": null,
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 0,
-                "latestChangeAt": 0,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_metadata",
-                        "liveUid": 60,
-                        "workspaceUid": 61,
-                        "title": "[No title]",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            }
-        ],
-        "itemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "sys_file_metadata:60/61"
-                ]
-            }
-        ],
-        "changedItemGroups": [
-            {
-                "key": "records",
-                "label": null,
-                "items": [
-                    "sys_file_metadata:60/61"
-                ]
-            }
-        ],
+        "items": [],
+        "itemGroups": [],
+        "changedItemGroups": [],
         "hasNews": false,
         "mode": "changed"
     },
@@ -3608,6 +3380,66 @@
             },
             {
                 "table": "tt_content",
+                "liveUid": 13,
+                "workspaceUid": 14,
+                "title": "Touched but unchanged",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-x-content-text",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Page Content",
+                "typeLabel": "Regular Text Element",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": 0,
+                "colPosLabel": "Normal",
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700000300,
+                "latestChangeAt": 1700000300,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tt_content",
+                        "liveUid": 13,
+                        "workspaceUid": 14
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tt_content",
+                        "liveUid": 13,
+                        "workspaceUid": 14,
+                        "title": "Touched but unchanged",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tt_content",
                 "liveUid": 15,
                 "workspaceUid": 15,
                 "title": "New element",
@@ -3787,391 +3619,6 @@
                 ]
             },
             {
-                "table": "tt_content",
-                "liveUid": 27,
-                "workspaceUid": 27,
-                "title": "Element with a new image",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Regular Text Element",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72,
-                        "title": "N/A",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "File Reference",
-                        "typeLabel": "0",
-                        "thumbnailUrl": null,
-                        "tstamp": 0,
-                        "latestChangeAt": 0,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 0,
-                "colPosLabel": "Normal",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "sys_file_reference",
-                        "liveUid": 72,
-                        "workspaceUid": 72,
-                        "title": "N/A",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 18,
-                "workspaceUid": 18,
-                "title": "Collection with an edited item",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31,
-                        "title": "Item A (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001100,
-                        "latestChangeAt": 1700001100,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 30,
-                        "workspaceUid": 31,
-                        "title": "Item A (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 19,
-                "workspaceUid": 19,
-                "title": "Collection with a new item",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32,
-                        "title": "Item new",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001200,
-                        "latestChangeAt": 1700001200,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 32,
-                        "workspaceUid": 32,
-                        "title": "Item new",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 22,
-                "workspaceUid": 22,
-                "title": "Collection with a new item in an extra field",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36,
-                        "title": "Extra field item",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001400,
-                        "latestChangeAt": 1700001400,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "created",
-                        "kindLabel": "Created",
-                        "badge": "success"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 36,
-                        "workspaceUid": 36,
-                        "title": "Extra field item",
-                        "kindKey": "new",
-                        "kindLabel": "New",
-                        "badge": "success",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 21,
-                "workspaceUid": 21,
-                "title": "Hidden collection with an edited item",
-                "kindKey": "live",
-                "kindLabel": "Live",
-                "badge": "secondary",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": true,
-                "tableLabel": "Page Content",
-                "typeLabel": "Collection (stub)",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35,
-                        "title": "Hidden parent item (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "tableLabel": "Collection item (stub)",
-                        "typeLabel": "tx_easyws_item",
-                        "thumbnailUrl": null,
-                        "tstamp": 1700001300,
-                        "latestChangeAt": 1700001300,
-                        "latestChangeUserUid": 0,
-                        "latestChangeUser": ""
-                    }
-                ],
-                "colPos": 1,
-                "colPosLabel": "Column 1",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000000,
-                "latestChangeAt": 1700000000,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "changeBadges": [
-                    {
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tx_easyws_item",
-                        "liveUid": 34,
-                        "workspaceUid": 35,
-                        "title": "Hidden parent item (draft)",
-                        "kindKey": "modified",
-                        "kindLabel": "Modified",
-                        "badge": "info",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
-            },
-            {
                 "table": "sys_file_metadata",
                 "liveUid": 60,
                 "workspaceUid": 61,
@@ -4230,6 +3677,306 @@
                         "historyUrl": "<url>"
                     }
                 ]
+            },
+            {
+                "table": "sys_file_reference",
+                "liveUid": 72,
+                "workspaceUid": 72,
+                "title": "N/A",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "File Reference",
+                "typeLabel": "0",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 0,
+                "latestChangeAt": 0,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "sys_file_reference",
+                        "liveUid": 72,
+                        "workspaceUid": 72
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "sys_file_reference",
+                        "liveUid": 72,
+                        "workspaceUid": 72,
+                        "title": "N/A",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 30,
+                "workspaceUid": 31,
+                "title": "Item A (draft)",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001100,
+                "latestChangeAt": 1700001100,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 30,
+                        "workspaceUid": 31
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 30,
+                        "workspaceUid": 31,
+                        "title": "Item A (draft)",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 34,
+                "workspaceUid": 35,
+                "title": "Hidden parent item (draft)",
+                "kindKey": "modified",
+                "kindLabel": "Modified",
+                "badge": "info",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001300,
+                "latestChangeAt": 1700001300,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 34,
+                        "workspaceUid": 35
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 34,
+                        "workspaceUid": 35,
+                        "title": "Hidden parent item (draft)",
+                        "kindKey": "modified",
+                        "kindLabel": "Modified",
+                        "badge": "info",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 32,
+                "workspaceUid": 32,
+                "title": "Item new",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001200,
+                "latestChangeAt": 1700001200,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 32,
+                        "workspaceUid": 32
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 32,
+                        "workspaceUid": 32,
+                        "title": "Item new",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
+            },
+            {
+                "table": "tx_easyws_item",
+                "liveUid": 36,
+                "workspaceUid": 36,
+                "title": "Extra field item",
+                "kindKey": "new",
+                "kindLabel": "New",
+                "badge": "success",
+                "iconIdentifier": "mimetypes-other-other",
+                "thumbnailUrl": null,
+                "isPrimary": false,
+                "isChanged": true,
+                "isHidden": false,
+                "tableLabel": "Collection item (stub)",
+                "typeLabel": "tx_easyws_item",
+                "editUrl": "<url>",
+                "contextualEditUrl": "<url>",
+                "historyUrl": "<url>",
+                "historyDiffCount": 0,
+                "childChanges": [],
+                "colPos": null,
+                "colPosLabel": null,
+                "locateTable": null,
+                "locateLiveUid": null,
+                "locateWorkspaceUid": null,
+                "tstamp": 1700001400,
+                "latestChangeAt": 1700001400,
+                "latestChangeUserUid": 0,
+                "latestChangeUser": "",
+                "stageId": 0,
+                "changeBadges": [
+                    {
+                        "kindKey": "created",
+                        "kindLabel": "Created",
+                        "badge": "success"
+                    }
+                ],
+                "publishRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 36,
+                        "workspaceUid": 36
+                    }
+                ],
+                "changeRecords": [
+                    {
+                        "table": "tx_easyws_item",
+                        "liveUid": 36,
+                        "workspaceUid": 36,
+                        "title": "Extra field item",
+                        "kindKey": "new",
+                        "kindLabel": "New",
+                        "badge": "success",
+                        "historyDiffCount": 0,
+                        "editUrl": "<url>",
+                        "contextualEditUrl": "<url>",
+                        "historyUrl": "<url>"
+                    }
+                ]
             }
         ],
         "itemGroups": [
@@ -4238,7 +3985,12 @@
                 "label": null,
                 "items": [
                     "pages:2/5",
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:72/72",
+                    "tx_easyws_item:30/31",
+                    "tx_easyws_item:34/35",
+                    "tx_easyws_item:32/32",
+                    "tx_easyws_item:36/36"
                 ]
             },
             {
@@ -4247,20 +3999,10 @@
                 "items": [
                     "tt_content:25/26",
                     "tt_content:11/12",
+                    "tt_content:13/14",
                     "tt_content:15/15",
                     "tt_content:16/17",
-                    "tt_content:23/24",
-                    "tt_content:27/27"
-                ]
-            },
-            {
-                "key": "column:1",
-                "label": "Column 1",
-                "items": [
-                    "tt_content:18/18",
-                    "tt_content:19/19",
-                    "tt_content:22/22",
-                    "tt_content:21/21"
+                    "tt_content:23/24"
                 ]
             }
         ],
@@ -4270,7 +4012,12 @@
                 "label": null,
                 "items": [
                     "pages:2/5",
-                    "sys_file_metadata:60/61"
+                    "sys_file_metadata:60/61",
+                    "sys_file_reference:72/72",
+                    "tx_easyws_item:30/31",
+                    "tx_easyws_item:34/35",
+                    "tx_easyws_item:32/32",
+                    "tx_easyws_item:36/36"
                 ]
             },
             {
@@ -4279,20 +4026,10 @@
                 "items": [
                     "tt_content:25/26",
                     "tt_content:11/12",
+                    "tt_content:13/14",
                     "tt_content:15/15",
                     "tt_content:16/17",
-                    "tt_content:23/24",
-                    "tt_content:27/27"
-                ]
-            },
-            {
-                "key": "column:1",
-                "label": "Column 1",
-                "items": [
-                    "tt_content:18/18",
-                    "tt_content:19/19",
-                    "tt_content:22/22",
-                    "tt_content:21/21"
+                    "tt_content:23/24"
                 ]
             }
         ],
@@ -4523,5 +4260,5 @@
         "hasNews": false,
         "mode": "changed"
     },
-    "page:2:countHiddenExcluded": 12
+    "page:2:countHiddenExcluded": 13
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Hooks;
 
 use TYPO3\CMS\Core\DataHandling\DataHandler;
-use Webconsulting\WebconEasyWorkspace\Service\PendingItems\WorkspaceVersionPresence;
 use Webconsulting\WebconEasyWorkspace\Service\RecordSchemaInspector;
 use Webconsulting\WebconEasyWorkspace\Service\WorkspaceRevision;
 
@@ -33,7 +32,6 @@ final readonly class WorkspaceRevisionHook
     public function __construct(
         private WorkspaceRevision $revision,
         private RecordSchemaInspector $schema,
-        private WorkspaceVersionPresence $presence,
     ) {}
 
     public function processDatamap_afterAllOperations(DataHandler $dataHandler): void
@@ -61,7 +59,6 @@ final readonly class WorkspaceRevisionHook
         if ($workspaceId <= 0 || $publishes) {
             $this->revision->bump(0);
         }
-        $this->presence->reset();
     }
 
     /**

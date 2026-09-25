@@ -8,16 +8,12 @@ use Webconsulting\WebconEasyWorkspace\Dto\PendingChangeRecord;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingChildChange;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingRecordReference;
-use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 
 final readonly class PendingItemAggregator
 {
     public function __construct(
-        private PendingItemFactory $pendingItemFactory,
         private PendingItemTimelineResolver $timelineResolver,
-        private InlineChildResolver $inlineChildResolver,
-        private WorkspaceRecordQuery $workspaceRecordQuery,
         private LocalizationService $localizationService,
     ) {}
 
@@ -112,86 +108,6 @@ final readonly class PendingItemAggregator
             $item = $this->mergeItems($item, $relatedItem);
         }
         return $item;
-    }
-
-    /**
-     * @param list<PendingItem> $items
-     * @param array<string, mixed> $config
-     * @param array<int, string> $columnLabels
-     * @return list<PendingItem>
-     */
-    public function withInlineChildParents(
-        array $items,
-        string $parentTable,
-        int $pageUid,
-        int $workspaceId,
-        PendingItemsMode $mode,
-        array $config,
-        array $columnLabels,
-        ?int $languageUid,
-        int $maxItems,
-    ): array {
-        if ($workspaceId <= 0 || $pageUid <= 0) {
-            return $items;
-        }
-
-        $items = array_values($items);
-
-        foreach ($this->inlineChildResolver->resolveChangedInlineChildItemsOnPage($parentTable, $pageUid, $workspaceId, $config, $columnLabels, $languageUid) as $parentUid => $childItems) {
-            if ($childItems === []) {
-                continue;
-            }
-            $index = $this->findItemIndexByRecordIdentity($items, $parentTable, $parentUid);
-            if ($index === null) {
-                if (count($items) >= $maxItems) {
-                    break;
-                }
-                $parentItem = $this->inlineChildResolver->resolveInlineChildParentItem($parentTable, $parentUid, $workspaceId, $config, $columnLabels);
-                if (!$parentItem instanceof PendingItem) {
-                    continue;
-                }
-                $item = $parentItem;
-            } else {
-                $item = $items[$index];
-            }
-
-            $item = $this->withRelatedChanges($item, $childItems);
-            if ($mode->includesUnchanged() || $item->isChanged) {
-                if ($index === null) {
-                    $items[] = $item;
-                } else {
-                    $items[$index] = $item;
-                }
-            }
-        }
-
-        return array_values($items);
-    }
-
-    /**
-     * @param list<PendingItem> $items
-     * @param array<string, mixed> $config
-     * @return list<PendingItem>
-     */
-    public function withStandaloneWorkspaceItems(array $items, int $workspaceId, array $config, int $maxItems): array
-    {
-        if ($workspaceId <= 0 || count($items) >= $maxItems) {
-            return $items;
-        }
-
-        foreach (WorkspaceRecordQuery::STANDALONE_WORKSPACE_TABLES as $table) {
-            foreach ($this->workspaceRecordQuery->listStandaloneWorkspaceRows($table, $workspaceId, $maxItems - count($items)) as $row) {
-                $item = $this->pendingItemFactory->buildItem($table, $row, isPrimary: false, config: $config);
-                if ($item instanceof PendingItem) {
-                    $items[] = $item;
-                }
-                if (count($items) >= $maxItems) {
-                    break 2;
-                }
-            }
-        }
-
-        return $items;
     }
 
     /**

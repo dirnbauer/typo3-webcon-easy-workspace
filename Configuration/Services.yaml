@@ -30,3 +30,7 @@ services:
   Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary:
     arguments:
       $cache: '@cache.webcon_easy_workspace'
+
+  Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter:
+    arguments:
+      $cache: '@cache.webcon_easy_workspace'

@@ -26,18 +26,20 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/Fixtures/ChangeCounterScenario.csv');
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->create('default');
+        // Core lists what the signed-in editor may see.
+        $this->setUpBackendUser(1);
     }
 
     #[Test]
-    public function countsEveryPendingVersionOfTheWorkspaceByTableAndState(): void
+    public function countsTheRowsTheWorkspacesModuleListsByTable(): void
     {
         $count = $this->get(WorkspaceChangeCounter::class)->count(4);
 
         self::assertSame(4, $count->workspaceId);
         self::assertSame(3, $count->total);
         self::assertSame(['pages' => 1, 'tt_content' => 1, 'tx_news_domain_model_news' => 1], $count->byTable);
-        self::assertSame(['new' => 1, 'changed' => 1, 'deleted' => 1, 'moved' => 0], $count->byState);
-        self::assertSame(1700000600, $count->latestChangeAt);
+        // A new record is told apart; a change and a deletion are both changes.
+        self::assertSame(['new' => 1, 'changed' => 2, 'deleted' => 0, 'moved' => 0], $count->byState);
         self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $count->stamp);
     }
 
@@ -78,7 +80,6 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
 
         $after = $counter->count(4);
         self::assertSame(3, $after->total, 'Editing an already versioned page must not add a row');
-        self::assertGreaterThan($before->latestChangeAt, $after->latestChangeAt);
         self::assertNotSame($before->stamp, $after->stamp);
     }
 
@@ -98,7 +99,7 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
         $after = $counter->count(4);
         self::assertSame(4, $after->total);
         self::assertSame(2, $after->byTable['tt_content']);
-        self::assertSame(2, $after->byState['changed']);
+        self::assertSame(3, $after->byState['changed'], 'the page, the news deletion and this edit');
         self::assertNotSame($before->stamp, $after->stamp);
     }
 }

@@ -4,27 +4,34 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service\PendingItems;
 
+use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
+use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChange;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
- * Collects pending workspace items for page or news scope and probes
- * whether a scope has publishable changes without building full rows.
+ * The toolbar's and the module's items for a page or a news article.
+ *
+ * What is changed comes from core (CoreWorkspaceChanges): the Workspaces
+ * module's rows for the page, each with the records nested below it. This
+ * class only turns them into items. In "all" mode the page's unchanged
+ * records are listed around them, in the page's order.
  */
 final readonly class PendingItemsCollector
 {
+    private const string NEWS_TABLE = 'tx_news_domain_model_news';
+
     public function __construct(
         private Context $context,
         private TcaSchemaFactory $tcaSchemaFactory,
+        private CoreWorkspaceChanges $coreWorkspaceChanges,
         private WorkspaceRecordQuery $workspaceRecordQuery,
         private PendingItemFactory $pendingItemFactory,
-        private InlineChildResolver $inlineChildResolver,
         private PendingItemAggregator $pendingItemAggregator,
-        private WorkspaceVersionPresence $presence,
     ) {}
 
     /**
@@ -33,17 +40,14 @@ final readonly class PendingItemsCollector
      */
     public function hasChangesForPage(int $pageUid, array $config = [], ?int $languageUid = null): array
     {
-        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
-        if ($workspaceId <= 0 || $pageUid <= 0) {
-            return ['workspaceId' => $workspaceId, 'pageUid' => $pageUid, 'languageUid' => $languageUid, 'hasChanges' => false];
-        }
-        $this->presence->reset();
+        $workspaceId = $this->workspaceId();
 
         return [
             'workspaceId' => $workspaceId,
             'pageUid' => $pageUid,
             'languageUid' => $languageUid,
-            'hasChanges' => $this->probePageChanges($this->resolvePageScope($pageUid, $workspaceId, $languageUid), $pageUid, $workspaceId, $languageUid),
+            'hasChanges' => $workspaceId > 0 && $pageUid > 0
+                && $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid) !== [],
         ];
     }
 
@@ -53,93 +57,15 @@ final readonly class PendingItemsCollector
      */
     public function hasChangesForNews(int $newsUid, array $config = [], ?int $languageUid = null): array
     {
-        $workspaceId = Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
-        if ($workspaceId <= 0 || $newsUid <= 0 || !$this->tcaSchemaFactory->has('tx_news_domain_model_news')) {
-            return ['workspaceId' => $workspaceId, 'newsUid' => $newsUid, 'languageUid' => $languageUid, 'hasChanges' => false];
-        }
-        $this->presence->reset();
+        $workspaceId = $this->workspaceId();
 
         return [
             'workspaceId' => $workspaceId,
             'newsUid' => $newsUid,
             'languageUid' => $languageUid,
-            'hasChanges' => $this->probeNewsChanges($this->resolveNewsScope($newsUid, $workspaceId, $languageUid), $newsUid, $workspaceId, $languageUid),
+            'hasChanges' => $workspaceId > 0 && $newsUid > 0 && $this->tcaSchemaFactory->has(self::NEWS_TABLE)
+                && $this->newsEntries($newsUid, $workspaceId, $languageUid) !== [],
         ];
-    }
-
-    private function resolvePageScope(int $pageUid, int $workspaceId, ?int $languageUid): PageCollectionScope
-    {
-        $pageRecordUid = $this->workspaceRecordQuery->resolvePageRecordUidForLanguage($pageUid, $workspaceId, $languageUid);
-        $pageRow = $pageRecordUid > 0
-            ? $this->workspaceRecordQuery->resolveRecordRow('pages', $pageRecordUid, $workspaceId)
-            : null;
-
-        return new PageCollectionScope(
-            pageRecordUid: $pageRecordUid,
-            pageRow: $pageRow,
-            contentRows: $this->workspaceRecordQuery->listAllRecordsOnPage(
-                'tt_content',
-                $pageUid,
-                $workspaceId,
-                [['colPos', 'ASC'], ['sorting', 'ASC']],
-                $languageUid,
-            ),
-        );
-    }
-
-    private function resolveNewsScope(int $newsUid, int $workspaceId, ?int $languageUid): NewsCollectionScope
-    {
-        return new NewsCollectionScope(
-            newsRecordUid: $this->workspaceRecordQuery->resolveRecordUidForLanguage('tx_news_domain_model_news', $newsUid, $workspaceId, $languageUid),
-            relatedContentRows: $this->workspaceRecordQuery->listAllRelatedRecords(
-                'tt_content',
-                'tx_news_related_news',
-                $newsUid,
-                $workspaceId,
-                [['sorting', 'ASC']],
-                $languageUid,
-            ),
-        );
-    }
-
-    private function probePageChanges(PageCollectionScope $scope, int $pageUid, int $workspaceId, ?int $languageUid): bool
-    {
-        if (
-            ($scope->pageRecordUid > 0 && $this->workspaceRecordQuery->hasWorkspaceVersionForRecord('pages', $scope->pageRecordUid, $workspaceId, $languageUid))
-            || $this->workspaceRecordQuery->hasChangedRowsRelated('tt_content', 'pid', $pageUid, $workspaceId, $languageUid)
-        ) {
-            return true;
-        }
-
-        if ($scope->pageRow !== null && $this->inlineChildResolver->hasInlineChildChangesForRows('pages', [$scope->pageRow], $workspaceId, $languageUid)) {
-            return true;
-        }
-
-        if ($this->inlineChildResolver->hasChangedInlineChildrenOnPage('tt_content', $pageUid, $workspaceId, $languageUid)) {
-            return true;
-        }
-
-        if ($this->inlineChildResolver->hasInlineChildChangesForRows('tt_content', $scope->contentRows, $workspaceId, $languageUid)) {
-            return true;
-        }
-
-        return $this->workspaceRecordQuery->hasStandaloneWorkspaceChanges($workspaceId);
-    }
-
-    private function probeNewsChanges(NewsCollectionScope $scope, int $newsUid, int $workspaceId, ?int $languageUid): bool
-    {
-        if (
-            ($scope->newsRecordUid > 0 && $this->workspaceRecordQuery->hasWorkspaceVersionForRecord('tx_news_domain_model_news', $scope->newsRecordUid, $workspaceId, $languageUid))
-            || $this->workspaceRecordQuery->hasChangedRowsRelated('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, $languageUid)
-        ) {
-            return true;
-        }
-
-        if ($this->inlineChildResolver->hasInlineChildChangesForRows('tt_content', $scope->relatedContentRows, $workspaceId, $languageUid)) {
-            return true;
-        }
-
-        return $this->workspaceRecordQuery->hasStandaloneWorkspaceChanges($workspaceId);
     }
 
     /**
@@ -154,63 +80,31 @@ final readonly class PendingItemsCollector
         ?int $languageUid,
         bool $hasNews,
     ): PendingItemsPayload {
-        $this->presence->reset();
-        $scope = $this->resolvePageScope($pageUid, $workspaceId, $languageUid);
         $maxItems = Value::int($config['maxItems'] ?? 200);
-        $items = [];
         // Column titles only label and group rows; a count does not need
         // the backend layout.
         $columnLabels = PendingItemFactory::isCountOnly($config) ? [] : $this->pendingItemFactory->resolveColumnLabels($pageUid);
-
-        if ($scope->pageRow !== null) {
-            $childItems = $this->inlineChildResolver->resolveInlineChildItems('pages', $scope->pageRow, $workspaceId, $mode, $config, languageUid: $languageUid);
-            if ($this->canBeListed($scope->pageRow, $childItems, $mode)) {
-                $pageItem = $this->pendingItemFactory->buildItem('pages', $scope->pageRow, isPrimary: true, config: $config);
-                if ($pageItem !== null) {
-                    $pageItem = $this->pendingItemAggregator->withRelatedChanges($pageItem, $childItems);
-                    if ($this->includeItem($pageItem, $mode)) {
-                        $items[] = $pageItem;
-                    }
-                }
-            }
-        }
-
-        $items = $this->collectContentRows(
-            $items,
-            $scope->contentRows,
-            $workspaceId,
-            $mode,
+        $items = $this->changedItems(
+            $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid),
             $config,
             $columnLabels,
-            $languageUid,
             $maxItems,
         );
 
-        if (count($items) < $maxItems) {
-            $items = $this->pendingItemAggregator->withInlineChildParents(
-                $items,
-                'tt_content',
-                $pageUid,
-                $workspaceId,
-                $mode,
-                $config,
-                $columnLabels,
-                $languageUid,
-                $maxItems,
-            );
+        if ($mode->includesUnchanged()) {
+            $rows = [];
+            $pageRecordUid = $this->workspaceRecordQuery->resolvePageRecordUidForLanguage($pageUid, $workspaceId, $languageUid);
+            $pageRow = $pageRecordUid > 0 ? $this->workspaceRecordQuery->resolveRecordRow('pages', $pageRecordUid, $workspaceId) : null;
+            if ($pageRow !== null) {
+                $rows[] = ['table' => 'pages', 'row' => $pageRow];
+            }
+            foreach ($this->workspaceRecordQuery->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, [['colPos', 'ASC'], ['sorting', 'ASC']], $languageUid) as $row) {
+                $rows[] = ['table' => 'tt_content', 'row' => $row];
+            }
+            $items = $this->inPageOrder($items, $rows, $config, $columnLabels, $maxItems);
         }
 
-        return $this->finalizePayload(
-            $items,
-            $workspaceId,
-            $workspaceTitle,
-            $mode,
-            $config,
-            $languageUid,
-            $maxItems,
-            pageUid: $pageUid,
-            hasNews: $hasNews,
-        );
+        return $this->payload($items, $workspaceId, $workspaceTitle, $mode, $languageUid, pageUid: $pageUid, hasNews: $hasNews);
     }
 
     /**
@@ -224,136 +118,203 @@ final readonly class PendingItemsCollector
         array $config,
         ?int $languageUid,
     ): PendingItemsPayload {
-        $this->presence->reset();
-        $scope = $this->resolveNewsScope($newsUid, $workspaceId, $languageUid);
         $maxItems = Value::int($config['maxItems'] ?? 200);
-        $items = [];
-
-        if ($scope->newsRecordUid > 0) {
-            $newsItem = $this->pendingItemFactory->resolveRecordItem('tx_news_domain_model_news', $scope->newsRecordUid, $workspaceId, isPrimary: true, config: $config);
-            if ($newsItem !== null && $this->includeItem($newsItem, $mode)) {
-                $items[] = $newsItem;
-            }
-        }
-
         // A news article's content elements are addressed through
         // tx_news_related_news, not through a backend layout column: their
         // colPos is a leftover, so neither a "Column 0" meta line nor a
         // column group belongs on them.
-        $items = $this->collectContentRows(
-            $items,
-            $scope->relatedContentRows,
-            $workspaceId,
-            $mode,
-            $config,
-            null,
-            $languageUid,
-            $maxItems,
-        );
+        $items = $this->changedItems($this->newsEntries($newsUid, $workspaceId, $languageUid), $config, null, $maxItems);
 
-        return $this->finalizePayload(
-            $items,
-            $workspaceId,
-            $workspaceTitle,
-            $mode,
-            $config,
-            $languageUid,
-            $maxItems,
-            newsUid: $newsUid,
-        );
+        if ($mode->includesUnchanged()) {
+            $rows = [];
+            $newsRecordUid = $this->workspaceRecordQuery->resolveRecordUidForLanguage(self::NEWS_TABLE, $newsUid, $workspaceId, $languageUid);
+            $newsRow = $newsRecordUid > 0 ? $this->workspaceRecordQuery->resolveRecordRow(self::NEWS_TABLE, $newsRecordUid, $workspaceId) : null;
+            if ($newsRow !== null) {
+                $rows[] = ['table' => self::NEWS_TABLE, 'row' => $newsRow];
+            }
+            foreach ($this->workspaceRecordQuery->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']], $languageUid) as $row) {
+                $rows[] = ['table' => 'tt_content', 'row' => $row];
+            }
+            $items = $this->inPageOrder($items, $rows, $config, null, $maxItems);
+        }
+
+        return $this->payload($items, $workspaceId, $workspaceTitle, $mode, $languageUid, newsUid: $newsUid);
     }
 
     /**
-     * @param list<PendingItem> $items
-     * @param list<array<string, mixed>> $contentRows
+     * Core's rows of the article's storage folder that belong to the
+     * article: its own version and its content elements' (with whatever
+     * is nested below them).
+     *
+     * @return list<WorkspaceChange>
+     */
+    private function newsEntries(int $newsUid, int $workspaceId, ?int $languageUid): array
+    {
+        $news = BackendUtility::getRecord(self::NEWS_TABLE, $newsUid, 'pid');
+        if ($workspaceId <= 0 || !is_array($news)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->coreWorkspaceChanges->entries($workspaceId, Value::int($news['pid'] ?? null), $languageUid),
+            fn(WorkspaceChange $entry): bool => $this->belongsToNews($entry, $newsUid),
+        ));
+    }
+
+    private function belongsToNews(WorkspaceChange $entry, int $newsUid): bool
+    {
+        if ($entry->table === self::NEWS_TABLE) {
+            $row = BackendUtility::getRecord(self::NEWS_TABLE, $entry->workspaceUid);
+            return $entry->liveUid === $newsUid
+                || (is_array($row) && Value::int($row['l10n_parent'] ?? null) === $newsUid);
+        }
+        if ($entry->table === 'tt_content') {
+            $row = BackendUtility::getRecord('tt_content', $entry->workspaceUid, 'tx_news_related_news');
+            return is_array($row) && Value::int($row['tx_news_related_news'] ?? null) === $newsUid;
+        }
+
+        return false;
+    }
+
+    /**
+     * One item per core row, its nested versions folded into it; the page
+     * (or article) first, then content elements by column and position,
+     * then everything else in core's order.
+     *
+     * @param list<WorkspaceChange> $entries
      * @param array<string, mixed> $config
-     * @param array<int, string>|null $columnLabels Null for records that live
-     *        outside a backend layout column (a news article's elements).
+     * @param array<int, string>|null $columnLabels Null outside a backend layout.
      * @return list<PendingItem>
      */
-    private function collectContentRows(
-        array $items,
-        array $contentRows,
-        int $workspaceId,
-        PendingItemsMode $mode,
-        array $config,
-        ?array $columnLabels,
-        ?int $languageUid,
-        int $maxItems,
-    ): array {
-        $childRows = $this->inlineChildResolver->prefetchInlineChildRows('tt_content', $contentRows, $workspaceId, $mode, $languageUid);
-        foreach ($contentRows as $index => $row) {
-            $childItems = $this->inlineChildResolver->resolveInlineChildItems(
-                'tt_content',
-                $row,
-                $workspaceId,
-                $mode,
-                $config,
-                $columnLabels ?? [],
-                $languageUid,
-                $childRows[$index] ?? [],
-            );
-            if (!$this->canBeListed($row, $childItems, $mode)) {
+    private function changedItems(array $entries, array $config, ?array $columnLabels, int $maxItems): array
+    {
+        $built = [];
+        foreach ($entries as $position => $entry) {
+            $row = BackendUtility::getRecord($entry->table, $entry->workspaceUid);
+            if (!is_array($row)) {
                 continue;
             }
-            $item = $this->pendingItemFactory->buildItem('tt_content', $row, isPrimary: false, config: $config, columnLabels: $columnLabels);
+            $row = Value::stringKeyArray($row);
+            $item = $this->pendingItemFactory->buildItem(
+                $entry->table,
+                $row,
+                isPrimary: $entry->table === 'pages' || $entry->table === self::NEWS_TABLE,
+                config: $config,
+                columnLabels: $entry->table === 'tt_content' ? $columnLabels : [],
+            );
             if ($item === null) {
                 continue;
             }
-            $item = $this->pendingItemAggregator->withRelatedChanges($item, $childItems);
-            if ($this->includeItem($item, $mode)) {
+            $item = $this->pendingItemAggregator->withRelatedChanges($item, $this->childItems($entry, $config, $columnLabels));
+            $built[] = [
+                'item' => $item,
+                'order' => [
+                    match ($entry->table) {
+                        'pages', self::NEWS_TABLE => 0,
+                        'tt_content' => 1,
+                        default => 2,
+                    },
+                    $entry->table === 'tt_content' ? Value::int($row['colPos'] ?? null) : 0,
+                    $entry->table === 'tt_content' ? Value::int($row['sorting'] ?? null) : 0,
+                    $position,
+                ],
+            ];
+        }
+        usort($built, static fn(array $a, array $b): int => $a['order'] <=> $b['order']);
+
+        return array_slice(array_column($built, 'item'), 0, $maxItems);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     * @param array<int, string>|null $columnLabels
+     * @return list<PendingItem>
+     */
+    private function childItems(WorkspaceChange $entry, array $config, ?array $columnLabels): array
+    {
+        $items = [];
+        foreach ($entry->children as $child) {
+            $row = BackendUtility::getRecord($child->table, $child->workspaceUid);
+            if (!is_array($row)) {
+                continue;
+            }
+            $item = $this->pendingItemFactory->buildItem(
+                $child->table,
+                Value::stringKeyArray($row),
+                isPrimary: false,
+                config: $config,
+                columnLabels: $columnLabels ?? [],
+                locateTable: $entry->table === 'tt_content' ? 'tt_content' : null,
+                locateLiveUid: $entry->liveUid,
+                locateWorkspaceUid: $entry->workspaceUid,
+            );
+            if ($item !== null) {
                 $items[] = $item;
             }
-            if (count($items) >= $maxItems) {
-                break;
-            }
         }
+
         return $items;
     }
 
     /**
-     * Whether building the row's item can make any difference.
+     * The scope's records in their own order, each replaced by its changed
+     * item when core lists one; changed items outside that order (nested
+     * tables, file metadata) follow.
      *
-     * In "changed" mode a row is listed only when it is changed itself or
-     * carries changed children. buildItem() calls a row changed only when
-     * it is a workspace row (t3ver_wsid) or an overlaid one (_ORIG_uid), and
-     * $childItems already holds nothing but changed children — so for a
-     * live row without them the item would be built only to be dropped.
-     * That is most rows of most pages, and each build resolves thumbnails,
-     * labels and URLs.
-     *
-     * @param array<string, mixed> $row
-     * @param list<PendingItem> $childItems
+     * @param list<PendingItem> $changedItems
+     * @param list<array{table: string, row: array<string, mixed>}> $rows
+     * @param array<string, mixed> $config
+     * @param array<int, string>|null $columnLabels
+     * @return list<PendingItem>
      */
-    private function canBeListed(array $row, array $childItems, PendingItemsMode $mode): bool
+    private function inPageOrder(array $changedItems, array $rows, array $config, ?array $columnLabels, int $maxItems): array
     {
-        return $mode->includesUnchanged()
-            || $childItems !== []
-            || isset($row['_ORIG_uid'])
-            || Value::int($row['t3ver_wsid'] ?? null) > 0;
+        $items = [];
+        foreach ($rows as ['table' => $table, 'row' => $row]) {
+            $uid = Value::int($row['_ORIG_uid'] ?? $row['uid'] ?? null);
+            $liveUid = Value::int($row['t3ver_oid'] ?? null) ?: Value::int($row['uid'] ?? null);
+            $index = $this->pendingItemAggregator->findItemIndexByRecordIdentity($changedItems, $table, $liveUid)
+                ?? $this->pendingItemAggregator->findItemIndexByRecordIdentity($changedItems, $table, $uid);
+            if ($index !== null) {
+                $items[] = $changedItems[$index];
+                unset($changedItems[$index]);
+            } else {
+                $item = $this->pendingItemFactory->buildItem(
+                    $table,
+                    $row,
+                    isPrimary: $table === 'pages' || $table === self::NEWS_TABLE,
+                    config: $config,
+                    columnLabels: $table === 'tt_content' ? $columnLabels : [],
+                );
+                if ($item !== null) {
+                    $items[] = $item;
+                }
+            }
+            if (count($items) >= $maxItems) {
+                return $items;
+            }
+        }
+
+        return array_slice([...$items, ...array_values($changedItems)], 0, $maxItems);
     }
 
     /**
      * @param list<PendingItem> $items
-     * @param array<string, mixed> $config
      */
-    private function finalizePayload(
+    private function payload(
         array $items,
         int $workspaceId,
         string $workspaceTitle,
         PendingItemsMode $mode,
-        array $config,
         ?int $languageUid,
-        int $maxItems,
         ?int $pageUid = null,
         ?int $newsUid = null,
         bool $hasNews = false,
     ): PendingItemsPayload {
-        if (count($items) < $maxItems) {
-            $items = $this->pendingItemAggregator->withStandaloneWorkspaceItems($items, $workspaceId, $config, $maxItems);
-        }
-
         $items = $this->pendingItemAggregator->deduplicateItems($items);
+        if (!$mode->includesUnchanged()) {
+            $items = $this->pendingItemAggregator->changedItems($items);
+        }
         $changedItems = $this->pendingItemAggregator->changedItems($items);
 
         return new PendingItemsPayload(
@@ -370,8 +331,8 @@ final readonly class PendingItemsCollector
         );
     }
 
-    private function includeItem(PendingItem $item, PendingItemsMode $mode): bool
+    private function workspaceId(): int
     {
-        return $mode->includesUnchanged() || $item->isChanged;
+        return Value::int($this->context->getPropertyFromAspect('workspace', 'id', 0));
     }
 }

@@ -17,7 +17,11 @@ final class PublishSelectionNormalizerTest extends UnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $GLOBALS['TCA'] = [];
+        // Selections name workspace-aware tables; anything else is dropped.
+        $GLOBALS['TCA'] = [
+            'pages' => ['ctrl' => ['versioningWS' => true]],
+            'tt_content' => ['ctrl' => ['versioningWS' => true]],
+        ];
         $this->subject = new PublishSelectionNormalizer(new WorkspaceTablePolicy());
     }
 

@@ -11,17 +11,12 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  * A token that changes whenever DataHandler wrote something a workspace's
  * pending changes can depend on.
  *
- * The badge stamp used to fingerprint only pages, tt_content and news
- * (row count and newest tstamp), so editing a Content Blocks collection item,
- * a file reference or file metadata left it unchanged: other tabs were not
- * told, and an open list did not refresh. WorkspaceRevisionHook replaces the
- * workspace's token after every DataHandler run that touches a
- * workspace-aware table, and the token of Live (0) whenever live data
- * changed — a live edit or a publish — because a workspace overlays Live.
- *
- * The badge stamp includes both tokens, which makes it exact for everything
- * written through DataHandler; the row fingerprint stays in the stamp for
- * writes that bypass it.
+ * WorkspaceRevisionHook replaces the workspace's token after every
+ * DataHandler run that touches a workspace-aware table — a collection item,
+ * a file reference and file metadata included — and the token of Live (0)
+ * whenever live data changed (a live edit or a publish), because a
+ * workspace overlays Live. The badge stamp includes both, and the cached
+ * counts are valid only for the revision they were built at.
  */
 final readonly class WorkspaceRevision
 {

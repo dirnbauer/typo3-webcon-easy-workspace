@@ -4,38 +4,31 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Service;
 
-use TYPO3\CMS\Core\Database\Connection;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
-use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
-use TYPO3\CMS\Core\Versioning\VersionState;
-use Webconsulting\WebconEasyWorkspace\Database\WorkspaceVersionConstraint;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChangeCount;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItems\CoreWorkspaceChanges;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
-use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
 /**
- * Single source of truth for the toolbar badge.
+ * The whole workspace's number of changes, as the Workspaces module counts
+ * them: its top-level rows. A changed element counts once however many of
+ * its collection items or file references changed with it; a changed item
+ * of an unchanged element is a row of its own.
  *
- * Counts every pending version of one workspace with a single aggregate
- * query per counted table (COUNT + MAX(tstamp), grouped by t3ver_state).
- * No records are materialised, and the workspace constraint is phrased for
- * core's (t3ver_oid, t3ver_wsid) index, so each query is an index range scan
- * instead of a full scan of a wide tt_content.
+ * Core's list depends on the editor's table and page permissions, so it is
+ * remembered per editor, and only until the workspace revision moves — with
+ * every DataHandler write (see WorkspaceRevision). A lifetime bounds how
+ * long a write that bypassed DataHandler stays unseen.
  */
 final readonly class WorkspaceChangeCounter
 {
-    /**
-     * Version states that represent an editor-visible pending change.
-     *
-     * @var list<int>
-     */
-    private const array COUNTED_STATES = [0, 1, 2, 4];
+    private const int LIFETIME = 300;
 
     public function __construct(
-        private ConnectionPool $connectionPool,
-        private TcaSchemaFactory $tcaSchemaFactory,
+        private CoreWorkspaceChanges $coreWorkspaceChanges,
         private WorkspaceRevision $revision,
+        private FrontendInterface $cache,
     ) {}
 
     public function count(int $workspaceId): WorkspaceChangeCount
@@ -46,99 +39,66 @@ final readonly class WorkspaceChangeCounter
         // Read before counting: a write racing this request then moves the
         // stamp on the next request instead of hiding behind this one.
         $revision = $this->revision->current($workspaceId);
+        // Keyed by workspace and editor and overwritten in place (the cache
+        // is a file backend without garbage collection); valid while the
+        // revision it was counted at is current.
+        $identifier = sha1(implode('|', ['count', $workspaceId, $this->userUid()]));
+        $cached = $this->cache->get($identifier);
+        if (is_array($cached)
+            && ($cached['revision'] ?? null) === $revision
+            && Value::int($cached['expires'] ?? null) > time()
+            && is_array($cached['byTable'] ?? null)
+            && is_array($cached['byState'] ?? null)
+        ) {
+            return $this->build($workspaceId, $revision, $cached['byTable'], $cached['byState']);
+        }
 
         $byTable = [];
         $byState = WorkspaceChangeCount::EMPTY_STATES;
-        $total = 0;
-        $latestChangeAt = 0;
-        foreach ($this->countedTables() as $table) {
-            foreach ($this->aggregate($table, $workspaceId) as $row) {
-                $state = VersionState::tryFrom(Value::int($row['t3ver_state'] ?? null));
-                $changes = Value::int($row['changes'] ?? null);
-                if ($state === null || $changes <= 0) {
-                    continue;
-                }
-                $byTable[$table] = ($byTable[$table] ?? 0) + $changes;
-                $byState[self::stateKey($state)] += $changes;
-                $total += $changes;
-                $latestChangeAt = max($latestChangeAt, Value::int($row['latest'] ?? null));
-            }
+        foreach ($this->coreWorkspaceChanges->entries($workspaceId) as $entry) {
+            $byTable[$entry->table] = ($byTable[$entry->table] ?? 0) + 1;
+            ++$byState[$entry->isNew() ? 'new' : 'changed'];
         }
+        $this->cache->set($identifier, [
+            'revision' => $revision,
+            'expires' => time() + self::LIFETIME,
+            'byTable' => $byTable,
+            'byState' => $byState,
+        ]);
+
+        return $this->build($workspaceId, $revision, $byTable, $byState);
+    }
+
+    /**
+     * @param array<mixed> $byTable
+     * @param array<mixed> $byState
+     */
+    private function build(int $workspaceId, string $revision, array $byTable, array $byState): WorkspaceChangeCount
+    {
+        $tables = [];
+        foreach ($byTable as $table => $changes) {
+            $tables[(string)$table] = Value::int($changes);
+        }
+        $states = WorkspaceChangeCount::EMPTY_STATES;
+        foreach (array_keys($states) as $state) {
+            $states[$state] = Value::int($byState[$state] ?? null);
+        }
+        $total = array_sum($tables);
 
         return new WorkspaceChangeCount(
             workspaceId: $workspaceId,
             total: $total,
-            byTable: $byTable,
-            byState: $byState,
-            latestChangeAt: $latestChangeAt,
-            stamp: WorkspaceChangeCount::stamp($workspaceId, $total, $latestChangeAt, $revision),
+            byTable: $tables,
+            byState: $states,
+            latestChangeAt: 0,
+            stamp: WorkspaceChangeCount::stamp($workspaceId, $total, 0, $revision),
         );
     }
 
-    /**
-     * Tables that contribute to the badge: the policy's badge tables that
-     * are installed and workspace-aware (news only when EXT:news exists).
-     *
-     * @return list<string>
-     */
-    public function countedTables(): array
+    private function userUid(): int
     {
-        $tables = [];
-        foreach (WorkspaceTablePolicy::BADGE_TABLES as $table) {
-            if ($this->tcaSchemaFactory->has($table) && $this->tcaSchemaFactory->get($table)->isWorkspaceAware()) {
-                $tables[] = $table;
-            }
-        }
+        $user = $GLOBALS['BE_USER'] ?? null;
 
-        return $tables;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function aggregate(string $table, int $workspaceId): array
-    {
-        $schema = $this->tcaSchemaFactory->get($table);
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
-        $queryBuilder->getRestrictions()->removeAll();
-
-        $constraints = [
-            WorkspaceVersionConstraint::rowsOf($queryBuilder, $workspaceId),
-            $queryBuilder->expr()->in('t3ver_state', $queryBuilder->createNamedParameter(self::COUNTED_STATES, Connection::PARAM_INT_ARRAY)),
-        ];
-        if ($schema->hasCapability(TcaSchemaCapability::SoftDelete)) {
-            $constraints[] = $queryBuilder->expr()->eq(
-                $schema->getCapability(TcaSchemaCapability::SoftDelete)->getFieldName(),
-                $queryBuilder->createNamedParameter(0, Connection::PARAM_INT),
-            );
-        }
-
-        $latest = $schema->hasCapability(TcaSchemaCapability::UpdatedAt)
-            ? $queryBuilder->expr()->max($schema->getCapability(TcaSchemaCapability::UpdatedAt)->getFieldName(), 'latest')
-            : '0 AS ' . $queryBuilder->quoteIdentifier('latest');
-
-        $rows = $queryBuilder
-            ->select('t3ver_state')
-            ->addSelectLiteral($queryBuilder->expr()->count('uid', 'changes'), $latest)
-            ->from($table)
-            ->where(...$constraints)
-            ->groupBy('t3ver_state')
-            ->executeQuery()
-            ->fetchAllAssociative();
-
-        return array_values(array_map(Value::stringKeyArray(...), $rows));
-    }
-
-    /**
-     * @return 'new'|'changed'|'deleted'|'moved'
-     */
-    private static function stateKey(VersionState $state): string
-    {
-        return match ($state) {
-            VersionState::NEW_PLACEHOLDER => 'new',
-            VersionState::DELETE_PLACEHOLDER => 'deleted',
-            VersionState::MOVE_POINTER => 'moved',
-            VersionState::DEFAULT_STATE => 'changed',
-        };
+        return $user instanceof BackendUserAuthentication ? Value::int($user->user['uid'] ?? null) : 0;
     }
 }

@@ -24,13 +24,13 @@ dev dependency.
 like a Content Blocks installation: 26 inline fields into two workspace-aware
 collection tables, one CType with a ``columnsOverrides`` entry.
 ``PendingItemsServicePageSnapshotTest`` compares every list, group, count and
-probe of ``PageInlineScenario.csv`` against a snapshot recorded with 1.7.2 —
-record a new one only for an intended change
-(``EASYWS_UPDATE_SNAPSHOT=1``). ``PageCollectionCostTest`` counts queries
-through a Doctrine driver middleware (``Fixtures/Database/QueryCounter``)
-and pins that children are fetched once per relation and that tables
-without workspace rows are never asked; ``WorkspaceRevisionTest`` pins when
-the stamp moves and how long the cached page count lives.
+probe of ``PageInlineScenario.csv`` against a recorded snapshot — record a
+new one only for an intended change (``EASYWS_UPDATE_SNAPSHOT=1``).
+``WorkspacesModuleParityTest`` checks the toolbar against the Workspaces
+module on the same data: the whole-workspace count against the module's
+grid total, and a page's items against the module's rows for that page.
+``WorkspaceRevisionTest`` pins when the stamp moves and how long the cached
+page count lives.
 
 JavaScript
 ----------

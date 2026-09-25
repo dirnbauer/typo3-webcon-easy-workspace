@@ -121,16 +121,21 @@ final class WorkspaceRevisionTest extends FunctionalTestCase
     {
         $this->enterWorkspace(1);
         $summary = $this->get(ContextChangeSummary::class);
-        $liveUids = static fn(?array $result): array => array_column($result['records'] ?? [], 'liveUid');
+        $records = static fn(?array $result): array => array_map(
+            static fn(array $record): string => $record['table'] . ':' . $record['liveUid'],
+            $result['records'] ?? [],
+        );
         $stamp = $this->changeCount(1)->stamp;
 
+        // As in the Workspaces module, the draft of collection item A is a
+        // row of its own while its element 18 is unchanged.
         $first = $summary->forContext(1, $stamp, 2, 0, []);
-        self::assertSame(12, $first['count'] ?? null);
-        self::assertContains(18, $liveUids($first));
+        self::assertSame(13, $first['count'] ?? null);
+        self::assertContains('tx_easyws_item:30', $records($first));
+        self::assertNotContains('tt_content:18', $records($first));
 
-        // A write that bypasses DataHandler — here the draft of collection
-        // item A, which made element 18 pending — moves nothing the stamp is
-        // made of, so the cached summary stands …
+        // A write that bypasses DataHandler — here the draft of item A —
+        // moves nothing the stamp is made of, so the cached summary stands …
         $this->get(ConnectionPool::class)->getConnectionForTable('tx_easyws_item')->update('tx_easyws_item', ['deleted' => 1], ['uid' => 31]);
         self::assertSame($stamp, $this->changeCount(1)->stamp);
         self::assertSame($first, $summary->forContext(1, $stamp, 2, 0, []));
@@ -140,8 +145,8 @@ final class WorkspaceRevisionTest extends FunctionalTestCase
         $newStamp = $this->changeCount(1)->stamp;
         self::assertNotSame($stamp, $newStamp);
         $second = $summary->forContext(1, $newStamp, 2, 0, []);
-        self::assertSame(12, $second['count'] ?? null, 'element 18 dropped out, element 13 came in');
-        self::assertNotContains(18, $liveUids($second));
-        self::assertContains(13, $liveUids($second));
+        self::assertSame(12, $second['count'] ?? null, 'item A dropped out; element 13 was listed before');
+        self::assertNotContains('tx_easyws_item:30', $records($second));
+        self::assertContains('tt_content:13', $records($second));
     }
 }

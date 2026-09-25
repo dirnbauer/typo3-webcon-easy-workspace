@@ -35,10 +35,9 @@ final readonly class WorkspaceChangeCount
     }
 
     /**
-     * Deterministic fingerprint of (workspace, total, newest tstamp) and,
-     * when given, the DataHandler revision of the workspace — which moves
-     * for inline children, file references and metadata as well, where the
-     * row fingerprint alone does not.
+     * Deterministic fingerprint of the workspace, its number of changes and
+     * its DataHandler revision (see WorkspaceRevision), which moves with
+     * every write to a workspace-aware table.
      */
     public static function stamp(int $workspaceId, int $total, int $latestChangeAt, string $revision = ''): string
     {

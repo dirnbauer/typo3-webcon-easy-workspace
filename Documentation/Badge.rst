@@ -43,90 +43,60 @@ Two numbers are computed per request:
 Server
 ======
 
+Where the changes come from
+---------------------------
+
+Easy Workspace shows the Workspaces module's data and keeps no list of its
+own. ``CoreWorkspaceChanges`` asks core the way the module does:
+
+- ``WorkspaceService::selectVersionsInWorkspace()`` finds the versions of the
+  workspace (for one page, or for the whole workspace), with the editor's
+  table and page permissions;
+- ``CollectionService`` nests every record that depends on another one below
+  it — collection items, file references, inline children — the step
+  ``GridDataService`` runs before it renders the module's grid.
+
+An entry is one row of that grid's top level; the versions nested below it
+come with it and are published with it. A changed collection item or file
+reference of an unchanged element is a row of its own, as in the module, and
+a version whose fields equal the live record's is listed too. Both core
+classes are ``@internal``: they are the module's own code path, which is the
+point.
+
 Whole workspace
 ---------------
 
 ``WorkspaceChangeCounter::count(int $workspaceId)`` returns a
-``WorkspaceChangeCount`` DTO. For every counted table it runs one aggregate
-query::
-
-    SELECT t3ver_state, COUNT(uid) AS changes, MAX(tstamp) AS latest
-    FROM <table>
-    WHERE ((t3ver_oid = 0 AND t3ver_wsid = :ws) OR (t3ver_oid > 0 AND t3ver_wsid = :ws))
-      AND deleted = 0 AND t3ver_state IN (0, 1, 2, 4)
-    GROUP BY t3ver_state
-
-The workspace condition is ``t3ver_wsid = :ws`` phrased for Core's
-``(t3ver_oid, t3ver_wsid)`` index (``WorkspaceVersionConstraint``): no index
-starts with ``t3ver_wsid``, so the plain form scans the table — 80 ms on a
-Content Blocks ``tt_content`` with 940 columns, against 0.4 ms.
-
-Counted tables are ``pages`` and ``tt_content``, plus
-``tx_news_domain_model_news`` when EXT:news is installed
-(``WorkspaceTablePolicy::BADGE_TABLES``). The change type follows
-``t3ver_state``: ``1`` new, ``2`` deleted, ``4`` moved, ``0`` changed.
+``WorkspaceChangeCount`` DTO: ``total`` is the number of top-level rows,
+``byTable`` counts them per table, ``byState`` tells new records from other
+changes. A functional test (``WorkspacesModuleParityTest``) checks the total
+against the module's own grid.
 
 ..  _badge-stamp:
 
 The stamp
 ---------
 
-The DTO carries ``total``, ``byTable``, ``byState`` and a ``stamp``:
-``sha1(workspaceId|total|maxTstamp|revision)``. The row fingerprint
-(``total``, ``maxTstamp``) alone does not move when a collection item, a
-file reference or file metadata is edited, so the stamp also includes the
-**workspace revision**: ``WorkspaceRevisionHook`` (a DataHandler
-``processDatamapClass``/``processCmdmapClass`` hook) replaces a token in
-``sys_registry`` after every DataHandler run that touched a workspace-aware
-table — the workspace's own token for a run in a workspace, the Live token
-for a run in Live or one that publishes. Every workspace's stamp includes
-both. The stamp therefore moves exactly when a count can have changed, and
-clients compare it instead of diffing lists.
+The DTO's ``stamp`` is ``sha1(workspaceId|total|0|revision)``. The
+**workspace revision** moves with every change: ``WorkspaceRevisionHook`` (a
+DataHandler ``processDatamapClass``/``processCmdmapClass`` hook) replaces a
+token in ``sys_registry`` after every DataHandler run that touched a
+workspace-aware table — the workspace's own token for a run in a workspace,
+the Live token for a run in Live or one that publishes. Every workspace's
+stamp includes both. Clients compare the stamp instead of diffing lists.
 
 ..  _badge-page:
 
-The page count
---------------
+Caching
+-------
 
-``ContextChangeSummary`` keys the page summary (count and changed records)
-by workspace, page or news article, ``showHidden`` and ``maxItems``, and
-keeps it while the stamp holds — switching modules on the same page or
-returning to a page is a cache read. The cache ``webcon_easy_workspace``
-(``SimpleFileBackend``, group ``system``) holds one small entry per page,
-overwritten in place; entries also expire after five minutes, which bounds
-how long a write that bypasses DataHandler (and misses the row fingerprint)
-stays unseen.
-
-On a miss, the page is collected like the dropdown list, in count-only mode
-(no thumbnails, URLs or history timelines). The collection is built to stay
-cheap on Content Blocks installations, where every collection field is a
-base ``tt_content`` column and each element therefore carries a few hundred
-inline fields whatever its CType:
-
-- ``WorkspaceVersionPresence`` asks once — one ``UNION ALL`` over all
-  workspace-aware tables — which tables hold any row of the workspace. A
-  "changed rows" query against a table without one is skipped: it could not
-  return anything.
-- Inline children of all elements of the page are fetched with one query
-  per distinct relation (table, foreign field, match fields), not one per
-  element and relation, and handed to their parents in query order.
-- ``BackendUtility::workspaceOL()`` runs only for rows that have a version;
-  one lookup finds them for the whole page (``WorkspaceRecordQuery::overlayRows()``).
-- In "changed" mode an element is built into an item only when it can be
-  listed at all: a workspace row, an overlaid row, or one with changed
-  children.
-- IN lists stay below 200 values, the ``eq_range_index_dive_limit`` above
-  which MySQL/MariaDB plan from index statistics — and ``t3ver_oid``, 0 on
-  nearly every row, has statistics that make a full scan look cheaper.
-
-On production data (page 1149, 40 elements, workspace "Staging") a badge
-cost 15,393 queries and 2.3 s up to 1.7.2; it now costs 30 queries and
-about 30 ms uncached, 11 queries and 6 ms from the cache. The list
-(``/items``) went from 2.2 s to about 35 ms. A snapshot test
-(``PendingItemsServicePageSnapshotTest``) pins every list, group and count
-of a scenario with edits, new/delete/move placeholders, translations,
-hidden elements, discarded drafts, collection children and file references
-to what 1.7.2 returned.
+Core's list depends on the editor's permissions, so the whole-workspace
+count and the page summary (count and changed records) are cached per
+editor in ``webcon_easy_workspace`` (``SimpleFileBackend``, group
+``system``) — one entry per editor and workspace, or per editor and page,
+overwritten in place. An entry is valid while the revision it was built at
+is current, and for five minutes at most, which bounds how long a write that
+bypasses DataHandler stays unseen.
 
 ..  _badge-payload:
 

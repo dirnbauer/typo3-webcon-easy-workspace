@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Tests\Unit\Utility;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 use Webconsulting\WebconEasyWorkspace\Utility\WorkspaceTablePolicy;
 
+/**
+ * The toolbar acts on the same tables the Workspaces module lists: every
+ * workspace-aware one, collection and other child tables included.
+ */
 final class WorkspaceTablePolicyTest extends UnitTestCase
 {
     #[\Override]
@@ -18,122 +21,35 @@ final class WorkspaceTablePolicyTest extends UnitTestCase
         parent::tearDown();
     }
 
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function primaryTablesDataProvider(): array
-    {
-        return [
-            'pages' => ['pages'],
-            'tt_content' => ['tt_content'],
-            'news' => ['tx_news_domain_model_news'],
-            'file metadata' => ['sys_file_metadata'],
-        ];
-    }
-
     #[Test]
-    #[DataProvider('primaryTablesDataProvider')]
-    public function primaryTablesAreAlwaysAllowed(string $table): void
+    public function everyWorkspaceAwareTableIsAllowed(): void
     {
+        $GLOBALS['TCA'] = [
+            'tt_content' => ['ctrl' => ['versioningWS' => true]],
+            'feature_items' => ['ctrl' => ['versioningWS' => true, 'hideTable' => true]],
+            'sys_file_reference' => ['ctrl' => ['versioningWS' => true, 'hideTable' => true]],
+            'tx_some_record' => ['ctrl' => ['versioningWS' => true]],
+        ];
         $subject = new WorkspaceTablePolicy();
 
-        self::assertTrue($subject->isPrimary($table));
-        self::assertTrue($subject->isAllowed($table));
+        self::assertTrue($subject->isAllowed('tt_content'));
+        self::assertTrue($subject->isAllowed('feature_items'));
+        self::assertTrue($subject->isAllowed('sys_file_reference'));
+        self::assertTrue($subject->isAllowed('tx_some_record'));
     }
 
     #[Test]
-    public function unknownTableIsNotAllowed(): void
-    {
-        $GLOBALS['TCA'] = [];
-
-        self::assertFalse(new WorkspaceTablePolicy()->isAllowed('tx_unknown_table'));
-    }
-
-    #[Test]
-    public function workspaceAwareHiddenChildTableWithParentUidColumnIsAllowed(): void
+    public function tablesWithoutVersioningAndUnknownTablesAreNot(): void
     {
         $GLOBALS['TCA'] = [
-            'tx_child_table' => [
-                'ctrl' => ['versioningWS' => true, 'hideTable' => true],
-                'columns' => [
-                    'foreign_table_parent_uid' => ['config' => ['type' => 'passthrough']],
-                ],
-            ],
-        ];
-
-        self::assertTrue(new WorkspaceTablePolicy()->isAllowed('tx_child_table'));
-    }
-
-    #[Test]
-    public function workspaceAwareHiddenChildTableReferencedByInlineParentIsAllowed(): void
-    {
-        $GLOBALS['TCA'] = [
-            'tx_parent_table' => [
-                'ctrl' => ['versioningWS' => true],
-                'columns' => [
-                    'children' => [
-                        'config' => [
-                            'type' => 'inline',
-                            'foreign_table' => 'tx_child_table',
-                            'foreign_field' => 'parent_uid',
-                        ],
-                    ],
-                ],
-            ],
-            'tx_child_table' => [
-                'ctrl' => ['versioningWS' => true, 'hideTable' => true],
-                'columns' => [],
-            ],
-        ];
-
-        self::assertTrue(new WorkspaceTablePolicy()->isAllowed('tx_child_table'));
-    }
-
-    #[Test]
-    public function visibleNonChildTableIsNotAllowed(): void
-    {
-        $GLOBALS['TCA'] = [
-            'tx_some_table' => [
-                'ctrl' => ['versioningWS' => true],
-                'columns' => [],
-            ],
-        ];
-
-        self::assertFalse(new WorkspaceTablePolicy()->isAllowed('tx_some_table'));
-    }
-
-    #[Test]
-    public function sysFileReferenceIsAllowedWhenWorkspaceAware(): void
-    {
-        $GLOBALS['TCA'] = [
-            'sys_file_reference' => [
-                'ctrl' => ['versioningWS' => true],
-                'columns' => [],
-            ],
-        ];
-
-        self::assertTrue(new WorkspaceTablePolicy()->isAllowed('sys_file_reference'));
-    }
-
-    #[Test]
-    public function isAllowedMemoizesResultPerInstance(): void
-    {
-        $GLOBALS['TCA'] = [
-            'tx_child_table' => [
-                'ctrl' => ['versioningWS' => true, 'hideTable' => true],
-                'columns' => [
-                    'foreign_table_parent_uid' => ['config' => ['type' => 'passthrough']],
-                ],
-            ],
+            'sys_file' => ['ctrl' => []],
+            'be_users' => ['ctrl' => ['versioningWS' => false]],
         ];
         $subject = new WorkspaceTablePolicy();
-        self::assertTrue($subject->isAllowed('tx_child_table'));
 
-        // TCA changes within a request do not happen; the memoized
-        // verdict must survive a (synthetic) TCA mutation.
-        $GLOBALS['TCA'] = [];
-
-        self::assertTrue($subject->isAllowed('tx_child_table'));
-        self::assertFalse(new WorkspaceTablePolicy()->isAllowed('tx_child_table'));
+        self::assertFalse($subject->isAllowed('sys_file'));
+        self::assertFalse($subject->isAllowed('be_users'));
+        self::assertFalse($subject->isAllowed('tx_unknown_table'));
+        self::assertFalse($subject->isAllowed(''));
     }
 }
