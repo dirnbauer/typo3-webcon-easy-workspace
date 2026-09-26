@@ -56,6 +56,22 @@ export function metaParts(host, item) {
 }
 
 /**
+ * Related changes (a changed element's collection items and file
+ * references), when the editor's user setting asks for them: one line naming
+ * the records, a record that is new, deleted or moved marked as such, and
+ * the full list with every change type on hover.
+ */
+export function childSummary(host, children) {
+  const name = (child) => child.title || child.tableLabel || child.table;
+  const kind = (child) => label(host, `change.${changeType(child)}`);
+  return {
+    count: label(host, 'toolbar.row.children', { count: children.length }),
+    list: children.map((child) => (changeType(child) === 'changed' ? name(child) : `${name(child)} (${kind(child)})`)).join(' · '),
+    full: children.map((child) => `${name(child)}: ${kind(child)}`).join('\n'),
+  };
+}
+
+/**
  * The language chip is shown where a row's language is not obvious: in a
  * view of several or no particular language, every row that is not in the
  * language the view is about. Rows of other languages sit under a header
@@ -136,15 +152,14 @@ export function renderRow(host, item, index) {
           <span class="wew-row__meta">
             ${meta.map((part, partIndex) => html`${partIndex > 0 ? html`<span class="wew-row__meta-sep" aria-hidden="true">·</span>` : nothing}<span>${part}</span>`)}
           </span>` : nothing}
-        ${children.length > 0 ? html`
-          <span class="wew-row__children" data-wew-children>
-            <span class="wew-row__children-title">${label(host, 'toolbar.row.children', { count: children.length })}</span>
-            ${children.map((child) => html`
-              <span class="wew-row__child">
-                <span class="wew-row__child-title" title=${child.title || ''}>${child.title || child.tableLabel || child.table}</span>
-                <span class="badge ${changeBadgeClass(changeType(child))} wew-row__badge wew-row__badge--child">${child.kindLabel || label(host, `change.${changeType(child)}`)}</span>
-              </span>`)}
-          </span>` : nothing}
+        ${children.length > 0 ? (() => {
+          const summary = childSummary(host, children);
+          return html`
+            <span class="wew-row__children" title=${summary.full} data-wew-children>
+              <span class="wew-row__children-count">${summary.count}:</span>
+              <span class="wew-row__children-list">${summary.list}</span>
+            </span>`;
+        })() : nothing}
       </span>
       <span class="wew-row__actions">
         ${editable ? actionButton(host, item, 'edit', 'actions-open', label(host, 'toolbar.row.edit')) : nothing}

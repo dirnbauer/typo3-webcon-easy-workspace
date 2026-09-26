@@ -1,6 +1,7 @@
 import { html, nothing } from 'lit';
 import { label, configBool } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 import { changedItemCount } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
+import { moduleHref } from '@webconsulting/webcon-easy-workspace/menu-actions.js';
 
 /**
  * One sentence about the numbers: what is pending here, and how much more
@@ -17,25 +18,44 @@ export function summaryText(host, onPage, total) {
   return parts.join(' · ');
 }
 
+/**
+ * Compact header: one row with the workspace (Core's workspace icon names
+ * what the title is), its stage and the two header actions, one line with
+ * the numbers below.
+ */
 export function renderHeader(host) {
   const onPage = changedItemCount(host.items);
   const total = Math.max(0, Number(host.badgeCount) || 0);
   const showName = configBool(host, 'enableWorkspaceChip', true) && host.workspaceTitle;
   const refreshing = host.state === 'loading';
   const refreshLabel = label(host, 'toolbar.refresh');
+  const moduleLabel = label(host, 'toolbar.openModule');
+  const href = moduleHref(host);
+  const stageTitle = host.stage?.label ? label(host, 'toolbar.stage.label', { stage: host.stage.label }) : '';
 
   return html`
     <header class="wew-menu__head">
       <div class="wew-menu__titles">
-        ${showName ? html`<span class="wew-menu__eyebrow">${label(host, 'toolbar.title')}</span>` : nothing}
-        <h2 class="wew-menu__title" id=${host.titleId}>${showName ? host.workspaceTitle : label(host, 'toolbar.title')}</h2>
+        <div class="wew-menu__title-row">
+          <typo3-backend-icon class="wew-menu__title-icon" identifier="apps-toolbar-menu-workspace" size="small" aria-hidden="true"></typo3-backend-icon>
+          <h2 class="wew-menu__title" id=${host.titleId} title=${label(host, 'toolbar.activeWorkspace')}>
+            ${showName ? host.workspaceTitle : label(host, 'toolbar.title')}
+          </h2>
+          ${host.stage?.label ? html`
+            <span class="badge badge-secondary wew-menu__stage" title=${stageTitle} aria-label=${stageTitle} data-wew-stage>${host.stage.label}</span>` : nothing}
+        </div>
         <p class="wew-menu__summary" aria-live="polite" data-wew-count-chip>${summaryText(host, onPage, total)}</p>
       </div>
       <div class="wew-menu__head-side">
-        ${host.stage?.label ? html`
-          <span class="badge badge-secondary wew-menu__stage" title=${label(host, 'toolbar.stage.title')} data-wew-stage>
-            ${label(host, 'toolbar.stage.label', { stage: host.stage.label })}
-          </span>` : nothing}
+        ${href ? html`
+          <a class="btn btn-borderless btn-sm wew-menu__module"
+             href=${href}
+             title=${moduleLabel}
+             aria-label=${moduleLabel}
+             data-wew-open-module
+             @click=${(event) => host.handleOpenModule(event)}>
+            <typo3-backend-icon identifier="wew-module" size="small"></typo3-backend-icon>
+          </a>` : nothing}
         <button type="button"
                 class="btn btn-borderless btn-sm wew-menu__refresh ${refreshing ? 'is-busy' : ''}"
                 title=${refreshLabel}

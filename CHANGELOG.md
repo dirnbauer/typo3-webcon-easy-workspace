@@ -2,6 +2,28 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.9.1] — 2026-09-26
+
+A more compact dropdown: the same information in about half the height.
+
+### Changed
+
+- The header takes two lines: workspace icon, name, stage and two icon
+  buttons (open the module, refresh), then the numbers. The "Workspace"
+  eyebrow is gone, and "Open module" moved from its own footer row into
+  the header.
+- The footer is one row: select-all shows `selected/total` (the full
+  sentence is its accessible name and hover title), then Preview and
+  Publish.
+- Rows are tighter (22px icons, one ellipsised meta line), a page group's
+  title and path share one line, and the language headers are single lines.
+  The other-languages hint is one short line ("Not shown in German ·
+  published with the rest"); the full explanation is on hover and read to
+  screen readers.
+- With "Show subelement details in the toolbar menu" on, a row names its
+  related changes on one line instead of one line per record; the full list
+  with each change type is on hover.
+
 ## [1.9.0] — 2026-09-25
 
 The dropdown tells the changes of the language the editor is looking at

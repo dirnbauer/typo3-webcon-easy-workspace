@@ -18,6 +18,7 @@ const labels = {
   'toolbar.languages.inView': '{language} · shown in this view',
   'toolbar.languages.other': 'Other languages',
   'toolbar.languages.otherHint': 'Not visible while the page is shown in {language}.',
+  'toolbar.languages.otherHintShort': 'Not shown in {language}',
   'toolbar.languages.count': '{count, plural, one {# change} other {# changes}}',
   'toolbar.row.language': 'Language: {language}',
   'toolbar.row.partOf': 'in {title}',
@@ -72,7 +73,9 @@ describe('footer template', () => {
     expect(input.closest('.form-check')).not.toBeNull();
     expect(footer.querySelector(`label.form-check-label[for="${input.id}"]`)).not.toBeNull();
     expect(input.indeterminate).toBe(true);
-    expect(footer.querySelector('[data-wew-selection-count]').textContent.trim()).toBe('1 of 2 selected');
+    // Compact: the label shows n/m, the full sentence is the checkbox's name.
+    expect(footer.querySelector('[data-wew-selection-count]').textContent.trim()).toBe('1/2');
+    expect(input.getAttribute('aria-label')).toContain('1 of 2 selected');
     expect(footer.querySelector('[data-wew-publish]').disabled).toBe(false);
   });
 
@@ -81,7 +84,9 @@ describe('footer template', () => {
 
     expect(footer.querySelector('[data-wew-select-all]')).toBeNull();
     expect(footer.querySelector('[data-wew-publish]')).toBeNull();
-    expect(footer.querySelector('[data-wew-open-module]')).not.toBeNull();
+    // The module link lives in the header, so the footer is one row.
+    expect(footer.querySelector('[data-wew-open-module]')).toBeNull();
+    expect(mount(renderHeader(host([]))).querySelector('[data-wew-open-module]')).not.toBeNull();
   });
 });
 
@@ -145,6 +150,23 @@ describe('row template: languages', () => {
   });
 });
 
+describe('row template: related changes', () => {
+  it('names them on one line when the user setting asks for them, the full list on hover', () => {
+    const item = changed(1, { childChanges: [
+      { table: 'tx_item', title: '3 days', kindKey: 'modified' },
+      { table: 'sys_file_reference', title: 'hero.jpg', kindKey: 'new' },
+    ] });
+    const on = host([item], [], { _config: { ...DEFAULT_CONFIG, showSubelementsInToolbar: true, labels: { ...labels, 'toolbar.row.children': '{count, plural, one {# related change} other {# related changes}}' } } });
+    const children = mount(renderRow(on, item, 0)).querySelector('[data-wew-children]');
+
+    expect(children.textContent.replace(/\s+/g, ' ').trim()).toBe('2 related changes: 3 days · hero.jpg (New)');
+    expect(children.getAttribute('title')).toBe('3 days: Changed\nhero.jpg: New');
+
+    const off = host([item]);
+    expect(mount(renderRow(off, item, 0)).querySelector('[data-wew-children]')).toBeNull();
+  });
+});
+
 describe('group template', () => {
   it('renders the current view first and the other languages under their own headers', () => {
     const h = host([changed(1, { languageUid: 0 }), changed(2, { languageUid: 1 }), changed(3, { languageUid: 0 })], [], { viewLanguages: [0] });
@@ -152,7 +174,10 @@ describe('group template', () => {
 
     const sections = Array.from(list.querySelectorAll('[data-wew-section]')).map((section) => section.getAttribute('data-wew-section'));
     expect(sections).toEqual(['in-view', 'other-languages']);
-    expect(list.querySelector('[data-wew-section="other-languages"]').textContent).toContain('Not visible while the page is shown in English.');
+    const other = list.querySelector('[data-wew-section="other-languages"]');
+    // One short line on screen, the full sentence on hover and for screen readers.
+    expect(other.querySelector('.wew-section__hint').textContent.trim()).toBe('Not shown in English');
+    expect(other.getAttribute('title')).toBe('Not visible while the page is shown in English.');
     expect(list.querySelector('[data-wew-language="1"]').textContent).toContain('German');
     expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual([
       'tt_content:1', 'tt_content:3', 'tt_content:2',
@@ -175,7 +200,8 @@ describe('header template', () => {
 
     expect(header.querySelector('.wew-menu__title').textContent.trim()).toBe('Staging');
     expect(header.querySelector('[data-wew-count-chip]').textContent.trim()).toBe('2 changes on this page · 3 more elsewhere');
-    expect(header.querySelector('[data-wew-stage]').textContent.trim()).toBe('Stage: Editing');
+    expect(header.querySelector('[data-wew-stage]').textContent.trim()).toBe('Editing');
+    expect(header.querySelector('[data-wew-stage]').getAttribute('aria-label')).toBe('Stage: Editing');
     expect(summaryText(host([]), 0, 0)).toBe('Nothing pending');
     expect(summaryText(host([], [], { state: 'no-context' }), 0, 4)).toBe('4 pending in this workspace');
   });

@@ -15,16 +15,18 @@ Anatomy
 =======
 
 Header
-    The workspace name as the title (``enableWorkspaceChip``; "Workspace"
-    without it), one sentence with the numbers ("N changes on this page ·
-    M more elsewhere in the workspace", or "N pending in this workspace"
-    outside a page context), the stage of the listed records as a Core
-    badge ("Mixed stages" when they differ) and a refresh button.
+    Two lines. Core's workspace icon and the workspace name as the title
+    (``enableWorkspaceChip``; "Workspace" without it), the stage of the listed
+    records as a Core badge ("Mixed stages" when they differ), and two icon
+    buttons: open the Easy Workspace module for the current page, and
+    refresh. Below, one line with the numbers ("N changes on this page · M
+    more elsewhere in the workspace", or "N pending in this workspace"
+    outside a page context).
 
 Groups
-    One group for the page or news article (record icon, title, rootline
-    path, row count) and, when present, one for workspace-wide file
-    metadata records. Within the page group the rows are ordered by
+    One group for the page or news article (record icon, title and rootline
+    path on one line, row count) and, when present, one for workspace-wide
+    file metadata records. Within the page group the rows are ordered by
     language, see :ref:`toolbar-languages`.
 
 Rows
@@ -36,18 +38,22 @@ Rows
     (``showSubelementsInToolbar``), and the always-visible actions as Core
     borderless buttons: edit, changes and history, discard (``enableRevert``)
     and show in preview (``enableHoverHighlight``; not offered for a row the
-    page does not show in the current language).
+    page does not show in the current language). A row takes two lines —
+    title and change badge, then the meta line, each ellipsised — and one
+    more when the user setting "Show subelement details in the toolbar menu"
+    is on: the related changes named on one line, the full list with each
+    change type on hover.
 
     Clicking anywhere on a row that is not a button toggles its checkbox,
     so selecting elements to publish needs no aim.
 
 Footer
-    Select-all checkbox with "N of M selected", the primary ``Publish N``
-    button, a Preview split button (open in a new tab or copy the preview
-    link, ``enablePreviewLink``) and an "Open module" link that switches the
-    content frame to the Easy Workspace module for the current page.
-    Select-all and ``Publish N`` are only shown while there is something to
-    select.
+    One row: the select-all checkbox showing ``selected/total`` (its
+    accessible name and hover title say "Deselect all changes (N of M
+    selected)"), a Preview split button (open in a new tab or copy the
+    preview link, ``enablePreviewLink``) and the primary ``Publish N``
+    button. Select-all and ``Publish N`` are only shown while there is
+    something to select.
 
 States
     Loading skeleton (three rows), empty ("Nothing pending"), no context
@@ -75,9 +81,10 @@ current language. The list tells them apart:
 - Rows of the view's languages come first, under a "shown in this view"
   line when other languages follow. The rows the page shows only after a
   language switch come next under "Other languages", one sub-header per
-  language (flag, title, count) and a hint that says why they are not to be
-  seen and that they publish with the rest. They start selected like every
-  other row; select-all and ``Publish N`` count them.
+  language (flag, title, count) and a one-line hint ("Not shown in German ·
+  published with the rest"); the full explanation is the section's hover
+  title and screen-reader text. They start selected like every other row;
+  select-all and ``Publish N`` count them.
 - A language chip appears on a row only where its language is not obvious:
   in a view of several languages, or in a module without one, on every row
   that is not in the view's (or the default) language.

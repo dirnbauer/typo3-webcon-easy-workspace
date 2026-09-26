@@ -2223,14 +2223,14 @@
     </unit>
     <unit id="toolbar.languages.inView">
       <segment>
-        <source>{language} · shown in this view</source>
-        <target state="translated">{language} · shown in this view</target>
+        <source>{language} · in this view</source>
+        <target state="translated">{language} · in this view</target>
       </segment>
     </unit>
     <unit id="toolbar.languages.inViewMany">
       <segment>
-        <source>Shown in this view</source>
-        <target state="translated">Shown in this view</target>
+        <source>In this view</source>
+        <target state="translated">In this view</target>
       </segment>
     </unit>
     <unit id="toolbar.languages.other">
@@ -2279,6 +2279,18 @@
       <segment>
         <source>{count, plural, one {# related change} other {# related changes}}</source>
         <target state="translated">{count, plural, one {# related change} other {# related changes}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.otherHintShort">
+      <segment>
+        <source>Not shown in {language} · published with the rest</source>
+        <target state="translated">Not shown in {language} · published with the rest</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.otherHintShortMany">
+      <segment>
+        <source>Not shown in this view · published with the rest</source>
+        <target state="translated">Not shown in this view · published with the rest</target>
       </segment>
     </unit>
   </file>

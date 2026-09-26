@@ -1,7 +1,6 @@
 import { html, nothing } from 'lit';
 import { label, configBool } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 import { footerState } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
-import { moduleHref } from '@webconsulting/webcon-easy-workspace/menu-actions.js';
 
 function renderPreviewSplit(host) {
   const open = Boolean(host.splitOpen);
@@ -38,24 +37,25 @@ function renderPreviewSplit(host) {
 
 /**
  * Select-all as a Core `.form-check` (the wrapper defines the checkbox
- * tokens; a bare `.form-check-input` renders without a box).
+ * tokens; a bare `.form-check-input` renders without a box). Compact: the
+ * label shows "selected/total", the full sentence is the checkbox's name and
+ * the hover title.
  */
 function renderSelectAll(host, { total, selectedCount, allChecked, someChecked }) {
   const inputId = `${host.titleId}-select-all`;
+  const action = allChecked ? label(host, 'toolbar.deselectAllChanges') : label(host, 'toolbar.selectAllChanges');
+  const count = label(host, 'toolbar.selection.count', { selected: selectedCount, total });
   return html`
-    <div class="wew-menu__selectall form-check">
+    <div class="wew-menu__selectall form-check" title=${`${action} · ${count}`}>
       <input type="checkbox"
              class="form-check-input"
              id=${inputId}
              .checked=${allChecked}
              .indeterminate=${someChecked}
-             aria-label=${allChecked ? label(host, 'toolbar.deselectAllChanges') : label(host, 'toolbar.selectAllChanges')}
+             aria-label=${`${action} (${count})`}
              data-wew-select-all
              @change=${(event) => host.handleSelectAll(event)} />
-      <label class="form-check-label" for=${inputId}>
-        ${allChecked ? label(host, 'toolbar.deselectAll') : label(host, 'toolbar.selectAll')}
-      </label>
-      <span class="wew-menu__count" data-wew-selection-count>${label(host, 'toolbar.selection.count', { selected: selectedCount, total })}</span>
+      <label class="form-check-label wew-menu__count" for=${inputId} data-wew-selection-count>${selectedCount}/${total}</label>
     </div>
   `;
 }
@@ -70,7 +70,6 @@ export function renderFooter(host) {
   const publishLabel = host.publishing
     ? label(host, 'toolbar.publishing')
     : (selectedCount > 0 ? label(host, 'toolbar.publishCount', { count: selectedCount }) : label(host, 'toolbar.publishToLive'));
-  const href = moduleHref(host);
 
   return html`
     <footer class="wew-menu__foot" data-wew-footer>
@@ -87,14 +86,7 @@ export function renderFooter(host) {
             <span>${publishLabel}</span>
           </button>` : nothing}
       </div>
-      <div class="wew-menu__foot-meta">
-        <span class="visually-hidden">${label(host, 'toolbar.keyboardHint')}</span>
-        ${href ? html`
-          <a class="wew-menu__module-link" href=${href} data-wew-open-module @click=${(event) => host.handleOpenModule(event)}>
-            <typo3-backend-icon identifier="wew-module" size="small"></typo3-backend-icon>
-            ${label(host, 'toolbar.openModule')}
-          </a>` : nothing}
-      </div>
+      <span class="visually-hidden">${label(host, 'toolbar.keyboardHint')}</span>
     </footer>
   `;
 }

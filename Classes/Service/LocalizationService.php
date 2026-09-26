@@ -78,6 +78,8 @@ final readonly class LocalizationService
         'toolbar.languages.other',
         'toolbar.languages.otherHint',
         'toolbar.languages.otherHintMany',
+        'toolbar.languages.otherHintShort',
+        'toolbar.languages.otherHintShortMany',
         'toolbar.languages.count',
         'toolbar.row.language',
         'toolbar.row.partOf',

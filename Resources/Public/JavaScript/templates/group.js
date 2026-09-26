@@ -25,6 +25,14 @@ export function renderGroup(host, group, rowOffset = 0) {
   const view = viewLanguages(host);
   const viewLanguage = view !== null && view.length === 1 ? (host.languages?.[view[0]] || null) : null;
   const otherCount = other.reduce((sum, entry) => sum + entry.rows.length, 0);
+  // One short line in the list; the full explanation on hover and for
+  // screen readers.
+  const hint = viewLanguage
+    ? label(host, 'toolbar.languages.otherHint', { language: viewLanguage.title })
+    : label(host, 'toolbar.languages.otherHintMany');
+  const shortHint = viewLanguage
+    ? label(host, 'toolbar.languages.otherHintShort', { language: viewLanguage.title })
+    : label(host, 'toolbar.languages.otherHintShortMany');
   let offset = rowOffset;
   const rowsOf = (rows) => {
     const start = offset;
@@ -53,15 +61,15 @@ export function renderGroup(host, group, rowOffset = 0) {
       </li>` : nothing}
     ${rowsOf(group.rows)}
     ${other.length > 0 ? html`
-      <li class="wew-section wew-section--other" role="presentation" data-wew-section="other-languages">
+      <li class="wew-section wew-section--other"
+          role="presentation"
+          title=${hint}
+          data-wew-section="other-languages">
         <typo3-backend-icon identifier="actions-info-circle" size="small"></typo3-backend-icon>
         <span class="wew-section__title">${label(host, 'toolbar.languages.other')}</span>
         <span class="wew-section__count">${label(host, 'toolbar.languages.count', { count: otherCount })}</span>
-        <span class="wew-section__hint">
-          ${viewLanguage
-            ? label(host, 'toolbar.languages.otherHint', { language: viewLanguage.title })
-            : label(host, 'toolbar.languages.otherHintMany')}
-        </span>
+        <span class="wew-section__hint">${shortHint}</span>
+        <span class="visually-hidden">${hint}</span>
       </li>
       ${other.map((entry) => html`
         <li class="wew-language" role="presentation" data-wew-language=${entry.language.uid}>
