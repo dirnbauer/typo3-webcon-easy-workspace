@@ -2,6 +2,21 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- Discarding a selection that holds records together with records that
+  depend on them no longer fails in the Development context, in this
+  module's batch actions and in Core's Workspaces module alike. TYPO3 v14's
+  workspaces CommandMap rebuilds such a batch and gives each record an
+  empty `version` command next to its `discard`; the workspaces hook then
+  reads a missing `action` ("Undefined array key "action"", an exception
+  in Development). The new DiscardDependencyCommandHook, registered after
+  Core's, drops the empty commands, so the discards run as they already do
+  in Production. BatchDiscardTest pins the Core behaviour: when it starts
+  to fail, Core handles the map itself and the hook can go.
+
 ## [1.9.1] — 2026-09-26
 
 A more compact dropdown: the same information in about half the height.
