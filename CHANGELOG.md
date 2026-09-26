@@ -2,7 +2,10 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
-## [Unreleased]
+## [1.9.2] — 2026-09-26
+
+A batch discard that includes dependent records works in the Development
+context again.
 
 ### Fixed
 
