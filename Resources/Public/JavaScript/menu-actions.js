@@ -141,10 +141,13 @@ export async function refresh(host, options = {}) {
     host.stage = data.stage && typeof data.stage === 'object' ? data.stage : null;
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
-    syncSelectionWithItems(
-      host,
-      selectionContextKey(context.pageUid, context.newsUid, host.workspaceId),
-    );
+    const contextKey = selectionContextKey(context.pageUid, context.newsUid, host.workspaceId);
+    // Another page, article or workspace: its folded sections start folded.
+    if (host._foldContextKey !== contextKey) {
+      host._foldContextKey = contextKey;
+      host.openSections = new Set();
+    }
+    syncSelectionWithItems(host, contextKey);
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
     notifyView(host);
     broadcastDeclineState(host);

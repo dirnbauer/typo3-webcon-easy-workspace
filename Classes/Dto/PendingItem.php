@@ -51,7 +51,31 @@ final readonly class PendingItem
         public int $stageId = 0,
         public ?int $languageUid = null,
         public ?array $parent = null,
+        /** False for a version TYPO3 made along with an edit elsewhere (ContentChangeDetector). */
+        public bool $contentChanged = true,
     ) {}
+
+    /**
+     * A version whose content, or the content of a record that belongs to
+     * it, differs from live. A translation or an element TYPO3 only
+     * versioned along with an edit elsewhere has none.
+     */
+    public function hasContentChanges(): bool
+    {
+        if (!$this->isChanged) {
+            return false;
+        }
+        if ($this->contentChanged) {
+            return true;
+        }
+        foreach ($this->childChanges as $child) {
+            if ($child->contentChanged) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /**
      * A copy with some constructor arguments replaced.
@@ -174,6 +198,7 @@ final readonly class PendingItem
             'thumbnailUrl' => $this->thumbnailUrl,
             'isPrimary' => $this->isPrimary,
             'isChanged' => $this->isChanged,
+            'contentChanged' => $this->hasContentChanges(),
             'isHidden' => $this->isHidden,
             'tableLabel' => $this->tableLabel,
             'typeLabel' => $this->typeLabel,

@@ -8,6 +8,22 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.10.0
+===================
+
+Flush the caches after the update (a service gained a dependency). Nothing
+to migrate; things to know:
+
+- ``/items`` rows and their ``childChanges`` carry ``contentChanged``,
+  false for a version identical to its live record (see
+  :ref:`toolbar-unchanged`). A client that ignores the key sees the
+  previous behaviour.
+- The other-languages header is a button now. ``.wew-section--other`` is
+  gone; the folded sections are ``.wew-section--toggle`` list items
+  (``.wew-section--other-languages``, ``.wew-section--unchanged``) holding a
+  ``.wew-section__toggle`` button.
+- The dropdown's maximum height is the viewport below the top bar.
+
 Upgrading to 1.9.0
 ==================
 

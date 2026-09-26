@@ -153,8 +153,12 @@ final readonly class PendingItemAggregator
                 : $incoming->childChanges,
         );
 
+        $sameRecord = $base->table === $incoming->table && $base->liveUid === $incoming->liveUid;
+
         return $base->with([
             'isChanged' => $base->isChanged || $incomingChanged,
+            // Two versions of one record: either one's edit counts.
+            'contentChanged' => $base->contentChanged || ($sameRecord && $incoming->contentChanged),
             'childChanges' => $childChanges,
             'changeBadges' => $this->mergeChangeBadges($base->changeBadges, $incoming->changeBadges),
             'publishRecords' => $this->mergeRecordReferences($base->publishRecords, $incoming->publishRecords),

@@ -20,6 +20,13 @@ const labels = {
   'toolbar.languages.otherHint': 'Not visible while the page is shown in {language}.',
   'toolbar.languages.otherHintShort': 'Not shown in {language}',
   'toolbar.languages.count': '{count, plural, one {# change} other {# changes}}',
+  'toolbar.languages.translations': 'Translations',
+  'toolbar.languages.changedCount': '{changed} of {total} changed',
+  'toolbar.section.unchanged': 'Without content change',
+  'toolbar.section.unchangedHint': 'Versioned along by TYPO3',
+  'toolbar.row.unchanged': 'Unchanged',
+  'toolbar.row.unchangedTitle': 'Versioned together with an edit elsewhere; content matches live.',
+  'toolbar.summary.unchanged': '{count, plural, one {# without content change} other {# without content change}}',
   'toolbar.row.language': 'Language: {language}',
   'toolbar.row.partOf': 'in {title}',
   'toolbar.row.notInView': 'Only visible on the page in the {language} view',
@@ -48,6 +55,10 @@ function host(items, selected = [], overrides = {}) {
     stage: null,
     contextRecord: { title: 'Start', path: '', iconIdentifier: 'apps-pagetree-page-default' },
     _config: { ...DEFAULT_CONFIG, enableRevert: true, enablePreviewLink: true, moduleUrl: '#module', labels },
+    openSections: new Set(),
+    toggleSection(sectionId) {
+      if (this.openSections.has(sectionId)) this.openSections.delete(sectionId); else this.openSections.add(sectionId);
+    },
     _highlightInIframe() {},
     _clearIframeHighlight() {},
     _previewDiscard() {},
@@ -165,25 +176,81 @@ describe('row template: related changes', () => {
     const off = host([item]);
     expect(mount(renderRow(off, item, 0)).querySelector('[data-wew-children]')).toBeNull();
   });
+
+  it('leaves out related records TYPO3 only versioned along', () => {
+    const item = changed(1, { childChanges: [
+      { table: 'tx_item', title: '3 days', kindKey: 'modified', contentChanged: true },
+      { table: 'sys_file_reference', title: 'hero.jpg', kindKey: 'modified', contentChanged: false },
+    ] });
+    const on = host([item], [], { _config: { ...DEFAULT_CONFIG, showSubelementsInToolbar: true, labels: { ...labels, 'toolbar.row.children': '{count, plural, one {# related change} other {# related changes}}' } } });
+    expect(mount(renderRow(on, item, 0)).querySelector('[data-wew-children]').textContent.replace(/\s+/g, ' ').trim())
+      .toBe('1 related change: 3 days');
+
+    const onlyAlong = changed(2, { childChanges: [{ table: 'sys_file_reference', title: 'hero.jpg', kindKey: 'modified', contentChanged: false }] });
+    expect(mount(renderRow(on, onlyAlong, 0)).querySelector('[data-wew-children]')).toBeNull();
+  });
 });
 
 describe('group template', () => {
-  it('renders the current view first and the other languages under their own headers', () => {
+  it('renders the current view first and folds the other languages under one header', () => {
     const h = host([changed(1, { languageUid: 0 }), changed(2, { languageUid: 1 }), changed(3, { languageUid: 0 })], [], { viewLanguages: [0] });
-    const list = mount(renderGroup(h, groupRows(h)[0], 0));
+    let list = mount(renderGroup(h, groupRows(h)[0], 0));
 
     const sections = Array.from(list.querySelectorAll('[data-wew-section]')).map((section) => section.getAttribute('data-wew-section'));
     expect(sections).toEqual(['in-view', 'other-languages']);
-    const other = list.querySelector('[data-wew-section="other-languages"]');
+    const toggle = list.querySelector('[data-wew-section="other-languages"] button');
+    // Folded by default: in the default-language view they are its translations.
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.querySelector('.wew-section__title').textContent.trim()).toBe('Translations');
+    expect(toggle.querySelector('.wew-section__count').textContent.trim()).toBe('1 of 1 changed');
     // One short line on screen, the full sentence on hover and for screen readers.
-    expect(other.querySelector('.wew-section__hint').textContent.trim()).toBe('Not shown in English');
-    expect(other.getAttribute('title')).toBe('Not visible while the page is shown in English.');
+    expect(toggle.querySelector('.wew-section__hint').textContent.trim()).toBe('Not shown in English');
+    expect(toggle.getAttribute('title')).toBe('Not visible while the page is shown in English.');
+    expect(list.querySelector('[data-wew-language="1"]')).toBeNull();
+    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual(['tt_content:1', 'tt_content:3']);
+
+    toggle.click();
+    list = mount(renderGroup(h, groupRows(h)[0], 0));
+    expect(list.querySelector('[data-wew-section="other-languages"] button').getAttribute('aria-expanded')).toBe('true');
     expect(list.querySelector('[data-wew-language="1"]').textContent).toContain('German');
     expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual([
       'tt_content:1', 'tt_content:3', 'tt_content:2',
     ]);
     // Only the first row is tabbable; the others join the roving tabindex.
     expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+  });
+
+  it('folds the versions TYPO3 only made along with an edit, and marks them', () => {
+    const h = host([
+      changed(1),
+      changed(2, { contentChanged: false }),
+      changed(3, { languageUid: 1, contentChanged: false }),
+      changed(4, { languageUid: 1 }),
+    ], [], { viewLanguages: [0] });
+    let list = mount(renderGroup(h, groupRows(h)[0], 0));
+
+    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual(['tt_content:1']);
+    // The group counts the edits; its title gives the whole picture.
+    expect(list.querySelector('.wew-group__count').textContent.trim()).toBe('2');
+    expect(list.querySelector('.wew-group__count').getAttribute('title')).toBe('2 of 4 changed');
+    const unchanged = list.querySelector('[data-wew-section="unchanged"] button');
+    expect(unchanged.querySelector('.wew-section__title').textContent.trim()).toBe('Without content change');
+    expect(unchanged.querySelector('.wew-section__count').textContent.trim()).toBe('1');
+    expect(list.querySelector('[data-wew-section="other-languages"] .wew-section__count').textContent.trim()).toBe('1 of 2 changed');
+
+    unchanged.click();
+    list.querySelector('[data-wew-section="other-languages"] button').click();
+    list = mount(renderGroup(h, groupRows(h)[0], 0));
+    // Within a language the edited rows come first.
+    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual([
+      'tt_content:1', 'tt_content:2', 'tt_content:4', 'tt_content:3',
+    ]);
+    const quiet = list.querySelector('[data-wew-key="tt_content:2"]');
+    expect(quiet.classList.contains('wew-row--no-content-change')).toBe(true);
+    expect(quiet.querySelector('[data-wew-change-badge]').textContent.trim()).toBe('Unchanged');
+    expect(quiet.querySelector('[data-wew-change-badge]').getAttribute('title')).toBe('Versioned together with an edit elsewhere; content matches live.');
+    // Still a version: it can be selected, published and discarded.
+    expect(quiet.querySelector('[data-wew-row-check]')).not.toBeNull();
   });
 
   it('needs no section headers when every row is in view', () => {
@@ -200,6 +267,9 @@ describe('header template', () => {
 
     expect(header.querySelector('.wew-menu__title').textContent.trim()).toBe('Staging');
     expect(header.querySelector('[data-wew-count-chip]').textContent.trim()).toBe('2 changes on this page · 3 more elsewhere');
+    const withUnchanged = host([changed(1), changed(2, { contentChanged: false })], [], { badgeCount: 5 });
+    expect(mount(renderHeader(withUnchanged)).querySelector('[data-wew-count-chip]').textContent.trim())
+      .toBe('1 change on this page · 1 without content change · 3 more elsewhere');
     expect(header.querySelector('[data-wew-stage]').textContent.trim()).toBe('Editing');
     expect(header.querySelector('[data-wew-stage]').getAttribute('aria-label')).toBe('Stage: Editing');
     expect(summaryText(host([]), 0, 0)).toBe('Nothing pending');

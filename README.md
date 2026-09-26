@@ -4,7 +4,7 @@
 
 Easy Workspace adds a workspace publishing dropdown to the TYPO3 backend toolbar and a **Content → Easy Workspace** module. Editors see the pending changes of the page (or news article) they are working on, review diffs and history, and publish or discard selected records without leaving their context. Publishing, staging, discarding and rollback use TYPO3 Core APIs (DataHandler, RecordHistory).
 
-The dropdown knows which language the editor is looking at: the changes the page shows in the current view come first, the changes of other languages follow under their language, still selected and published together — the page only shows them after a language switch, and the dropdown says so. The toolbar badge counts the pending changes of the page (or news article) the editor is on — the same changes the Workspaces module lists for it, collection items and file references included — not the whole workspace. It updates when something is saved in any frame or another tab of the browser, and when the editor moves to another page; it never polls, so changes made by other editors, the CLI or an MCP client appear at the next navigation or save. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
+The dropdown knows which language the editor is looking at: the edited elements the page shows in the current view come first; the translations follow folded (one click opens them), still selected and published together — the page only shows them after a language switch, and the dropdown says so. A translation or collection item TYPO3 only versioned along with an edit is marked "Unchanged" instead of "Changed". The toolbar badge counts the pending changes of the page (or news article) the editor is on — the same changes the Workspaces module lists for it, collection items and file references included — not the whole workspace. It updates when something is saved in any frame or another tab of the browser, and when the editor moves to another page; it never polls, so changes made by other editors, the CLI or an MCP client appear at the next navigation or save. The dropdown header still names both ("N on this page · M elsewhere"). See [Documentation/Badge.rst](Documentation/Badge.rst) for how the counts are computed and refreshed.
 
 ## Requirements
 
@@ -20,7 +20,7 @@ The package is distributed through GitHub tags only (not on Packagist):
 
 ```bash
 composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-composer require webconsulting/webcon-easy-workspace:^1.9
+composer require webconsulting/webcon-easy-workspace:^1.10
 vendor/bin/typo3 extension:setup
 vendor/bin/typo3 cache:flush
 ```

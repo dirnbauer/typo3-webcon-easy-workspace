@@ -9,6 +9,21 @@ export function changedItemCount(items) {
   return Array.isArray(items) ? items.filter((item) => item.isChanged).length : 0;
 }
 
+/**
+ * Whether a row's content differs from live. False for a version TYPO3
+ * made along with an edit elsewhere: a translation of an edited element,
+ * an item of an edited collection. A server that sends no flag counts every
+ * version as a change.
+ */
+export function hasContentChange(item) {
+  return Boolean(item?.isChanged) && item.contentChanged !== false;
+}
+
+/** Rows whose content differs from live (see hasContentChange). */
+export function contentChangeCount(items) {
+  return Array.isArray(items) ? items.filter(hasContentChange).length : 0;
+}
+
 export function footerState(host) {
   const changeable = (host.items || []).filter((item) => item.isChanged);
   const total = changeable.length;
@@ -116,6 +131,10 @@ export function groupRows(host) {
         byLanguage.set(language.uid, { key: `language:${language.uid}`, language, rows: [] });
       }
       byLanguage.get(language.uid).rows.push(row);
+    }
+    // Within a language, the rows someone edited come first.
+    for (const entry of byLanguage.values()) {
+      entry.rows = [...entry.rows.filter(hasContentChange), ...entry.rows.filter((row) => !hasContentChange(row))];
     }
     groups.push({
       key: 'context',

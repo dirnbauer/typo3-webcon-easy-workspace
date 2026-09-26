@@ -85,6 +85,9 @@ export function showsLanguage(host, item) {
 export function renderRow(host, item, index) {
   const itemKey = key(host, item);
   const type = changeType(item);
+  // A version TYPO3 made along with an edit elsewhere: listed, publishable,
+  // but not an edit of its own.
+  const unchanged = item.isChanged && item.contentChanged === false;
   const selected = host.selection.has(itemKey);
   const revert = canRevert(host, item);
   const inView = isInView(host, item);
@@ -100,11 +103,13 @@ export function renderRow(host, item, index) {
     item.isHidden ? 'wew-row--hidden' : '',
     item.isPrimary ? 'wew-row--primary' : '',
     inView ? '' : 'wew-row--other-language',
+    unchanged ? 'wew-row--no-content-change' : '',
   ].filter(Boolean).join(' ');
   const meta = metaParts(host, item);
   const hoverLocate = locatable ? (on) => (on ? host._highlightInIframe(item) : host._clearIframeHighlight()) : null;
   const hoverDiscard = revert ? (on) => (on ? host._previewDiscard(item) : host._clearIframeHighlight()) : null;
-  const children = showSubelements ? (item.childChanges || []) : [];
+  // Related records TYPO3 only versioned along are not changes to name.
+  const children = showSubelements ? (item.childChanges || []).filter((child) => child.contentChanged !== false) : [];
 
   return html`
     <li class=${classes}
@@ -138,7 +143,9 @@ export function renderRow(host, item, index) {
       <span class="wew-row__body">
         <span class="wew-row__head">
           <span class="wew-row__title" title=${item.title}>${item.title}</span>
-          ${item.isChanged ? html`
+          ${unchanged ? html`
+            <span class="badge wew-row__badge" title=${label(host, 'toolbar.row.unchangedTitle')} data-wew-change-badge="unchanged">${label(host, 'toolbar.row.unchanged')}</span>` : nothing}
+          ${item.isChanged && !unchanged ? html`
             <span class="badge ${changeBadgeClass(type)} wew-row__badge" data-wew-change-badge>${label(host, `change.${type}`)}</span>` : nothing}
           ${item.isHidden && configBool(host, 'enableHiddenBadge', true) ? html`
             <span class="badge badge-secondary wew-row__badge" title=${label(host, 'toolbar.hidden.title')}>${label(host, 'toolbar.hidden')}</span>` : nothing}

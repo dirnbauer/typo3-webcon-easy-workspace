@@ -21,6 +21,7 @@ final readonly class PendingChildChange
         public int $latestChangeAt,
         public int $latestChangeUserUid,
         public string $latestChangeUser,
+        public bool $contentChanged = true,
     ) {}
 
     public static function fromPendingItem(PendingItem $item): self
@@ -40,11 +41,12 @@ final readonly class PendingChildChange
             latestChangeAt: $item->latestChangeAt,
             latestChangeUserUid: $item->latestChangeUserUid,
             latestChangeUser: $item->latestChangeUser,
+            contentChanged: $item->hasContentChanges(),
         );
     }
 
     /**
-     * @return array{table: string, workspaceUid: int, liveUid: int, title: string, kindKey: string, kindLabel: string, tableLabel: string, thumbnailUrl: string|null}
+     * @return array{table: string, workspaceUid: int, liveUid: int, title: string, kindKey: string, kindLabel: string, tableLabel: string, thumbnailUrl: string|null, contentChanged: bool}
      */
     public function toToolbarArray(): array
     {
@@ -57,6 +59,7 @@ final readonly class PendingChildChange
             'kindLabel' => $this->kindLabel,
             'tableLabel' => $this->tableLabel,
             'thumbnailUrl' => $this->thumbnailUrl,
+            'contentChanged' => $this->contentChanged,
         ];
     }
 

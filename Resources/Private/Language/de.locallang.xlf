@@ -2293,5 +2293,47 @@
         <target state="translated">In dieser Ansicht nicht sichtbar · wird mitveröffentlicht</target>
       </segment>
     </unit>
+    <unit id="toolbar.row.unchanged">
+      <segment>
+        <source>Unchanged</source>
+        <target state="translated">Unverändert</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.unchangedTitle">
+      <segment>
+        <source>TYPO3 versioned this record together with an edit elsewhere, in another language or in the element it belongs to. Its content matches live; it is published with the rest.</source>
+        <target state="translated">TYPO3 hat diesen Datensatz zusammen mit einer Änderung an anderer Stelle versioniert, in einer anderen Sprache oder im Element, zu dem er gehört. Sein Inhalt entspricht dem Live-Stand; er wird mitveröffentlicht.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.section.unchanged">
+      <segment>
+        <source>Without content change</source>
+        <target state="translated">Ohne inhaltliche Änderung</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.section.unchangedHint">
+      <segment>
+        <source>Versioned along by TYPO3 · published with the rest</source>
+        <target state="translated">Von TYPO3 mitversioniert · wird mitveröffentlicht</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.translations">
+      <segment>
+        <source>Translations</source>
+        <target state="translated">Übersetzungen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.languages.changedCount">
+      <segment>
+        <source>{changed} of {total} changed</source>
+        <target state="translated">{changed} von {total} geändert</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.unchanged">
+      <segment>
+        <source>{count, plural, one {# without content change} other {# without content change}}</source>
+        <target state="translated">{count, plural, one {# ohne inhaltliche Änderung} other {# ohne inhaltliche Änderung}}</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

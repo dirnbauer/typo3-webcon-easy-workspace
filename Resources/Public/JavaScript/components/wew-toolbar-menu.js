@@ -78,6 +78,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     publishing: { type: Boolean },
     splitOpen: { type: Boolean },
     selectionVersion: { type: Number },
+    openSections: { type: Object },
   };
 
   createRenderRoot() {
@@ -95,6 +96,10 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     this.stage = null;
     this.selection = new Set();
     this.selectionVersion = 0;
+    // Folded sections the editor opened (group key + section): translations
+    // and versions without a content change start folded.
+    this.openSections = new Set();
+    this._foldContextKey = '';
     this._selectionContextKey = '';
     this._selectionTouched = false;
     this.context = null;
@@ -338,6 +343,16 @@ export class WebconEasyWorkspaceMenu extends LitElement {
     });
   }
 
+  toggleSection(sectionId) {
+    const next = new Set(this.openSections);
+    if (next.has(sectionId)) {
+      next.delete(sectionId);
+    } else {
+      next.add(sectionId);
+    }
+    this.openSections = next;
+  }
+
   // ---- Rendering ---------------------------------------------------------
 
   render() {
@@ -371,7 +386,7 @@ export class WebconEasyWorkspaceMenu extends LitElement {
           <ul class="wew-list" role="list" @keydown=${this.handleListKeydown} @focusin=${this.handleListFocusIn}>
             ${groups.map((group) => {
               const rendered = renderGroup(this, group, offset);
-              offset += groupRowCount(group);
+              offset += groupRowCount(this, group);
               return rendered;
             })}
           </ul>

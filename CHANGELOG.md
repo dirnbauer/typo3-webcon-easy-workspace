@@ -2,6 +2,40 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.10.0] — 2026-09-26
+
+The dropdown shows the edited content elements first; translations and the
+versions TYPO3 only made along with an edit start folded.
+
+### Changed
+
+- The page group lists the rows of the current view whose content someone
+  edited first. Two sections follow folded and open with a click: "Without
+  content change" (versions of this view TYPO3 only made along with an
+  edit) and the other languages, called "Translations" in a view of the
+  default language and "Other languages" otherwise, with a count such as
+  "4 of 7 changed". Within each language the edited rows come first. Folded
+  rows stay selected and publish and discard with the rest, as before;
+  another page, news article or workspace starts folded again.
+- The dropdown may use the viewport's height below the top bar (was 64 vh,
+  at most 560 px), so an opened list rarely needs a scroll box of its own.
+- The page group's count is the number of edited rows; its hover title says
+  "N of M changed".
+
+### Fixed
+
+- A translation nobody edited no longer reads as "Changed". Editing an
+  element in a workspace makes TYPO3 version its translations and its
+  collection items along with it, as copies of the live rows; the list
+  showed each copy as an edit of its own. Rows now carry `contentChanged`
+  (in `/items`, on rows and related changes): a version identical to its
+  live record gets a neutral "Unchanged" badge and a quieter title, the
+  header counts it apart ("7 changes on this page · 3 without a content
+  change"), and related changes name only the records that changed.
+  ContentChangeDetector compares every column except the ones TYPO3
+  maintains itself, empty values loosely; it runs inside the cached core
+  scan, once per workspace revision, 500 versions per round trip.
+
 ## [1.9.2] — 2026-09-26
 
 A batch discard that includes dependent records works in the Development

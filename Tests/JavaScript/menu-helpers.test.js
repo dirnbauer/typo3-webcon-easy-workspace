@@ -5,6 +5,8 @@ import {
   relativeTime,
   groupRows,
   changedItemCount,
+  contentChangeCount,
+  hasContentChange,
   isInView,
   rowLanguage,
   primaryViewLanguage,
@@ -34,6 +36,17 @@ const host = () => ({
 });
 
 describe('menu-toolbar-helpers', () => {
+  it('tells an edit from a version TYPO3 only made along with one', () => {
+    expect(hasContentChange({ isChanged: true, contentChanged: true })).toBe(true);
+    expect(hasContentChange({ isChanged: true, contentChanged: false })).toBe(false);
+    // A server that sends no flag counts every version as a change.
+    expect(hasContentChange({ isChanged: true })).toBe(true);
+    expect(hasContentChange({ isChanged: false, contentChanged: true })).toBe(false);
+    const items = [{ isChanged: true }, { isChanged: true, contentChanged: false }, { isChanged: false }];
+    expect(changedItemCount(items)).toBe(2);
+    expect(contentChangeCount(items)).toBe(1);
+  });
+
   it('maps kind keys onto the four change types', () => {
     expect(changeType({ kindKey: 'new' })).toBe('new');
     expect(changeType({ kindKey: 'delete' })).toBe('deleted');

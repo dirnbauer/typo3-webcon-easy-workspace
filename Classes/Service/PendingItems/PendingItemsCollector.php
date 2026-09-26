@@ -205,7 +205,10 @@ final readonly class PendingItemsCollector
             if ($item === null) {
                 continue;
             }
-            $item = $this->pendingItemAggregator->withRelatedChanges($item, $this->childItems($entry, $config, $columnLabels));
+            $item = $this->pendingItemAggregator->withRelatedChanges(
+                $item->with(['contentChanged' => $entry->contentChanged]),
+                $this->childItems($entry, $config, $columnLabels),
+            );
             $built[] = [
                 'item' => $item,
                 'order' => [
@@ -250,7 +253,7 @@ final readonly class PendingItemsCollector
                 resolveParent: false,
             );
             if ($item !== null) {
-                $items[] = $item;
+                $items[] = $item->with(['contentChanged' => $child->contentChanged]);
             }
         }
 

@@ -1,19 +1,21 @@
 import { html, nothing } from 'lit';
 import { label, configBool } from '@webconsulting/webcon-easy-workspace/menu-context.js';
-import { changedItemCount } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
+import { changedItemCount, contentChangeCount } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
 import { moduleHref } from '@webconsulting/webcon-easy-workspace/menu-actions.js';
 
 /**
- * One sentence about the numbers: what is pending here, and how much more
- * waits elsewhere in the workspace.
+ * One sentence about the numbers: what was edited here, how many versions
+ * TYPO3 only made along with those edits, and how much more waits
+ * elsewhere in the workspace.
  */
-export function summaryText(host, onPage, total) {
+export function summaryText(host, onPage, total, unchanged = 0) {
   if (host.state === 'no-context') {
     return total > 0 ? label(host, 'toolbar.count.workspace', { count: total }) : label(host, 'toolbar.count.none');
   }
-  if (onPage <= 0 && total <= 0) return label(host, 'toolbar.count.none');
+  if (onPage <= 0 && unchanged <= 0 && total <= 0) return label(host, 'toolbar.count.none');
   const parts = [label(host, host.newsUid > 0 ? 'toolbar.summary.news' : 'toolbar.summary.page', { count: onPage })];
-  const elsewhere = Math.max(0, total - onPage);
+  if (unchanged > 0) parts.push(label(host, 'toolbar.summary.unchanged', { count: unchanged }));
+  const elsewhere = Math.max(0, total - onPage - unchanged);
   if (elsewhere > 0) parts.push(label(host, 'toolbar.summary.elsewhere', { count: elsewhere }));
   return parts.join(' · ');
 }
@@ -24,7 +26,8 @@ export function summaryText(host, onPage, total) {
  * the numbers below.
  */
 export function renderHeader(host) {
-  const onPage = changedItemCount(host.items);
+  const onPage = contentChangeCount(host.items);
+  const unchanged = changedItemCount(host.items) - onPage;
   const total = Math.max(0, Number(host.badgeCount) || 0);
   const showName = configBool(host, 'enableWorkspaceChip', true) && host.workspaceTitle;
   const refreshing = host.state === 'loading';
@@ -44,7 +47,7 @@ export function renderHeader(host) {
           ${host.stage?.label ? html`
             <span class="badge badge-secondary wew-menu__stage" title=${stageTitle} aria-label=${stageTitle} data-wew-stage>${host.stage.label}</span>` : nothing}
         </div>
-        <p class="wew-menu__summary" aria-live="polite" data-wew-count-chip>${summaryText(host, onPage, total)}</p>
+        <p class="wew-menu__summary" aria-live="polite" data-wew-count-chip>${summaryText(host, onPage, total, unchanged)}</p>
       </div>
       <div class="wew-menu__head-side">
         ${href ? html`

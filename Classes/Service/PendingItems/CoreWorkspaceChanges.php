@@ -8,6 +8,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Schema\Capability\RootLevelCapability;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
@@ -44,12 +46,16 @@ final readonly class CoreWorkspaceChanges
 {
     private const int LIFETIME = 300;
 
+    /** Versions compared per round trip (plus their live rows). */
+    private const int ROW_CHUNK = 500;
+
     public function __construct(
         private WorkspaceService $workspaceService,
         private EventDispatcherInterface $eventDispatcher,
         private TcaSchemaFactory $tcaSchemaFactory,
         private WorkspaceRevision $revision,
         private FrontendInterface $cache,
+        private ConnectionPool $connectionPool,
     ) {}
 
     /**
@@ -156,9 +162,11 @@ final readonly class CoreWorkspaceChanges
         $versions = $this->workspaceService->selectVersionsInWorkspace($workspaceId, -99, -1, 0, 'tables_select');
         foreach ($versions as $table => $records) {
             $table = (string)$table;
+            $records = is_array($records) ? $records : [];
             $languageField = $this->languageField($table);
             $translationParentField = $this->translationParentField($table);
-            foreach (is_array($records) ? $records : [] as $record) {
+            $contentChanged = $this->contentChanges($table, $records);
+            foreach ($records as $record) {
                 $record = Value::stringKeyArray($record);
                 $uid = Value::int($record['uid'] ?? null);
                 if ($uid <= 0) {
@@ -183,8 +191,72 @@ final readonly class CoreWorkspaceChanges
                         : null,
                     translationParent: $translationParent,
                     isMoved: $isMoved,
+                    contentChanged: $isMoved || ($contentChanged[$uid] ?? true),
                 );
             }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Per version uid: whether it differs from its live record. Two queries
+     * per ROW_CHUNK versions of a table (the versions, their live rows), once
+     * per revision as part of the cached scan; a large workspace never holds
+     * more than one chunk of full rows.
+     *
+     * @param array<mixed> $records core's version rows of one table
+     * @return array<int, bool>
+     */
+    private function contentChanges(string $table, array $records): array
+    {
+        $versionUids = [];
+        foreach ($records as $record) {
+            $uid = Value::int(is_array($record) ? ($record['uid'] ?? null) : null);
+            if ($uid > 0) {
+                $versionUids[] = $uid;
+            }
+        }
+
+        $changes = [];
+        foreach (array_chunk(array_values(array_unique($versionUids)), self::ROW_CHUNK) as $chunk) {
+            $versionRows = $this->fullRows($table, $chunk);
+            $liveUids = [];
+            foreach ($versionRows as $row) {
+                $liveUid = Value::int($row['t3ver_oid'] ?? null);
+                if ($liveUid > 0) {
+                    $liveUids[] = $liveUid;
+                }
+            }
+            $liveRows = $this->fullRows($table, $liveUids);
+            foreach ($versionRows as $uid => $row) {
+                // A new, deleted or moved record is a change by what it is.
+                $changes[$uid] = Value::int($row['t3ver_state'] ?? null) !== 0
+                    || ContentChangeDetector::differs($row, $liveRows[Value::int($row['t3ver_oid'] ?? null)] ?? null);
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * @param list<int> $uids at most ROW_CHUNK
+     * @return array<int, array<string, mixed>> keyed by uid; deleted and hidden rows included
+     */
+    private function fullRows(string $table, array $uids): array
+    {
+        if ($uids === []) {
+            return [];
+        }
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($table);
+        $queryBuilder->getRestrictions()->removeAll();
+        $result = $queryBuilder->select('*')
+            ->from($table)
+            ->where($queryBuilder->expr()->in('uid', $queryBuilder->createNamedParameter($uids, Connection::PARAM_INT_ARRAY)))
+            ->executeQuery();
+        $rows = [];
+        while ($row = $result->fetchAssociative()) {
+            $rows[Value::int($row['uid'] ?? null)] = Value::stringKeyArray($row);
         }
 
         return $rows;

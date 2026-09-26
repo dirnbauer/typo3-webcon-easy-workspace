@@ -19,20 +19,22 @@ Header
     (``enableWorkspaceChip``; "Workspace" without it), the stage of the listed
     records as a Core badge ("Mixed stages" when they differ), and two icon
     buttons: open the Easy Workspace module for the current page, and
-    refresh. Below, one line with the numbers ("N changes on this page · M
-    more elsewhere in the workspace", or "N pending in this workspace"
-    outside a page context).
+    refresh. Below, one line with the numbers ("N changes on this page · K
+    without a content change · M more elsewhere in the workspace", or "N
+    pending in this workspace" outside a page context).
 
 Groups
     One group for the page or news article (record icon, title and rootline
-    path on one line, row count) and, when present, one for workspace-wide
-    file metadata records. Within the page group the rows are ordered by
-    language, see :ref:`toolbar-languages`.
+    path on one line, the number of edited rows) and, when present, one for
+    workspace-wide file metadata records. Within the page group the edited
+    rows of the current view come first, see :ref:`toolbar-languages`.
 
 Rows
     A selection checkbox (a Core ``.form-check``), record icon or
     thumbnail, title, the change type as a Core badge (new / changed /
-    deleted / moved, the module's classes), a meta line with type, column,
+    deleted / moved, the module's classes; a neutral "Unchanged" for a
+    version TYPO3 only made along, see :ref:`toolbar-unchanged`), a meta
+    line with type, column,
     the element a collection item or file reference belongs to ("in …"),
     author and relative time, optional related child records
     (``showSubelementsInToolbar``), and the always-visible actions as Core
@@ -78,18 +80,55 @@ current language. The list tells them apart:
   the module's identifier (``module``, from Core's module router element)
   and the server reads that module's data. A module without a language —
   a record list, the dashboard — reports ``null``.
-- Rows of the view's languages come first, under a "shown in this view"
-  line when other languages follow. The rows the page shows only after a
-  language switch come next under "Other languages", one sub-header per
-  language (flag, title, count) and a one-line hint ("Not shown in German ·
-  published with the rest"); the full explanation is the section's hover
-  title and screen-reader text. They start selected like every other row;
-  select-all and ``Publish N`` count them.
+- The most important rows come first: those of the view's languages whose
+  content someone edited, under a "shown in this view" line when more
+  follows. Two sections follow folded; their header is a button
+  (``aria-expanded``) that opens them:
+
+  - "Without content change": versions of the view's languages TYPO3 only
+    made along with an edit, see :ref:`toolbar-unchanged`.
+  - The rows the page shows only after a language switch: "Translations"
+    in a view of the default language, "Other languages" otherwise, with a
+    count ("4 of 7 changed") and a one-line hint ("Not shown in German ·
+    published with the rest"); the full explanation is the header's hover
+    title and screen-reader text. Opened, one sub-header per language
+    (flag, title, count) and its edited rows first.
+
+  Folded rows start selected like every other row; select-all and
+  ``Publish N`` count them. The dropdown remembers which sections the
+  editor opened until they move to another page, news article or
+  workspace.
 - A language chip appears on a row only where its language is not obvious:
   in a view of several languages, or in a module without one, on every row
   that is not in the view's (or the default) language.
 
 The badge is not affected: it counts the page's changes in every language.
+
+..  _toolbar-unchanged:
+
+Versions without a content change
+=================================
+
+Editing an element in a workspace makes TYPO3 version more than the editor
+touched: the element's translations, its collection items and their
+translations become workspace versions too, as copies of their live rows.
+The Workspaces module lists each of them as a change, and publishing has to
+take them along.
+
+The toolbar lists them too, but tells them apart. ``ContentChangeDetector``
+compares each version with its live record: every column except the ones
+TYPO3 maintains itself (``uid``, the timestamps, the ``t3ver_*`` pointers,
+``l10n_diffsource``, ``l10n_state``), empty values loosely (``'0'`` equals
+``''``, as copying a row turns one into the other in a few group fields). A
+new, deleted or moved version is a change by what it is. The comparison
+runs inside the cached core scan, once per workspace revision, 500 versions
+per round trip.
+
+A row whose content matches live, with no changed related record, carries
+a neutral "Unchanged" badge instead of the change type and a quieter
+title. It stays selected and publishes and discards with the rest; the
+header counts it apart ("3 without a content change"), and a row's related
+changes name only the records that changed.
 
 ..  _toolbar-keyboard:
 
@@ -122,7 +161,7 @@ Styles live in four files under ``Resources/Public/Css/``:
     automatically. Extension styles only read ``--wew-*``.
 ``toolbar-menu.css``
     The dropdown's layout (width 460 px, min-width 320 px, max-height
-    64 vh, badge pulse, row enter/exit transitions using ``@starting-style``
+    the viewport below the top bar, badge pulse, row enter/exit transitions using ``@starting-style``
     and ``transition-behavior: allow-discrete``, ``prefers-reduced-motion``
     support). Badges, buttons and checkboxes are Core's own classes
     (``.badge``, ``.btn-borderless``, ``.form-check``); the file draws no

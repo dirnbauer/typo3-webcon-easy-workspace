@@ -29,6 +29,11 @@ final readonly class WorkspaceChange
         public ?int $languageUid = null,
         public int $translationParent = 0,
         public bool $isMoved = false,
+        /**
+         * False for a version that matches its live record: one TYPO3
+         * created along with an edit elsewhere (see ContentChangeDetector).
+         */
+        public bool $contentChanged = true,
     ) {}
 
     public function isNew(): bool
@@ -50,6 +55,7 @@ final readonly class WorkspaceChange
             $this->languageUid,
             $this->translationParent,
             $this->isMoved,
+            $this->contentChanged,
         );
     }
 
@@ -92,7 +98,7 @@ final readonly class WorkspaceChange
     }
 
     /**
-     * @return array{table: string, workspaceUid: int, liveUid: int, pid: int, languageUid: int|null, translationParent: int, isMoved: bool}
+     * @return array{table: string, workspaceUid: int, liveUid: int, pid: int, languageUid: int|null, translationParent: int, isMoved: bool, contentChanged: bool}
      */
     public function toArray(): array
     {
@@ -104,6 +110,7 @@ final readonly class WorkspaceChange
             'languageUid' => $this->languageUid,
             'translationParent' => $this->translationParent,
             'isMoved' => $this->isMoved,
+            'contentChanged' => $this->contentChanged,
         ];
     }
 
@@ -122,6 +129,7 @@ final readonly class WorkspaceChange
             languageUid: is_int($languageUid) ? $languageUid : null,
             translationParent: (int)($row['translationParent'] ?? 0),
             isMoved: (bool)($row['isMoved'] ?? false),
+            contentChanged: (bool)($row['contentChanged'] ?? true),
         );
     }
 }
