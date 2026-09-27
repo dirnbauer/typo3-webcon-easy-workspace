@@ -2,7 +2,10 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
-## [Unreleased]
+## [1.10.1] — 2026-09-27
+
+In a workspace with mount points, the dropdown lists the drafts on the pages
+below the mounts again, and a mount point without a page no longer breaks it.
 
 ### Fixed
 
