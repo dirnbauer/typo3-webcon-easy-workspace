@@ -1,0 +1,25 @@
+"be_users"
+,"uid","pid","username","password","admin","workspace_id","deleted","disable"
+,1,0,"admin","",1,1,0,0
+,2,0,"admin-stale-mount","",1,2,0,0
+"sys_workspace"
+,"uid","pid","title","adminusers","members","db_mountpoints","deleted"
+,1,0,"Mounted workspace","be_users_1","","2",0
+,2,0,"Workspace with a stale mount","be_users_2","","2,99",0
+"pages"
+,"uid","pid","title","doktype","deleted","hidden","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,1,0,"Root",1,0,0,1700000000,0,0,0,0
+,2,1,"Mounted section",1,0,0,1700000000,0,0,0,0
+,3,2,"One level down",1,0,0,1700000000,0,0,0,0
+,4,3,"Two levels down",1,0,0,1700000000,0,0,0,0
+,5,1,"Outside the mount",1,0,0,1700000000,0,0,0,0
+"tt_content"
+,"uid","pid","CType","header","colPos","sorting","sys_language_uid","l18n_parent","hidden","deleted","tstamp","t3ver_oid","t3ver_wsid","t3ver_state","t3ver_stage"
+,10,2,"text","On the mount page",0,10,0,0,0,0,1700000000,0,0,0,0
+,11,2,"text","On the mount page (draft)",0,10,0,0,0,0,1700000100,10,1,0,0
+,12,3,"text","One level down",0,10,0,0,0,0,1700000000,0,0,0,0
+,13,3,"text","One level down (draft)",0,10,0,0,0,0,1700000200,12,1,0,0
+,14,4,"text","New, two levels down",0,10,0,0,0,0,1700000300,0,1,1,0
+,15,5,"text","Outside the mount",0,10,0,0,0,0,1700000000,0,0,0,0
+,16,5,"text","Outside the mount (draft)",0,10,0,0,0,0,1700000400,15,1,0,0
+,17,3,"text","One level down (draft of the second workspace)",0,10,0,0,0,0,1700000500,12,2,0,0

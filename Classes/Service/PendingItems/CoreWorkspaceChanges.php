@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Service\PendingItems;
 
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Schema\Capability\RootLevelCapability;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
@@ -23,12 +25,13 @@ use Webconsulting\WebconEasyWorkspace\Utility\Value;
  * A workspace's changes as the Workspaces module lists them.
  *
  * Core finds the versions — WorkspaceService::selectVersionsInWorkspace(),
- * with the editor's table and page permissions — and nests every record
- * that depends on another one below it: collection items, file references,
- * inline children (CollectionService, the step GridDataService runs before
- * it renders the module's grid). An entry is one row of that grid's top
- * level; the versions nested below it come with it. A changed collection
- * item of an unchanged element is a row of its own, as in the module.
+ * every level below the editor's mounts, with the editor's table and page
+ * permissions — and nests every record that depends on another one below
+ * it: collection items, file references, inline children
+ * (CollectionService, the step GridDataService runs before it renders the
+ * module's grid). An entry is one row of that grid's top level; the
+ * versions nested below it come with it. A changed collection item of an
+ * unchanged element is a row of its own, as in the module.
  *
  * Core's selection asks every workspace-aware table (hundreds in a Content
  * Blocks installation), so it runs once per workspace revision and editor:
@@ -49,6 +52,12 @@ final readonly class CoreWorkspaceChanges
     /** Versions compared per round trip (plus their live rows). */
     private const int ROW_CHUNK = 500;
 
+    /**
+     * Core's depth for "every level": the module's "Infinite", and the depth
+     * its actions for the entire workspace select with.
+     */
+    private const int ALL_LEVELS = 999;
+
     public function __construct(
         private WorkspaceService $workspaceService,
         private EventDispatcherInterface $eventDispatcher,
@@ -56,6 +65,7 @@ final readonly class CoreWorkspaceChanges
         private WorkspaceRevision $revision,
         private FrontendInterface $cache,
         private ConnectionPool $connectionPool,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -159,8 +169,7 @@ final readonly class CoreWorkspaceChanges
     private function select(int $workspaceId): array
     {
         $rows = [];
-        $versions = $this->workspaceService->selectVersionsInWorkspace($workspaceId, -99, -1, 0, 'tables_select');
-        foreach ($versions as $table => $records) {
+        foreach ($this->versions($workspaceId) as $table => $records) {
             $table = (string)$table;
             $records = is_array($records) ? $records : [];
             $languageField = $this->languageField($table);
@@ -197,6 +206,87 @@ final readonly class CoreWorkspaceChanges
         }
 
         return $rows;
+    }
+
+    /**
+     * Core's versions of the whole workspace, selected as the module's
+     * actions for the entire workspace select them.
+     *
+     * Without page 0 among the editor's mounts, core looks below the mounts
+     * only, as many levels deep as it is told. In a workspace with mount
+     * points the editor's mounts are the workspace's (an administrator's as
+     * well, whose mount is page 0 otherwise), so depth 0 would find the
+     * drafts on the mount pages and none on the pages below them.
+     *
+     * A mount point without a page — deleted since the workspace was set up —
+     * makes core fail on the page tree ("Undefined array key", an exception
+     * in the Development context). Such mount points are logged and left
+     * out: core is asked below each of the others instead, which costs one
+     * scan per mount point until the workspace record is corrected.
+     *
+     * @return array<mixed> core's version rows by table
+     */
+    private function versions(int $workspaceId): array
+    {
+        $mounts = $this->webmounts();
+        $missing = in_array(0, $mounts, true) ? [] : $this->missingPages($mounts);
+        if ($missing === []) {
+            return $this->workspaceService->selectVersionsInWorkspace($workspaceId, -99, -1, self::ALL_LEVELS, 'tables_select');
+        }
+
+        $this->logger->warning(
+            'Workspace {workspace} has mount points without a page: {pages}. Easy Workspace lists the changes below its other mount points; correct the mount points of the workspace record.',
+            ['workspace' => $workspaceId, 'pages' => implode(',', $missing)],
+        );
+        $versions = [];
+        foreach (array_diff($mounts, $missing) as $mount) {
+            $mountVersions = $this->workspaceService->selectVersionsInWorkspace($workspaceId, -99, $mount, self::ALL_LEVELS, 'tables_select');
+            foreach ($mountVersions as $table => $records) {
+                foreach (is_array($records) ? $records : [] as $record) {
+                    // Root-level records, and the pages of nested mounts,
+                    // come with every mount that covers them.
+                    $uid = Value::int(is_array($record) ? ($record['uid'] ?? null) : null);
+                    $versions[(string)$table][$uid] ??= $record;
+                }
+            }
+        }
+
+        return $versions;
+    }
+
+    /**
+     * The mounts core reads for the whole workspace.
+     *
+     * @return list<int>
+     */
+    private function webmounts(): array
+    {
+        $user = $GLOBALS['BE_USER'] ?? null;
+
+        return $user instanceof BackendUserAuthentication ? $user->getWebmounts() : [];
+    }
+
+    /**
+     * The mounts without a page record, looked up as core looks up the pages
+     * of a tree: deleted pages do not count.
+     *
+     * @param list<int> $mounts
+     * @return list<int>
+     */
+    private function missingPages(array $mounts): array
+    {
+        if ($mounts === []) {
+            return [];
+        }
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('pages');
+        $queryBuilder->getRestrictions()->removeAll()->add(new DeletedRestriction());
+        $pages = $queryBuilder->select('uid')
+            ->from('pages')
+            ->where($queryBuilder->expr()->in('uid', $queryBuilder->createNamedParameter($mounts, Connection::PARAM_INT_ARRAY)))
+            ->executeQuery()
+            ->fetchFirstColumn();
+
+        return array_values(array_diff($mounts, array_map(Value::int(...), $pages)));
     }
 
     /**

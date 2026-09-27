@@ -30,7 +30,9 @@ new one only for an intended change (``EASYWS_UPDATE_SNAPSHOT=1``).
 module on the same data: the whole-workspace count against the module's
 grid total, and a page's items against the module's rows for that page.
 ``WorkspaceRevisionTest`` pins when the stamp moves and how long the cached
-page count lives.
+page count lives. ``CoreWorkspaceChangesMountedWorkspaceTest`` covers a
+workspace with mount points: the drafts on every level below a mount, and a
+mount point without a page, which is logged and left out.
 
 JavaScript
 ----------

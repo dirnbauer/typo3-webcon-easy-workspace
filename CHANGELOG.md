@@ -2,6 +2,31 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- In a workspace with mount points, the drafts on the pages below a mount
+  are listed. Such a workspace's mounts are the editor's (an
+  administrator's too), and core selects the whole workspace below the
+  mounts only, as many levels deep as it is asked to. The toolbar asked for
+  no level, so it found the drafts on the mount pages alone: since 1.9.0 a
+  page below a mount read "0 changes on this page · N more elsewhere in the
+  workspace" although it had drafts, and since 1.8.0 the workspace total
+  missed them. `CoreWorkspaceChanges` now asks for every level (999), as
+  core's actions for the entire workspace do. Lab, Staging (six mounts,
+  175 pages below them): the scan finds 10 versions instead of 5 and takes
+  about 670 instead of 170 ms, still once per editor and revision; a
+  workspace without mount points is scanned as before.
+- A workspace mount point without a page (deleted since the workspace was
+  set up) no longer fails the dropdown with "Could not load pending
+  changes" in the Development context, where core's "Undefined array key"
+  in `WorkspaceService::getTreeUids()` is an exception. The mount point is
+  logged as a warning that names the workspace and the page, and the
+  changes below the other mount points are listed, one core scan per mount
+  point until the workspace record is corrected. Other errors still fail
+  the request.
+
 ## [1.10.0] — 2026-09-26
 
 The dropdown shows the edited content elements first; translations and the

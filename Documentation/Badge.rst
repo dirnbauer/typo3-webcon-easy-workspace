@@ -50,9 +50,13 @@ Easy Workspace shows the Workspaces module's data and keeps no list of its
 own. ``CoreWorkspaceChanges`` asks core the way the module does:
 
 - ``WorkspaceService::selectVersionsInWorkspace()`` finds the versions of the
-  whole workspace, with the editor's table and page permissions. Core asks
-  every workspace-aware table, so this runs **once per editor and
-  revision**; the rows are cached (see :ref:`badge-page`). A page's rows
+  whole workspace, with the editor's table and page permissions: every
+  level below the editor's mounts, as core's actions for the entire
+  workspace select them. That matters in a workspace with mount points,
+  whose mounts are the editor's (an administrator's too); a mount point
+  without a page is logged and left out. Core asks every workspace-aware
+  table, so this runs **once per editor and revision**; the rows are
+  cached (see :ref:`badge-page`). A page's rows
   are the subset core would select for the page — the page the version
   lives on (the target page of a move), the page record and its
   translations, and the root-level records of tables that ignore the
