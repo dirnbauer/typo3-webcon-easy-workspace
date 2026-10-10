@@ -8,6 +8,7 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
+use Webconsulting\WebconEasyWorkspace\Enum\ChangeRole;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\PendingItemFactory;
@@ -111,7 +112,7 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, pageUid: int, languageUid: int|null, hasChanges: bool}
+     * @return array{workspaceId: int, pageUid: int, languageUid: int|null, hasChanges: bool, hasCopies: bool}
      */
     public function hasChangesForPage(int $pageUid, array $config = [], ?int $languageUid = null): array
     {
@@ -120,7 +121,7 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, newsUid: int, languageUid: int|null, hasChanges: bool}
+     * @return array{workspaceId: int, newsUid: int, languageUid: int|null, hasChanges: bool, hasCopies: bool}
      */
     public function hasChangesForNews(int $newsUid, array $config = [], ?int $languageUid = null): array
     {
@@ -152,7 +153,7 @@ final readonly class PendingItemsService
 
     /**
      * @param array<string, mixed> $config
-     * @return array{context: string, workspaceId: int, hasChanges: bool, pageUid?: int, newsUid?: int, languageUid?: int|null}
+     * @return array{context: string, workspaceId: int, hasChanges: bool, hasCopies?: bool, pageUid?: int, newsUid?: int, languageUid?: int|null}
      */
     public function hasChangesForContext(int $pageUid, int $newsUid, array $config, ?int $languageUid = null): array
     {
@@ -176,9 +177,10 @@ final readonly class PendingItemsService
     }
 
     /**
-     * Number of changed rows the dropdown would list for this context —
-     * the page (with its content elements and inline children) or the
-     * single news article. Returns null when there is no context, so the
+     * Number of changes the dropdown would list for this context — the
+     * page (with its content elements and inline children) or the single
+     * news article. Translation copies folded into a change and unchanged
+     * copies do not count. Returns null when there is no context, so the
      * toolbar badge can fall back to the whole-workspace count.
      *
      * @param array<string, mixed> $config
@@ -189,16 +191,17 @@ final readonly class PendingItemsService
     }
 
     /**
-     * The changed rows the dropdown would list for this context, reduced to
-     * what the badge needs: their number, and which records they are (the
-     * Visual Editor preview draws its decline buttons from that list).
-     * Null when there is no context.
+     * The changes the dropdown would list for this context, reduced to what
+     * the badge needs: their number, which records they are (the Visual
+     * Editor preview draws its decline buttons from that list), and the
+     * number of unchanged copies waiting for cleanup. Null when there is no
+     * context.
      *
      * Built in count-only mode — the same collection as the dropdown, minus
      * thumbnails, URLs and history timelines.
      *
      * @param array<string, mixed> $config
-     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}|null
+     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>, copies: int}|null
      */
     public function changesForContext(int $pageUid, int $newsUid, array $config, ?int $languageUid = null): ?array
     {
@@ -216,19 +219,36 @@ final readonly class PendingItemsService
     }
 
     /**
+     * The changes among the items and the copy records among them: `count`
+     * and `records` hold the changes (owners only — their companions travel
+     * with them), `copies` the unchanged copy records (each copy entry and
+     * its companions). An item without a role counts when it has content
+     * changes and no item carries a role (a list of an earlier release);
+     * next to classified items, a changed record without one is a version
+     * core does not list as a change here.
+     *
      * @param list<PendingItem> $items
-     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}
+     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>, copies: int}
      */
     public static function changeSummary(array $items): array
     {
         $records = [];
+        $copies = 0;
+        $classified = array_any($items, static fn(PendingItem $item): bool => $item->role !== null);
         foreach ($items as $item) {
-            if ($item->isChanged) {
+            if (!$item->isChanged) {
+                continue;
+            }
+            if ($item->role === ChangeRole::Copy) {
+                $copies += 1 + count($item->companions);
+                continue;
+            }
+            if ($item->role === ChangeRole::Change || ($item->role === null && !$classified && $item->hasContentChanges())) {
                 $records[] = ['table' => $item->table, 'liveUid' => $item->liveUid, 'workspaceUid' => $item->workspaceUid];
             }
         }
 
-        return ['count' => count($records), 'records' => $records];
+        return ['count' => count($records), 'records' => $records, 'copies' => $copies];
     }
 
     /**

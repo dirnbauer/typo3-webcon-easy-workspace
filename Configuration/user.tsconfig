@@ -45,6 +45,15 @@ options.webcon_easy_workspace {
     # backend module only; publish still includes them. (1)
     showSubelementsInModule = 1
 
+    # Default for the personal "Dropdown layout" user setting: how the
+    # toolbar dropdown arranges the same changes and actions.
+    #   clarity    – explains itself: plain wording, a note on the
+    #                translation copies TYPO3 makes along with an edit
+    #   efficiency – compact rows, keyboard shortcuts, one-glance scanning
+    #   core       – looks and behaves like the core backend's own lists
+    # An editor's own choice in User Settings wins. (clarity)
+    layout = clarity
+
     # -- Header ---------------------------------------------------
 
     # Show the active workspace name (e.g. "Staging") as a chip

@@ -4,8 +4,20 @@ import Modal, { Sizes as ModalSizes, Types as ModalTypes, Positions as ModalPosi
 import { ENDPOINTS } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
 import { label } from '@webconsulting/webcon-easy-workspace/menu-context.js';
 import { reloadPreviewAndRefocus } from '@webconsulting/webcon-easy-workspace/menu-preview-locate.js';
+import { keepOpenAcrossModal, focusedControl } from '@webconsulting/webcon-easy-workspace/menu-dropdown.js';
 
-export function openEditModal(host, item) {
+/**
+ * The record's form in Core's modal. The dropdown the modal hides opens
+ * again when it is gone (focus back on `opener`). `afterSave()` runs once
+ * the list after a save is there (contextual forms report their saves); a
+ * string it returns joins the save's notification. `beforeRefresh()` runs
+ * right after a save, before the list is asked for and before the dropdown
+ * opens again: the place to arm a focus request for the new list.
+ *
+ * Core's plain record form (no contextual URL) reports no save, so the list
+ * is asked for whenever it closes.
+ */
+export function openEditModal(host, item, { afterSave = null, beforeRefresh = null, opener = focusedControl(host) } = {}) {
   const url = item.contextualEditUrl || item.editUrl;
   if (!url) return;
   const isContextual = Boolean(item.contextualEditUrl);
@@ -18,13 +30,23 @@ export function openEditModal(host, item) {
     hideHeader: isContextual,
     additionalCssClasses: ['wew-edit-modal-shell'],
   });
-  if (isContextual) {
-    wireContextualEditModal(host, modal, item);
-  }
+  // Wired first: its hidden handler arms the focus request before the
+  // dropdown's reopen looks for one.
+  const wiring = isContextual ? wireContextualEditModal(host, modal, item, { afterSave, beforeRefresh }) : null;
+  const keep = keepOpenAcrossModal(host, modal, opener, { refresh: !isContextual });
+  if (wiring) wiring.keep = keep;
 }
 
-export function wireContextualEditModal(host, modal, item) {
+/**
+ * Save tracking for Core's contextual record form. "Open in full form"
+ * (`typo3:editform:navigate`) loads the full form in the content frame and
+ * closes the sheet: the dropdown stays closed then and takes no focus.
+ * `keep` on the returned object is the dropdown's reopen to cancel then
+ * (keepOpenAcrossModal()); the caller sets it.
+ */
+export function wireContextualEditModal(host, modal, item, { afterSave = null, beforeRefresh = null } = {}) {
   const topWindow = window.top || window;
+  const wiring = { keep: null };
   let savedTitle = '';
   let saved = false;
   let closedExplicitly = false;
@@ -34,7 +56,12 @@ export function wireContextualEditModal(host, modal, item) {
     if (action === 'typo3:editform:saved') {
       saved = true;
       savedTitle = event.data.recordTitle ?? '';
-    } else if (action === 'typo3:editform:closed' || action === 'typo3:editform:navigate') {
+    } else if (action === 'typo3:editform:closed') {
+      closedExplicitly = true;
+      modal.hideModal();
+    } else if (action === 'typo3:editform:navigate') {
+      wiring.keep?.cancel();
+      host._focusAfterRender = null;
       closedExplicitly = true;
       modal.hideModal();
     }
@@ -51,19 +78,23 @@ export function wireContextualEditModal(host, modal, item) {
   modal.addEventListener('typo3-modal-hidden', async () => {
     topWindow.removeEventListener('message', onMessage);
     if (!saved) return;
+    if (typeof beforeRefresh === 'function' && !wiring.keep?.cancelled) beforeRefresh();
     // One request for list and badge (the FormEngine save message that
     // arrived meanwhile joins it through BadgeSync's debounce).
     await (host.badge ? host.badge.request('edit-saved', { list: true }) : host._refresh());
     reloadPreviewAndRefocus(host, item);
+    const extra = typeof afterSave === 'function' ? afterSave() : null;
+    const message = savedTitle ? label(host, 'edit.saved.messageWithTitle', { title: savedTitle }) : label(host, 'edit.saved.message');
     Notification.success(
       label(host, 'edit.saved.title'),
-      savedTitle ? label(host, 'edit.saved.messageWithTitle', { title: savedTitle }) : label(host, 'edit.saved.message'),
+      typeof extra === 'string' && extra !== '' ? `${message} ${extra}` : message,
       4,
     );
   });
+  return wiring;
 }
 
-export function openDiffModal(host, item) {
+export function openDiffModal(host, item, { opener = focusedControl(host) } = {}) {
   if (!ENDPOINTS.diff) return;
   const url = `${ENDPOINTS.diff}&table=${encodeURIComponent(item.table)}&workspaceUid=${encodeURIComponent(item.workspaceUid)}`;
   const recordTitle = item.title || label(host, 'diff.noTitle');
@@ -91,9 +122,12 @@ export function openDiffModal(host, item) {
           e.preventDefault();
           const editUrl = editBtn.getAttribute('data-edit-url');
           if (!editUrl) return;
+          // The edit form takes over from the history: the dropdown opens
+          // again after the form, not in between.
+          keep.cancel();
           m.hideModal();
           setTimeout(() => {
-            Modal.advanced({
+            const editModal = Modal.advanced({
               title: label(host, 'diff.modal.editTitle', { title: recordTitle }),
               type: ModalTypes.iframe,
               content: editUrl,
@@ -101,11 +135,15 @@ export function openDiffModal(host, item) {
               position: ModalPositions.sheet,
               additionalCssClasses: ['wew-edit-modal-shell'],
             });
+            // Core's plain record form reports no save: the list is asked
+            // for whenever it closes.
+            keepOpenAcrossModal(host, editModal, opener, { wasOpen: keep.wasOpen, refresh: true });
           }, 60);
         });
       }
     },
   });
+  const keep = keepOpenAcrossModal(host, modal, opener);
   return modal;
 }
 

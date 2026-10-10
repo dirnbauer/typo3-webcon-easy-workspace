@@ -31,7 +31,7 @@ final readonly class ContextChangeSummary
 
     /**
      * @param array<string, mixed> $config Normalized config from ConfigurationProvider.
-     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}|null
+     * @return array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>, copies: int}|null
      */
     public function forContext(int $workspaceId, string $stamp, int $pageUid, int $newsUid, array $config): ?array
     {
@@ -41,7 +41,8 @@ final readonly class ContextChangeSummary
         }
 
         $identifier = sha1(implode('|', [
-            'context',
+            // Bumped with the meaning of the summary (1.11: changes only, plus copies).
+            'context|2',
             $workspaceId,
             $context->value,
             $context === ToolbarContext::News ? $newsUid : $pageUid,
@@ -56,8 +57,9 @@ final readonly class ContextChangeSummary
             && ($cached['stamp'] ?? null) === $stamp
             && Value::int($cached['expires'] ?? null) > time()
             && is_array($cached['summary'] ?? null)
+            && array_key_exists('copies', $cached['summary'])
         ) {
-            /** @var array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>} $summary */
+            /** @var array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>, copies: int} $summary */
             $summary = $cached['summary'];
             return $summary;
         }

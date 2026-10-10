@@ -9,6 +9,7 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
+use Webconsulting\WebconEasyWorkspace\Dto\PendingCompanion;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
@@ -133,6 +134,43 @@ final class PendingItemsServiceNewsTest extends FunctionalTestCase
         self::assertSame([], self::titles($payload->items));
         self::assertSame(0, $this->subject()->countChangesForContext(0, 50, []));
         self::assertFalse($this->subject()->hasChangesForNews(50)['hasChanges']);
+    }
+
+    #[Test]
+    public function theCopyOfAnArticlesTranslationFoldsIntoTheArticle(): void
+    {
+        $payload = $this->subject()->payloadForNews(60, PendingItemsMode::Changed);
+
+        self::assertSame(['Translated article (draft)'], self::titles($payload->items));
+        self::assertSame(
+            [['news', 63, 61, 1]],
+            array_map(
+                static fn(PendingCompanion $companion): array => ['news', $companion->workspaceUid, $companion->liveUid, $companion->languageUid],
+                $payload->items[0]->companions,
+            ),
+        );
+        self::assertSame(1, $this->subject()->countChangesForContext(0, 60, []));
+    }
+
+    #[Test]
+    public function inAllModeForTheTranslationsLanguageItsCopyIsAnUnchangedRecord(): void
+    {
+        $payload = $this->subject()->payloadForNews(60, PendingItemsMode::All, [], 1);
+
+        $translation = array_values(array_filter($payload->items, static fn(PendingItem $item): bool => $item->liveUid === 61));
+        self::assertCount(1, $translation, 'the German article is still listed');
+        self::assertFalse($translation[0]->isChanged);
+        self::assertSame([], array_filter($payload->items, static fn(PendingItem $item): bool => $item->isChanged));
+        self::assertSame(0, PendingItemsService::changeSummary($payload->items)['count']);
+    }
+
+    #[Test]
+    public function aTranslationEditedOnItsOwnBelongsToItsArticle(): void
+    {
+        $payload = $this->subject()->payloadForNews(70, PendingItemsMode::Changed);
+
+        self::assertSame(['Von Hand übersetzt (Entwurf)'], self::titles($payload->items));
+        self::assertSame(1, $this->subject()->countChangesForContext(0, 70, []));
     }
 
     #[Test]

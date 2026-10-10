@@ -94,6 +94,37 @@ final class ConfigurationProviderTest extends UnitTestCase
     }
 
     #[Test]
+    public function theLayoutIsClarityUnlessTsConfigOrTheEditorChoosesAnother(): void
+    {
+        self::assertSame('clarity', $this->subject->get()['layout']);
+
+        $this->setUpBackendUserWith(['layout' => 'core']);
+        self::assertSame('core', $this->subject->get()['layout']);
+
+        // The editor's own choice in User Settings wins.
+        $this->setUpBackendUserWith(['layout' => 'core'], ['webconEasyWorkspaceLayout' => 'efficiency']);
+        self::assertSame('efficiency', $this->subject->get()['layout']);
+
+        // Case and blanks do not matter.
+        $this->setUpBackendUserWith([], ['webconEasyWorkspaceLayout' => ' Core ']);
+        self::assertSame('core', $this->subject->get()['layout']);
+    }
+
+    #[Test]
+    public function anUnknownLayoutFallsBackToTheDefault(): void
+    {
+        $this->setUpBackendUserWith(['layout' => 'fancy']);
+        self::assertSame('clarity', $this->subject->get()['layout']);
+
+        // An unknown choice leaves the TSconfig default in place.
+        $this->setUpBackendUserWith(['layout' => 'efficiency'], ['webconEasyWorkspaceLayout' => 'removed-in-2.0']);
+        self::assertSame('efficiency', $this->subject->get()['layout']);
+
+        $this->setUpBackendUserWith([], ['webconEasyWorkspaceLayout' => 3]);
+        self::assertSame('clarity', $this->subject->get()['layout']);
+    }
+
+    #[Test]
     public function maxItemsIsCoercedToAtLeastOne(): void
     {
         $this->setUpBackendUserWith(['maxItems' => '0']);

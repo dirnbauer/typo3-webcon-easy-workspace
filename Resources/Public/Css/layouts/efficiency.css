@@ -1,0 +1,377 @@
+/*
+ * Easy Workspace dropdown — "efficiency" layout ("Effizient").
+ *
+ * Dense, crisp and fast, in the manner of a refined mail list: one line for
+ * the title with the time at its end, one line that starts with the change
+ * badge, the translations as chips. Actions appear where the time was while
+ * a row is hovered or holds focus (fine pointers only; touch keeps them).
+ *
+ * Every rule is scoped under .wew-menu[data-wew-layout="efficiency"]; the
+ * base presentation lives in toolbar-menu.css. Colours from tokens.css only,
+ * no gradients, motion through the --wew-motion-* tokens (0 under
+ * prefers-reduced-motion). The alignment grid is the base one:
+ *
+ *   12px gutter · 24px control column · 8px · 24px icon column · 8px · text
+ *
+ * Section chevrons and language flags sit centred in the icon column, so
+ * every title of the list starts on the text column.
+ */
+.wew-menu[data-wew-layout="efficiency"] {
+    --wew-layout: efficiency;
+    --wew-eff-title: .78125rem;                 /* 12.5px: titles carry the list */
+    --wew-eff-meta: var(--wew-font-size-xs);    /* 11px */
+    --wew-eff-micro: .65625rem;                 /* 10.5px: time, counts, hints */
+    --wew-eff-line: 18px;
+    --wew-eff-tile: 6px;
+    --wew-eff-accent: var(--wew-accent-primary);
+    --wew-eff-accent-tint: color-mix(in srgb, var(--wew-accent-primary) 13%, transparent);
+    --wew-eff-accent-line: color-mix(in srgb, var(--wew-accent-primary) 45%, transparent);
+    --wew-eff-hairline: color-mix(in srgb, var(--wew-border) 70%, transparent);
+}
+
+/* ---- Header: the same two lines, a little tighter ---- */
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__head {
+    padding: 10px var(--wew-space-2) 9px var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__title { letter-spacing: -.01em; }
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__summary {
+    font-size: var(--wew-eff-meta); font-variant-numeric: tabular-nums;
+}
+
+/* ---- Groups: a compact heading, the count as a pill ---- */
+.wew-menu[data-wew-layout="efficiency"] .wew-list { padding: 2px 0 var(--wew-space-2); }
+.wew-menu[data-wew-layout="efficiency"] .wew-group__head { padding: 10px var(--wew-space-3) 4px var(--wew-gutter); }
+.wew-menu[data-wew-layout="efficiency"] .wew-group__icon { opacity: .7; }
+.wew-menu[data-wew-layout="efficiency"] h3.wew-group__title {
+    font-size: var(--wew-eff-meta); font-weight: 700; line-height: 16px; letter-spacing: .005em;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-group__path { font-size: var(--wew-eff-meta); line-height: 16px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-group__count { font-size: var(--wew-eff-micro); padding: 0 6px; line-height: 16px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-group + .wew-group { margin-top: var(--wew-space-1); border-top-color: var(--wew-eff-hairline); }
+
+/* "English · in dieser Ansicht" and the language headers: flag centred in
+   the icon column, the name on the text column. */
+.wew-menu[data-wew-layout="efficiency"] :is(.wew-section--in-view, .wew-language) {
+    gap: var(--wew-gap); padding: 6px var(--wew-space-3) 2px var(--wew-indent-icon);
+    font-size: var(--wew-eff-micro); font-weight: 600; letter-spacing: .01em;
+}
+.wew-menu[data-wew-layout="efficiency"] :is(.wew-section--in-view, .wew-language) > typo3-backend-icon {
+    flex: none; inline-size: var(--wew-col); justify-content: center;
+}
+.wew-menu[data-wew-layout="efficiency"] :is(.wew-section__count, .wew-language__count) { font-size: var(--wew-eff-micro); }
+
+/* ---- Rows ----
+   select | icon | title   | actions (touch; floating with a fine pointer)
+   select | icon | meta    (runs under the actions)
+   .      | .    | children
+   .      | .    | translations */
+.wew-menu[data-wew-layout="efficiency"] .wew-row {
+    grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas:
+        "select icon title actions"
+        "select icon meta  meta"
+        ".      .    kids  kids"
+        ".      .    langs langs";
+    row-gap: 0;
+    padding-block: 5px;
+    border-radius: var(--wew-radius-sm);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-rows { display: grid; gap: 1px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__title {
+    font-size: var(--wew-eff-title); font-weight: 500; line-height: var(--wew-eff-line); letter-spacing: -.003em;
+    transition: color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row--primary .wew-row__title { font-weight: 650; }
+
+/* Not selected = not published: the title steps back, the icon greys out.
+   The checkbox carries the state; the muted text stays at AA. */
+.wew-menu[data-wew-layout="efficiency"] .wew-row--unselected .wew-row__title { color: var(--wew-text-muted); font-weight: 400; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row--unselected :is(.wew-row__type, .wew-row__type-tile:not(.wew-row__locate)) { filter: grayscale(1); opacity: .65; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row--unselected .wew-row__badge { filter: grayscale(1); }
+
+/* Type icon tile, and locate on it: the icon gives way to an eye. */
+.wew-menu[data-wew-layout="efficiency"] .wew-row__type-tile {
+    grid-area: icon; position: relative;
+    display: inline-grid; place-items: center; overflow: hidden;
+    inline-size: var(--wew-col); block-size: var(--wew-col); padding: 0; margin: 0;
+    border: 0; border-radius: var(--wew-eff-tile);
+    background: var(--wew-surface-sunken); color: var(--wew-text-muted);
+    font: inherit;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__thumb .wew-row__type { inline-size: 100%; block-size: 100%; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate {
+    cursor: pointer;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), box-shadow var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate > span {
+    grid-area: 1 / 1; display: inline-grid; place-items: center;
+    transition: opacity var(--wew-motion-fast) var(--wew-ease), scale var(--wew-motion) var(--wew-ease-spring);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__eye { opacity: 0; scale: .5; color: var(--wew-eff-accent); }
+.wew-menu[data-wew-layout="efficiency"] .wew-row:hover .wew-row__locate { box-shadow: inset 0 0 0 1px var(--wew-border); }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate:is(:hover, :focus-visible) {
+    background: var(--wew-eff-accent-tint); box-shadow: inset 0 0 0 1px var(--wew-eff-accent-line);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate:is(:hover, :focus-visible) .wew-row__type { opacity: 0; scale: .5; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate:is(:hover, :focus-visible) .wew-row__eye { opacity: 1; scale: 1; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate:focus-visible { outline: var(--wew-focus-outline); outline-offset: 1px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__locate:active { scale: .94; }
+
+/* Line 1 belongs to the title. Actions: in the row grid on touch; with a
+   fine pointer they float over the end of line 1 on a solid copy of the
+   row's hover surface (no gradient) while the row is hovered or holds
+   keyboard focus. */
+.wew-menu[data-wew-layout="efficiency"] .wew-row__actions { gap: 0; margin-block: -3px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__action { position: relative; min-inline-size: var(--wew-target); min-block-size: var(--wew-target); }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__action-slot { inline-size: var(--wew-target); }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__action--danger { margin-inline-start: 11px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__action--danger::before {
+    content: ""; position: absolute; inset-inline-start: -6px; inset-block: 6px;
+    border-inline-start: 1px solid var(--wew-border);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__action:not(:disabled):active { scale: .92; }
+
+@media (hover: hover) and (pointer: fine) {
+    .wew-menu[data-wew-layout="efficiency"] .wew-row {
+        grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr);
+        grid-template-areas:
+            "select icon title"
+            "select icon meta"
+            ".      .    kids"
+            ".      .    langs";
+    }
+    .wew-menu[data-wew-layout="efficiency"] .wew-row__actions {
+        position: absolute; z-index: 1; inset-block-start: 2px; inset-inline-end: var(--wew-space-1);
+        margin: 0; padding-inline: var(--wew-space-2) 0;
+        border-radius: var(--wew-radius-sm);
+        background: var(--wew-surface);
+        box-shadow: inset 0 0 0 100vmax var(--wew-surface-hover);
+        opacity: 0; translate: 4px 0; pointer-events: none;
+        transition: opacity var(--wew-motion-fast) var(--wew-ease), translate var(--wew-motion) var(--wew-ease);
+    }
+    .wew-menu[data-wew-layout="efficiency"] .wew-row:is(:hover, :has(:focus-visible)) .wew-row__actions { opacity: 1; translate: 0 0; pointer-events: auto; }
+}
+/* Keyboard focus in a row tints it like hover (the floating actions sit
+   on that tint). */
+.wew-menu[data-wew-layout="efficiency"] .wew-row:has(:focus-visible) { background: var(--wew-surface-hover); }
+
+/* Line 2: the change badge starts it, so badges form one column. */
+.wew-menu[data-wew-layout="efficiency"] .wew-row__meta {
+    gap: 6px; font-size: var(--wew-eff-meta); line-height: 16px; margin-top: 1px;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__badge {
+    font-size: .625rem; line-height: 12px; padding-block: 1px; letter-spacing: .015em;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__meta-text { margin-inline-start: 0; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__sep { opacity: .5; }
+/* One line of whole parts: a "· part" that does not fit wraps out of
+   sight (the full text is the title), so the line never ends in a
+   dangling "·…". Only the first part, when it alone is too long, ends in
+   an ellipsis. */
+.wew-menu[data-wew-layout="efficiency"] .wew-row__meta-text {
+    display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 8px;
+    block-size: 16px; overflow: hidden; text-overflow: clip;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__meta-text > .wew-row__part { flex: none; white-space: nowrap; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__meta-text > .wew-row__part:first-child {
+    flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__part--unit > .wew-row__sep { margin-inline-start: .3em; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__language { font-size: var(--wew-eff-micro); }
+
+.wew-menu[data-wew-layout="efficiency"] .wew-row__children { margin-top: 4px; font-size: var(--wew-eff-micro); }
+
+/* Translations carried along: icon, label, chips that edit. */
+.wew-menu[data-wew-layout="efficiency"] .wew-row__companions {
+    gap: 3px var(--wew-space-3); padding-top: 4px; font-size: var(--wew-eff-meta); line-height: var(--wew-target);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-row__companions-label { margin-inline-end: 1px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-row__chips { gap: 4px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-companion {
+    --typo3-btn-padding-x: 0; --typo3-btn-padding-y: 0;
+    /* A 24px target (WCAG 2.5.8) drawn as the dense 20px pill: the border
+       is transparent space, background and inset shadows stay inside it. */
+    gap: 4px; min-block-size: var(--wew-target); padding-inline: 5px 6px;
+    border: 2px solid transparent; border-inline-width: 0; border-radius: var(--wew-radius-pill);
+    background: var(--wew-chip); background-clip: padding-box; color: var(--wew-text);
+    font-size: var(--wew-eff-micro); font-weight: 700; letter-spacing: .05em;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), color var(--wew-motion-fast) var(--wew-ease),
+        box-shadow var(--wew-motion-fast) var(--wew-ease), translate var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-companion__pen {
+    --icon-size-small: 11px;
+    display: inline-flex; color: var(--wew-text-muted);
+    transition: color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="efficiency"] button.wew-companion:hover {
+    background: var(--wew-eff-accent-tint); color: var(--wew-eff-accent);
+    box-shadow: inset 0 0 0 1px var(--wew-eff-accent-line);
+}
+.wew-menu[data-wew-layout="efficiency"] button.wew-companion:hover .wew-companion__pen { color: var(--wew-eff-accent); }
+.wew-menu[data-wew-layout="efficiency"] .wew-companion--static {
+    background: transparent; padding-inline: 1px 3px; color: inherit; font-weight: 600;
+}
+
+/* ---- Sections: chevron in the icon column, title on the text column ---- */
+.wew-menu[data-wew-layout="efficiency"] .wew-section { border-top-color: var(--wew-eff-hairline); }
+.wew-menu[data-wew-layout="efficiency"] .wew-section__head { padding-block: 3px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-section__toggle {
+    --wew-section-line: 28px;
+    gap: 0 6px; min-height: 0; block-size: 28px; padding-block: 0;
+    font-size: var(--wew-font-size-title); font-weight: 600;
+    /* What does not fit on the line wraps out of sight instead of ending
+       in "…": the status shows whole or not at all (its text stays in the
+       toggle's title and the screen-reader text). */
+    flex-wrap: wrap; align-content: flex-start; row-gap: 12px; overflow: hidden;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-section__toggle > :not(.visually-hidden) { min-block-size: 28px; display: inline-flex; align-items: center; }
+.wew-menu[data-wew-layout="efficiency"] .wew-section__toggle > .wew-section__count--pill { min-block-size: 16px; justify-content: center; }
+.wew-menu[data-wew-layout="efficiency"] .wew-section__toggle > .wew-section__chevron {
+    inline-size: var(--wew-col); margin-inline-end: calc(var(--wew-gap) - 6px); justify-content: center;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-section__count--pill {
+    min-inline-size: 18px; padding: 0 5px; line-height: 16px; font-size: var(--wew-eff-micro);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-section__meta {
+    flex: 0 0 auto; overflow: visible; font-size: var(--wew-eff-micro); margin-inline-start: -2px;
+}
+/* Folded: "2 von 2 ausgewählt" — what goes live unseen, in the accent. */
+.wew-menu[data-wew-layout="efficiency"] .wew-section__meta--selection { color: var(--wew-eff-accent); font-weight: 600; }
+.wew-menu[data-wew-layout="efficiency"] .wew-section__meta--selection::before { color: var(--wew-text-muted); font-weight: 400; }
+.wew-menu[data-wew-layout="efficiency"] .wew-section__help {
+    margin: -2px var(--wew-space-3) var(--wew-space-1) var(--wew-indent-text); font-size: var(--wew-eff-micro);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-section__body { padding-bottom: 2px; }
+
+/* Cleanup: one quiet action, red only on hover. */
+.wew-menu[data-wew-layout="efficiency"] .wew-cleanup__discard {
+    --typo3-btn-padding-x: 8px; --typo3-btn-padding-y: 0;
+    /* A 24px target that keeps the quiet 22px pill. */
+    gap: 5px; min-block-size: var(--wew-target);
+    border-radius: var(--wew-radius-pill); background: var(--wew-chip); background-clip: padding-box; color: var(--wew-text-muted);
+    font-size: var(--wew-eff-meta); font-weight: 600;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-cleanup__discard:not(:disabled):hover,
+.wew-menu[data-wew-layout="efficiency"] .wew-cleanup__discard:focus-visible {
+    background: var(--wew-danger-tint); color: var(--wew-text-danger);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-cleanup__discard:focus-visible { outline: var(--wew-focus-outline); outline-offset: -2px; box-shadow: none; }
+.wew-menu[data-wew-layout="efficiency"] .wew-cleanup__icon { display: inline-flex; }
+.wew-menu[data-wew-layout="efficiency"] .wew-cleanup__discard[aria-busy="true"] .wew-cleanup__icon { animation: wew-pulse 1s ease-in-out infinite; }
+
+/* A leftover copy: icon, title and type; its chips below. */
+.wew-menu[data-wew-layout="efficiency"] .wew-copy {
+    grid-template-columns: var(--wew-col) minmax(0, 1fr);
+    grid-template-areas: "icon text" "icon chips";
+    row-gap: 3px; padding-block: 5px;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-copy__icon { border-radius: var(--wew-eff-tile); }
+/* The type shows whole or wraps out of sight; the title takes the ellipsis. */
+.wew-menu[data-wew-layout="efficiency"] .wew-copy__text {
+    grid-area: text; display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 6px; min-width: 0;
+    block-size: var(--wew-eff-line); line-height: var(--wew-eff-line); overflow: hidden;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-copy__title { flex: 0 1 auto; font-size: var(--wew-eff-title); font-weight: 500; color: var(--wew-text); }
+.wew-menu[data-wew-layout="efficiency"] .wew-copy__type {
+    flex: 0 0 auto; white-space: nowrap; font-size: var(--wew-eff-micro); color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-copy__icon { align-self: start; }
+.wew-menu[data-wew-layout="efficiency"] .wew-copy__chips { gap: 4px; }
+
+/* ---- Footer: actions, then the shortcuts as a quiet status line ---- */
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__foot {
+    flex-wrap: wrap; row-gap: 0; padding-block: var(--wew-space-2) 0;
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__foot:not(:has(.wew-shortcuts)) { padding-bottom: var(--wew-space-2); }
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__publish {
+    transition: scale var(--wew-motion-fast) var(--wew-ease), background-color var(--wew-motion-fast) var(--wew-ease),
+        border-color var(--wew-motion-fast) var(--wew-ease), box-shadow var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__publish:not(:disabled) { box-shadow: var(--wew-shadow-soft); }
+.wew-menu[data-wew-layout="efficiency"] .wew-menu__publish[data-wew-pressed] { scale: .96; }
+.wew-menu[data-wew-layout="efficiency"] .wew-shortcuts {
+    order: 3; flex: 1 1 100%;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--wew-space-3);
+    margin: var(--wew-space-2) calc(var(--wew-space-2) * -1) 0 calc(var(--wew-gutter) * -1);
+    padding: 5px var(--wew-space-2) 6px var(--wew-gutter);
+    border-top: 1px solid var(--wew-eff-hairline);
+    font-size: var(--wew-eff-micro); line-height: 18px; color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="efficiency"] .wew-shortcut { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.wew-menu[data-wew-layout="efficiency"] .wew-shortcut > span { margin-inline-start: 2px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-kbd {
+    display: inline-grid; place-items: center;
+    min-inline-size: 17px; block-size: 16px; padding: 0 4px;
+    border: 1px solid var(--wew-border); border-bottom-width: 2px; border-radius: 4px;
+    background: var(--wew-surface); color: var(--wew-text); box-shadow: none;
+    font-family: var(--wew-font-family); font-size: .625rem; font-weight: 600; line-height: 1; letter-spacing: .01em;
+}
+
+/* ---- States ---- */
+.wew-menu[data-wew-layout="efficiency"] .wew-state { padding: 20px var(--wew-space-4) 22px; gap: 3px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-state__icon { width: 36px; height: 36px; margin-bottom: 6px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-state__title { font-size: var(--wew-eff-title); }
+
+/* Skeleton: title with a time stub at its end, a badge stub starting line 2. */
+.wew-menu[data-wew-layout="efficiency"] .wew-skeleton { gap: 1px; padding: 6px var(--wew-space-1); }
+.wew-menu[data-wew-layout="efficiency"] .wew-skeleton__row { row-gap: 7px; padding-block: 7px; }
+.wew-menu[data-wew-layout="efficiency"] .wew-skeleton__block { border-radius: var(--wew-eff-tile); }
+.wew-menu[data-wew-layout="efficiency"] .wew-skeleton__actions > span:not(:last-child) { display: none; }
+.wew-menu[data-wew-layout="efficiency"] .wew-skeleton__actions > span:last-child { width: 38px; height: 8px; margin: 0; }
+
+/* ---- Narrow: the dropdown's own width decides ---- */
+@container wew-menu (max-width: 25rem) {
+    /* Touch: the actions keep their place on line 1 (the base moves them
+       to a line of their own). */
+    .wew-menu[data-wew-layout="efficiency"] .wew-row {
+        grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+        grid-template-areas:
+            "select icon title actions"
+            "select icon meta  meta"
+            ".      .    kids  kids"
+            ".      .    langs langs";
+    }
+    .wew-menu[data-wew-layout="efficiency"] .wew-row__actions { justify-self: end; margin-top: -3px; }
+    /* "Verwerfen" (text only) still fits beside the cleanup title. */
+    .wew-menu[data-wew-layout="efficiency"] .wew-section--cleanup .wew-section__head { grid-template-columns: var(--wew-col) minmax(0, 1fr) auto; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-section--cleanup .wew-cleanup__discard { grid-column: auto; justify-self: end; margin-bottom: 0; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-section--cleanup .wew-cleanup__icon { display: none; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__summary { -webkit-line-clamp: 3; line-clamp: 3; }
+    /* Footer: select-all and preview on one line, publish full width below
+       (the biggest target on a phone-sized backend). */
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__foot:has(.wew-menu__selectall) .wew-menu__foot-actions { display: contents; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__foot:has(.wew-menu__selectall) .wew-split { order: 1; margin-inline-start: auto; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__foot:has(.wew-menu__selectall) .wew-menu__publish { order: 2; flex: 1 1 100%; margin-top: var(--wew-space-2); }
+    .wew-menu[data-wew-layout="efficiency"] .wew-shortcut--move,
+    .wew-menu[data-wew-layout="efficiency"] .wew-shortcut--all { display: none; }
+    /* The column gives way to time and author (screen readers keep it). */
+    .wew-menu[data-wew-layout="efficiency"] .wew-row__meta-text > .wew-row__part--column {
+        position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%);
+    }
+}
+
+/* The narrowest dropdown: the cleanup action moves under its title, the
+   publish button gets a line of its own even with a single edit. */
+@container wew-menu (max-width: 21.5rem) {
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__summary { -webkit-line-clamp: 4; line-clamp: 4; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__foot-actions { display: contents; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-split { order: 1; margin-inline-start: auto; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-menu__publish { order: 2; flex: 1 1 100%; margin-top: var(--wew-space-2); }
+    .wew-menu[data-wew-layout="efficiency"] .wew-section--cleanup .wew-section__head { grid-template-columns: var(--wew-col) minmax(0, 1fr); }
+    .wew-menu[data-wew-layout="efficiency"] .wew-section--cleanup .wew-cleanup__discard { grid-column: 2; justify-self: start; margin: 0 0 var(--wew-space-1) calc(var(--wew-col) + 2px); }
+}
+
+/* ---- Forced colours ---- */
+@media (forced-colors: active) {
+    .wew-menu[data-wew-layout="efficiency"] .wew-row__locate:is(:hover, :focus-visible) { outline: 2px solid Highlight; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-kbd { border-color: CanvasText; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-row--unselected .wew-row__badge { filter: none; }
+}
+
+/* ---- Reduced motion: state changes without movement ---- */
+@media (prefers-reduced-motion: reduce) {
+    .wew-menu[data-wew-layout="efficiency"] :is(.wew-row__actions, .wew-row__locate > span, .wew-companion, .wew-menu__publish) { transition: none; translate: none; }
+    .wew-menu[data-wew-layout="efficiency"] :is(.wew-row__locate:active, .wew-row__action:active, .wew-menu__publish[data-wew-pressed]) { scale: none; }
+    .wew-menu[data-wew-layout="efficiency"] .wew-cleanup__discard[aria-busy="true"] .wew-cleanup__icon { animation: none; }
+}

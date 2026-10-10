@@ -10,6 +10,10 @@ return [
         'crdate' => 'crdate',
         'delete' => 'deleted',
         'versioningWS' => true,
+        // Translatable like EXT:news, so its translation copies can fold
+        // into the article.
+        'languageField' => 'sys_language_uid',
+        'transOrigPointerField' => 'l10n_parent',
         'enablecolumns' => [
             'disabled' => 'hidden',
         ],

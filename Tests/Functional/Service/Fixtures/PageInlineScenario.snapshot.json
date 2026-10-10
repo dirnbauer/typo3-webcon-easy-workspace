@@ -37,6 +37,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -99,6 +103,10 @@
                 "stageId": 0,
                 "languageUid": 1,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -161,6 +169,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -223,6 +235,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "copy",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "tt_content:13",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -285,6 +301,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -347,6 +367,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "deleted",
@@ -409,6 +433,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -471,6 +499,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -533,6 +565,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -595,6 +631,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -657,6 +697,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -719,6 +763,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -781,6 +829,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -907,6 +959,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -969,6 +1025,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1005,6 +1065,10 @@
                 "stageId": 0,
                 "languageUid": 1,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1067,6 +1131,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1129,6 +1197,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "copy",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "tt_content:13",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1191,6 +1263,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -1253,6 +1329,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "deleted",
@@ -1315,6 +1395,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -1377,6 +1461,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1413,6 +1501,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1449,6 +1541,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1485,6 +1581,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1521,6 +1621,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1557,6 +1661,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1593,6 +1701,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -1629,6 +1741,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1691,6 +1807,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -1753,6 +1873,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1815,6 +1939,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -1877,6 +2005,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -1939,6 +2071,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -2041,12 +2177,13 @@
         "hasNews": false,
         "mode": "all"
     },
-    "page:2:count": 13,
+    "page:2:count": 12,
     "page:2:hasChanges": {
         "workspaceId": 1,
         "pageUid": 2,
         "languageUid": null,
-        "hasChanges": true
+        "hasChanges": true,
+        "hasCopies": true
     },
     "page:2:language1": {
         "workspaceId": 1,
@@ -2086,6 +2223,10 @@
                 "stageId": 0,
                 "languageUid": 1,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2115,68 +2256,6 @@
                         "historyUrl": "<url>"
                     }
                 ]
-            },
-            {
-                "table": "tt_content",
-                "liveUid": 23,
-                "workspaceUid": 24,
-                "title": "Moved from the other page",
-                "kindKey": "move",
-                "kindLabel": "Moved",
-                "badge": "warning",
-                "iconIdentifier": "mimetypes-x-content-text",
-                "thumbnailUrl": null,
-                "isPrimary": false,
-                "isChanged": true,
-                "isHidden": false,
-                "tableLabel": "Page Content",
-                "typeLabel": "Regular Text Element",
-                "editUrl": "<url>",
-                "contextualEditUrl": "<url>",
-                "historyUrl": "<url>",
-                "historyDiffCount": 0,
-                "childChanges": [],
-                "colPos": 0,
-                "colPosLabel": "Normal",
-                "locateTable": null,
-                "locateLiveUid": null,
-                "locateWorkspaceUid": null,
-                "tstamp": 1700000600,
-                "latestChangeAt": 1700000600,
-                "latestChangeUserUid": 0,
-                "latestChangeUser": "",
-                "stageId": 0,
-                "languageUid": 0,
-                "parent": null,
-                "changeBadges": [
-                    {
-                        "kindKey": "moved",
-                        "kindLabel": "Moved",
-                        "badge": "warning"
-                    }
-                ],
-                "publishRecords": [
-                    {
-                        "table": "tt_content",
-                        "liveUid": 23,
-                        "workspaceUid": 24
-                    }
-                ],
-                "changeRecords": [
-                    {
-                        "table": "tt_content",
-                        "liveUid": 23,
-                        "workspaceUid": 24,
-                        "title": "Moved from the other page",
-                        "kindKey": "move",
-                        "kindLabel": "Moved",
-                        "badge": "warning",
-                        "historyDiffCount": 0,
-                        "editUrl": "<url>",
-                        "contextualEditUrl": "<url>",
-                        "historyUrl": "<url>"
-                    }
-                ]
             }
         ],
         "itemGroups": [
@@ -2184,8 +2263,7 @@
                 "key": "column:0",
                 "label": "Normal",
                 "items": [
-                    "tt_content:25/26",
-                    "tt_content:23/24"
+                    "tt_content:25/26"
                 ]
             }
         ],
@@ -2194,8 +2272,7 @@
                 "key": "column:0",
                 "label": "Normal",
                 "items": [
-                    "tt_content:25/26",
-                    "tt_content:23/24"
+                    "tt_content:25/26"
                 ]
             }
         ],
@@ -2240,6 +2317,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2302,6 +2383,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2364,6 +2449,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2470,6 +2559,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2506,6 +2599,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -2568,6 +2665,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2630,6 +2731,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2666,6 +2771,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2728,6 +2837,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2805,7 +2918,8 @@
         "workspaceId": 1,
         "pageUid": 3,
         "languageUid": null,
-        "hasChanges": true
+        "hasChanges": true,
+        "hasCopies": false
     },
     "page:3:language1": {
         "workspaceId": 1,
@@ -2856,6 +2970,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -2946,6 +3064,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -2982,6 +3104,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": null,
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [],
                 "publishRecords": [],
                 "changeRecords": []
@@ -3018,6 +3144,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3083,7 +3213,8 @@
         "workspaceId": 1,
         "pageUid": 4,
         "languageUid": null,
-        "hasChanges": true
+        "hasChanges": true,
+        "hasCopies": false
     },
     "page:4:language1": {
         "workspaceId": 1,
@@ -3134,6 +3265,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3224,6 +3359,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3281,7 +3420,8 @@
         "workspaceId": 1,
         "pageUid": 999,
         "languageUid": null,
-        "hasChanges": true
+        "hasChanges": true,
+        "hasCopies": false
     },
     "page:999:language1": {
         "workspaceId": 1,
@@ -3332,6 +3472,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3394,6 +3538,10 @@
                 "stageId": 0,
                 "languageUid": 1,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3456,6 +3604,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3518,6 +3670,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "copy",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "tt_content:13",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3580,6 +3736,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -3642,6 +3802,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "deleted",
@@ -3704,6 +3868,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "moved",
@@ -3766,6 +3934,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3828,6 +4000,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -3890,6 +4066,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -3952,6 +4132,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -4014,6 +4198,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -4076,6 +4264,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "created",
@@ -4202,6 +4394,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -4264,6 +4460,10 @@
                 "stageId": 0,
                 "languageUid": 1,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -4326,6 +4526,10 @@
                 "stageId": 0,
                 "languageUid": 0,
                 "parent": null,
+                "role": "change",
+                "companions": [],
+                "dependents": [],
+                "copyGroup": "",
                 "changeBadges": [
                     {
                         "kindKey": "modified",
@@ -4394,5 +4598,5 @@
         "hasNews": false,
         "mode": "changed"
     },
-    "page:2:countHiddenExcluded": 13
+    "page:2:countHiddenExcluded": 12
 }

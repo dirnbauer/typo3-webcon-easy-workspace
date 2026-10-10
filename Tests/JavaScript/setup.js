@@ -7,6 +7,7 @@ globalThis.TYPO3 = {
       webcon_easy_workspace_publish: 'https://backend.test/typo3/ajax/webcon-easy-workspace/publish?token=t',
       webcon_easy_workspace_preview_link: 'https://backend.test/typo3/ajax/webcon-easy-workspace/preview-link?token=t',
       webcon_easy_workspace_discard: 'https://backend.test/typo3/ajax/webcon-easy-workspace/discard?token=t',
+      webcon_easy_workspace_discard_copies: 'https://backend.test/typo3/ajax/webcon-easy-workspace/discard-copies?token=t',
       webcon_easy_workspace_diff: 'https://backend.test/typo3/ajax/webcon-easy-workspace/diff?token=t',
       webcon_easy_workspace_history_rollback: 'https://backend.test/typo3/ajax/webcon-easy-workspace/history-rollback?token=t',
     },

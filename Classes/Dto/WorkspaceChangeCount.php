@@ -7,6 +7,11 @@ namespace Webconsulting\WebconEasyWorkspace\Dto;
 /**
  * Whole-workspace change count as reported by the toolbar badge.
  *
+ * `total` counts changes — what someone edited. Translation copies TYPO3
+ * made along with a change and unchanged copies do not count; `versionCount`
+ * is every row the Workspaces module lists (changes, their companions and
+ * the copies), `copyCount` the copies waiting for cleanup.
+ *
  * The stamp is a cheap fingerprint of the workspace state: the client
  * compares it to decide whether an open dropdown list has to re-fetch and
  * whether another tab has to be told, and the server keys the cached page
@@ -27,11 +32,13 @@ final readonly class WorkspaceChangeCount
         public array $byState,
         public int $latestChangeAt,
         public string $stamp,
+        public int $versionCount = 0,
+        public int $copyCount = 0,
     ) {}
 
     public static function empty(int $workspaceId): self
     {
-        return new self($workspaceId, 0, [], self::EMPTY_STATES, 0, self::stamp($workspaceId, 0, 0));
+        return new self($workspaceId, 0, [], self::EMPTY_STATES, 0, self::stamp($workspaceId, 0, 0), 0, 0);
     }
 
     /**
@@ -48,6 +55,8 @@ final readonly class WorkspaceChangeCount
      * @return array{
      *     workspaceId: int,
      *     changedCount: int,
+     *     versionCount: int,
+     *     copyCount: int,
      *     byTable: array<string, int>,
      *     byState: array{new: int, changed: int, deleted: int, moved: int},
      *     latestChangeAt: int,
@@ -59,6 +68,8 @@ final readonly class WorkspaceChangeCount
         return [
             'workspaceId' => $this->workspaceId,
             'changedCount' => $this->total,
+            'versionCount' => $this->versionCount,
+            'copyCount' => $this->copyCount,
             'byTable' => $this->byTable,
             'byState' => $this->byState,
             'latestChangeAt' => $this->latestChangeAt,

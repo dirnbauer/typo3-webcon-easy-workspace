@@ -6,6 +6,8 @@ export const ENDPOINTS = {
   discard: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard || '',
   diff: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_diff || '',
   historyRollback: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_history_rollback || '',
+  // Discards the unchanged copies of a context (the cleanup section).
+  discardCopies: TYPO3.settings.ajaxUrls?.webcon_easy_workspace_discard_copies || '',
 };
 
 // Cross-tab refresh channel (same origin). Messages are
@@ -67,6 +69,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   userEnabled: true,
   showSubelementsInToolbar: false,
   showSubelementsInModule: true,
+  // Dropdown presentation chosen per editor (User Settings → Easy Workspace):
+  // clarity | efficiency | core. Data, counts and actions are the same in all
+  // three; see layouts/index.js.
+  layout: 'clarity',
   // Runtime-detected environment (NOT user-configurable). Set by
   // EasyWorkspaceToolbarItem::getDropDown().
   activeWorkspaceId: 0,

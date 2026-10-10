@@ -6,8 +6,10 @@ namespace Webconsulting\WebconEasyWorkspace\Service\PendingItems;
 
 use Webconsulting\WebconEasyWorkspace\Dto\PendingChangeRecord;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingChildChange;
+use Webconsulting\WebconEasyWorkspace\Dto\PendingCompanion;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingRecordReference;
+use Webconsulting\WebconEasyWorkspace\Enum\ChangeRole;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
 
 final readonly class PendingItemAggregator
@@ -136,13 +138,18 @@ final readonly class PendingItemAggregator
             $preservedBadges = $base->changeBadges;
             $preservedPublishRecords = $this->withoutConceptualPublishRecords($base->publishRecords, $incoming->table, $incoming->liveUid);
             $preservedChangeRecords = $this->withoutConceptualChangeRecords($base->changeRecords, $incoming->table, $incoming->liveUid);
-            // The newer version's fields, with what was aggregated so far.
+            // The newer version's fields, with what was aggregated so far —
+            // the classification included, unless the newer one has its own.
             $base = $incoming->with([
                 'isChanged' => true,
                 'childChanges' => $base->childChanges,
                 'changeBadges' => $preservedBadges,
                 'publishRecords' => $preservedPublishRecords,
                 'changeRecords' => $preservedChangeRecords,
+                'role' => $incoming->role ?? $base->role,
+                'companions' => $incoming->companions !== [] ? $incoming->companions : $base->companions,
+                'dependents' => $incoming->dependents !== [] ? $incoming->dependents : $base->dependents,
+                'copyGroup' => $incoming->copyGroup !== '' ? $incoming->copyGroup : $base->copyGroup,
             ]);
         }
 
@@ -163,7 +170,50 @@ final readonly class PendingItemAggregator
             'changeBadges' => $this->mergeChangeBadges($base->changeBadges, $incoming->changeBadges),
             'publishRecords' => $this->mergeRecordReferences($base->publishRecords, $incoming->publishRecords),
             'changeRecords' => $this->mergeChangeRecords($base->changeRecords, $incoming->changeRecords),
+            'role' => self::mergeRoles($base->role, $incoming->role),
+            'companions' => $this->mergeCompanions($base->companions, $incoming->companions),
+            'dependents' => $this->mergeDependents($base->dependents, $incoming->dependents),
         ]);
+    }
+
+    /**
+     * Either one's edit makes the merged item a change.
+     */
+    private static function mergeRoles(?ChangeRole $base, ?ChangeRole $incoming): ?ChangeRole
+    {
+        return match (true) {
+            $base === ChangeRole::Change || $incoming === ChangeRole::Change => ChangeRole::Change,
+            $base === ChangeRole::Copy || $incoming === ChangeRole::Copy => ChangeRole::Copy,
+            default => null,
+        };
+    }
+
+    /**
+     * @param list<PendingCompanion> $base
+     * @param list<PendingCompanion> $incoming
+     * @return list<PendingCompanion>
+     */
+    private function mergeCompanions(array $base, array $incoming): array
+    {
+        $merged = [];
+        foreach ([...$base, ...$incoming] as $companion) {
+            $merged[$companion->table . ':' . $companion->workspaceUid] = $companion;
+        }
+        return array_values($merged);
+    }
+
+    /**
+     * @param list<array{table: string, workspaceUid: int, languageUid: int, edited: bool}> $base
+     * @param list<array{table: string, workspaceUid: int, languageUid: int, edited: bool}> $incoming
+     * @return list<array{table: string, workspaceUid: int, languageUid: int, edited: bool}>
+     */
+    private function mergeDependents(array $base, array $incoming): array
+    {
+        $merged = [];
+        foreach ([...$base, ...$incoming] as $dependent) {
+            $merged[$dependent['table'] . ':' . $dependent['workspaceUid']] = $dependent;
+        }
+        return array_values($merged);
     }
 
     /**

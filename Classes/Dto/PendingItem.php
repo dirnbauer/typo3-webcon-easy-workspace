@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Webconsulting\WebconEasyWorkspace\Dto;
 
+use Webconsulting\WebconEasyWorkspace\Enum\ChangeRole;
+
 final readonly class PendingItem
 {
     /**
@@ -14,6 +16,10 @@ final readonly class PendingItem
      * @param list<PendingChangeRecord> $changeRecords
      * @param int|null $languageUid The record's language; null for a table without one.
      * @param array{table: string, uid: int, title: string}|null $parent The record this one is part of — a collection item's or file reference's element.
+     * @param ChangeRole|null $role A change (counted, selectable) or a copy (offered for cleanup); null for a live record.
+     * @param list<PendingCompanion> $companions Translation copies that go live and are discarded with this change.
+     * @param list<array{table: string, workspaceUid: int, languageUid: int, edited: bool}> $dependents Other translations core's discard of this record removes along (pointing at its version): new ones, and with `edited` ones with edits of their own.
+     * @param string $copyGroup The cleanup group of a copy: table and the record it translates.
      */
     public function __construct(
         public string $table,
@@ -53,6 +59,10 @@ final readonly class PendingItem
         public ?array $parent = null,
         /** False for a version TYPO3 made along with an edit elsewhere (ContentChangeDetector). */
         public bool $contentChanged = true,
+        public ?ChangeRole $role = null,
+        public array $companions = [],
+        public array $dependents = [],
+        public string $copyGroup = '',
     ) {}
 
     /**
@@ -75,6 +85,11 @@ final readonly class PendingItem
         }
 
         return false;
+    }
+
+    public function isChangeRole(): bool
+    {
+        return $this->role === ChangeRole::Change;
     }
 
     /**
@@ -154,6 +169,10 @@ final readonly class PendingItem
             'stageId' => $this->stageId,
             'languageUid' => $this->languageUid,
             'parent' => $this->parent,
+            'role' => $this->role?->value,
+            'companions' => array_map(static fn(PendingCompanion $companion): array => $companion->toArray(), $this->companions),
+            'dependents' => $this->dependents,
+            'copyGroup' => $this->copyGroup,
             'changeBadges' => $this->isChanged ? ($this->changeBadges ?: [[
                 'kindKey' => $this->kindKey,
                 'kindLabel' => $this->kindLabel,
@@ -213,10 +232,17 @@ final readonly class PendingItem
             'locateWorkspaceUid' => $this->locateWorkspaceUid,
             'tstamp' => $this->tstamp,
             'latestChangeAt' => $this->latestChangeAt,
+            'latestChangeUserUid' => $this->latestChangeUserUid,
             'latestChangeUser' => $this->latestChangeUser,
             'languageUid' => $this->languageUid,
             'parent' => $this->parent,
+            // The record and the records nested below it; the server adds
+            // the companions when it publishes or discards.
             'publishRecords' => array_map(static fn(PendingRecordReference $record): array => $record->toArray(), $this->publishRecords),
+            'role' => $this->role?->value,
+            'companions' => array_map(static fn(PendingCompanion $companion): array => $companion->toArray(), $this->companions),
+            'dependents' => $this->dependents,
+            'copyGroup' => $this->copyGroup,
         ];
     }
 }

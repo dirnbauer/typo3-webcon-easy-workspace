@@ -65,12 +65,28 @@ final class LanguageContextTest extends FunctionalTestCase
         $languages = $this->get(LanguageContext::class)->languagesForPage(2);
 
         self::assertSame([
-            0 => ['uid' => 0, 'title' => 'English', 'flag' => 'flags-us'],
-            1 => ['uid' => 1, 'title' => 'Deutsch', 'flag' => 'flags-de'],
-            2 => ['uid' => 2, 'title' => 'Magyar', 'flag' => 'flags-hu'],
+            0 => ['uid' => 0, 'title' => 'English', 'flag' => 'flags-us', 'code' => 'EN', 'hreflang' => 'en-US'],
+            1 => ['uid' => 1, 'title' => 'Deutsch', 'flag' => 'flags-de', 'code' => 'DE', 'hreflang' => 'de-AT'],
+            2 => ['uid' => 2, 'title' => 'Magyar', 'flag' => 'flags-hu', 'code' => 'HU', 'hreflang' => 'hu-HU'],
         ], $languages);
         self::assertSame([], $this->get(LanguageContext::class)->languagesForPage(0));
         self::assertSame([], $this->get(LanguageContext::class)->languagesForPage(999999));
+    }
+
+    #[Test]
+    public function languagesSharingALanguageCodeAreToldApartByTheirLocale(): void
+    {
+        $this->writeSite([
+            ['languageId' => 0, 'title' => 'Deutsch (Österreich)', 'locale' => 'de_AT.UTF-8', 'base' => '/', 'flag' => 'at'],
+            ['languageId' => 1, 'title' => 'Deutsch (Schweiz)', 'locale' => 'de_CH.UTF-8', 'base' => '/ch/', 'flag' => 'ch', 'hreflang' => 'de-CH'],
+            ['languageId' => 2, 'title' => 'English', 'locale' => 'en_GB.UTF-8', 'base' => '/en/', 'flag' => 'gb'],
+        ]);
+        $this->setUpBackendUser(1);
+
+        $languages = $this->get(LanguageContext::class)->languagesForPage(2);
+
+        self::assertSame(['DE-AT', 'DE-CH', 'EN'], array_column($languages, 'code'));
+        self::assertSame(['de-AT', 'de-CH', 'en-GB'], array_column($languages, 'hreflang'));
     }
 
     #[Test]

@@ -7,7 +7,10 @@ Badge and refresh
 The toolbar badge shows the number of pending changes **on the page (or
 news article) the editor is currently on** — the page record, its content
 elements and their inline children (Content Blocks collections, file
-references) — the same rows the dropdown lists, not the whole workspace.
+references) — the same edits the dropdown lists, not the whole workspace.
+It counts edits: the translation copies TYPO3 makes along with an edit ride
+on that edit and do not count (see :ref:`toolbar-copies`), so one edited
+element reads as 1.
 Where no page can be resolved at all (a module outside the Web group, the
 dashboard) the badge falls back to the whole-workspace count, which is the
 only meaningful number there. The dropdown header always names both:
@@ -30,8 +33,8 @@ tab visibility (see :ref:`badge-triggers`).
 Two numbers are computed per request:
 
 ``changedCount``
-    The whole workspace — ``WorkspaceChangeCounter``, the number of core's
-    top-level rows (below).
+    The whole workspace — ``WorkspaceChangeCounter``, the number of edits:
+    core's top-level rows without the companions and copies (below).
 ``contextCount``
     The page or news article — ``ContextChangeSummary``, which runs the same
     collection the ``/items`` list is built from in count-only mode and
@@ -68,8 +71,21 @@ own. ``CoreWorkspaceChanges`` asks core the way the module does:
   ``GridDataService`` runs before it renders the module's grid. A page's
   nested tree is cached for the revision as well.
 
+- ``CompanionClassifier`` then sorts the entries (1.11): a translation
+  version that mirrors its parent's version — identical, the same synced
+  values, the same move or delete — becomes a **companion** of that entry
+  and leaves the top level; an entry with a difference of its own is a
+  **change**; an entry that changes nothing and has no edited owner is a
+  **copy**. The facts it compares (version state, language, translation
+  pointers mapped to live uids, and a hash per changed field) come from the
+  full rows the scan already loads, no extra query. The classification runs
+  before the language filter, so a companion stays with its owner in every
+  view. From the parent pointers as stored it also names, on each entry,
+  the other translations Core's discard of it removes along (its
+  ``dependents``, see :ref:`toolbar-dependents`).
+
 An entry is one row of that grid's top level; the versions nested below it
-come with it and are published with it. A changed collection item or file
+come with it and are published with it, and so do its companions. A changed collection item or file
 reference of an unchanged element is a row of its own, as in the module, and
 a version whose fields equal the live record's is listed too. Both core
 classes are ``@internal``: they are the module's own code path, which is the
@@ -79,10 +95,14 @@ Whole workspace
 ---------------
 
 ``WorkspaceChangeCounter::count(int $workspaceId)`` returns a
-``WorkspaceChangeCount`` DTO: ``total`` is the number of top-level rows,
-``byTable`` counts them per table, ``byState`` tells new records from other
-changes. A functional test (``WorkspacesModuleParityTest``) checks the total
-against the module's own grid.
+``WorkspaceChangeCount`` DTO: ``total`` is the number of edits (change
+entries), ``byTable`` counts them per table and ``byState`` by their version
+state (new, changed, deleted, moved). ``versionCount`` is the number of
+top-level rows the Workspaces module lists — edits, companions and copies —
+and ``copyCount`` the records the cleanup would discard (copies and their
+companions). A functional test (``WorkspacesModuleParityTest``) checks
+``versionCount`` against the module's own grid and that every module row is
+an edit, a companion or a copy.
 
 ..  _badge-stamp:
 
@@ -129,7 +149,10 @@ and ``webcon_easy_workspace_has_changes``) return:
             {"table": "tt_content", "liveUid": 812, "workspaceUid": 1044},
             {"table": "pages", "liveUid": 1149, "workspaceUid": 1149}
         ],
+        "copies": 0,
         "changedCount": 3,
+        "versionCount": 9,
+        "copyCount": 0,
         "byTable": {"pages": 1, "tt_content": 1, "tx_news_domain_model_news": 1},
         "byState": {"new": 1, "changed": 1, "deleted": 1, "moved": 0},
         "latestChangeAt": 1700000600,
@@ -138,13 +161,17 @@ and ``webcon_easy_workspace_has_changes``) return:
 
 ``context`` echoes the client context (``page``, ``news`` or ``none``);
 ``pageUid``/``newsUid`` select the page TSconfig **and** scope
-``contextCount`` and ``records`` — the changed rows of that page, from
-which the Visual Editor preview draws its decline buttons. ``/has-changes``
-adds ``hasChanges``. The ``items``, ``publish`` and ``discard`` responses
+``contextCount`` and ``records`` — the edits of that page, from which the
+Visual Editor preview draws its decline buttons (never on a translation
+copy). ``copies`` is the number of records in the context's cleanup
+section, ``null`` without a context. ``/has-changes``
+adds ``hasChanges``. The ``items``, ``publish``, ``discard`` and ``discard-copies`` responses
 embed the same object under ``badge`` — their requests carry
 ``pageUid``/``newsUid`` too, so the echoed badge is already scoped — and the
 client never has to derive a count from a list or ask twice. A user in
-Live receives ``workspaceId: 0`` and ``changedCount: 0``.
+Live receives ``workspaceId: 0`` and ``changedCount: 0``. Clients that
+predate 1.11 ignore the new keys; a payload without them defaults to
+``copies: null``, ``versionCount: 0`` and ``copyCount: 0`` on the client.
 
 ..  _badge-client:
 

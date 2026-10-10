@@ -36,7 +36,12 @@ final readonly class LanguageContext
     /**
      * The site's languages the editor may see, keyed by language id.
      *
-     * @return array<int, array{uid: int, title: string, flag: string}>
+     * `code` is the short tag the dropdown prints on its language chips
+     * (`DE`); two languages of the site sharing a language code are told
+     * apart by their full locale (`DE-AT`, `DE-CH`). `hreflang` goes into
+     * the `lang` attribute of a translated title.
+     *
+     * @return array<int, array{uid: int, title: string, flag: string, code: string, hreflang: string}>
      */
     public function languagesForPage(int $pageUid): array
     {
@@ -48,17 +53,26 @@ final readonly class LanguageContext
         } catch (SiteNotFoundException) {
             return [];
         }
+        $siteLanguages = $site->getLanguages();
+        $codeUses = [];
+        foreach ($siteLanguages as $language) {
+            $code = $language->getLocale()->getLanguageCode();
+            $codeUses[$code] = ($codeUses[$code] ?? 0) + 1;
+        }
         $user = $this->accessGuard->user();
         $languages = [];
-        foreach ($site->getLanguages() as $language) {
+        foreach ($siteLanguages as $language) {
             $languageId = $language->getLanguageId();
             if ($user !== null && !$user->checkLanguageAccess($languageId)) {
                 continue;
             }
+            $locale = $language->getLocale();
             $languages[$languageId] = [
                 'uid' => $languageId,
                 'title' => $language->getTitle(),
                 'flag' => $language->getFlagIdentifier(),
+                'code' => strtoupper(($codeUses[$locale->getLanguageCode()] ?? 0) > 1 ? $locale->getName() : $locale->getLanguageCode()),
+                'hreflang' => $language->getHreflang(),
             ];
         }
         ksort($languages);

@@ -503,9 +503,18 @@ function mergeBatches(target, batch) {
   return target;
 }
 
+/**
+ * Coerce a badge payload into a stable shape. Counts are edits only:
+ * `contextCount` for the page or article, `changedCount` for the workspace.
+ * `copies` (leftover copies of the context), `versionCount` (every row the
+ * Workspaces module lists) and `copyCount` (leftover copies of the
+ * workspace) arrived with 1.11; an older payload — another tab still on the
+ * previous version — defaults them to null and 0.
+ */
 export function normalizeBadgePayload(data) {
   if (!data || typeof data !== 'object') return null;
   const changedCount = Math.max(0, parseInt(String(data.changedCount ?? '0'), 10) || 0);
+  const rawCopies = parseInt(String(data.copies ?? ''), 10);
   const workspaceId = Math.max(0, parseInt(String(data.workspaceId ?? '0'), 10) || 0);
   const rawContextCount = parseInt(String(data.contextCount ?? ''), 10);
   const contextCount = Number.isFinite(rawContextCount) && rawContextCount >= 0 ? rawContextCount : null;
@@ -515,6 +524,9 @@ export function normalizeBadgePayload(data) {
     workspaceTitle: typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '',
     changedCount,
     contextCount,
+    copies: Number.isFinite(rawCopies) && rawCopies >= 0 ? rawCopies : null,
+    versionCount: Math.max(0, parseInt(String(data.versionCount ?? '0'), 10) || 0),
+    copyCount: Math.max(0, parseInt(String(data.copyCount ?? '0'), 10) || 0),
     records: Array.isArray(data.records)
       ? data.records
         .filter((record) => record && typeof record === 'object' && typeof record.table === 'string')

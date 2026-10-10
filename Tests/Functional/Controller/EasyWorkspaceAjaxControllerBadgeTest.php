@@ -77,9 +77,12 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
         $payload = $this->json($subject->badgeAction($this->request($backendUser, query: ['pageUid' => 1])));
 
         self::assertSame(
-            ['context', 'workspaceId', 'workspaceTitle', 'contextCount', 'records', 'changedCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
+            ['context', 'workspaceId', 'workspaceTitle', 'contextCount', 'records', 'copies', 'changedCount', 'versionCount', 'copyCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
             array_keys($payload),
         );
+        self::assertSame(0, $payload['copies']);
+        self::assertSame(1, $payload['versionCount']);
+        self::assertSame(0, $payload['copyCount']);
         // The changed rows behind contextCount, for the Visual Editor's decline buttons.
         self::assertSame([['table' => 'tt_content', 'liveUid' => 1, 'workspaceUid' => 2]], $payload['records']);
         self::assertSame('page', $payload['context']);
@@ -97,6 +100,7 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
         $contextFree = $this->json($subject->badgeAction($this->request($backendUser)));
         self::assertSame('none', $contextFree['context']);
         self::assertNull($contextFree['contextCount']);
+        self::assertNull($contextFree['copies']);
         self::assertSame([], $contextFree['records']);
         self::assertSame(1, $contextFree['changedCount']);
         self::assertSame($payload['stamp'], $contextFree['stamp']);
@@ -156,6 +160,9 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
 
         self::assertTrue($result['success'], implode(' / ', Value::stringList($result['errors'] ?? [])));
         self::assertSame(1, $result['published']);
+        self::assertSame(0, $result['companions']);
+        self::assertSame([], $result['skippedCompanions']);
+        self::assertSame([], $result['warnings']);
         $badge = Value::stringKeyArray($result['badge'] ?? null);
         self::assertSame(0, $badge['changedCount']);
         self::assertSame(1, $badge['workspaceId']);
@@ -175,6 +182,9 @@ final class EasyWorkspaceAjaxControllerBadgeTest extends FunctionalTestCase
         )));
 
         self::assertTrue($result['success']);
+        self::assertSame(1, $result['discarded']);
+        self::assertSame(0, $result['companionsDiscarded']);
+        self::assertSame([], $result['warnings']);
         self::assertSame(0, Value::stringKeyArray($result['badge'] ?? null)['changedCount']);
     }
 }

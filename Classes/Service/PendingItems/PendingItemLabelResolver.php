@@ -60,6 +60,24 @@ final readonly class PendingItemLabelResolver
     }
 
     /**
+     * A field's label as the edit form shows it, or its name when TCA has
+     * none (a column only a hook writes).
+     */
+    public function fieldLabel(string $table, string $field): string
+    {
+        if (!$this->tcaSchemaFactory->has($table)) {
+            return $field;
+        }
+        $schema = $this->tcaSchemaFactory->get($table);
+        if (!$schema->hasField($field)) {
+            return $field;
+        }
+        $label = trim($this->localizationService->resolveLabel($schema->getField($field)->getLabel()));
+
+        return $label !== '' ? rtrim($label, ':') : $field;
+    }
+
+    /**
      * @param array<string, mixed> $row
      */
     public function resolveTitle(string $table, array $row): string

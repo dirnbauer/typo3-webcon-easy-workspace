@@ -1,0 +1,417 @@
+/*
+ * Easy Workspace dropdown — "clarity" layout ("Klar").
+ *
+ * Calm and explanatory: every edit is a small card on the dropdown's own
+ * surface — a slim bar in its change-type colour, the title on the full
+ * first line, the meta line beneath, the translations TYPO3 copied along at
+ * the card's foot. Selected cards stand raised (what goes live); a card that
+ * stays in the workspace lies flat. One callout explains the copies once.
+ *
+ * Every rule is scoped under .wew-menu[data-wew-layout="clarity"]; the base
+ * presentation lives in toolbar-menu.css. Colours come from tokens.css only
+ * (the card surface, its shadows and the info callout included), mapped to
+ * the --wew-k-* properties below. No gradients; motion through the
+ * --wew-motion-* tokens (0 under reduced motion).
+ *
+ * Alignment: the gutter grows to 16px. Cards sit 8px in from the edge, and
+ * their padding puts the checkbox, icon and text columns exactly where the
+ * group heading, section heads and footer have them:
+ *
+ *   16px gutter · 24px control column · 8px · 24px icon column · 8px · text
+ */
+
+/* ---- Layout tokens ---- */
+.wew-menu[data-wew-layout="clarity"] {
+    --wew-gutter: var(--wew-space-4);
+    /* Card inset from the dropdown edge, and the padding that keeps the columns aligned. */
+    --wew-k-inset: var(--wew-space-2);
+    --wew-k-pad: calc(var(--wew-gutter) - var(--wew-k-inset) - 1px);
+    --wew-k-pad-end: 6px;
+    --wew-k-radius: var(--wew-radius);
+    /* Raised in both schemes (tokens.css). */
+    --wew-k-card: var(--wew-surface-card);
+    --wew-k-card-border: color-mix(in srgb, var(--wew-text) 11%, transparent);
+    --wew-k-card-border-hover: color-mix(in srgb, var(--wew-text) 20%, transparent);
+    --wew-k-flat: color-mix(in srgb, var(--wew-text) 2.5%, transparent);
+    --wew-k-hairline: color-mix(in srgb, var(--wew-text) 9%, transparent);
+    --wew-k-shadow: var(--wew-shadow-card);
+    --wew-k-shadow-hover: var(--wew-shadow-card-hover);
+    /* Core's info callout surface for the explainer. */
+    --wew-k-info-surface: var(--wew-info-surface);
+    --wew-k-info-text: var(--wew-info-fg);
+    --wew-k-info-border: color-mix(in srgb, var(--wew-accent-changed) 26%, transparent);
+    /* Accent bars: the change-type text colours; in light mode the dark ink of
+       "changed" and "moved" is lifted towards its badge colour. */
+    --wew-k-bar-new: var(--wew-accent-new);
+    --wew-k-bar-changed: light-dark(color-mix(in oklab, var(--wew-changed-border) 55%, var(--wew-accent-changed)), var(--wew-accent-changed));
+    --wew-k-bar-deleted: var(--wew-accent-deleted);
+    --wew-k-bar-moved: light-dark(color-mix(in oklab, var(--wew-moved-border) 85%, var(--wew-accent-moved)), var(--wew-accent-moved));
+    interpolate-size: allow-keywords;
+}
+
+/* ---- Header: the lead statement in full ink, the rest quiet ---- */
+/* The summary runs the full width, under the header buttons too, so the
+   numbers do not wrap early. */
+.wew-menu[data-wew-layout="clarity"] .wew-menu__head {
+    grid-template-areas: "title side" "summary summary";
+    gap: 3px var(--wew-space-2);
+    padding: 14px var(--wew-space-2) 12px var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-menu__titles { display: contents; }
+/* The workspace icon sits in the control column, the title and the summary
+   start where the group titles and record icons do. */
+.wew-menu[data-wew-layout="clarity"] .wew-menu__title-row { grid-area: title; gap: var(--wew-gap); }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__title-icon { inline-size: var(--wew-col); align-items: center; justify-content: center; }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__head-side { grid-area: side; }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__summary {
+    grid-area: summary;
+    padding-inline: calc(var(--wew-col) + var(--wew-gap)) var(--wew-space-2);
+    -webkit-line-clamp: 3; line-clamp: 3;
+    font-size: var(--wew-font-size-sm);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-menu__summary-lead { color: var(--wew-text); font-weight: 600; white-space: nowrap; }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__summary-lead.is-quiet { color: inherit; font-weight: inherit; white-space: normal; }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__summary-part { white-space: nowrap; }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__summary-sep { opacity: .6; }
+
+/* ---- List, groups ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-list { padding: 2px 0 var(--wew-space-3); }
+.wew-menu[data-wew-layout="clarity"] .wew-group + .wew-group {
+    margin-top: var(--wew-space-3); padding-top: 2px;
+    border-top-color: var(--wew-k-hairline);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-group__head {
+    padding: var(--wew-space-3) var(--wew-gutter) 6px var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="clarity"] h3.wew-group__title { font-weight: 700; letter-spacing: -.005em; }
+.wew-menu[data-wew-layout="clarity"] .wew-section--in-view {
+    padding: 2px var(--wew-gutter) 6px var(--wew-indent-icon);
+    font-weight: 600; letter-spacing: .005em;
+}
+/* Flags and chevrons take the icon column, so every heading's text starts
+   on the card titles' line. */
+.wew-menu[data-wew-layout="clarity"] .wew-section--in-view > typo3-backend-icon,
+.wew-menu[data-wew-layout="clarity"] .wew-language > typo3-backend-icon {
+    display: inline-flex; flex: none; align-items: center; justify-content: center; inline-size: var(--wew-col);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section__chevron { inline-size: var(--wew-col); }
+.wew-menu[data-wew-layout="clarity"] .wew-rows {
+    display: grid; gap: 6px;
+    padding: 2px var(--wew-k-inset) 4px;
+}
+
+/* ---- Edit cards ----
+   select | icon  | title  | actions
+   select | icon  | meta   (meta runs under the actions)
+   .      | .     | kids
+   .      | langs → the translations foot, icon column included */
+.wew-menu[data-wew-layout="clarity"] .wew-row {
+    --wew-k-accent: var(--wew-k-bar-changed);
+    grid-template-areas:
+        "select icon  title actions"
+        "select icon  meta  meta"
+        ".      .     kids  kids"
+        ".      langs langs langs";
+    row-gap: 3px;
+    margin: 0;
+    padding: 10px var(--wew-k-pad-end) 10px var(--wew-k-pad);
+    border: 1px solid var(--wew-k-card-border);
+    border-radius: var(--wew-k-radius);
+    background: var(--wew-k-card);
+    box-shadow: var(--wew-k-shadow);
+    transition:
+        background-color var(--wew-motion) var(--wew-ease),
+        border-color var(--wew-motion) var(--wew-ease),
+        box-shadow var(--wew-motion) var(--wew-ease),
+        opacity var(--wew-motion) var(--wew-ease),
+        translate var(--wew-motion) var(--wew-ease),
+        height var(--wew-motion) var(--wew-ease),
+        padding var(--wew-motion) var(--wew-ease),
+        display var(--wew-motion) allow-discrete;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row[data-change="new"] { --wew-k-accent: var(--wew-k-bar-new); }
+.wew-menu[data-wew-layout="clarity"] .wew-row[data-change="deleted"] { --wew-k-accent: var(--wew-k-bar-deleted); }
+.wew-menu[data-wew-layout="clarity"] .wew-row[data-change="moved"] { --wew-k-accent: var(--wew-k-bar-moved); }
+/* The accent bar: a slim pill in the change-type colour, inside the card's edge. */
+.wew-menu[data-wew-layout="clarity"] .wew-row::before {
+    content: "";
+    position: absolute; inset-block: 10px; inset-inline-start: 3px;
+    width: 3px; border-radius: var(--wew-radius-pill);
+    background: var(--wew-k-accent);
+    transition: background-color var(--wew-motion) var(--wew-ease), opacity var(--wew-motion) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row:hover {
+    background: var(--wew-k-card);
+    border-color: var(--wew-k-card-border-hover);
+    box-shadow: var(--wew-k-shadow-hover);
+}
+/* Stays in the workspace: the card lies flat, its bar loses the colour. */
+.wew-menu[data-wew-layout="clarity"] .wew-row:not(.wew-row--selected) {
+    background: var(--wew-k-flat);
+    box-shadow: none;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row:not(.wew-row--selected)::before {
+    background: var(--wew-k-card-border-hover);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row:not(.wew-row--selected):hover {
+    background: color-mix(in srgb, var(--wew-text) 4.5%, transparent);
+    box-shadow: none;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row:has(.wew-row__check:focus-visible) {
+    outline-offset: 2px;
+}
+@starting-style {
+    .wew-menu[data-wew-layout="clarity"] .wew-row { opacity: 0; translate: 0 4px; }
+}
+/* Leaving (discard, publish): slides aside and folds its height away. */
+.wew-menu[data-wew-layout="clarity"] .wew-row--leaving {
+    display: none; height: 0; padding-block: 0; overflow: hidden;
+    opacity: 0; translate: 16px 0;
+}
+
+.wew-menu[data-wew-layout="clarity"] .wew-row__title { line-height: 1.5; letter-spacing: -.003em; }
+.wew-menu[data-wew-layout="clarity"] .wew-row--primary .wew-row__title { font-weight: 650; }
+.wew-menu[data-wew-layout="clarity"] .wew-row__icon,
+.wew-menu[data-wew-layout="clarity"] .wew-row__thumb {
+    border-radius: calc(var(--wew-k-radius) * .7);
+    background: color-mix(in srgb, var(--wew-k-accent) 9%, var(--wew-surface-sunken));
+    color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row:not(.wew-row--selected) .wew-row__icon {
+    background: var(--wew-surface-sunken);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row__actions { gap: 1px; }
+.wew-menu[data-wew-layout="clarity"] .wew-row__action { min-inline-size: var(--wew-target); min-block-size: var(--wew-target); }
+.wew-menu[data-wew-layout="clarity"] .wew-row__action-slot { inline-size: var(--wew-target); }
+.wew-menu[data-wew-layout="clarity"] .wew-row__action--danger { margin-inline-start: 6px; }
+.wew-menu[data-wew-layout="clarity"] .wew-row__meta { gap: 5px; margin-top: 1px; }
+
+/* ---- The translations foot of a card ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-row__companions {
+    grid-area: langs;
+    display: grid; grid-template-columns: var(--wew-col) minmax(0, 1fr); column-gap: var(--wew-gap); align-items: start;
+    margin-top: 7px; padding-top: 7px;
+    border-top: 1px solid var(--wew-k-hairline);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row__companions-icon {
+    display: grid; place-items: center; height: calc(var(--wew-target) - 2px);
+    color: var(--wew-text-muted); opacity: .85;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row__companions-groups {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--wew-space-3); min-width: 0;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-row__companion-group { gap: 4px 6px; }
+.wew-menu[data-wew-layout="clarity"] .wew-row__chips { gap: 4px; }
+.wew-menu[data-wew-layout="clarity"] .wew-companion {
+    gap: 5px; padding-inline: 4px 8px;
+    box-shadow: inset 0 0 0 1px var(--wew-k-hairline);
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), box-shadow var(--wew-motion-fast) var(--wew-ease), translate var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-companion:not(.wew-companion--static):hover {
+    background: var(--wew-chip-hover);
+    box-shadow: inset 0 0 0 1px var(--wew-k-card-border-hover);
+    translate: 0 -1px;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-companion:not(.wew-companion--static):active { translate: 0 0; }
+.wew-menu[data-wew-layout="clarity"] .wew-companion typo3-backend-icon { border-radius: 2px; overflow: hidden; }
+.wew-menu[data-wew-layout="clarity"] .wew-companion--static { box-shadow: none; padding-inline: 2px 4px; }
+
+/* ---- The explainer: once, soft info surface, Core's info icon ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-explainer {
+    display: grid;
+    grid-template-columns: var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas: "icon title action" ".    text  text";
+    column-gap: var(--wew-gap); row-gap: 3px; align-items: center;
+    margin: var(--wew-space-2) var(--wew-k-inset) 2px;
+    padding: 9px var(--wew-space-2) 12px var(--wew-k-pad);
+    border: 1px solid var(--wew-k-info-border);
+    border-radius: var(--wew-k-radius);
+    background: var(--wew-k-info-surface);
+    color: var(--wew-k-info-text);
+    transition:
+        opacity var(--wew-motion) var(--wew-ease),
+        translate var(--wew-motion) var(--wew-ease),
+        height var(--wew-motion) var(--wew-ease),
+        margin var(--wew-motion) var(--wew-ease),
+        padding var(--wew-motion) var(--wew-ease);
+}
+@starting-style {
+    .wew-menu[data-wew-layout="clarity"] .wew-explainer { opacity: 0; translate: 0 4px; }
+}
+.wew-menu[data-wew-layout="clarity"] .wew-explainer.is-leaving {
+    height: 0; margin-block: 0; padding-block: 0; border-width: 0; overflow: hidden; opacity: 0; translate: 0 -4px;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-explainer__icon {
+    grid-area: icon; display: grid; place-items: center; height: 20px;
+    color: var(--wew-accent-changed);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-explainer__title {
+    grid-area: title; margin: 0;
+    font-size: var(--wew-font-size-title); font-weight: 650; line-height: 20px; text-wrap: balance;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-explainer__text {
+    grid-area: text; margin: 0; max-width: 54ch; padding-inline-end: var(--wew-space-1);
+    font-size: var(--wew-font-size-sm); line-height: 1.5; text-wrap: pretty;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-explainer__dismiss {
+    grid-area: action; align-self: start;
+    display: inline-flex; align-items: center; gap: .35em;
+    min-block-size: calc(var(--wew-target) + 4px);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-explainer__dismiss:focus-visible { outline: var(--wew-focus-outline); outline-offset: 1px; }
+
+/* ---- Sections: quiet headings on the surface, aligned with the cards ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-section {
+    margin-top: var(--wew-space-2);
+    border-top-color: var(--wew-k-hairline);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section__head {
+    padding: 6px var(--wew-k-inset) 6px var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section__toggle {
+    --wew-section-line: calc(var(--wew-target) + 6px);
+    padding-inline: var(--wew-space-1) var(--wew-space-2);
+    border-radius: calc(var(--wew-k-radius) * .7);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section__count:not(.wew-section__count--pill) { font-variant-numeric: tabular-nums; }
+.wew-menu[data-wew-layout="clarity"] .wew-section__body { padding-bottom: 2px; }
+.wew-menu[data-wew-layout="clarity"] .wew-language {
+    padding: var(--wew-space-2) var(--wew-gutter) 6px var(--wew-indent-icon);
+    font-weight: 600;
+}
+
+/* ---- Cleanup: a quiet tray at the group's end ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-section--cleanup {
+    --wew-k-tray: calc(var(--wew-k-inset) + 1px);
+    margin: var(--wew-space-2) var(--wew-k-inset) 2px;
+    border: 1px solid var(--wew-k-hairline);
+    border-radius: var(--wew-k-radius);
+    background: var(--wew-k-flat);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-group__head + .wew-section--cleanup { margin-top: 2px; border-top-width: 1px; }
+.wew-menu[data-wew-layout="clarity"] .wew-section--cleanup .wew-section__head {
+    padding: 5px 5px 5px calc(var(--wew-gutter) - var(--wew-k-tray));
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section--cleanup .wew-section__help {
+    margin: 0 var(--wew-space-3) var(--wew-space-2) calc(var(--wew-indent-icon) - var(--wew-k-tray));
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section--cleanup .wew-copies { padding: 0 4px 6px; display: grid; gap: 2px; }
+.wew-menu[data-wew-layout="clarity"] .wew-section--cleanup .wew-copy {
+    margin: 0;
+    padding: 6px var(--wew-space-2) 7px calc(var(--wew-indent-icon) - var(--wew-k-tray) - 4px);
+    transition: background-color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-section--cleanup .wew-copy:hover { background: var(--wew-k-flat); }
+.wew-menu[data-wew-layout="clarity"] .wew-copy__icon { border-radius: calc(var(--wew-k-radius) * .7); }
+.wew-menu[data-wew-layout="clarity"] .wew-copy__chips { gap: 4px; }
+.wew-menu[data-wew-layout="clarity"] .wew-cleanup__discard {
+    transition: color var(--wew-motion-fast) var(--wew-ease), background-color var(--wew-motion-fast) var(--wew-ease), border-color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-cleanup__discard:not(:disabled):hover {
+    background: var(--wew-danger-tint);
+    border-color: color-mix(in srgb, var(--wew-accent-deleted) 40%, transparent);
+}
+
+/* ---- Footer: room around the one primary action ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-menu__foot {
+    padding: var(--wew-space-3) var(--wew-space-3) var(--wew-space-3) var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-menu__selectall { display: grid; grid-template-columns: var(--wew-col) auto; column-gap: var(--wew-gap); }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__selectall .form-check-input { justify-self: center; margin: 0; }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__foot .btn { min-block-size: calc(var(--wew-target) + 8px); }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__publish { padding-inline: .875rem; box-shadow: var(--wew-k-shadow); }
+.wew-menu[data-wew-layout="clarity"] .wew-menu__publish:not(:disabled):hover { box-shadow: var(--wew-k-shadow-hover); }
+
+/* ---- States ---- */
+.wew-menu[data-wew-layout="clarity"] .wew-state { padding: 28px var(--wew-space-4) 30px; gap: 6px; }
+.wew-menu[data-wew-layout="clarity"] .wew-state__icon {
+    position: relative;
+    width: 48px; height: 48px; margin-bottom: var(--wew-space-3);
+}
+/* Empty: a calm check in two soft rings, two small dots of colour around it. */
+.wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon {
+    box-shadow:
+        0 0 0 7px color-mix(in srgb, var(--wew-accent-new) 8%, transparent),
+        0 0 0 15px color-mix(in srgb, var(--wew-accent-new) 4%, transparent);
+    animation: wew-k-pop var(--wew-motion-slow) var(--wew-ease-spring) both;
+}
+.wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon::before,
+.wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon::after {
+    content: ""; position: absolute; border-radius: 50%;
+    animation: wew-k-fade var(--wew-motion-slow) var(--wew-ease) both;
+    animation-delay: var(--wew-motion);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon::before {
+    width: 6px; height: 6px; inset-inline-start: -19px; inset-block-start: 4px;
+    background: color-mix(in srgb, var(--wew-accent-changed) 55%, transparent);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon::after {
+    width: 5px; height: 5px; inset-inline-end: -18px; inset-block-end: 2px;
+    background: color-mix(in srgb, var(--wew-accent-moved) 65%, transparent);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-state--error .wew-state__icon {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--wew-accent-deleted) 7%, transparent);
+}
+.wew-menu[data-wew-layout="clarity"] .wew-state__title { font-size: var(--wew-font-size-head); letter-spacing: -.005em; }
+.wew-menu[data-wew-layout="clarity"] .wew-state__text { font-size: var(--wew-font-size-sm); }
+.wew-menu[data-wew-layout="clarity"] .wew-state__action { margin-top: var(--wew-space-3); }
+@keyframes wew-k-pop { from { opacity: 0; scale: .7; } }
+@keyframes wew-k-fade { from { opacity: 0; scale: .2; } }
+
+/* Loading: the skeleton takes the card's shape, so nothing jumps. */
+.wew-menu[data-wew-layout="clarity"] .wew-skeleton { gap: 6px; padding: var(--wew-space-3) var(--wew-k-inset); }
+.wew-menu[data-wew-layout="clarity"] .wew-skeleton__row {
+    padding: 12px var(--wew-k-pad-end) 12px var(--wew-k-pad);
+    border: 1px solid var(--wew-k-hairline);
+    border-radius: var(--wew-k-radius);
+    background: var(--wew-k-flat);
+}
+
+/* ---- Narrow: the title keeps its line, the actions gather at the card's foot ---- */
+@container wew-menu (max-width: 25rem) {
+    /* The menu is the container, so its children take the tighter grid. */
+    .wew-menu[data-wew-layout="clarity"] > * {
+        --wew-gutter: var(--wew-space-3);
+        --wew-k-inset: 6px;
+        --wew-k-pad: calc(var(--wew-gutter) - var(--wew-k-inset) - 1px);
+        --wew-indent-icon: calc(var(--wew-gutter) + var(--wew-col) + var(--wew-gap));
+        --wew-indent-text: calc(var(--wew-indent-icon) + var(--wew-col) + var(--wew-gap));
+    }
+    .wew-menu[data-wew-layout="clarity"] .wew-row {
+        grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr);
+        grid-template-areas:
+            "select icon  title"
+            "select icon  meta"
+            ".      .     actions"
+            ".      .     kids"
+            ".      langs langs";
+    }
+    .wew-menu[data-wew-layout="clarity"] .wew-row__actions { justify-self: end; margin: 2px -2px 0 0; }
+    .wew-menu[data-wew-layout="clarity"] .wew-section--cleanup .wew-section__head { grid-template-columns: var(--wew-col) minmax(0, 1fr); }
+}
+
+/* The narrowest dropdown: a fourth line rather than losing the last part of the summary. */
+@container wew-menu (max-width: 21.5rem) {
+    .wew-menu[data-wew-layout="clarity"] .wew-menu__summary { -webkit-line-clamp: 4; line-clamp: 4; }
+}
+
+/* ---- Forced colours: cards and the callout keep a visible frame ---- */
+@media (forced-colors: active) {
+    .wew-menu[data-wew-layout="clarity"] .wew-row,
+    .wew-menu[data-wew-layout="clarity"] .wew-explainer,
+    .wew-menu[data-wew-layout="clarity"] .wew-section--cleanup { border-color: CanvasText; }
+    .wew-menu[data-wew-layout="clarity"] .wew-row::before { background: CanvasText; }
+}
+
+/* ---- Reduced motion: no lift, no pop, no slide ---- */
+@media (prefers-reduced-motion: reduce) {
+    .wew-menu[data-wew-layout="clarity"] .wew-row,
+    .wew-menu[data-wew-layout="clarity"] .wew-row::before,
+    .wew-menu[data-wew-layout="clarity"] .wew-explainer,
+    .wew-menu[data-wew-layout="clarity"] .wew-companion,
+    .wew-menu[data-wew-layout="clarity"] .wew-cleanup__discard { transition: none; }
+    .wew-menu[data-wew-layout="clarity"] .wew-companion:not(.wew-companion--static):hover { translate: none; }
+    .wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon,
+    .wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon::before,
+    .wew-menu[data-wew-layout="clarity"] .wew-state--empty .wew-state__icon::after { animation: none; }
+}

@@ -30,7 +30,7 @@ Install from the GitHub VCS repository in a TYPO3 project:
 ..  code-block:: bash
 
     composer config repositories.webcon-easy-workspace vcs https://github.com/dirnbauer/typo3-webcon-easy-workspace.git
-    composer require webconsulting/webcon-easy-workspace:^1.10
+    composer require webconsulting/webcon-easy-workspace:^1.11
     vendor/bin/typo3 extension:setup
     vendor/bin/typo3 cache:flush
 
@@ -151,8 +151,9 @@ The route names below use the ``webcon_easy_workspace_`` prefix.
       - JSON pending records, groups, context and workspace identity
     * - ``badge``
       - GET
-      - Whole-workspace count: ``changedCount``, ``byTable``, ``byState``,
-        ``stamp`` and workspace identity (:ref:`badge-payload`)
+      - Page and workspace counts: ``contextCount``, ``changedCount``,
+        ``versionCount``, ``copyCount``, ``byTable``, ``byState``, ``stamp``
+        and workspace identity (:ref:`badge-payload`)
     * - ``has_changes``
       - GET
       - The badge payload plus ``hasChanges``
@@ -164,10 +165,18 @@ The route names below use the ``webcon_easy_workspace_`` prefix.
       - Workspace preview URL
     * - ``publish``
       - POST
-      - Publish selected records; the response embeds the fresh ``badge``
+      - Publish selected records and the translation copies that ride on
+        them; the response embeds the fresh ``badge``
     * - ``discard``
       - POST
-      - Discard a draft from the active workspace; embeds the fresh ``badge``
+      - Discard a draft from the active workspace, with the translation
+        copies that ride on it; Core's discard removes the translations
+        pointing at the draft as well (``dependentsDiscarded``); embeds the
+        fresh ``badge``
+    * - ``discard_copies``
+      - POST
+      - Discard the unchanged copies of the page or news article (or the
+        posted ones among them); embeds the fresh ``badge``
     * - ``history_rollback``
       - POST
       - Roll back a record or field history entry

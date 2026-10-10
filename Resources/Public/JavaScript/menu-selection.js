@@ -1,7 +1,15 @@
+import { isChangeRow } from '@webconsulting/webcon-easy-workspace/menu-roles.js';
+
 export function key(host, item) {
   return `${item.table}:${item.workspaceUid}`;
 }
 
+/**
+ * The records a selected row publishes: its own version and its nested
+ * records (collection items, file references). The translations TYPO3
+ * copied along are not part of it; the server adds them after checking
+ * they are still unchanged.
+ */
 export function publishRecordsForItem(host, item) {
   const records = Array.isArray(item.publishRecords) && item.publishRecords.length > 0
     ? item.publishRecords
@@ -16,18 +24,17 @@ export function publishRecordsForItem(host, item) {
   return Array.from(unique.values());
 }
 
-export function discardRecordsForItem(host, item) {
-  const records = publishRecordsForItem(host, item);
-  const ownKey = `${item.table}:${item.workspaceUid}`;
-  return [
-    ...records.filter((record) => `${record.table}:${record.workspaceUid}` !== ownKey),
-    ...records.filter((record) => `${record.table}:${record.workspaceUid}` === ownKey),
-  ];
+/**
+ * The one record a row discard posts. The server discards its nested
+ * records and the translations folded into it in the same request.
+ */
+export function discardTargetForItem(item) {
+  return { table: item.table, workspaceUid: item.workspaceUid };
 }
 
 export function syncSelectionWithItems(host, contextKey) {
   const items = Array.isArray(host.items) ? host.items : [];
-  const changedKeys = new Set(items.filter((i) => i.isChanged).map((i) => key(host, i)));
+  const changedKeys = new Set(items.filter(isChangeRow).map((i) => key(host, i)));
   const contextChanged = host._selectionContextKey !== contextKey;
 
   if (contextChanged) {
@@ -52,12 +59,23 @@ export function resetSelection(host) {
 }
 
 export function toggle(host, item, checked) {
+  toggleMany(host, [item], checked);
+}
+
+/**
+ * Select or clear several rows at once (a section's checkbox). Only edit
+ * rows can be selected.
+ */
+export function toggleMany(host, items, checked) {
   const next = new Set(host.selection);
-  const itemKey = key(host, item);
-  if (checked) {
-    next.add(itemKey);
-  } else {
-    next.delete(itemKey);
+  for (const item of items) {
+    if (!isChangeRow(item)) continue;
+    const itemKey = key(host, item);
+    if (checked) {
+      next.add(itemKey);
+    } else {
+      next.delete(itemKey);
+    }
   }
   host.selection = next;
   host._selectionTouched = true;
@@ -71,6 +89,6 @@ export function selectAll(host, value) {
     host.requestSelectionUpdate?.();
     return;
   }
-  host.selection = new Set(host.items.filter((i) => i.isChanged).map((i) => key(host, i)));
+  host.selection = new Set((host.items || []).filter(isChangeRow).map((i) => key(host, i)));
   host.requestSelectionUpdate?.();
 }

@@ -128,9 +128,12 @@ final class WorkspaceRevisionTest extends FunctionalTestCase
         $stamp = $this->changeCount(1)->stamp;
 
         // As in the Workspaces module, the draft of collection item A is a
-        // row of its own while its element 18 is unchanged.
+        // row of its own while its element 18 is unchanged. Element 13's
+        // draft is identical to live: an unchanged copy, not a change.
         $first = $summary->forContext(1, $stamp, 2, 0, []);
-        self::assertSame(13, $first['count'] ?? null);
+        self::assertSame(12, $first['count'] ?? null);
+        self::assertSame(1, $first['copies'] ?? null);
+        self::assertNotContains('tt_content:13', $records($first));
         self::assertContains('tx_easyws_item:30', $records($first));
         self::assertNotContains('tt_content:18', $records($first));
 
@@ -145,7 +148,8 @@ final class WorkspaceRevisionTest extends FunctionalTestCase
         $newStamp = $this->changeCount(1)->stamp;
         self::assertNotSame($stamp, $newStamp);
         $second = $summary->forContext(1, $newStamp, 2, 0, []);
-        self::assertSame(12, $second['count'] ?? null, 'item A dropped out; element 13 was listed before');
+        self::assertSame(12, $second['count'] ?? null, 'item A dropped out; element 13 is a change now');
+        self::assertSame(0, $second['copies'] ?? null);
         self::assertNotContains('tx_easyws_item:30', $records($second));
         self::assertContains('tt_content:13', $records($second));
     }

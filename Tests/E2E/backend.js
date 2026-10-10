@@ -11,6 +11,9 @@ export const env = {
   workspaceId: Number(process.env.WEW_E2E_WORKSPACE_ID || 0),
   pageUid: Number(process.env.WEW_E2E_PAGE_UID || 0),
   contentUid: Number(process.env.WEW_E2E_CONTENT_UID || 0),
+  // A translation of WEW_E2E_CONTENT_UID (1.11 translation-copy cases; the
+  // lab: page 2228, hero 158035, German 158633). 0 skips those cases.
+  translationUid: Number(process.env.WEW_E2E_TRANSLATION_UID || 0),
   // The badge poll interval plus jitter; the "external actor" case has to wait for it.
   // How long the idle check watches for (unwanted) badge requests.
   idleMs: Number(process.env.WEW_E2E_IDLE_MS || 20_000),
@@ -29,6 +32,12 @@ export const selectors = {
   toggle: '.webcon-easy-workspace-toolbar .dropdown-toggle',
   menu: '.wew-menu',
   rows: '[data-wew-row]',
+  rowCheck: '[data-wew-row-check]',
+  companions: '[data-wew-companions]',
+  companionChip: '[data-wew-companions] [data-wew-companion]',
+  cleanup: '[data-wew-cleanup]',
+  discardCopies: '[data-wew-discard-copies]',
+  empty: '[data-wew-empty]',
   publish: '[data-wew-publish]',
   selectAll: '[data-wew-select-all]',
   contentIframe: '#typo3-contentIframe',
@@ -218,7 +227,8 @@ export async function waitForModuleFrame(page, marker = '') {
 
 /**
  * Open a FormEngine edit form for a content element inside the module iframe
- * and save a new header — the classic editor flow.
+ * and save a new header — the classic editor flow. `header = null` saves the
+ * form unchanged (TYPO3 still versions the record and its translations).
  */
 export async function saveContentHeaderInIframe(page, contentUid, header) {
   await goto(page, env.recordsModule);
@@ -246,7 +256,7 @@ export async function saveContentHeaderInIframe(page, contentUid, header) {
     await waitForModuleFrame(page, '/record/edit');
   }
   await frame.locator(field).waitFor({ timeout: 60_000 });
-  await frame.locator(field).fill(header);
+  if (header !== null) await frame.locator(field).fill(header);
   // A classic FormEngine save: a full form POST inside the iframe. No
   // DataHandler event, no BroadcastChannel message — only an iframe load.
   // Wait for the POST itself: on a loaded instance the button sits in its
@@ -258,6 +268,7 @@ export async function saveContentHeaderInIframe(page, contentUid, header) {
   await frame.locator('button[name="_savedok"]').click();
   await saved;
   await waitForModuleFrame(page, '/record/edit');
+  if (header === null) return;
   await expect
     .poll(() => frame.locator(field).inputValue().catch(() => null), { timeout: 30_000 })
     .toBe(header);
@@ -293,8 +304,9 @@ export async function publishAllThroughDropdown(page) {
   await page.click(selectors.toggle);
   await page.locator(selectors.menu).waitFor();
   await page.locator(selectors.rows).first().waitFor({ timeout: 20_000 });
+  // Select-all shows from two edits on; a single edit is selected already.
   const selectAll = page.locator(selectors.selectAll);
-  if (!(await selectAll.isChecked())) await selectAll.check();
+  if (await selectAll.count() > 0 && !(await selectAll.isChecked())) await selectAll.check();
   await page.locator(selectors.publish).click();
 }
 
@@ -311,15 +323,41 @@ export async function discardPendingOnTestPage(page) {
     const url = new URL(TYPO3.settings.ajaxUrls.webcon_easy_workspace_items, window.location.href);
     url.searchParams.set('pageUid', String(pageUid));
     const items = await (await fetch(url.toString(), { credentials: 'same-origin' })).json();
+    const post = (route, body) => fetch(route, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    // Edits first: the server discards the translations copied along with them.
     for (const item of items.items || []) {
-      if (!item.isChanged || !item.workspaceUid) continue;
-      await fetch(TYPO3.settings.ajaxUrls.webcon_easy_workspace_discard, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table: item.table, workspaceUid: item.workspaceUid }),
-      });
+      if (!item.isChanged || !item.workspaceUid || item.role === 'copy') continue;
+      await post(TYPO3.settings.ajaxUrls.webcon_easy_workspace_discard, { table: item.table, workspaceUid: item.workspaceUid });
+    }
+    // Then the leftover copies (1.11 cleanup route).
+    if (TYPO3.settings.ajaxUrls.webcon_easy_workspace_discard_copies) {
+      await post(TYPO3.settings.ajaxUrls.webcon_easy_workspace_discard_copies, { pageUid });
     }
   }, env.pageUid);
 }
 
+
+/** The toolbar list of the test page, as the dropdown loads it. */
+export async function itemsOfTestPage(page) {
+  return page.evaluate(async (pageUid) => {
+    const url = new URL(TYPO3.settings.ajaxUrls.webcon_easy_workspace_items, window.location.href);
+    url.searchParams.set('pageUid', String(pageUid));
+    url.searchParams.set('_', String(Date.now()));
+    return (await fetch(url.toString(), { credentials: 'same-origin' })).json();
+  }, env.pageUid);
+}
+
+/** The badge payload of the test page (counts, change records, copies). */
+export async function badgeOfTestPage(page) {
+  return page.evaluate(async (pageUid) => {
+    const url = new URL(TYPO3.settings.ajaxUrls.webcon_easy_workspace_badge, window.location.href);
+    url.searchParams.set('pageUid', String(pageUid));
+    url.searchParams.set('_', String(Date.now()));
+    return (await fetch(url.toString(), { credentials: 'same-origin' })).json();
+  }, env.pageUid);
+}

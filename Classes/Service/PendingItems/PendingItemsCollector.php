@@ -7,19 +7,24 @@ namespace Webconsulting\WebconEasyWorkspace\Service\PendingItems;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
+use Webconsulting\WebconEasyWorkspace\Dto\PendingCompanion;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItemsPayload;
 use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChange;
+use Webconsulting\WebconEasyWorkspace\Enum\ChangeRole;
+use Webconsulting\WebconEasyWorkspace\Enum\CompanionKind;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
+use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
  * The toolbar's and the module's items for a page or a news article.
  *
  * What is changed comes from core (CoreWorkspaceChanges): the Workspaces
- * module's rows for the page, each with the records nested below it. This
- * class only turns them into items. In "all" mode the page's unchanged
- * records are listed around them, in the page's order.
+ * module's rows for the page, each with the records nested below it and
+ * classified as a change or a copy, with the translation copies folded into
+ * it. This class only turns them into items. In "all" mode the page's
+ * unchanged records are listed around them, in the page's order.
  */
 final readonly class PendingItemsCollector
 {
@@ -32,40 +37,73 @@ final readonly class PendingItemsCollector
         private WorkspaceRecordQuery $workspaceRecordQuery,
         private PendingItemFactory $pendingItemFactory,
         private PendingItemAggregator $pendingItemAggregator,
+        private PendingItemLabelResolver $labelResolver,
+        private PendingItemUrlBuilder $urlBuilder,
     ) {}
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, pageUid: int, languageUid: int|null, hasChanges: bool}
+     * @return array{workspaceId: int, pageUid: int, languageUid: int|null, hasChanges: bool, hasCopies: bool}
      */
     public function hasChangesForPage(int $pageUid, array $config = [], ?int $languageUid = null): array
     {
         $workspaceId = $this->workspaceId();
+        $entries = $workspaceId > 0 && $pageUid > 0
+            ? $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid)
+            : [];
 
         return [
             'workspaceId' => $workspaceId,
             'pageUid' => $pageUid,
             'languageUid' => $languageUid,
-            'hasChanges' => $workspaceId > 0 && $pageUid > 0
-                && $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid) !== [],
+            'hasChanges' => self::hasRole($entries, ChangeRole::Change),
+            'hasCopies' => self::hasRole($entries, ChangeRole::Copy),
         ];
     }
 
     /**
      * @param array<string, mixed> $config
-     * @return array{workspaceId: int, newsUid: int, languageUid: int|null, hasChanges: bool}
+     * @return array{workspaceId: int, newsUid: int, languageUid: int|null, hasChanges: bool, hasCopies: bool}
      */
     public function hasChangesForNews(int $newsUid, array $config = [], ?int $languageUid = null): array
     {
         $workspaceId = $this->workspaceId();
+        $entries = $workspaceId > 0 && $newsUid > 0 && $this->tcaSchemaFactory->has(self::NEWS_TABLE)
+            ? $this->newsEntries($newsUid, $workspaceId, $languageUid)
+            : [];
 
         return [
             'workspaceId' => $workspaceId,
             'newsUid' => $newsUid,
             'languageUid' => $languageUid,
-            'hasChanges' => $workspaceId > 0 && $newsUid > 0 && $this->tcaSchemaFactory->has(self::NEWS_TABLE)
-                && $this->newsEntries($newsUid, $workspaceId, $languageUid) !== [],
+            'hasChanges' => self::hasRole($entries, ChangeRole::Change),
+            'hasCopies' => self::hasRole($entries, ChangeRole::Copy),
         ];
+    }
+
+    /**
+     * The classified rows of a page or a news article — what the cleanup
+     * of unchanged copies picks its entries from.
+     *
+     * @return list<WorkspaceChange>
+     */
+    public function entriesForContext(ToolbarContext $context, int $pageUid, int $newsUid, int $workspaceId, ?int $languageUid = null): array
+    {
+        return match ($context) {
+            ToolbarContext::Page => $pageUid > 0 ? $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid) : [],
+            ToolbarContext::News => $newsUid > 0 && $this->tcaSchemaFactory->has(self::NEWS_TABLE)
+                ? $this->newsEntries($newsUid, $workspaceId, $languageUid)
+                : [],
+            ToolbarContext::None => [],
+        };
+    }
+
+    /**
+     * @param list<WorkspaceChange> $entries
+     */
+    private static function hasRole(array $entries, ChangeRole $role): bool
+    {
+        return array_any($entries, static fn(WorkspaceChange $entry): bool => $entry->role === $role);
     }
 
     /**
@@ -84,12 +122,8 @@ final readonly class PendingItemsCollector
         // Column titles only label and group rows; a count does not need
         // the backend layout.
         $columnLabels = PendingItemFactory::isCountOnly($config) ? [] : $this->pendingItemFactory->resolveColumnLabels($pageUid);
-        $items = $this->changedItems(
-            $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid),
-            $config,
-            $columnLabels,
-            $maxItems,
-        );
+        $entries = $this->coreWorkspaceChanges->entries($workspaceId, $pageUid, $languageUid);
+        $items = $this->changedItems($entries, $config, $columnLabels, $maxItems);
 
         if ($mode->includesUnchanged()) {
             $rows = [];
@@ -101,7 +135,10 @@ final readonly class PendingItemsCollector
             foreach ($this->workspaceRecordQuery->listAllRecordsOnPage('tt_content', $pageUid, $workspaceId, [['colPos', 'ASC'], ['sorting', 'ASC']], $languageUid) as $row) {
                 $rows[] = ['table' => 'tt_content', 'row' => $row];
             }
-            $items = $this->inPageOrder($items, $rows, $config, $columnLabels, $maxItems);
+            // The language filter goes by the owner's language: a companion
+            // of another language's change is covered all the same.
+            $classified = $languageUid === null ? $entries : $this->coreWorkspaceChanges->entries($workspaceId, $pageUid);
+            $items = $this->inPageOrder($items, $rows, $config, $columnLabels, $maxItems, self::coveredByCompanions($classified, $entries));
         }
 
         return $this->payload($items, $workspaceId, $workspaceTitle, $mode, $languageUid, pageUid: $pageUid, hasNews: $hasNews);
@@ -123,7 +160,8 @@ final readonly class PendingItemsCollector
         // tx_news_related_news, not through a backend layout column: their
         // colPos is a leftover, so neither a "Column 0" meta line nor a
         // column group belongs on them.
-        $items = $this->changedItems($this->newsEntries($newsUid, $workspaceId, $languageUid), $config, null, $maxItems);
+        $entries = $this->newsEntries($newsUid, $workspaceId, $languageUid);
+        $items = $this->changedItems($entries, $config, null, $maxItems);
 
         if ($mode->includesUnchanged()) {
             $rows = [];
@@ -135,7 +173,8 @@ final readonly class PendingItemsCollector
             foreach ($this->workspaceRecordQuery->listAllRelatedRecords('tt_content', 'tx_news_related_news', $newsUid, $workspaceId, [['sorting', 'ASC']], $languageUid) as $row) {
                 $rows[] = ['table' => 'tt_content', 'row' => $row];
             }
-            $items = $this->inPageOrder($items, $rows, $config, null, $maxItems);
+            $classified = $languageUid === null ? $entries : $this->newsEntries($newsUid, $workspaceId, null);
+            $items = $this->inPageOrder($items, $rows, $config, null, $maxItems, self::coveredByCompanions($classified, $entries));
         }
 
         return $this->payload($items, $workspaceId, $workspaceTitle, $mode, $languageUid, newsUid: $newsUid);
@@ -164,9 +203,7 @@ final readonly class PendingItemsCollector
     private function belongsToNews(WorkspaceChange $entry, int $newsUid): bool
     {
         if ($entry->table === self::NEWS_TABLE) {
-            $row = BackendUtility::getRecord(self::NEWS_TABLE, $entry->workspaceUid);
-            return $entry->liveUid === $newsUid
-                || (is_array($row) && Value::int($row['l10n_parent'] ?? null) === $newsUid);
+            return $entry->liveUid === $newsUid || $entry->translationParent === $newsUid;
         }
         if ($entry->table === 'tt_content') {
             $row = BackendUtility::getRecord('tt_content', $entry->workspaceUid, 'tx_news_related_news');
@@ -206,7 +243,13 @@ final readonly class PendingItemsCollector
                 continue;
             }
             $item = $this->pendingItemAggregator->withRelatedChanges(
-                $item->with(['contentChanged' => $entry->contentChanged]),
+                $item->with([
+                    'contentChanged' => $entry->contentChanged,
+                    'role' => $entry->role,
+                    'companions' => $this->companions($entry, $config),
+                    'dependents' => $entry->dependents,
+                    'copyGroup' => $entry->copyGroup,
+                ]),
                 $this->childItems($entry, $config, $columnLabels),
             );
             $built[] = [
@@ -226,6 +269,75 @@ final readonly class PendingItemsCollector
         usort($built, static fn(array $a, array $b): int => $a['order'] <=> $b['order']);
 
         return array_slice(array_column($built, 'item'), 0, $maxItems);
+    }
+
+    /**
+     * The entry's translation copies as the dropdown shows them. The field
+     * labels of a synchronized translation leave out what a move rewrites
+     * (page, position); a count needs neither labels nor URLs.
+     *
+     * @param array<string, mixed> $config
+     * @return list<PendingCompanion>
+     */
+    private function companions(WorkspaceChange $entry, array $config): array
+    {
+        $countOnly = PendingItemFactory::isCountOnly($config);
+        $companions = [];
+        foreach ($entry->companions as $companion) {
+            $kind = CompanionKind::fromChangeKind($companion->kind());
+            $fields = [];
+            if ($kind === CompanionKind::Synced && !$countOnly) {
+                $sortField = $this->coreWorkspaceChanges->sortField($companion->table);
+                foreach (array_keys($companion->changedFields) as $field) {
+                    if ($field !== 'pid' && $field !== $sortField) {
+                        $fields[] = $this->labelResolver->fieldLabel($companion->table, $field);
+                    }
+                }
+            }
+            $companions[] = new PendingCompanion(
+                table: $companion->table,
+                workspaceUid: $companion->workspaceUid,
+                liveUid: $companion->liveUid,
+                languageUid: $companion->languageUid ?? 0,
+                kind: $kind,
+                fields: array_values(array_unique($fields)),
+                editUrl: $countOnly ? null : $this->urlBuilder->buildEditUrl($companion->table, $companion->liveUid),
+                contextualEditUrl: $countOnly ? null : $this->urlBuilder->buildContextualEditUrl($companion->table, $companion->liveUid),
+            );
+        }
+
+        return $companions;
+    }
+
+    /**
+     * The records the entries' companions stand for (with what is nested
+     * below them), by table:liveUid, each with whether its owner is listed.
+     * In "all" mode the page's records are read with their workspace
+     * overlay, which would bring every companion back as a changed row of
+     * its own: one whose owner is listed travels with it, one whose owner a
+     * language filter left out is an unchanged record of this language.
+     *
+     * @param list<WorkspaceChange> $classified Every entry of the scope, before a language filter.
+     * @param list<WorkspaceChange> $listed The entries listed.
+     * @return array<string, bool> table:liveUid => owner listed
+     */
+    private static function coveredByCompanions(array $classified, array $listed): array
+    {
+        $listedKeys = [];
+        foreach ($listed as $entry) {
+            $listedKeys[$entry->table . ':' . $entry->workspaceUid] = true;
+        }
+        $covered = [];
+        foreach ($classified as $entry) {
+            $ownerListed = isset($listedKeys[$entry->table . ':' . $entry->workspaceUid]);
+            foreach ($entry->companions as $companion) {
+                foreach ([$companion, ...$companion->children] as $node) {
+                    $covered[$node->table . ':' . $node->liveUid] = $ownerListed;
+                }
+            }
+        }
+
+        return $covered;
     }
 
     /**
@@ -269,14 +381,26 @@ final readonly class PendingItemsCollector
      * @param list<array{table: string, row: array<string, mixed>}> $rows
      * @param array<string, mixed> $config
      * @param array<int, string>|null $columnLabels
+     * @param array<string, bool> $covered table:liveUid of the records folded into a change as its companions => whether that change is listed
      * @return list<PendingItem>
      */
-    private function inPageOrder(array $changedItems, array $rows, array $config, ?array $columnLabels, int $maxItems): array
+    private function inPageOrder(array $changedItems, array $rows, array $config, ?array $columnLabels, int $maxItems, array $covered = []): array
     {
         $items = [];
         foreach ($rows as ['table' => $table, 'row' => $row]) {
             $uid = Value::int($row['_ORIG_uid'] ?? $row['uid'] ?? null);
             $liveUid = Value::int($row['t3ver_oid'] ?? null) ?: Value::int($row['uid'] ?? null);
+            if (isset($covered[$table . ':' . $liveUid])) {
+                if ($covered[$table . ':' . $liveUid]) {
+                    continue;
+                }
+                // Its change is another language's: as live, unchanged.
+                $liveRow = BackendUtility::getRecord($table, $liveUid);
+                if (!is_array($liveRow)) {
+                    continue;
+                }
+                $row = Value::stringKeyArray($liveRow);
+            }
             $index = $this->pendingItemAggregator->findItemIndexByRecordIdentity($changedItems, $table, $liveUid)
                 ?? $this->pendingItemAggregator->findItemIndexByRecordIdentity($changedItems, $table, $uid);
             if ($index !== null) {

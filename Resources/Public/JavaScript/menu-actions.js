@@ -7,12 +7,14 @@ import { broadcastDeclineState } from '@webconsulting/webcon-easy-workspace/menu
 import {
   key,
   publishRecordsForItem,
-  discardRecordsForItem,
+  discardTargetForItem,
   resetSelection,
   syncSelectionWithItems,
 } from '@webconsulting/webcon-easy-workspace/menu-selection.js';
+import { companionLanguageTitles } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
+import { layoutFlag } from '@webconsulting/webcon-easy-workspace/menu-layout.js';
 
-export { key, publishRecordsForItem, discardRecordsForItem } from '@webconsulting/webcon-easy-workspace/menu-selection.js';
+export { key, publishRecordsForItem, discardTargetForItem } from '@webconsulting/webcon-easy-workspace/menu-selection.js';
 
 const JSON_HEADERS = { headers: { 'Content-Type': 'application/json; charset=utf-8' } };
 
@@ -61,14 +63,22 @@ function contextQuery(context, extra = {}) {
 }
 
 /**
- * The site's languages of the list, keyed by language id.
+ * The site's languages of the list, keyed by language id. `code` is the
+ * short code the language chips show ("DE"), `hreflang` tags titles with
+ * their language.
  */
-function languageMap(raw) {
+export function languageMap(raw) {
   const map = {};
   for (const language of Array.isArray(raw) ? raw : []) {
     const uid = Number(language?.uid);
     if (!Number.isInteger(uid) || uid < 0) continue;
-    map[uid] = { uid, title: String(language.title || ''), flag: String(language.flag || '') };
+    map[uid] = {
+      uid,
+      title: String(language.title || ''),
+      flag: String(language.flag || ''),
+      code: String(language.code || ''),
+      hreflang: String(language.hreflang || ''),
+    };
   }
   return map;
 }
@@ -134,6 +144,8 @@ export async function refresh(host, options = {}) {
     }
     host.context = data.context;
     host.items = Array.isArray(data.items) ? data.items : [];
+    // Counts the lists that arrived: focus restoration waits for the next one.
+    host.listVersion = (Number(host.listVersion) || 0) + 1;
     host.languages = languageMap(data.languages);
     host.viewLanguages = viewLanguageList(data.viewLanguages);
     host.viewModule = typeof data.viewModule === 'string' ? data.viewModule : '';
@@ -141,11 +153,13 @@ export async function refresh(host, options = {}) {
     host.stage = data.stage && typeof data.stage === 'object' ? data.stage : null;
     host.workspaceId = Number.isFinite(Number(data.workspaceId)) ? Number(data.workspaceId) : 0;
     host.workspaceTitle = typeof data.workspaceTitle === 'string' ? data.workspaceTitle : '';
+    host.userUid = Number(data.userUid) || 0;
     const contextKey = selectionContextKey(context.pageUid, context.newsUid, host.workspaceId);
-    // Another page, article or workspace: its folded sections start folded.
+    // Another page, article or workspace: its sections start in their
+    // default state again (the editor's toggles belong to one context).
     if (host._foldContextKey !== contextKey) {
       host._foldContextKey = contextKey;
-      host.openSections = new Set();
+      host.sectionState = new Map();
     }
     syncSelectionWithItems(host, contextKey);
     host.state = data.context === 'none' ? 'no-context' : (host.items.length === 0 ? 'empty' : 'loaded');
@@ -204,19 +218,21 @@ export async function publish(host) {
     if (result?.badge) {
       host.badge?.apply(result.badge, { reason: 'publish', refreshList: false });
     }
-    if (result?.success && Number(result.published || 0) > 0) {
+    if (result?.success) {
+      // The editor selected edits; the server's record count (nested
+      // records, translations carried along) stays in the payload.
       Notification.success(
         label(host, 'publish.success.title'),
-        label(host, 'publish.success.message', { count: Number(result.published || 0) }),
+        label(host, 'publish.success.message', { count: selectedItems.length }),
       );
+      notifyPublishNotes(host, result);
+      host.focusAfterRender?.({ index: 0 });
       await host._animateRowsLeaving?.(selectedItems.map((i) => key(host, i)));
       // apply() above already told the other tabs when the stamp moved.
       await refreshList(host, 'publish');
+      host.setStatus?.('');
     } else {
-      const errors = Array.isArray(result?.errors) && result.errors.length
-        ? result.errors.join(' / ')
-        : (result?.error || label(host, 'error.unknown'));
-      Notification.warning(label(host, 'publish.warning.title'), errors);
+      Notification.warning(label(host, 'publish.warning.title'), errorText(host, result));
     }
   } catch (error) {
     Notification.error(label(host, 'publish.failedTitle'), error?.message || label(host, 'error.unexpected'));
@@ -227,30 +243,104 @@ export async function publish(host) {
 }
 
 /**
- * Discard every workspace record behind an item (children first, the
- * record itself last). Returns the aggregated result; the last server
- * response carries the freshest badge payload.
+ * What the server noted on a successful publish: translations it did not
+ * carry along because someone edited them meanwhile (they are rows of their
+ * own now), and warnings of the DataHandler run.
+ */
+function notifyPublishNotes(host, result) {
+  const skipped = Array.isArray(result?.skippedCompanions) ? result.skippedCompanions : [];
+  if (skipped.length > 0) {
+    Notification.info(
+      label(host, 'publish.warning.title'),
+      label(host, 'publish.companionsSkipped', { languages: companionLanguageTitles(host, skipped) }),
+    );
+  }
+  const warnings = stringList(result?.warnings);
+  if (warnings.length > 0) {
+    Notification.warning(label(host, 'publish.warning.title'), warnings.join(' / '));
+  }
+}
+
+function stringList(value) {
+  return Array.isArray(value) ? value.filter((entry) => typeof entry === 'string' && entry !== '') : [];
+}
+
+function errorText(host, result) {
+  const errors = stringList(result?.errors);
+  if (errors.length > 0) return errors.join(' / ');
+  return result?.error || label(host, 'error.unknown');
+}
+
+/**
+ * Discard one row: a single request for the row's record. The server
+ * discards its nested records and the translations TYPO3 copied along with
+ * it (after checking they are still unchanged) in the same run; Core's
+ * discard takes the row's dependents along (`dependentsDiscarded`, 0 from an
+ * older server).
  *
- * @returns {Promise<{success: boolean, errors: string[]}>}
+ * @returns {Promise<{success: boolean, errors: string[], warnings: string[], companionsDiscarded: number, dependentsDiscarded: number}>}
  */
 export async function discardItem(host, item) {
-  const results = [];
-  for (const record of discardRecordsForItem(host, item)) {
-    const response = await new AjaxRequest(ENDPOINTS.discard)
-      .post({ table: record.table, workspaceUid: record.workspaceUid, ...contextBody(host) }, JSON_HEADERS);
-    results.push(await response.resolve());
+  const response = await new AjaxRequest(ENDPOINTS.discard)
+    .post({ ...discardTargetForItem(item), ...contextBody(host) }, JSON_HEADERS);
+  const result = await response.resolve();
+  if (result?.badge) {
+    host.badge?.apply(result.badge, { reason: 'discard', refreshList: false });
   }
-  const last = results.at(-1);
-  if (last?.badge) {
-    host.badge?.apply(last.badge, { reason: 'discard', refreshList: false });
-  }
-  const failed = results.filter((result) => !result?.success);
+  const success = Boolean(result?.success);
   return {
-    success: failed.length === 0,
-    errors: failed.flatMap((result) => (Array.isArray(result?.errors) && result.errors.length
-      ? result.errors
-      : [result?.error || label(host, 'error.unknown')])),
+    success,
+    errors: success ? [] : [errorText(host, result)],
+    warnings: stringList(result?.warnings),
+    companionsDiscarded: Math.max(0, Number(result?.companionsDiscarded) || 0),
+    dependentsDiscarded: Math.max(0, Number(result?.dependentsDiscarded) || 0),
   };
+}
+
+/**
+ * Discard leftover copies (the cleanup section). The server checks each one
+ * is still identical to live and keeps the ones someone edited meanwhile;
+ * nothing is ever published here.
+ *
+ * @param {Array<{table: string, workspaceUid: number}>} records copy items; the server adds their translations
+ * @returns {Promise<{success: boolean, discarded: number, skipped: number, errors: string[]}>}
+ */
+export async function discardCopies(host, records) {
+  const failed = (errors) => ({ success: false, discarded: 0, skipped: 0, errors });
+  if (!ENDPOINTS.discardCopies) {
+    return failed([label(host, 'error.unknown')]);
+  }
+  try {
+    const response = await new AjaxRequest(ENDPOINTS.discardCopies)
+      .post({ records, ...contextBody(host) }, JSON_HEADERS);
+    const result = await response.resolve();
+    if (result?.badge) {
+      host.badge?.apply(result.badge, { reason: 'discard', refreshList: false });
+    }
+    const discarded = Math.max(0, Number(result?.discarded) || 0);
+    const skipped = Math.max(0, Number(result?.skipped) || 0);
+    if (result?.success) {
+      // The layout names the records as its cleanup section does.
+      Notification.success(
+        label(host, 'toolbar.cleanup.success.title'),
+        label(host, String(layoutFlag(host, 'cleanupSuccessKey') || 'toolbar.cleanup.success.message'), { count: discarded }),
+        4,
+      );
+      if (skipped > 0) {
+        Notification.info(
+          label(host, 'toolbar.cleanup.success.title'),
+          label(host, String(layoutFlag(host, 'cleanupSkippedKey') || 'toolbar.cleanup.skipped'), { count: skipped }),
+        );
+      }
+    } else {
+      Notification.error(label(host, 'discard.error.title'), errorText(host, result));
+    }
+    await refreshList(host, 'discard');
+    return { success: Boolean(result?.success), discarded, skipped, errors: stringList(result?.errors) };
+  } catch (error) {
+    Notification.error(label(host, 'discard.error.failedTitle'), error?.message || label(host, 'error.unexpected'));
+    return failed([error?.message || label(host, 'error.unexpected')]);
+  }
 }
 
 async function resolvePreviewUrl(host, pageUid) {

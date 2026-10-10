@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   badgeCount,
+  badgeOfTestPage,
   currentWorkspaceId,
   discardPendingOnTestPage,
   env,
@@ -168,4 +169,28 @@ test('decrements after publishing from the dropdown, in this and in a second tab
   await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(expected);
   await expect.poll(() => badgeCount(secondTab), { timeout: 15_000 }).toBe(expected);
   await secondTab.close();
+});
+
+/**
+ * 1.11: translation copies never count. An English edit plus a German
+ * translator edit are two changes, whatever TYPO3 versioned along; the
+ * Visual Editor decline buttons (badge `records`) sit on those two only.
+ * Needs WEW_E2E_TRANSLATION_UID (see dropdown.spec.js).
+ */
+test('counts an edit and a translator edit as two, never the copies TYPO3 made', async () => {
+  test.skip(env.translationUid <= 0, 'Set WEW_E2E_TRANSLATION_UID to run the translation-copy cases.');
+  await discardPendingOnTestPage(page);
+  await saveContentHeaderInIframe(page, env.contentUid, `Badge copies E2E ${Date.now()}`);
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(1);
+
+  await saveContentHeaderInIframe(page, env.translationUid, `Übersetzung E2E ${Date.now()}`);
+  await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(2);
+
+  const badge = await badgeOfTestPage(page);
+  expect(badge.contextCount).toBe(2);
+  expect(badge.records).toHaveLength(2);
+  expect(badge.records.map((record) => record.liveUid).sort()).toEqual([env.contentUid, env.translationUid].sort());
+  // The module still lists every version: changes plus the copies folded into them.
+  expect(badge.versionCount).toBeGreaterThan(2);
+  await discardPendingOnTestPage(page);
 });

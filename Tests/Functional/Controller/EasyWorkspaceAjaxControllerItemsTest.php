@@ -92,9 +92,14 @@ final class EasyWorkspaceAjaxControllerItemsTest extends FunctionalTestCase
         self::assertSame('web_layout', $payload['viewModule']);
         self::assertSame([1], $payload['viewLanguages']);
         self::assertSame(
-            [['uid' => 0, 'title' => 'English', 'flag' => 'flags-us'], ['uid' => 1, 'title' => 'Deutsch', 'flag' => 'flags-de']],
+            [
+                ['uid' => 0, 'title' => 'English', 'flag' => 'flags-us', 'code' => 'EN', 'hreflang' => 'en-US'],
+                ['uid' => 1, 'title' => 'Deutsch', 'flag' => 'flags-de', 'code' => 'DE', 'hreflang' => 'de-AT'],
+            ],
             $payload['languages'],
         );
+        // The acting editor, for "by you".
+        self::assertSame(1, $payload['userUid']);
         // The items once — the module's groups stay with the module.
         self::assertArrayNotHasKey('itemGroups', $payload);
         self::assertArrayNotHasKey('changedItemGroups', $payload);
@@ -113,6 +118,18 @@ final class EasyWorkspaceAjaxControllerItemsTest extends FunctionalTestCase
         self::assertArrayNotHasKey('changeBadges', $first);
         self::assertArrayHasKey('publishRecords', $first);
         self::assertArrayHasKey('parent', $first);
+        foreach (['role', 'companions', 'dependents', 'copyGroup', 'latestChangeUserUid'] as $key) {
+            self::assertArrayHasKey($key, $first);
+        }
+
+        // Element 13's draft is identical to live: listed, as a copy.
+        $roles = [];
+        foreach ((array)$payload['items'] as $item) {
+            $item = Value::stringKeyArray($item);
+            $roles[$item['table'] . ':' . $item['workspaceUid']] = [$item['role'], $item['copyGroup']];
+        }
+        self::assertSame(['copy', 'tt_content:13'], $roles['tt_content:14']);
+        self::assertSame(['change', ''], $roles['tt_content:12']);
     }
 
     #[Test]

@@ -1,10 +1,18 @@
 /*
  * Easy Workspace toolbar dropdown (rendered by <webcon-easy-workspace-menu-v2>).
  *
+ * The base presentation every layout starts from. Layout files
+ * (Css/layouts/<name>.css, loaded after this one) refine it under
+ * .wew-menu[data-wew-layout="<name>"].
+ *
  * Badges, buttons and checkboxes are Core's own (.badge, .btn-borderless,
- * .form-check); this file lays them out. Colours, radii and motion come
- * from tokens.css (--wew-* → --typo3-*). No gradients, no shadows of our
- * own: flat surfaces, one border colour, Core's type scale.
+ * .form-check); this file lays them out. Colours, radii and motion come from
+ * tokens.css (--wew-* → --typo3-*), so light and dark follow the backend.
+ * No gradients. One alignment grid runs through the whole dropdown:
+ *
+ *   12px gutter · 24px control column (checkboxes, group icon, section
+ *   checkbox) · 8px · 24px icon column (record icons, flags, chevrons) · 8px ·
+ *   text column (titles, meta, translation chips)
  */
 
 /* ---- Host + dropdown shell ---- */
@@ -14,7 +22,7 @@
 .webcon-easy-workspace-toolbar--live { display: none !important; }
 .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2) {
     width: min(460px, calc(100vw - 1rem));
-    min-width: 320px;
+    min-width: min(320px, calc(100vw - 1rem));
     max-width: calc(100vw - 1rem);
     padding: 0;
     overflow: hidden;
@@ -32,38 +40,64 @@ webcon-easy-workspace-menu-v2 {
     color: var(--wew-text);
 }
 .wew-menu {
+    --wew-gutter: var(--wew-space-3);
+    --wew-col: var(--wew-target);
+    --wew-gap: var(--wew-space-2);
+    /* Start of the icon column and of the text column, from the menu edge. */
+    --wew-indent-icon: calc(var(--wew-gutter) + var(--wew-col) + var(--wew-gap));
+    --wew-indent-text: calc(var(--wew-indent-icon) + var(--wew-col) + var(--wew-gap));
+    container: wew-menu / inline-size;
     display: flex; flex-direction: column; min-height: 0; outline: none;
     /* The whole viewport below the topbar: the list folds its less
        important parts instead of hiding rows below a short scroll box. */
     max-height: calc(100vh - 5rem);
     max-height: calc(100dvh - 5rem);
+    timeline-scope: --wew-scroll;
 }
 .wew-menu :where(button) { font: inherit; }
-.wew-menu .badge { font-weight: 600; white-space: nowrap; }
+.wew-menu .badge { white-space: nowrap; }
+.wew-menu :where(h2, h3, h4, h5) { margin: 0; font-family: inherit; color: inherit; }
 
 /* ---- Header: which workspace, how much is pending — two lines ---- */
 .wew-menu__head {
+    position: relative; z-index: 1;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--wew-space-2);
-    padding: var(--wew-space-2) var(--wew-space-2) var(--wew-space-2) var(--wew-space-3);
+    /* The summary runs the full width, under the header buttons too, so
+       the numbers do not wrap early next to an empty corner. */
+    grid-template-areas: "title side" "summary summary";
+    align-items: start;
+    gap: 2px var(--wew-space-2);
+    padding: var(--wew-space-3) var(--wew-space-2) var(--wew-space-2) var(--wew-gutter);
     border-bottom: 1px solid var(--wew-border);
+    background: var(--wew-surface);
 }
-.wew-menu__titles { display: grid; min-width: 0; }
-.wew-menu__title-row { display: flex; align-items: center; gap: var(--wew-space-1); min-width: 0; }
+.wew-menu__titles { display: contents; }
+.wew-menu__title-row { grid-area: title; display: flex; align-items: center; gap: var(--wew-space-2); min-width: 0; min-height: var(--wew-target); }
 .wew-menu__title-icon { flex: none; display: inline-flex; color: var(--wew-text-muted); }
 .wew-menu__title {
-    margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-size: var(--wew-font-size-sm); font-weight: 700; line-height: 1.4;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--wew-font-size-head); font-weight: 700; line-height: 1.3; letter-spacing: -.005em;
 }
-.wew-menu__stage { flex: none; font-size: var(--wew-font-size-xs); line-height: 1.4; }
+.wew-menu__stage { flex: none; font-size: var(--wew-font-size-xs); }
 .wew-menu__summary {
-    margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-size: var(--wew-font-size-xs); line-height: 1.45; color: var(--wew-text-muted);
+    grid-area: summary;
+    margin: 0; padding-inline: calc(16px + var(--wew-space-2)) var(--wew-space-2);
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+    overflow: hidden; white-space: normal; text-wrap: pretty;
+    font-size: var(--wew-font-size-sm); line-height: 1.45; color: var(--wew-text-muted);
 }
-.wew-menu__head-side { display: inline-flex; align-items: center; }
-.wew-menu__head-side .btn { --typo3-btn-padding-x: .375rem; --typo3-btn-padding-y: .25rem; }
+.wew-menu__summary:focus { outline: none; }
+.wew-menu__head-side { grid-area: side; display: inline-flex; align-items: center; gap: 2px; }
+.wew-menu__head-side .btn {
+    --typo3-btn-padding-x: .3125rem; --typo3-btn-padding-y: .3125rem;
+    display: inline-grid; place-items: center;
+    min-inline-size: calc(var(--wew-target) + 4px); min-block-size: calc(var(--wew-target) + 4px);
+    border-radius: var(--wew-radius-sm); color: var(--wew-text-muted);
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu__head-side .btn:hover { background: var(--wew-surface-hover); color: var(--wew-text); }
+.wew-menu__head-side .btn:focus-visible { outline: var(--wew-focus-outline); outline-offset: -2px; box-shadow: none; }
 .wew-menu__refresh.is-busy typo3-backend-icon { animation: wew-spin 1s linear infinite; }
 @keyframes wew-spin { to { transform: rotate(360deg); } }
 
@@ -72,186 +106,352 @@ webcon-easy-workspace-menu-v2 {
     position: relative; flex: 1 1 auto; min-height: 0;
     overflow-y: auto; overscroll-behavior: contain;
     scrollbar-width: thin;
+    scroll-timeline: --wew-scroll block;
+}
+/* Soft elevation only while the list scrolls under the header or footer. */
+@supports (animation-timeline: scroll()) {
+    .wew-menu__head { animation: wew-lift-head linear both; animation-timeline: --wew-scroll; animation-range: 0 32px; }
+    .wew-menu__foot { animation: wew-lift-foot linear both; animation-timeline: --wew-scroll; animation-range: calc(100% - 32px) 100%; }
+}
+@keyframes wew-lift-head {
+    from { box-shadow: none; }
+    to { box-shadow: 0 6px 10px -8px var(--wew-shadow-ink); }
+}
+@keyframes wew-lift-foot {
+    from { box-shadow: 0 -6px 10px -8px var(--wew-shadow-ink); }
+    to { box-shadow: none; }
 }
 
-/* ---- List, groups, rows ---- */
-.wew-list { list-style: none; margin: 0; padding: 0 0 var(--wew-space-1); }
-.wew-group {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-    gap: var(--wew-space-2); padding: var(--wew-space-2) var(--wew-space-3) 2px;
+/* ---- List and groups ---- */
+.wew-list { padding: var(--wew-space-1) 0 var(--wew-space-2); }
+.wew-rows, .wew-copies { list-style: none; margin: 0; padding: 0; }
+.wew-group + .wew-group { margin-top: var(--wew-space-2); padding-top: var(--wew-space-1); border-top: 1px solid var(--wew-border); }
+.wew-group__head {
+    display: grid; grid-template-columns: var(--wew-col) minmax(0, 1fr) auto; align-items: center;
+    column-gap: var(--wew-gap);
+    padding: var(--wew-space-2) var(--wew-space-3) var(--wew-space-1) var(--wew-gutter);
 }
-.wew-row + .wew-group { margin-top: var(--wew-space-1); border-top: 1px solid var(--wew-border); }
-.wew-group__icon { display: inline-flex; color: var(--wew-text-muted); }
+.wew-group__icon { display: inline-grid; place-items: center; color: var(--wew-text-muted); }
 /* Title and rootline path share one line; the path gives way first. */
 .wew-group__text { display: flex; align-items: baseline; gap: var(--wew-space-2); min-width: 0; }
 .wew-group__title, .wew-group__path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wew-group__title { flex: 0 1 auto; font-size: var(--wew-font-size-sm); font-weight: 700; }
+h3.wew-group__title { flex: 0 1 auto; font-size: var(--wew-font-size-title); font-weight: 700; line-height: 1.4; }
 .wew-group__path { flex: 1 1 0; min-width: 3rem; font-size: var(--wew-font-size-xs); color: var(--wew-text-muted); }
 .wew-group__count, .wew-section__count, .wew-language__count {
     font-size: var(--wew-font-size-xs); font-variant-numeric: tabular-nums; color: var(--wew-text-muted);
 }
+.wew-group__count {
+    min-inline-size: 1.5rem; padding: 1px 6px; border-radius: var(--wew-radius-pill);
+    background: var(--wew-chip); text-align: center; font-weight: 600;
+}
 
-/* A section names the language of the rows below it. The "other
-   languages" section carries a hint, because the page does not show those
-   rows in the current language. */
-.wew-section {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-    gap: 0 var(--wew-space-2);
-    padding: 2px var(--wew-space-3);
-    color: var(--wew-text-muted);
-}
-.wew-section__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--wew-font-size-xs); font-weight: 700; }
-/* One line: the full sentence is the section's title and screen-reader text. */
-.wew-section__hint {
-    grid-column: 2 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-size: var(--wew-font-size-xs); line-height: 1.4;
-}
-/* A folded section (translations, versions without a content change): its
-   header is a button, the chevron says whether it is open. */
-.wew-section--toggle {
-    display: block; padding: 0;
-    margin-top: var(--wew-space-1);
-    border-top: 1px dashed var(--wew-border-strong);
-    background: var(--wew-surface-raised);
-}
-.wew-section__toggle {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-    gap: 0 var(--wew-space-2);
-    width: 100%;
-    padding: var(--wew-space-1) var(--wew-space-3) 2px;
-    border: 0; background: transparent; color: var(--wew-text-muted);
-    text-align: start; cursor: pointer;
-}
-.wew-section__toggle:hover { background: var(--wew-surface-hover); color: var(--wew-text); }
-.wew-section__toggle:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wew-focus-ring); }
-.wew-language {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-    gap: var(--wew-space-2); padding: 2px var(--wew-space-3);
-    background: var(--wew-surface-raised);
-}
-.wew-language__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--wew-font-size-xs); font-weight: 700; }
-
+/* ---- Rows: inset, rounded, one grid per row ----
+   select | icon | title   | actions
+   select | icon | meta    (meta runs under the actions)
+   .      | .    | children
+   .      | .    | translations */
 .wew-row {
     position: relative;
-    display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center;
-    gap: var(--wew-space-2);
-    padding: 3px var(--wew-space-2);
-    outline: none;
+    display: grid;
+    grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas:
+        "select icon title actions"
+        "select icon meta  meta"
+        ".      .    kids  kids"
+        ".      .    langs langs";
+    column-gap: var(--wew-gap); row-gap: 1px; align-items: center;
+    margin-inline: var(--wew-space-1);
+    padding: 6px var(--wew-space-1) 6px calc(var(--wew-gutter) - var(--wew-space-1));
+    border-radius: var(--wew-radius-sm);
+    cursor: pointer;
     transition: background-color var(--wew-motion-fast) var(--wew-ease),
         opacity var(--wew-motion) var(--wew-ease), translate var(--wew-motion) var(--wew-ease), display var(--wew-motion) allow-discrete;
 }
 @starting-style { .wew-row { opacity: 0; translate: 0 -4px; } }
 .wew-row--leaving { display: none; opacity: 0; translate: 12px 0; }
-.wew-row--changed { cursor: pointer; }
-.wew-row:hover, .wew-row:focus-within { background: var(--wew-surface-hover); }
-/* Versioned along, not edited: listed, but quieter than the edits. */
-.wew-row--no-content-change .wew-row__title { font-weight: 400; color: var(--wew-text-muted); }
-.wew-row:focus-visible { box-shadow: inset 0 0 0 2px var(--wew-focus-ring); }
-/* Selection is carried by the checkbox; the row only gets a light tint so a
-   fully selected list (the default) does not read as one coloured slab. */
-.wew-row--selected { background: color-mix(in srgb, var(--wew-surface-selected) 40%, transparent); }
-.wew-row--selected:hover, .wew-row--selected:focus-within { background: color-mix(in srgb, var(--wew-surface-selected) 65%, transparent); }
-/* Rows of other languages sit on the raised band their section opened. */
-.wew-row--other-language { background: var(--wew-surface-raised); }
-.wew-row--other-language.wew-row--selected { background: color-mix(in srgb, var(--wew-surface-selected) 40%, var(--wew-surface-raised)); }
-.wew-row--other-language:hover, .wew-row--other-language:focus-within,
-.wew-row--other-language.wew-row--selected:hover, .wew-row--other-language.wew-row--selected:focus-within { background: var(--wew-surface-hover); }
-.wew-row__select { display: inline-flex; align-items: center; justify-content: center; width: 20px; }
+.wew-row:hover { background: var(--wew-surface-hover); }
+.wew-row:has(.wew-row__check:focus-visible) { outline: var(--wew-focus-outline); outline-offset: -2px; }
+.wew-row__select { grid-area: select; display: grid; place-items: center; width: var(--wew-col); height: var(--wew-col); }
 /* Core's .form-check defines the checkbox tokens; it only needs its margin removed here. */
-.wew-row__check-wrap { margin: 0; min-height: 0; }
+.wew-row__check-wrap { margin: 0; min-height: 0; padding: 0; display: grid; place-items: center; }
+.wew-row__check-wrap .form-check-input { float: none; margin: 0; }
 .wew-row__check { cursor: pointer; }
 .wew-row__icon, .wew-row__thumb {
-    display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden;
-    width: 22px; height: 22px; border-radius: var(--wew-radius-sm);
+    grid-area: icon;
+    display: inline-flex; align-items: center; justify-content: center; overflow: hidden;
+    width: var(--wew-col); height: var(--wew-col); border-radius: var(--wew-radius-sm);
     background: var(--wew-surface-sunken); color: var(--wew-text-muted);
 }
 .wew-row__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .wew-row--hidden .wew-row__thumb img { opacity: .5; }
-.wew-row__body { display: grid; gap: 0; min-width: 0; }
-/* Title and change badge on one line; the title gives way first. */
-.wew-row__head { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--wew-space-1); min-width: 0; }
-.wew-row__title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--wew-font-size-sm); font-weight: 500; line-height: 1.4; }
+.wew-row__title {
+    grid-area: title; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--wew-font-size-title); font-weight: 500; line-height: 1.45;
+}
 .wew-row--primary .wew-row__title { font-weight: 700; }
-.wew-row__badge { flex: none; padding-block: 0; font-size: var(--wew-font-size-xs); line-height: 1.5; }
-.wew-row__language {
-    display: inline-flex; align-items: center; gap: .3em; flex: none;
-    padding: 0 .4em 0 .2em; border: 1px solid var(--wew-border); border-radius: var(--wew-radius-pill);
-    font-size: var(--wew-font-size-xs); font-weight: 600; line-height: 1.5; color: var(--wew-text-muted); white-space: nowrap;
+.wew-row[data-change="deleted"] .wew-row__title { text-decoration: line-through; text-decoration-color: var(--wew-text-muted); }
+
+/* Always visible, without a frame each: an editor reads the row's actions
+   without hovering every row. Discard last, set apart. */
+.wew-row__actions { grid-area: actions; display: inline-flex; align-items: center; gap: 2px; color: var(--wew-text-muted); }
+.wew-row__action {
+    --typo3-btn-padding-x: .25rem; --typo3-btn-padding-y: .25rem;
+    display: inline-grid; place-items: center;
+    min-inline-size: calc(var(--wew-target) + 2px); min-block-size: calc(var(--wew-target) + 2px);
+    border-radius: var(--wew-radius-sm); color: inherit;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), color var(--wew-motion-fast) var(--wew-ease);
 }
-/* One line of meta, ellipsised as a whole: type, column, element, author, time. */
+.wew-row__action-slot { display: inline-block; inline-size: calc(var(--wew-target) + 2px); }
+.wew-row__action--danger { margin-inline-start: var(--wew-space-2); }
+.wew-row:hover .wew-row__actions, .wew-row:focus-within .wew-row__actions { color: var(--wew-text); }
+.wew-row__action:hover:not(:disabled) { background: var(--wew-chip-hover); }
+.wew-row__action--danger:hover:not(:disabled), .wew-row__action--danger:focus-visible { color: var(--wew-text-danger); background: var(--wew-danger-tint); }
+.wew-row__action:disabled { opacity: .4; }
+.wew-row__action:focus-visible, .wew-companion:focus-visible { outline: var(--wew-focus-outline); outline-offset: -2px; box-shadow: none; }
+
+/* Line 2: badges first (they line up in one scannable column), then the meta text. */
+/* Badges first, then the meta text. When the badges leave the text less
+   than a few words, the text takes a line of its own instead of starting
+   with a cut-off "CTA-Banner volle …". */
 .wew-row__meta {
-    display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-size: var(--wew-font-size-xs); line-height: 1.4; color: var(--wew-text-muted);
+    grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--wew-space-1); min-width: 0;
+    font-size: var(--wew-font-size-xs); line-height: 1.45; color: var(--wew-text-muted);
 }
-.wew-row__meta-sep { margin-inline: .35em; opacity: .5; }
+.wew-row__meta > .badge, .wew-row__language { flex: none; }
+.wew-row__badge { font-size: .625rem; letter-spacing: .01em; }
+/* One line of whole parts: a part that does not fit wraps onto a second
+   line that is clipped away, so the line never ends in "von Ann…"; only a
+   first part that alone is too long ends in an ellipsis. */
+.wew-row__meta-text {
+    flex: 1 1 0; min-width: min(11em, 100%); margin-inline-start: 0;
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    block-size: 1lh; overflow: hidden; white-space: nowrap;
+}
+.wew-row__part { flex: none; white-space: nowrap; }
+.wew-row__part:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A flex item drops its leading space; the margin stands in for it. */
+.wew-row__sep { opacity: .55; margin-inline-start: .3em; }
+.wew-row__language {
+    display: inline-flex; align-items: center; gap: .3em; padding-inline: 1px 2px;
+    font-size: var(--wew-font-size-xs); font-weight: 700; letter-spacing: .02em; color: var(--wew-text);
+}
+
 /* Related changes: one line, the full list with change types on hover. */
 .wew-row__children {
-    display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    padding-left: var(--wew-space-2); border-left: 2px solid var(--wew-border);
+    grid-area: kids; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    margin-top: 2px; padding-left: var(--wew-space-2); border-left: 2px solid var(--wew-border);
     font-size: var(--wew-font-size-xs); line-height: 1.4; color: var(--wew-text-muted);
 }
 .wew-row__children-count { margin-inline-end: .35em; font-weight: 600; }
-/* Always visible, without a frame each: an editor reads the row's actions
-   without hovering every row to find out what it can do. */
-.wew-row__actions { display: inline-flex; gap: 0; color: var(--wew-text-muted); }
-.wew-row__action { --typo3-btn-padding-x: .25rem; --typo3-btn-padding-y: .125rem; }
-.wew-row:hover .wew-row__actions, .wew-row:focus-within .wew-row__actions { color: var(--wew-text); }
-.wew-row__action--danger:hover:not(:disabled), .wew-row__action--danger:focus-visible { color: var(--wew-text-danger); }
+
+/* Translations carried along: one quiet line, language chips that edit. */
+.wew-row__companions {
+    grid-area: langs; display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--wew-space-3);
+    min-width: 0; padding-top: 3px;
+    font-size: var(--wew-font-size-xs); line-height: 1.4; color: var(--wew-text-muted);
+}
+/* Label and chips wrap as two units, so a chip never ends up alone on a line.
+   The line is muted; what sits in it inherits that (muting it again would
+   multiply, see tokens.css). */
+.wew-row__companion-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; min-width: 0; }
+.wew-row__chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.wew-row__companions-label { margin-inline-end: 2px; cursor: help; }
+.wew-companion {
+    --typo3-btn-padding-x: .4375rem; --typo3-btn-padding-y: 0;
+    display: inline-flex; align-items: center; gap: .3em;
+    min-block-size: var(--wew-target); padding-inline: 5px 7px;
+    border-radius: var(--wew-radius-pill);
+    background: var(--wew-chip); color: var(--wew-text);
+    font-size: var(--wew-font-size-xs); font-weight: 600; letter-spacing: .03em; line-height: 1;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease), translate var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-companion:hover { background: var(--wew-chip-hover); }
+.wew-companion:active { translate: 0 1px; }
+.wew-companion typo3-backend-icon { flex: none; }
+.wew-companion--static { background: transparent; color: inherit; padding-inline: 2px 4px; cursor: default; }
+
+/* ---- Sections: hairline-separated, a heading with a toggle ---- */
+.wew-section { border-top: 1px solid var(--wew-border); margin-top: var(--wew-space-1); }
+/* Right under the group heading a divider would only cut the group in two. */
+.wew-group__head + .wew-section { border-top: 0; margin-top: 0; }
+.wew-section--in-view {
+    margin: 0; border: 0; display: flex; align-items: center; gap: var(--wew-space-2);
+    padding: var(--wew-space-1) var(--wew-space-3) 2px var(--wew-indent-icon);
+    font-size: var(--wew-font-size-xs); font-weight: 700; color: var(--wew-text-muted);
+}
+.wew-section--in-view .wew-section__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wew-section--in-view .wew-section__count { margin-inline-start: auto; font-weight: 600; color: inherit; }
+.wew-section__head {
+    display: grid; grid-template-columns: var(--wew-col) minmax(0, 1fr) auto; align-items: center;
+    column-gap: var(--wew-gap); padding: var(--wew-space-1) var(--wew-space-2) var(--wew-space-1) var(--wew-gutter);
+}
+.wew-section__check-wrap { margin: 0; min-height: 0; padding: 0; display: grid; place-items: center; }
+.wew-section__check-wrap .form-check-input { float: none; margin: 0; }
+/* Core's 4px primary ring is about 1.5:1 on the dark dropdown: these
+   checkboxes take the package's outline, like every other control. */
+.wew-section__check-wrap .form-check-input:focus-visible,
+.wew-menu__selectall .form-check-input:focus-visible { outline: var(--wew-focus-outline); outline-offset: 2px; box-shadow: none; }
+.wew-section__heading { margin: 0; font: inherit; min-width: 0; }
+/* One line, whole parts: what does not fit (the status after the count)
+   wraps onto a second line that is clipped away, so the heading never ends
+   in "in Englis…"; the text stays in the toggle's title and the hidden
+   sentence. Layouts set the line height through --wew-section-line. */
+.wew-section__toggle {
+    --wew-section-line: 2rem;
+    display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start;
+    gap: var(--wew-section-line) var(--wew-space-2); width: 100%;
+    min-height: var(--wew-section-line); block-size: var(--wew-section-line); overflow: hidden;
+    margin-inline-start: calc(var(--wew-space-1) * -1);
+    padding: 0 var(--wew-space-1);
+    border: 0; border-radius: var(--wew-radius-sm); background: transparent; color: var(--wew-text);
+    font-size: var(--wew-font-size-title); font-weight: 600; text-align: start; cursor: pointer;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-section__toggle > :not(.visually-hidden) { min-block-size: var(--wew-section-line); }
+.wew-section__toggle > :is(.wew-section__title, .wew-section__count, .wew-section__meta) { display: inline-flex; align-items: center; }
+.wew-section__toggle > .wew-section__count--pill { min-block-size: 0; align-self: center; justify-content: center; }
+.wew-section__toggle:hover { background: var(--wew-surface-hover); }
+.wew-section__toggle:focus-visible { outline: var(--wew-focus-outline); outline-offset: -2px; }
+.wew-section__chevron {
+    flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--wew-text-muted);
+    transition: rotate var(--wew-motion) var(--wew-ease);
+}
+.wew-section__toggle[aria-expanded="true"] .wew-section__chevron { rotate: 90deg; }
+.wew-section__title { flex: none; }
+.wew-section__count, .wew-section__meta { font-weight: 400; font-size: var(--wew-font-size-xs); color: var(--wew-text-muted); white-space: nowrap; }
+.wew-section__count--pill {
+    min-inline-size: 1.5rem; padding: 1px 6px; border-radius: var(--wew-radius-pill);
+    background: var(--wew-chip); text-align: center; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.wew-section__meta { flex: none; margin-inline-start: calc(var(--wew-space-1) * -1); white-space: nowrap; }
+.wew-section__meta::before { content: "·"; margin-inline-end: var(--wew-space-1); opacity: .55; }
+.wew-section__help {
+    margin: 0 var(--wew-space-3) var(--wew-space-1) var(--wew-indent-icon);
+    font-size: var(--wew-font-size-xs); line-height: 1.45; color: var(--wew-text-muted);
+}
+.wew-section__body, .wew-section--cleanup .wew-copies {
+    transition: opacity var(--wew-motion) var(--wew-ease), translate var(--wew-motion) var(--wew-ease);
+}
+@starting-style { .wew-section__body, .wew-section--cleanup .wew-copies { opacity: 0; translate: 0 -3px; } }
+.wew-language {
+    margin: 0; display: flex; align-items: center; gap: var(--wew-space-2);
+    padding: var(--wew-space-1) var(--wew-space-3) 2px var(--wew-indent-icon);
+    font-size: var(--wew-font-size-xs); font-weight: 700; color: var(--wew-text-muted);
+}
+.wew-language__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wew-language__count { margin-inline-start: auto; font-weight: 600; color: inherit; }
+
+/* ---- Cleanup: leftover copies, one quiet action ---- */
+.wew-section--cleanup .wew-section__title { color: var(--wew-text); }
+.wew-cleanup__discard {
+    display: inline-flex; align-items: center; gap: .35em; white-space: nowrap;
+    min-block-size: calc(var(--wew-target) + 2px);
+}
+.wew-cleanup__discard:not(:disabled):hover { color: var(--wew-text-danger); }
+.wew-cleanup__discard[aria-busy="true"] typo3-backend-icon { animation: wew-pulse 1s ease-in-out infinite; }
+.wew-copy {
+    display: grid; grid-template-columns: var(--wew-col) minmax(0, 1fr); grid-template-areas: "icon title" ". chips";
+    column-gap: var(--wew-gap); row-gap: 3px; align-items: center;
+    margin-inline: var(--wew-space-1);
+    padding: 5px var(--wew-space-2) 6px calc(var(--wew-indent-icon) - var(--wew-space-1));
+    border-radius: var(--wew-radius-sm);
+}
+.wew-copy__icon {
+    grid-area: icon; display: inline-flex; align-items: center; justify-content: center;
+    width: var(--wew-col); height: var(--wew-col); border-radius: var(--wew-radius-sm);
+    background: var(--wew-surface-sunken); color: var(--wew-text-muted);
+}
+.wew-copy__title { grid-area: title; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--wew-font-size-title); }
+.wew-copy__chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 3px; }
 
 /* ---- Footer: one row, always visible below the scroll body ---- */
 .wew-menu__foot {
-    display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap;
     gap: var(--wew-space-2);
-    padding: var(--wew-space-2) var(--wew-space-2) var(--wew-space-2) var(--wew-space-3);
+    padding: var(--wew-space-2) var(--wew-space-2) var(--wew-space-2) var(--wew-gutter);
     border-top: 1px solid var(--wew-border);
-    background: var(--wew-surface-raised);
+    background: var(--wew-surface-footer);
 }
-.wew-menu__selectall { display: inline-flex; align-items: center; gap: var(--wew-space-2); min-width: 0; margin: 0; min-height: 0; }
-.wew-menu__count { font-size: var(--wew-font-size-xs); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--wew-text-muted); }
-.wew-menu__foot-actions { display: inline-flex; align-items: center; gap: var(--wew-space-1); }
-.wew-menu__foot .btn { display: inline-flex; align-items: center; gap: .35em; }
-.wew-menu__publish { min-width: 6.5rem; justify-content: center; }
+.wew-menu__foot:not(:has(.wew-menu__selectall)) { justify-content: flex-end; }
+.wew-menu__selectall { display: inline-flex; align-items: center; gap: var(--wew-gap); min-width: 0; margin: 0; min-height: 0; padding: 0; }
+.wew-menu__selectall .form-check-input { float: none; margin: 0 calc((var(--wew-col) - 1rem) / 2); }
+.wew-menu__count { font-size: var(--wew-font-size-xs); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--wew-text-muted); white-space: nowrap; cursor: pointer; }
+.wew-menu__foot-actions { display: inline-flex; align-items: center; gap: var(--wew-space-2); min-width: 0; }
+.wew-menu__foot .btn { display: inline-flex; align-items: center; gap: .4em; min-block-size: calc(var(--wew-target) + 6px); }
+.wew-menu__publish { min-width: auto; justify-content: center; padding-inline: .75rem; font-weight: 600; white-space: nowrap; }
+.wew-menu__publish typo3-backend-icon { transition: translate var(--wew-motion-fast) var(--wew-ease); }
+.wew-menu__publish:not(:disabled):hover typo3-backend-icon { translate: 0 -1px; }
+.wew-menu__publish.is-busy typo3-backend-icon { animation: wew-pulse 1s ease-in-out infinite; }
 
 .wew-split { position: relative; display: inline-flex; }
 .wew-split__main { border-start-end-radius: 0; border-end-end-radius: 0; }
-.wew-split__toggle { margin-inline-start: -1px; padding-inline: .35rem; border-start-start-radius: 0; border-end-start-radius: 0; }
+.wew-split__toggle { margin-inline-start: -1px; padding-inline: .375rem; border-start-start-radius: 0; border-end-start-radius: 0; }
+.wew-split__toggle typo3-backend-icon { transition: rotate var(--wew-motion) var(--wew-ease); }
+.wew-split.is-open .wew-split__toggle typo3-backend-icon { rotate: 180deg; }
 .wew-split__menu {
-    position: absolute; right: 0; bottom: calc(100% + 4px); z-index: 5;
+    position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 5;
     min-width: 12rem; margin: 0; padding: var(--wew-space-1); list-style: none;
     border: 1px solid var(--wew-border); border-radius: var(--wew-radius);
     background: var(--wew-surface); box-shadow: var(--wew-shadow);
+    transition: opacity var(--wew-motion-fast) var(--wew-ease), translate var(--wew-motion-fast) var(--wew-ease);
 }
+@starting-style { .wew-split__menu { opacity: 0; translate: 0 4px; } }
 .wew-split__item {
-    display: flex; align-items: center; gap: .5em; width: 100%; padding: .4em .6em;
+    display: flex; align-items: center; gap: .5em; width: 100%; min-height: var(--wew-target); padding: .4em .6em;
     border: 0; border-radius: var(--wew-radius-sm); background: transparent; color: var(--wew-text);
     text-align: left; cursor: pointer;
 }
-.wew-split__item:hover, .wew-split__item:focus-visible { background: var(--wew-surface-hover); outline: none; }
+.wew-split__item:hover { background: var(--wew-surface-hover); }
+.wew-split__item:focus-visible { outline: var(--wew-focus-outline); outline-offset: -2px; background: var(--wew-surface-hover); }
 
 /* ---- States: empty / error / no context / loading skeleton ---- */
 .wew-state {
     display: grid; justify-items: center; gap: var(--wew-space-1);
-    padding: var(--wew-space-3);
+    padding: var(--wew-space-4) var(--wew-space-4) calc(var(--wew-space-4) + var(--wew-space-1));
     text-align: center; color: var(--wew-text-muted);
 }
-.wew-state__icon { display: inline-flex; margin-bottom: var(--wew-space-1); color: var(--wew-text-muted); }
-.wew-state--empty .wew-state__icon { color: var(--wew-state-success-border); }
-.wew-state__title { margin: 0; font-size: var(--wew-font-size-sm); font-weight: 700; color: var(--wew-text); }
-.wew-state__text { max-width: 36ch; margin: 0; font-size: var(--wew-font-size-xs); }
-.wew-state__action { margin-top: var(--wew-space-2); }
-.wew-state--error .wew-state__title, .wew-state--error .wew-state__icon { color: var(--wew-text-danger); }
-.wew-skeleton { display: grid; gap: var(--wew-space-2); margin: 0; padding: var(--wew-space-2) var(--wew-space-3); list-style: none; }
-.wew-skeleton__row { display: grid; grid-template-columns: 20px 22px minmax(0, 1fr); align-items: center; gap: var(--wew-space-2); }
-.wew-skeleton__check, .wew-skeleton__block, .wew-skeleton__line {
+.wew-state__icon {
+    display: inline-grid; place-items: center; width: 44px; height: 44px; margin-bottom: var(--wew-space-2);
+    border-radius: 50%; background: var(--wew-chip); color: var(--wew-text-muted);
+}
+.wew-state__icon .icon { --icon-size: 22px; }
+.wew-state--empty .wew-state__icon { background: var(--wew-success-tint); color: var(--wew-accent-new); }
+.wew-state--error .wew-state__icon { background: var(--wew-danger-tint); color: var(--wew-text-danger); }
+.wew-state__title { margin: 0; font-size: var(--wew-font-size-title); font-weight: 700; color: var(--wew-text); text-wrap: balance; }
+.wew-state__title:focus { outline: none; }
+.wew-state__title:focus-visible { outline: var(--wew-focus-outline); outline-offset: 2px; border-radius: 2px; }
+.wew-state__text { max-width: 40ch; margin: 0; font-size: var(--wew-font-size-xs); line-height: 1.5; text-wrap: balance; }
+.wew-state__action { display: inline-flex; align-items: center; gap: .4em; margin-top: var(--wew-space-2); }
+.wew-state--error .wew-state__title { color: var(--wew-text-danger); }
+
+.wew-skeleton { display: grid; gap: var(--wew-space-1); margin: 0; padding: var(--wew-space-2) var(--wew-space-1); list-style: none; }
+.wew-skeleton__row {
+    display: grid;
+    grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas: "check block title actions" "check block meta meta";
+    column-gap: var(--wew-gap); row-gap: 6px; align-items: center;
+    padding: 6px var(--wew-space-1) 6px calc(var(--wew-gutter) - var(--wew-space-1));
+}
+.wew-skeleton__check, .wew-skeleton__block, .wew-skeleton__line, .wew-skeleton__badge, .wew-skeleton__actions > span {
     border-radius: var(--wew-radius-sm);
     background: var(--wew-skeleton);
-    animation: wew-pulse 1.2s ease-in-out infinite;
+    animation: wew-pulse 1.4s ease-in-out infinite;
 }
-.wew-skeleton__check { width: 16px; height: 16px; justify-self: center; }
-.wew-skeleton__block { width: 22px; height: 22px; }
-.wew-skeleton__lines { display: grid; gap: 6px; }
-.wew-skeleton__line { width: 70%; height: 10px; }
-.wew-skeleton__line--short { width: 40%; height: 8px; }
+.wew-skeleton__row:nth-child(2) > *, .wew-skeleton__row:nth-child(2) .wew-skeleton__meta > *, .wew-skeleton__row:nth-child(2) .wew-skeleton__actions > span { animation-delay: .15s; }
+.wew-skeleton__row:nth-child(3) > *, .wew-skeleton__row:nth-child(3) .wew-skeleton__meta > *, .wew-skeleton__row:nth-child(3) .wew-skeleton__actions > span { animation-delay: .3s; }
+.wew-skeleton__check { grid-area: check; width: 14px; height: 14px; justify-self: center; border-radius: 3px; }
+.wew-skeleton__block { grid-area: block; width: var(--wew-col); height: var(--wew-col); }
+.wew-skeleton__line { height: 9px; }
+.wew-skeleton__line--title { grid-area: title; width: 72%; height: 10px; }
+.wew-skeleton__row:nth-child(2) .wew-skeleton__line--title { width: 58%; }
+.wew-skeleton__row:nth-child(3) .wew-skeleton__line--title { width: 66%; }
+.wew-skeleton__actions { grid-area: actions; display: inline-flex; gap: 10px; }
+.wew-skeleton__actions > span { width: 16px; height: 16px; }
+.wew-skeleton__actions > span:last-child { margin-inline-start: var(--wew-space-2); }
+.wew-skeleton__meta { grid-area: meta; display: flex; align-items: center; gap: var(--wew-space-2); background: none; animation: none; }
+.wew-skeleton__badge { flex: none; width: 48px; height: 14px; border-radius: var(--wew-radius-pill); }
+.wew-skeleton__line--short { flex: 0 1 46%; }
 @keyframes wew-pulse { 50% { opacity: .45; } }
 
 /* ---- Toolbar badge pulse on increment ---- */
@@ -259,17 +459,56 @@ webcon-easy-workspace-menu-v2 {
 .wew-badge--pulse { animation: wew-badge-pulse var(--wew-motion-slow, 320ms) var(--wew-ease-spring); }
 @keyframes wew-badge-pulse { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-/* ---- Narrow viewports ---- */
+/* ---- Narrow: the dropdown's own width decides, not the viewport ---- */
+/* Select-all, preview and a publish label with its noun do not fit side by
+   side in the default 460px: the preview button keeps its icon (its name
+   stays the aria-label). */
+@container wew-menu (max-width: 32rem) {
+    .wew-menu__foot:has(.wew-menu__selectall) .wew-split__main > span {
+        position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+}
 @media (max-width: 560px) {
     .toolbar-item .dropdown-menu:has(> webcon-easy-workspace-menu-v2) { width: calc(100vw - 1rem); min-width: 0; }
-    .wew-row { grid-template-columns: auto auto minmax(0, 1fr); }
-    .wew-row__actions { grid-column: 3; justify-self: end; }
+}
+@container wew-menu (max-width: 25rem) {
+    .wew-row {
+        grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr);
+        grid-template-areas: "select icon title" "select icon meta" ". . kids" ". . langs" ". . actions";
+    }
+    .wew-row__actions { justify-self: end; margin-top: 2px; }
+    .wew-section--cleanup .wew-section__head { grid-template-columns: var(--wew-col) minmax(0, 1fr); }
+    .wew-section--cleanup .wew-cleanup__discard { grid-column: 2; justify-self: start; margin-bottom: var(--wew-space-1); }
+    .wew-split__main > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .wew-menu__foot { flex-wrap: wrap; }
-    .wew-menu__foot-actions { flex: 1 1 auto; justify-content: flex-end; }
+    /* Select-all and preview share a line; publish gets a full-width line below. */
+    .wew-menu__foot:has(.wew-menu__selectall) .wew-menu__foot-actions { display: contents; }
+    .wew-menu__foot:has(.wew-menu__selectall) .wew-split { order: 1; margin-inline-start: auto; }
+    .wew-menu__foot:has(.wew-menu__selectall) .wew-menu__publish { order: 2; flex: 1 1 100%; }
+    /* Without select-all: wrap instead of running past the left edge
+       (flex-end in a dropdown that clips its overflow). */
+    .wew-menu__foot-actions { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-end; }
+    .wew-menu__publish { flex: 1 1 auto; min-width: 0; white-space: normal; }
 }
 
-/* ---- Reduced motion: no transitions, no pulse ---- */
+/* ---- Forced colours: outlines and dividers stay visible ---- */
+@media (forced-colors: active) {
+    .wew-row:has(:focus-visible), .wew-section__toggle:focus-visible, .wew-companion:focus-visible,
+    .wew-row__action:focus-visible, .wew-split__item:focus-visible, .wew-menu__head-side .btn:focus-visible,
+    .wew-section__check-wrap .form-check-input:focus-visible, .wew-menu__selectall .form-check-input:focus-visible { outline-color: Highlight; }
+    .wew-section, .wew-group + .wew-group { border-top-color: CanvasText; }
+    .wew-companion { border: 1px solid CanvasText; }
+    /* Core draws the tick as a background image, which forced colours drop:
+       every checkbox would look unselected. The native control keeps it. */
+    .wew-menu .form-check-input { appearance: auto; background-image: none; }
+}
+
+/* ---- Reduced motion: no transitions, no pulse, no spin ---- */
 @media (prefers-reduced-motion: reduce) {
-    .wew-row { transition: none; }
-    .wew-badge--pulse, .wew-skeleton__check, .wew-skeleton__block, .wew-skeleton__line, .wew-menu__refresh.is-busy typo3-backend-icon { animation: none; }
+    .wew-row, .wew-section__chevron, .wew-section__body, .wew-copies, .wew-split__menu, .wew-split__toggle typo3-backend-icon,
+    .wew-companion, .wew-row__action, .wew-menu__publish typo3-backend-icon { transition: none; }
+    .wew-row--leaving { translate: none; }
+    .wew-badge--pulse, .wew-skeleton__check, .wew-skeleton__block, .wew-skeleton__line, .wew-skeleton__badge, .wew-skeleton__actions > span,
+    .wew-menu__refresh.is-busy typo3-backend-icon, .wew-cleanup__discard[aria-busy="true"] typo3-backend-icon,
+    .wew-menu__publish.is-busy typo3-backend-icon { animation: none; }
 }

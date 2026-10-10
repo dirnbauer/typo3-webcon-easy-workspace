@@ -14,14 +14,16 @@ use TYPO3\CMS\Workspaces\Service\GridDataService;
 use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItems\CoreWorkspaceChanges;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\WorkspaceChangeCounter;
 
 /**
- * The toolbar shows the Workspaces module's data: the same number of
- * changes, the same records. The fixture has what used to tell them apart —
- * a changed collection item of an unchanged element, a new file reference
- * of an unchanged element, a version identical to live.
+ * The toolbar shows the Workspaces module's data: the same records, each of
+ * the module's rows a change, a translation copy folded into a change, or an
+ * unchanged copy. The fixture has what used to tell them apart — a changed
+ * collection item of an unchanged element, a new file reference of an
+ * unchanged element, a version identical to live.
  */
 final class WorkspacesModuleParityTest extends FunctionalTestCase
 {
@@ -46,10 +48,32 @@ final class WorkspacesModuleParityTest extends FunctionalTestCase
     #[Test]
     public function theWorkspaceCountIsTheModulesCount(): void
     {
-        self::assertSame(
-            $this->moduleGrid(-1)['total'],
-            $this->get(WorkspaceChangeCounter::class)->count(1)->total,
-        );
+        $count = $this->get(WorkspaceChangeCounter::class)->count(1);
+
+        self::assertSame($this->moduleGrid(-1)['total'], $count->versionCount);
+        // Element 13's draft is identical to live: listed, not counted.
+        self::assertSame($count->versionCount - 1, $count->total);
+        self::assertSame(1, $count->copyCount);
+    }
+
+    #[Test]
+    public function everyModuleRowIsAChangeACompanionOrACopy(): void
+    {
+        $roles = [];
+        foreach ($this->get(CoreWorkspaceChanges::class)->entries(1) as $entry) {
+            $roles[$entry->table . ':' . $entry->workspaceUid] = $entry->role?->value;
+            foreach ($entry->companions as $companion) {
+                $roles[$companion->table . ':' . $companion->workspaceUid] = 'companion';
+            }
+        }
+        $moduleRows = self::topLevelRows($this->moduleGrid(-1));
+
+        sort($moduleRows);
+        $toolbarRows = array_keys($roles);
+        sort($toolbarRows);
+        self::assertSame($moduleRows, $toolbarRows);
+        self::assertSame('copy', $roles['tt_content:14']);
+        self::assertNotContains(null, $roles);
     }
 
     /**
@@ -62,16 +86,16 @@ final class WorkspacesModuleParityTest extends FunctionalTestCase
     public function aPageListsTheModulesRowsForThatPage(): void
     {
         foreach ([2, 3, 4] as $pageUid) {
-            $grid = $this->moduleGrid($pageUid);
-            $moduleRows = [];
-            foreach ($grid['data'] as $row) {
-                if ((int)($row['Workspaces_CollectionLevel'] ?? 0) === 0) {
-                    $moduleRows[] = $row['table'] . ':' . $row['uid'];
+            $moduleRows = self::topLevelRows($this->moduleGrid($pageUid));
+
+            // Each item and the translation copies folded into it.
+            $toolbarRows = [];
+            foreach ($this->get(PendingItemsService::class)->payloadForPage($pageUid, PendingItemsMode::Changed)->items as $item) {
+                $toolbarRows[] = $item->table . ':' . $item->workspaceUid;
+                foreach ($item->companions as $companion) {
+                    $toolbarRows[] = $companion->table . ':' . $companion->workspaceUid;
                 }
             }
-
-            $items = $this->get(PendingItemsService::class)->payloadForPage($pageUid, PendingItemsMode::Changed)->items;
-            $toolbarRows = array_map(static fn($item): string => $item->table . ':' . $item->workspaceUid, $items);
 
             sort($moduleRows);
             sort($toolbarRows);
@@ -88,6 +112,22 @@ final class WorkspacesModuleParityTest extends FunctionalTestCase
         self::assertContains('sys_file_reference:72', $toolbarRows);
         // The move is listed on its target page only.
         self::assertContains('tt_content:24', $toolbarRows);
+    }
+
+    /**
+     * @param array{total: int, data: list<array<string, mixed>>} $grid
+     * @return list<string>
+     */
+    private static function topLevelRows(array $grid): array
+    {
+        $rows = [];
+        foreach ($grid['data'] as $row) {
+            if ((int)($row['Workspaces_CollectionLevel'] ?? 0) === 0) {
+                $rows[] = $row['table'] . ':' . $row['uid'];
+            }
+        }
+
+        return $rows;
     }
 
     /**

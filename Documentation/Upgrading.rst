@@ -8,6 +8,54 @@ This extension targets TYPO3 14.3 LTS. The minimum Core version is now
 14.3.6, the security and maintenance release of 11 August 2026. Earlier
 TYPO3 major versions are not supported by this codebase.
 
+Upgrading to 1.11.0
+===================
+
+Flush the caches after the update: the cached scans, counts and page
+summaries changed their shape (their cache identifiers carry a new version,
+so stale entries are ignored either way). On a lab with linked clones, also
+clear OPcache. Nothing to migrate; things to know:
+
+- The badge, the header and the publish button count **edits**. The
+  translation copies TYPO3 makes along with an edit of the default
+  language ride on that edit's row as companions and no longer count: one
+  edited element reads as 1 where 1.10 said 4 (see :ref:`toolbar-copies`).
+- Publishing, requesting review, approving and discarding an edit take its
+  companions along on the server, after checking them again on fresh rows.
+  The Easy Workspace module does the same for its checkboxes. A
+  translation someone edited is never added to a write.
+- A discard stays Core's discard: discarding a moved, deleted or new
+  element removes the translations that point at its version, a
+  translator's later edit included, as in the Workspaces module. The list
+  names them (``dependents`` with ``edited``), every discard confirmation
+  says which go, and the discard response counts them
+  (``dependentsDiscarded``; see :ref:`toolbar-dependents`).
+- Versions that change nothing and belong to no edit are listed in an
+  "Unchanged copies" section with a "Discard copies" button (new route
+  ``webcon_easy_workspace_discard_copies``, ``POST``, honours
+  ``enableRevert``).
+- The badge payload's ``changedCount`` and ``byTable`` count edits;
+  ``versionCount`` carries the number of rows the Workspaces module lists,
+  ``copyCount`` and ``copies`` the cleanup's records. ``records`` lists
+  edits only, so the Visual Editor's decline buttons no longer appear on
+  translation copies.
+- ``/items`` rows carry ``role`` (``change`` or ``copy``), ``companions``,
+  ``dependents``, ``copyGroup`` and ``latestChangeUserUid``; the response
+  carries ``userUid``, its languages ``code`` and ``hreflang``.
+  ``contentChanged`` keeps its meaning.
+- Each editor can pick the dropdown's layout in User Settings (new setting
+  ``webconEasyWorkspaceLayout``, default from
+  ``options.webcon_easy_workspace.layout``, ``clarity``). The toolbar loads
+  three more stylesheets, ``Css/layouts/*.css``.
+- The folded "Without content change" section of 1.10 is gone, and with it
+  ``.wew-section--toggle``, ``.wew-section--unchanged``,
+  ``.wew-row--no-content-change`` and the labels
+  ``toolbar.summary.unchanged``, ``toolbar.section.unchanged``,
+  ``toolbar.section.unchangedHint``, ``toolbar.row.unchanged``,
+  ``toolbar.row.unchangedTitle`` and ``toolbar.languages.changedCount``.
+  A site stylesheet or label override that targeted them has nothing to
+  target any more.
+
 Upgrading to 1.10.0
 ===================
 

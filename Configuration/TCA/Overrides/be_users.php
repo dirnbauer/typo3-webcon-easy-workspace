@@ -43,6 +43,30 @@ ExtensionManagementUtility::addUserSetting(
     'after:--div--;LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:userSettings.tab',
 );
 
+// The dropdown's layout, chosen per editor; the TSconfig default
+// options.webcon_easy_workspace.layout applies until they choose one, and
+// whenever they choose "Site default" (the empty value a form save without
+// a choice stores). No persistentUpdate: core sends it as 0/1 for checkboxes
+// only, and the dropdown reads the layout from its server-rendered config.
+ExtensionManagementUtility::addUserSetting(
+    'webconEasyWorkspaceLayout',
+    [
+        'label' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:userSettings.layout',
+        'config' => [
+            'type' => 'select',
+            'renderType' => 'selectSingle',
+            'default' => '',
+            'items' => [
+                ['label' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:userSettings.layout.default', 'value' => ''],
+                ['label' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:userSettings.layout.clarity', 'value' => 'clarity'],
+                ['label' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:userSettings.layout.efficiency', 'value' => 'efficiency'],
+                ['label' => 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:userSettings.layout.core', 'value' => 'core'],
+            ],
+        ],
+    ],
+    'after:webconEasyWorkspaceEnabled',
+);
+
 ExtensionManagementUtility::addUserSetting(
     'webconEasyWorkspaceShowSubelementsToolbar',
     [
@@ -54,7 +78,7 @@ ExtensionManagementUtility::addUserSetting(
             'default' => 0,
         ],
     ],
-    'after:webconEasyWorkspaceEnabled',
+    'after:webconEasyWorkspaceLayout',
 );
 
 ExtensionManagementUtility::addUserSetting(

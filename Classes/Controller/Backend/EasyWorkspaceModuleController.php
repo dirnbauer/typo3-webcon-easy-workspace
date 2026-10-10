@@ -163,6 +163,7 @@ final readonly class EasyWorkspaceModuleController
                 : $this->localizationService->translate('module.publish.empty');
             $severity = $result['published'] > 0 ? ContextualFeedbackSeverity::OK : ContextualFeedbackSeverity::INFO;
             $this->enqueueFlash($message, $severity, $this->localizationService->translate('publish.success.title'));
+            $this->enqueueWarnings($result['warnings'], 'publish.warning.title');
         } else {
             $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
             $this->enqueueFlash($errors, ContextualFeedbackSeverity::WARNING, $this->localizationService->translate('publish.warning.title'));
@@ -191,6 +192,7 @@ final readonly class EasyWorkspaceModuleController
                 : $this->localizationService->translate('module.publish.empty');
             $severity = $result['changed'] > 0 ? ContextualFeedbackSeverity::OK : ContextualFeedbackSeverity::INFO;
             $this->enqueueFlash($message, $severity, $this->localizationService->translate('review.success.title'));
+            $this->enqueueWarnings($result['warnings'], 'review.warning.title');
         } else {
             $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
             $this->enqueueFlash($errors, ContextualFeedbackSeverity::WARNING, $this->localizationService->translate('review.warning.title'));
@@ -219,6 +221,7 @@ final readonly class EasyWorkspaceModuleController
                 : $this->localizationService->translate('module.publish.empty');
             $severity = $result['published'] > 0 ? ContextualFeedbackSeverity::OK : ContextualFeedbackSeverity::INFO;
             $this->enqueueFlash($message, $severity, $this->localizationService->translate('approval.success.title'));
+            $this->enqueueWarnings($result['warnings'], 'approval.warning.title');
         } else {
             $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
             $this->enqueueFlash($errors, ContextualFeedbackSeverity::WARNING, $this->localizationService->translate('approval.warning.title'));
@@ -252,11 +255,16 @@ final readonly class EasyWorkspaceModuleController
 
         $result = $this->publishService->discard($table, $workspaceUid, $this->accessGuard->user($request));
         if ($result['success']) {
+            $message = $this->localizationService->translate('discard.success.message', ['title' => '#' . $workspaceUid]);
+            if ($result['dependentsDiscarded'] > 0) {
+                $message .= ' ' . $this->localizationService->translate('discard.success.dependents', ['count' => $result['dependentsDiscarded']]);
+            }
             $this->enqueueFlash(
-                $this->localizationService->translate('discard.success.message', ['title' => '#' . $workspaceUid]),
+                $message,
                 ContextualFeedbackSeverity::OK,
                 $this->localizationService->translate('discard.success.title'),
             );
+            $this->enqueueWarnings($result['warnings'], 'discard.warning.title');
         } else {
             $errors = implode(' / ', $result['errors'] ?: [$this->localizationService->translate('error.unknown')]);
             $this->enqueueFlash($errors, ContextualFeedbackSeverity::ERROR, $this->localizationService->translate('discard.error.title'));
@@ -318,6 +326,8 @@ final readonly class EasyWorkspaceModuleController
             'discard.modal.message.new',
             'discard.modal.message.delete',
             'discard.modal.message.move',
+            'discard.modal.dependents',
+            'discard.modal.dependentEdits',
             'discard.modal.cancel',
             'discard.modal.confirm',
             'edit.title',
@@ -416,6 +426,19 @@ final readonly class EasyWorkspaceModuleController
     {
         $queue = $this->flashMessageService->getMessageQueueByIdentifier();
         $queue->enqueue(new FlashMessage($message, $title, $severity, true));
+    }
+
+    /**
+     * What DataHandler reported about records taken along (translation
+     * copies) while the selected change itself went through.
+     *
+     * @param list<string> $warnings
+     */
+    private function enqueueWarnings(array $warnings, string $titleKey): void
+    {
+        if ($warnings !== []) {
+            $this->enqueueFlash(implode(' / ', $warnings), ContextualFeedbackSeverity::WARNING, $this->localizationService->translate($titleKey));
+        }
     }
 
     /**

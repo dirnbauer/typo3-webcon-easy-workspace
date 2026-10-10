@@ -1,40 +1,35 @@
 import { html, nothing } from 'lit';
 import { label, configBool } from '@webconsulting/webcon-easy-workspace/menu-context.js';
-import { changedItemCount, contentChangeCount } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
+import { summaryText } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
 import { moduleHref } from '@webconsulting/webcon-easy-workspace/menu-actions.js';
+import { viaLayout } from '@webconsulting/webcon-easy-workspace/menu-layout.js';
+
+export { summaryText };
 
 /**
- * One sentence about the numbers: what was edited here, how many versions
- * TYPO3 only made along with those edits, and how much more waits
- * elsewhere in the workspace.
+ * Keep a number on the line of its noun ("4 unveränderte Kopien"): at phone
+ * width the summary wraps, and a line ending in "· 4" reads as a stray
+ * figure. Only the visible text is bound; the meaning is the same.
  */
-export function summaryText(host, onPage, total, unchanged = 0) {
-  if (host.state === 'no-context') {
-    return total > 0 ? label(host, 'toolbar.count.workspace', { count: total }) : label(host, 'toolbar.count.none');
-  }
-  if (onPage <= 0 && unchanged <= 0 && total <= 0) return label(host, 'toolbar.count.none');
-  const parts = [label(host, host.newsUid > 0 ? 'toolbar.summary.news' : 'toolbar.summary.page', { count: onPage })];
-  if (unchanged > 0) parts.push(label(host, 'toolbar.summary.unchanged', { count: unchanged }));
-  const elsewhere = Math.max(0, total - onPage - unchanged);
-  if (elsewhere > 0) parts.push(label(host, 'toolbar.summary.elsewhere', { count: elsewhere }));
-  return parts.join(' · ');
+export function bindNumbers(text) {
+  return String(text).replace(/(\d) (?=\S)/g, '$1\u00A0');
 }
 
 /**
  * Compact header: one row with the workspace (Core's workspace icon names
  * what the title is), its stage and the two header actions, one line with
- * the numbers below.
+ * the numbers below. The summary describes the dialog; it is no live region
+ * (it would re-announce on every refresh) — the footer's status region and
+ * Core's notifications speak instead.
  */
 export function renderHeader(host) {
-  const onPage = contentChangeCount(host.items);
-  const unchanged = changedItemCount(host.items) - onPage;
-  const total = Math.max(0, Number(host.badgeCount) || 0);
   const showName = configBool(host, 'enableWorkspaceChip', true) && host.workspaceTitle;
   const refreshing = host.state === 'loading';
-  const refreshLabel = label(host, 'toolbar.refresh');
+  const refreshLabel = label(host, refreshing ? 'toolbar.refreshing' : 'toolbar.refresh');
   const moduleLabel = label(host, 'toolbar.openModule');
   const href = moduleHref(host);
-  const stageTitle = host.stage?.label ? label(host, 'toolbar.stage.label', { stage: host.stage.label }) : '';
+  const stage = host.stage?.label || '';
+  const summary = bindNumbers(summaryText(host));
 
   return html`
     <header class="wew-menu__head">
@@ -44,10 +39,10 @@ export function renderHeader(host) {
           <h2 class="wew-menu__title" id=${host.titleId} title=${label(host, 'toolbar.activeWorkspace')}>
             ${showName ? host.workspaceTitle : label(host, 'toolbar.title')}
           </h2>
-          ${host.stage?.label ? html`
-            <span class="badge badge-secondary wew-menu__stage" title=${stageTitle} aria-label=${stageTitle} data-wew-stage>${host.stage.label}</span>` : nothing}
+          ${stage ? html`
+            <span class="badge badge-secondary wew-menu__stage" title=${label(host, 'toolbar.stage.label', { stage })} data-wew-stage><span class="visually-hidden">${label(host, 'toolbar.stage.prefix')} </span>${stage}</span>` : nothing}
         </div>
-        <p class="wew-menu__summary" aria-live="polite" data-wew-count-chip>${summaryText(host, onPage, total, unchanged)}</p>
+        <p class="wew-menu__summary" id=${host.summaryId || nothing} ?hidden=${summary === ''} data-wew-count-chip>${viaLayout(host, 'renderSummary', [summary], {}, () => summary)}</p>
       </div>
       <div class="wew-menu__head-side">
         ${href ? html`

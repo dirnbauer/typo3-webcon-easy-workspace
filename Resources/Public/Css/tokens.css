@@ -11,6 +11,10 @@
     --wew-font-size: var(--typo3-font-size, .875rem);
     --wew-font-size-sm: var(--typo3-font-size-small, .75rem);
     --wew-font-size-xs: .6875rem;
+    /* Dropdown hierarchy: workspace name (Core's dropdown headline), row and
+       section titles (Core's dropdown item text), then sm/xs for meta. */
+    --wew-font-size-head: var(--typo3-dropdown-headline-font-size, .875rem);
+    --wew-font-size-title: var(--typo3-font-size, .75rem);
     --wew-line-height: var(--typo3-component-line-height, 1.5);
 
     /* Spacing + shape */
@@ -22,6 +26,16 @@
     --wew-radius-sm: calc(var(--wew-radius) * .75);
     --wew-radius-pill: 999px;
     --wew-shadow: var(--typo3-component-box-shadow-flyout);
+    --wew-shadow-soft: var(--typo3-shadow-2, 0 1px 2px rgba(0, 0, 0, .08));
+    /* Elevation Core has no token for: a one-sided edge while the list
+       scrolls under the header or footer, and a card raised on the dropdown
+       surface. With the fallbacks above, the only colour literals of the
+       extension's styles. */
+    --wew-shadow-ink: light-dark(rgba(0, 0, 0, .28), rgba(0, 0, 0, .7));
+    --wew-shadow-card: 0 1px 2px light-dark(rgba(0, 0, 0, .05), rgba(0, 0, 0, .28)), 0 2px 8px -3px light-dark(rgba(0, 0, 0, .08), rgba(0, 0, 0, .4));
+    --wew-shadow-card-hover: 0 1px 2px light-dark(rgba(0, 0, 0, .06), rgba(0, 0, 0, .3)), 0 6px 14px -6px light-dark(rgba(0, 0, 0, .14), rgba(0, 0, 0, .55));
+    /* WCAG 2.2 target size (2.5.8) for every control in the dropdown. */
+    --wew-target: 24px;
 
     /* Surfaces */
     --wew-surface: var(--typo3-dropdown-bg, var(--typo3-component-bg));
@@ -30,9 +44,18 @@
     --wew-surface-hover: var(--typo3-dropdown-item-hover-bg, var(--typo3-component-hover-bg));
     --wew-surface-selected: var(--typo3-surface-container-primary, var(--typo3-state-primary-bg));
     --wew-surface-selected-text: var(--typo3-surface-container-primary-text, var(--typo3-component-color));
+    /* Raised in both schemes: Core's lowest container in light (near white
+       on the dropdown's grey), its base container in dark. */
+    --wew-surface-card: light-dark(var(--typo3-surface-container-lowest, var(--wew-surface)), var(--typo3-surface-container-base, var(--wew-surface-raised)));
+    /* Core's info callout. */
+    --wew-info-surface: var(--typo3-surface-container-info, var(--wew-tint));
+    --wew-info-fg: var(--typo3-surface-container-info-text, var(--wew-text));
 
     /* Text + lines */
     --wew-text: var(--typo3-dropdown-color, var(--typo3-component-color));
+    /* Core defines it relative to currentColor (65 %): never set it on a
+       descendant of an element that is muted already — the two steps
+       multiply (42 %, below 3:1). Such a descendant inherits instead. */
     --wew-text-muted: var(--typo3-text-color-variant, var(--typo3-component-variant-color));
     --wew-link: var(--typo3-component-link-color);
     --wew-text-danger: var(--typo3-text-color-danger);
@@ -40,6 +63,9 @@
     --wew-border: var(--typo3-dropdown-border-color, var(--typo3-component-border-color));
     --wew-border-strong: var(--typo3-component-hover-border-color, var(--wew-border));
     --wew-focus-ring: var(--typo3-component-focus-border-color, var(--typo3-state-primary-border-color));
+    /* Core's own focus idiom (breadcrumb, dropdown toggles): currentColor at
+       75 % — about 7:1 in both schemes, unlike the grey component border. */
+    --wew-focus-outline: 2px solid color-mix(in srgb, var(--wew-text) 75%, transparent);
 
     /* Brand + primary action */
     --wew-primary: var(--typo3-state-primary-bg);
@@ -64,6 +90,13 @@
     --wew-notice-fg: var(--typo3-badge-notice-color);
     --wew-notice-border: var(--typo3-badge-notice-border-color);
 
+    /* Change-type accents as text colours (dots, rails, hover tints) */
+    --wew-accent-new: var(--typo3-text-color-success, var(--wew-new-bg));
+    --wew-accent-changed: var(--typo3-text-color-info, var(--wew-changed-bg));
+    --wew-accent-deleted: var(--typo3-text-color-danger, var(--wew-deleted-bg));
+    --wew-accent-moved: var(--typo3-text-color-warning, var(--wew-moved-bg));
+    --wew-accent-primary: var(--typo3-text-color-primary, var(--wew-primary));
+
     /* State surfaces used by the module and the diff modal */
     --wew-state-info-bg: var(--typo3-state-info-bg);
     --wew-state-info-fg: var(--typo3-state-info-color);
@@ -81,6 +114,11 @@
     /* Derived tints (scheme-aware because they mix the current text colour) */
     --wew-skeleton: color-mix(in srgb, var(--wew-text) 8%, transparent);
     --wew-tint: color-mix(in srgb, var(--wew-text) 4%, transparent);
+    --wew-chip: color-mix(in srgb, var(--wew-text) 6%, transparent);
+    --wew-chip-hover: color-mix(in srgb, var(--wew-text) 11%, transparent);
+    --wew-danger-tint: color-mix(in srgb, var(--wew-accent-deleted) 12%, transparent);
+    --wew-success-tint: color-mix(in srgb, var(--wew-accent-new) 14%, transparent);
+    --wew-surface-footer: color-mix(in srgb, var(--wew-surface) 96%, var(--wew-text));
 
     /* Motion */
     --wew-motion-fast: 120ms;

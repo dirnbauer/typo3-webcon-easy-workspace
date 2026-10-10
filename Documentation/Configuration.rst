@@ -22,7 +22,9 @@ for everyone.
 
 The personal switches apply to both entry points: the top-right toolbar
 dropdown and the Easy Workspace backend module below the TYPO3 Workspaces
-publish module.
+publish module. One of them, ``Dropdown layout``, applies to the dropdown
+only: each editor chooses one of three presentations of the same list (see
+:ref:`toolbar-layouts`).
 
 The toolbar badge has no options: it counts the pending changes of the
 current page or news article (the whole workspace where there is no page)
@@ -62,6 +64,24 @@ All keys live below ``options.webcon_easy_workspace``.
     :Default: 1
 
     Default for the personal ``Use Easy Workspace`` user setting.
+
+..  confval:: layout
+
+    :type: string
+    :Default: clarity
+
+    Default for the personal ``Dropdown layout`` user setting
+    (``webconEasyWorkspaceLayout``): how the toolbar dropdown presents the
+    same changes and actions. ``clarity`` ("Clear") explains what goes live,
+    ``efficiency`` ("Efficient") is dense and has keyboard shortcuts,
+    ``core`` ("TYPO3 Core") follows the backend's own lists. An editor's own
+    choice wins; "Site default" (the setting's first choice, and what an
+    editor who never chose one has) and an unknown value follow this
+    default, then ``clarity``. See :ref:`toolbar-layouts`.
+
+    ..  code-block:: typoscript
+
+        options.webcon_easy_workspace.layout = core
 
 ..  confval:: showSubelementsInToolbar
 

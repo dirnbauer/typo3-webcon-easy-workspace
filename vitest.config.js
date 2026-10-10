@@ -15,6 +15,10 @@ export default defineConfig({
       { find: '@typo3/backend/modal.js', replacement: here('./Tests/JavaScript/mocks/modal.js') },
       { find: '@typo3/backend/enum/severity.js', replacement: here('./Tests/JavaScript/mocks/severity.js') },
       { find: '@typo3/backend/element/icon-element.js', replacement: here('./Tests/JavaScript/mocks/noop.js') },
+      // The backend module's selection helper (easy-workspace-module.js).
+      { find: '@typo3/backend/multi-record-selection.js', replacement: here('./Tests/JavaScript/mocks/noop.js') },
+      // The dropdown closes a Bootstrap dropdown through a dynamic import (import map in the backend).
+      { find: /^bootstrap$/, replacement: here('./Tests/JavaScript/mocks/noop.js') },
     ],
   },
   test: {

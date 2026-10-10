@@ -124,10 +124,11 @@ final class EasyWorkspaceModuleControllerTest extends FunctionalTestCase
         $html = $this->render('webcon_easy_workspace_pending', 4, ['id' => 10]);
 
         // The raw ICU message only travels to JavaScript in data-wew-labels;
-        // the summary itself must arrive formatted. Four: the page, the new
+        // the summary itself must arrive formatted. Three: the page, the new
         // element, and the deleted news record stored on the page — core
-        // lists every workspace-aware record of the page.
-        self::assertMatchesRegularExpression('/data-wew-publishbar-summary="">\s*4 records selected for approval\s*</', $html);
+        // lists every workspace-aware record of the page. The row of a
+        // legacy version state core does not list is no change to publish.
+        self::assertMatchesRegularExpression('/data-wew-publishbar-summary="">\s*3 records selected for approval\s*</', $html);
     }
 
     #[Test]

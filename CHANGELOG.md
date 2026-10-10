@@ -2,6 +2,151 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## [1.11.0] — 2026-10-10
+
+One edit reads as one change. The translation copies TYPO3 makes when a
+default-language element is saved ride on that element's row, go live and
+are discarded with it, and each editor picks one of three layouts for the
+dropdown.
+
+### Changed
+
+- Editing a default-language element no longer reads as four changes on a
+  site with three translations. Core's `DataMapProcessor` writes the
+  fields translations share with their parent (`l10n_mode=exclude`) into
+  every translation on every save, without comparing values, and
+  DataHandler versions each of them with its file references; the dropdown
+  counted every copy (badge 4, "4/4", "4 veröffentlichen" for one header
+  edit). The server now classifies the workspace once per revision
+  (`CompanionClassifier`): a translation version that mirrors its parent's
+  version — identical, the same synced values, the same move or delete,
+  its nested records included — becomes a companion of that edit. The
+  badge, the header, select-all and the publish button count edits only;
+  the companions show on the edited row as one line per kind
+  ("Übersetzungen unverändert: DE ZH HU", "Gilt auch für die Übersetzungen
+  (Startzeit): …", "Übersetzungen werden mitverschoben: …"), and a chip
+  opens that translation for editing. A translation someone edited stays a
+  change of its own.
+- Publishing, requesting review, approving and discarding an edit take its
+  companions along on the server, after checking them again on fresh rows
+  (`CompanionResolver`); a translation edited in the meantime is left out
+  and named in a notification. The client sends the edits it selected, as
+  before, so the module and the Visual Editor's decline button take the
+  companions along too. Discarding the English hero header on the lab
+  removes its three copies and their file references: before, the copies
+  stayed behind as orphans.
+- What a version changes includes the relations it keeps in MM tables
+  (categories, select and group fields with `MM`, in columns and
+  FlexForms; `ManyToManyRelations`): one category swapped for another, or
+  the same categories in another order, is an edit, never a copy for the
+  cleanup or a companion taken along. A relation table that cannot be read
+  counts as changed. The frontend's `SYS_LASTCHANGED` stamp, written into
+  live page rows on every render, is no edit.
+- Core lists the versions an editor may see; its publish and discard act on
+  every version nested below a record. An entry with a nested version the
+  editor's list leaves out (a file reference outside their file mounts,
+  one whose file is missing) is never a copy or a companion, and before a
+  write every record taken along is checked against what core will act on
+  (`CoreWorkspaceChanges::descendants()`). A translation of a translation
+  is taken along only together with the companion it was made from.
+- Core's publish and stage change also start at a record's outermost
+  parent. A row below a version the editor's list leaves out (a translated
+  collection item below another editor's translated element, for an editor
+  without access to content elements) is never a copy or a companion, and
+  every record taken along is checked upwards too
+  (`CoreWorkspaceChanges::parentVersions()`): publishing the default item
+  no longer takes the other editor's element and its other items live.
+- A discard stays Core's discard, as in the Workspaces module — and the
+  confirmation now says what it takes along. Core points the translations
+  it moves or deletes along with an element at the element's version, and
+  its discard removes every translation pointing at it: a translator's edit
+  made after the move or deletion goes too (one made before keeps its
+  pointer at the live element and stays). Before, the confirmation did not
+  mention it. The classification now names every translation Core's discard
+  of an entry reaches through such a pointer — at the entry's version, a
+  version nested below it, or one discarded in turn — that is no companion
+  of the entry: an entry's `dependents` carry `edited` (`false` for a new
+  translation, as before for a new element's new translations). Every
+  discard confirmation (the dropdown in all three layouts, the Visual
+  Editor's decline button, the module) names them: "Neue Übersetzungen
+  dieses Elements werden ebenfalls entfernt: …" and "TYPO3 verwirft dabei
+  auch diese Übersetzungen, samt ihren eigenen Änderungen: …"
+  (`discard.modal.dependentEdits`). The discard response adds
+  `dependentsDiscarded`, and the success message says how many went along
+  (`discard.success.dependents`). `companionsDiscarded` counts the copies
+  core removed along with the change as well.
+- "Approve and publish" works out the companions once, before the stage
+  change; the checks before a write read their rows in batches.
+- The badge payload counts edits: `changedCount`, `byTable` and `byState`
+  (now with deleted and moved), `contextCount` and `records`, from which the
+  Visual Editor draws its decline buttons. `versionCount` carries the
+  Workspaces module's row count, `copyCount` and `copies` the cleanup's
+  records. The caches of the scan, the counts and the page summary carry a
+  new version, so entries of 1.10 are ignored.
+- `/items` rows carry `role`, `companions`, `dependents`, `copyGroup` and
+  `latestChangeUserUid`; the response carries `userUid` ("von Ihnen" for
+  the editor's own edits) and short language codes with their `hreflang`.
+- Every row has the same anatomy: the title on line one, line two starting
+  with the change badge (one column to scan), then type · column · time ·
+  author. The meta line shows whole parts only and never ends in a word
+  cut short; the header summary spans the full width and keeps a number on
+  the line of its noun.
+- The row's checkbox is its keyboard stop, groups and sections are headings
+  with nested lists, the summary describes the dialog instead of being a
+  live region, and a status region announces silent outcomes.
+- The module's checkboxes are on edits only; an edit's row names its
+  companions ("Übersetzungen unverändert: DE, ZH, HU"), and a copy carries an
+  "Unveränderte Kopie" badge.
+- A Core modal opened from the dropdown reopens it when it closes. Core's
+  plain record form (from the history's "Edit", or for a record without the
+  contextual form) reports no save, so the list is fetched again whenever it
+  closes; "open in full form" in the contextual sheet leaves the dropdown
+  closed and focus in the form. A decline in the Visual Editor arms no focus
+  request for a later open, and an open of the editor's own drops any left.
+  While an action's request runs, focus waits on the control that started
+  it and stays there when it fails; after a save from a translation chip it
+  moves to the translation's own row, and when a list removes the focused
+  control it moves to the stop now at its place. Translation chips keep
+  their element across renders.
+
+### Added
+
+- Three layouts for the dropdown, chosen per editor in User Settings →
+  Easy Workspace → "Darstellung der Veröffentlichungsliste"
+  (`webconEasyWorkspaceLayout`; its first choice "Standard der Website"
+  follows `options.webcon_easy_workspace.layout`, `clarity`). Data, counts and
+  actions are shared; each layout is its own stylesheet scoped to
+  `data-wew-layout`.
+  - **Klar** (`clarity`, default): every edit a card with a bar in its
+    change colour and its translations as the card's foot; selected cards
+    stand raised. A callout explains once why TYPO3 made the copies;
+    "Verstanden" hides it for good (Core's persistent storage, uc key
+    `webconEasyWorkspace.copiesNoteSeen`).
+  - **Effizient** (`efficiency`): a dense mail-client list with hover
+    actions, locate on the type icon, muted unselected rows and keyboard
+    shortcuts named in the footer — Entf discards (with confirmation),
+    Strg/⌘+Enter publishes, A selects or clears all.
+  - **TYPO3 Core** (`core`): Core's list idiom with hairlines, two-line
+    titles and the change badges in one column; "Entwürfe ohne Änderung"
+    can be discarded per element, both discards confirmed in Core's
+    dialog.
+- An "Unveränderte Kopien" section lists versions that change nothing and
+  belong to no edit (a save without changes, an edit discarded in the
+  Workspaces module), one line per element with its languages. "Kopien
+  verwerfen" discards them through the new `discard-copies` route, which
+  checks every record again and keeps one edited meanwhile, and one with
+  `dependents` (Core's discard would take other translations along, and
+  the cleanup asks no question); it honours `enableRevert`.
+- Section headings for the other languages carry a checkbox that selects
+  or clears all their edits.
+
+### Removed
+
+- The folded "Ohne inhaltliche Änderung" section of 1.10 and the
+  "Unverändert" badge: an unchanged translation is no row any more. Its
+  classes (`.wew-section--toggle`, `.wew-section--unchanged`,
+  `.wew-row--no-content-change`) and six labels are gone.
+
 ## [1.10.1] — 2026-09-27
 
 In a workspace with mount points, the dropdown lists the drafts on the pages

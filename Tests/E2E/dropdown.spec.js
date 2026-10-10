@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
 import {
+  badgeCount,
+  badgeOfTestPage,
   currentWorkspaceId,
   discardPendingOnTestPage,
   env,
+  itemsOfTestPage,
   goto,
   openBackend,
   requireEnvironment,
@@ -70,14 +73,20 @@ test('every interactive element is reachable and labelled', async () => {
   await page.emulateMedia({ colorScheme: 'light' });
   const menu = await openDropdown(page);
 
-  // The dropdown is a labelled dialog with a live count.
+  // The dropdown is a labelled dialog, described by its summary. The summary
+  // is no live region (it would re-announce every refresh); a status region
+  // in the footer speaks instead.
   await expect(menu.locator('[role="dialog"]').or(menu)).toBeVisible();
   const dialog = page.locator('.wew-menu');
   await expect(dialog).toHaveAttribute('role', 'dialog');
+  await expect(dialog).toHaveAttribute('data-wew-layout', /^(clarity|efficiency|core)$/);
   const labelledBy = await dialog.getAttribute('aria-labelledby');
   expect(labelledBy).toBeTruthy();
   await expect(page.locator(`#${labelledBy}`)).toHaveCount(1);
-  await expect(page.locator('[data-wew-count-chip]')).toHaveAttribute('aria-live', 'polite');
+  const describedBy = await dialog.getAttribute('aria-describedby');
+  await expect(page.locator(`#${describedBy}`)).toHaveAttribute('data-wew-count-chip', '');
+  await expect(page.locator('[data-wew-count-chip]')).not.toHaveAttribute('aria-live', /.+/);
+  await expect(page.locator('[data-wew-status]')).toHaveAttribute('role', 'status');
 
   // No icon-only control without an accessible name.
   const unnamed = await page.locator('.wew-menu button').evaluateAll((buttons) => buttons
@@ -85,13 +94,17 @@ test('every interactive element is reachable and labelled', async () => {
     .map((button) => button.className));
   expect(unnamed).toEqual([]);
 
-  // Keyboard: the list takes focus and the arrow keys walk the rows.
-  const rows = page.locator(selectors.rows);
-  if (await rows.count() > 1) {
-    await rows.first().focus();
+  // Keyboard: the row checkboxes are the stops, exactly one is tabbable,
+  // and the arrow keys walk them.
+  const checks = page.locator(selectors.rowCheck);
+  if (await checks.count() > 0) {
+    await expect(page.locator('.wew-list [data-wew-stop][tabindex="0"]')).toHaveCount(1);
+  }
+  if (await checks.count() > 1) {
+    await checks.first().focus();
     await page.keyboard.press('ArrowDown');
-    await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-wew-key'))).toBe(
-      await rows.nth(1).getAttribute('data-wew-key'),
+    await expect.poll(() => page.evaluate(() => document.activeElement?.closest('[data-wew-row]')?.getAttribute('data-wew-key'))).toBe(
+      await page.locator(selectors.rows).nth(1).getAttribute('data-wew-key'),
     );
   }
 
@@ -136,4 +149,89 @@ test('states render: loading skeleton, empty and error', async () => {
   await page.locator('[data-wew-empty]').waitFor({ timeout: 15_000 });
   await page.locator(selectors.menu).screenshot({ path: `${shotDir}/state-empty.png` });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
+});
+
+/**
+ * 1.11: editing a default-language element makes TYPO3 version its
+ * translations unchanged. One edit must read as one everywhere, the copies
+ * ride on the edited row and go with it. Needs WEW_E2E_TRANSLATION_UID (a
+ * translation of WEW_E2E_CONTENT_UID; the lab: page 2228, hero 158035,
+ * German 158633). Never publishes: that path is covered functionally.
+ */
+test.describe('translation copies', () => {
+  test.beforeEach(async () => {
+    test.skip(env.translationUid <= 0, 'Set WEW_E2E_TRANSLATION_UID to run the translation-copy cases.');
+    await discardPendingOnTestPage(page);
+  });
+
+  test('one header edit reads as one change, with the translations as chips', async () => {
+    await saveContentHeaderInIframe(page, env.contentUid, `Copies E2E ${Date.now()}`);
+    const badge = await badgeOfTestPage(page);
+    expect(badge.contextCount).toBe(1);
+    await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(1);
+
+    await openDropdown(page);
+    await expect(page.locator(selectors.rows)).toHaveCount(1);
+    // One edit: no select-all, the publish label carries the count.
+    await expect(page.locator(selectors.selectAll)).toHaveCount(0);
+    await expect(page.locator(selectors.publish)).toHaveText(/^\s*1\b/);
+    const chips = page.locator(selectors.companionChip);
+    expect(await chips.count()).toBeGreaterThan(0);
+    for (const chip of await chips.all()) {
+      await expect(chip).toHaveAttribute('aria-label', /^[A-Z]{2}(-[A-Z]{2})?: /);
+    }
+    await page.locator(selectors.menu).screenshot({ path: `${shotDir}/copies-one-edit.png` });
+  });
+
+  test('a translation chip opens that translation in the edit modal', async () => {
+    await saveContentHeaderInIframe(page, env.contentUid, `Chip E2E ${Date.now()}`);
+    await openDropdown(page);
+    await page.locator(selectors.companionChip).first().click();
+    const modal = page.locator('typo3-backend-modal, .wew-edit-modal-shell').first();
+    await expect(modal).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press('Escape');
+  });
+
+  test('discarding the edit names the copies and takes them along', async () => {
+    await saveContentHeaderInIframe(page, env.contentUid, `Discard E2E ${Date.now()}`);
+    await openDropdown(page);
+    await page.locator(`${selectors.rows} [data-wew-action="discard"]`).first().click();
+    const confirm = page.locator('.wew-confirm');
+    await expect(confirm).toBeVisible({ timeout: 10_000 });
+    // The change itself, then one paragraph about the copies.
+    expect(await confirm.locator('p').count()).toBeGreaterThanOrEqual(2);
+    await page.locator('typo3-backend-modal button[name="discard"]').click();
+    await expect.poll(async () => (await itemsOfTestPage(page)).items.length, { timeout: 20_000 }).toBe(0);
+  });
+
+  test('a save without changes leaves only copies, cleaned up in one click', async () => {
+    await saveContentHeaderInIframe(page, env.contentUid, null);
+    const badge = await badgeOfTestPage(page);
+    expect(badge.contextCount).toBe(0);
+    expect(badge.copies).toBeGreaterThan(0);
+    await expect.poll(() => badgeCount(page), { timeout: 15_000 }).toBe(0);
+
+    await openDropdown(page);
+    const cleanup = page.locator(selectors.cleanup);
+    await expect(cleanup.locator('[data-wew-section-toggle]')).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator(selectors.publish)).toHaveCount(0);
+    await page.locator(selectors.menu).screenshot({ path: `${shotDir}/copies-cleanup.png` });
+    await page.locator(selectors.discardCopies).click();
+    await page.locator(selectors.empty).waitFor({ timeout: 20_000 });
+    expect((await itemsOfTestPage(page)).items).toEqual([]);
+  });
+
+  test('keyboard: arrows reach the actions and chips, Enter edits', async () => {
+    await saveContentHeaderInIframe(page, env.contentUid, `Keyboard E2E ${Date.now()}`);
+    await openDropdown(page);
+    const check = page.locator(selectors.rowCheck).first();
+    await check.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-wew-action'))).toBe('edit');
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => page.evaluate(() => document.activeElement?.hasAttribute('data-wew-row-check'))).toBe(true);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('typo3-backend-modal, .wew-edit-modal-shell').first()).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press('Escape');
+  });
 });

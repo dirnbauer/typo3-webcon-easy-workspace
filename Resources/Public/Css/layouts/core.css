@@ -1,0 +1,361 @@
+/*
+ * Easy Workspace dropdown — "TYPO3 Core" layout.
+ *
+ * The backend's own idiom, carried out with care: rows are a list group
+ * (full width, hairline between rows, no tinted selection), headings are
+ * dropdown headers over a 1px Core divider, controls are Core's .badge,
+ * .btn and .form-check. Focus is Core's currentColor-75 % outline, every
+ * target is at least 24px, muted text never sits on a tint.
+ *
+ * One grid runs through everything (from toolbar-menu.css):
+ *   12px gutter · 24px control column · 8px · 24px icon column · 8px · text
+ * Row titles, section titles, sub-heading titles and translation chips all
+ * start on the text column; chevrons, flags and glyphs centre in the icon
+ * column. A row's first line is one 26px box — checkbox, icon, the first
+ * title line, badge and actions share its centre.
+ *
+ * Every rule is scoped under .wew-menu[data-wew-layout="core"]. Colours
+ * from tokens.css only, no gradients, motion through the --wew-motion-*
+ * tokens (0 under prefers-reduced-motion).
+ */
+.wew-menu[data-wew-layout="core"] {
+    --wew-layout: core;
+    /* The first line of a row: the height of its icon. */
+    --wew-core-line: var(--wew-col);
+    --wew-core-title-line: 18px;
+    --wew-core-divider: var(--wew-border);
+    --wew-core-rail: 3px;
+    /* Start of the text column from the menu edge (= --wew-indent-text). */
+    --wew-core-text: calc(var(--wew-gutter) + var(--wew-col) + var(--wew-gap) + var(--wew-col) + var(--wew-gap));
+}
+
+/* ---- Header: Core's dropdown headline ---- */
+.wew-menu[data-wew-layout="core"] .wew-menu__head { padding-block: 14px 10px; row-gap: 3px; }
+.wew-menu[data-wew-layout="core"] .wew-menu__title { letter-spacing: 0; }
+.wew-menu[data-wew-layout="core"] .wew-menu__summary { padding-inline-start: calc(16px + var(--wew-space-2)); }
+
+/* ---- List and groups ---- */
+.wew-menu[data-wew-layout="core"] .wew-list { padding: 0 0 var(--wew-space-1); }
+.wew-menu[data-wew-layout="core"] .wew-group + .wew-group {
+    margin-top: 0; padding-top: 0; border-top: 1px solid var(--wew-core-divider);
+}
+.wew-menu[data-wew-layout="core"] .wew-group__head {
+    padding: 14px var(--wew-space-3) 6px var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="core"] .wew-group__icon { block-size: var(--wew-col); }
+.wew-menu[data-wew-layout="core"] h3.wew-group__title { font-size: var(--wew-font-size-title); font-weight: 700; letter-spacing: 0; }
+.wew-menu[data-wew-layout="core"] .wew-group__path { font-size: var(--wew-font-size-sm); }
+.wew-menu[data-wew-layout="core"] .wew-group__count {
+    min-inline-size: 22px; padding: 1px 7px; border-radius: var(--wew-radius-pill);
+    background: var(--wew-chip); color: var(--wew-text); font-weight: 600;
+}
+
+/* "English · in dieser Ansicht" and the per-language sub-headings: dropdown
+   headers, the flag centred in the icon column, the text on the text column. */
+.wew-menu[data-wew-layout="core"] .wew-section--in-view,
+.wew-menu[data-wew-layout="core"] .wew-language {
+    gap: var(--wew-gap);
+    min-block-size: 28px;
+    padding: 2px var(--wew-space-3) 2px calc(var(--wew-gutter) + var(--wew-col) + var(--wew-gap));
+    font-size: var(--wew-font-size-xs); font-weight: 600; letter-spacing: .01em; color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="core"] .wew-section--in-view > typo3-backend-icon,
+.wew-menu[data-wew-layout="core"] .wew-language > typo3-backend-icon {
+    flex: none; inline-size: var(--wew-col); justify-content: center;
+}
+.wew-menu[data-wew-layout="core"] .wew-section--in-view .wew-section__count,
+.wew-menu[data-wew-layout="core"] .wew-language__count {
+    margin-inline-start: auto; padding-inline-end: 2px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.wew-menu[data-wew-layout="core"] .wew-language { margin-top: var(--wew-space-1); }
+
+/* ---- Rows: a list group ----
+   select | icon  | title ……………… badge
+   .      | .     | meta    | actions
+   .      | .     | kids ………………………
+   .      | glyph | langs ……………………   */
+.wew-menu[data-wew-layout="core"] .wew-row {
+    grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas:
+        "select icon  head  head"
+        ".      .     meta  actions"
+        ".      .     kids  kids"
+        ".      glyph langs langs";
+    align-items: start;
+    column-gap: var(--wew-gap); row-gap: 0;
+    margin-inline: 0;
+    padding: 10px var(--wew-space-2) 8px var(--wew-gutter);
+    border-radius: 0;
+}
+/* Hairlines between rows, inset to the content; they step aside for the
+   hovered row so its highlight reads as one clean band. */
+.wew-menu[data-wew-layout="core"] .wew-row + .wew-row::before {
+    content: ""; position: absolute; inset-block-start: 0; inset-inline: var(--wew-gutter) var(--wew-space-2);
+    block-size: 1px; background: var(--wew-core-divider);
+    transition: opacity var(--wew-motion-fast) var(--wew-ease);
+    pointer-events: none;
+}
+.wew-menu[data-wew-layout="core"] .wew-row:hover::before,
+.wew-menu[data-wew-layout="core"] .wew-row:hover + .wew-row::before { opacity: 0; }
+/* The change type as a rail on the row's edge, drawn in while the row is
+   hovered — the colour of its badge. (Focus has Core's outline instead.) */
+.wew-menu[data-wew-layout="core"] .wew-row { --wew-core-accent: var(--wew-accent-changed); }
+.wew-menu[data-wew-layout="core"] .wew-row[data-change="new"] { --wew-core-accent: var(--wew-accent-new); }
+.wew-menu[data-wew-layout="core"] .wew-row[data-change="deleted"] { --wew-core-accent: var(--wew-accent-deleted); }
+.wew-menu[data-wew-layout="core"] .wew-row[data-change="moved"] { --wew-core-accent: var(--wew-accent-moved); }
+.wew-menu[data-wew-layout="core"] .wew-row::after {
+    content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; inline-size: var(--wew-core-rail);
+    background: var(--wew-core-accent);
+    opacity: 0; transform: scaleY(.4);
+    transition: opacity var(--wew-motion-fast) var(--wew-ease), transform var(--wew-motion) var(--wew-ease);
+    pointer-events: none;
+}
+.wew-menu[data-wew-layout="core"] .wew-row:hover::after { opacity: 1; transform: none; }
+/* The icon tile stays a tile on the hover band. */
+.wew-menu[data-wew-layout="core"] .wew-row__icon { transition: background-color var(--wew-motion-fast) var(--wew-ease); }
+.wew-menu[data-wew-layout="core"] .wew-row:hover .wew-row__icon,
+.wew-menu[data-wew-layout="core"] .wew-copy:hover .wew-copy__icon { background: var(--wew-surface); }
+
+.wew-menu[data-wew-layout="core"] .wew-row__select { block-size: var(--wew-core-line); }
+
+/* Line 1: the title (up to two lines, hyphenated in the record's language)
+   and its badge. The margin (not padding) centres line one on the icon and
+   keeps a clamped third line from peeking out. */
+.wew-menu[data-wew-layout="core"] .wew-row__head {
+    grid-area: head; display: flex; align-items: flex-start; gap: var(--wew-space-3); min-width: 0;
+}
+.wew-menu[data-wew-layout="core"] .wew-row__title {
+    flex: 1 1 auto; min-width: 0;
+    margin-block: calc((var(--wew-core-line) - var(--wew-core-title-line)) / 2);
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+    overflow: hidden; white-space: normal; text-overflow: clip;
+    overflow-wrap: anywhere; hyphens: auto; text-wrap: pretty;
+    font-weight: 500; line-height: var(--wew-core-title-line);
+}
+.wew-menu[data-wew-layout="core"] .wew-row--primary .wew-row__title { font-weight: 600; }
+.wew-menu[data-wew-layout="core"] .wew-row__head > .wew-row__badge {
+    flex: none; margin-block-start: calc((var(--wew-core-line) - 1.6em) / 2);
+    font-size: .625rem; letter-spacing: .02em; line-height: 1.6; padding-block: 0;
+}
+
+/* Actions on line 2, right: Core borderless buttons; discard last, behind a hairline. */
+.wew-menu[data-wew-layout="core"] .wew-row__actions { align-self: center; gap: 0; margin-inline-end: -2px; }
+/* 24px wide (the WCAG 2.2 target; Core's 1px border included), 26px high:
+   room for the meta text. */
+.wew-menu[data-wew-layout="core"] .wew-row__action { --typo3-btn-padding-x: 3px; min-inline-size: var(--wew-target); }
+.wew-menu[data-wew-layout="core"] .wew-row__action-slot { inline-size: var(--wew-target); }
+.wew-menu[data-wew-layout="core"] .wew-row__action--danger { position: relative; margin-inline-start: 9px; }
+.wew-menu[data-wew-layout="core"] .wew-row__action--danger::before {
+    content: ""; position: absolute; inset-inline-start: -5px; inset-block: 6px; inline-size: 1px;
+    background: var(--wew-core-divider); pointer-events: none;
+}
+
+/* Line 2: [Verborgen] [DE] meta text. */
+.wew-menu[data-wew-layout="core"] .wew-row__meta {
+    align-self: center; gap: 6px; min-block-size: 18px;
+    font-size: var(--wew-font-size-xs); line-height: 16px;
+}
+/* Whole parts only: what does not fit wraps onto a second line that is
+   clipped away; only a first part longer than the line ellipsises. */
+.wew-menu[data-wew-layout="core"] .wew-row__meta-text--parts {
+    flex: 1 1 0; min-width: 0; margin-inline-start: 0;
+    display: flex; flex-wrap: wrap; align-items: center;
+    block-size: 16px; overflow: hidden; white-space: nowrap;
+}
+.wew-menu[data-wew-layout="core"] .wew-row__part { flex: none; }
+.wew-menu[data-wew-layout="core"] .wew-row__part:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wew-menu[data-wew-layout="core"] .wew-row__part + .wew-row__part::before { content: "·"; margin-inline: .38em; opacity: .6; }
+.wew-menu[data-wew-layout="core"] .wew-row__language { gap: 4px; padding-inline: 0; }
+
+.wew-menu[data-wew-layout="core"] .wew-row__children { margin-block-start: 2px; }
+
+/* The translations line: Core's translate glyph in the icon column, the
+   label, then language chips — framed buttons when they edit, plain codes
+   when the translations only move or go along with a delete. */
+.wew-menu[data-wew-layout="core"] .wew-row__glyph {
+    grid-area: glyph; display: grid; place-items: center;
+    block-size: var(--wew-target); margin-block-start: 3px; color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="core"] .wew-row__companions {
+    margin-block-start: 3px; padding-top: 0; gap: 4px var(--wew-space-3);
+    font-size: var(--wew-font-size-xs); line-height: 16px;
+}
+.wew-menu[data-wew-layout="core"] .wew-row__companion-group { gap: 4px 6px; }
+.wew-menu[data-wew-layout="core"] .wew-row__chips { gap: 4px; }
+.wew-menu[data-wew-layout="core"] .wew-row__companions-label { margin-inline-end: 0; }
+
+.wew-menu[data-wew-layout="core"] .wew-companion {
+    --typo3-btn-padding-x: 0; --typo3-btn-padding-y: 0;
+    gap: 5px; min-block-size: var(--wew-target); padding-inline: 5px 7px;
+    border: 1px solid var(--wew-core-divider); border-radius: var(--wew-radius-sm);
+    background: var(--wew-surface); color: var(--wew-text);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--wew-text) 5%, transparent);
+    font-size: var(--wew-font-size-xs); font-weight: 600; letter-spacing: .04em; line-height: 1;
+    transition: border-color var(--wew-motion-fast) var(--wew-ease), background-color var(--wew-motion-fast) var(--wew-ease),
+        box-shadow var(--wew-motion-fast) var(--wew-ease), translate var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="core"] .wew-companion:hover {
+    border-color: var(--wew-border-strong); background: var(--wew-surface-hover);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--wew-text) 12%, transparent);
+}
+.wew-menu[data-wew-layout="core"] .wew-companion:active { translate: 0 1px; box-shadow: none; }
+.wew-menu[data-wew-layout="core"] .wew-companion--static {
+    border-color: transparent; background: transparent; box-shadow: none;
+    padding-inline: 2px 4px; color: inherit; cursor: default;
+}
+/* Translations that only follow along: the flag steps back with the code. */
+.wew-menu[data-wew-layout="core"] .wew-companion--static typo3-backend-icon { opacity: .6; }
+.wew-menu[data-wew-layout="core"] [data-wew-companion-kind="deleted"] .wew-companion__code {
+    text-decoration: line-through; text-decoration-thickness: 1px;
+}
+
+.wew-menu[data-wew-layout="core"] .wew-row[data-change="deleted"] .wew-row__title { text-decoration-thickness: 1px; }
+
+/* ---- Sections: a heading over a Core divider ---- */
+.wew-menu[data-wew-layout="core"] .wew-section { margin-top: 0; border-top: 1px solid var(--wew-core-divider); }
+.wew-menu[data-wew-layout="core"] .wew-section--in-view,
+.wew-menu[data-wew-layout="core"] .wew-group__head + .wew-section { border-top: 0; }
+.wew-menu[data-wew-layout="core"] .wew-section__head {
+    column-gap: var(--wew-gap);
+    padding: 6px var(--wew-space-2) 6px var(--wew-gutter);
+}
+/* The chevron fills the icon column; the title starts on the text column. */
+.wew-menu[data-wew-layout="core"] .wew-section__toggle {
+    --wew-section-line: 34px;
+    gap: var(--wew-section-line) var(--wew-gap); margin-inline-start: 0;
+    padding: 0 var(--wew-space-2) 0 0;
+    font-size: var(--wew-font-size-title); font-weight: 700;
+}
+.wew-menu[data-wew-layout="core"] .wew-section__chevron { inline-size: var(--wew-col); block-size: var(--wew-col); }
+.wew-menu[data-wew-layout="core"] .wew-section__count { font-variant-numeric: tabular-nums; }
+.wew-menu[data-wew-layout="core"] .wew-section__count--pill { color: var(--wew-text); }
+.wew-menu[data-wew-layout="core"] .wew-section__meta { margin-inline-start: calc(var(--wew-space-1) * -1); }
+.wew-menu[data-wew-layout="core"] .wew-section__help {
+    margin: -2px var(--wew-space-3) var(--wew-space-2) var(--wew-core-text);
+    max-inline-size: 46ch; text-wrap: pretty;
+}
+.wew-menu[data-wew-layout="core"] .wew-section__body > .wew-language:first-child { margin-top: 0; }
+.wew-menu[data-wew-layout="core"] .wew-section__body .wew-rows:last-child { padding-bottom: 2px; }
+
+/* ---- Cleanup: "Entwürfe ohne Änderung" ---- */
+.wew-menu[data-wew-layout="core"] .wew-cleanup__discard { gap: 5px; padding-inline: 8px 10px; }
+.wew-menu[data-wew-layout="core"] .wew-cleanup__discard:not(:disabled):hover { border-color: var(--wew-text-danger); }
+
+/* A cleanup line has the row's grid, without a checkbox: these drafts are
+   never published, only edited (chips) or discarded (↺). */
+.wew-menu[data-wew-layout="core"] .wew-copy {
+    position: relative;
+    grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas:
+        ".  icon  title title"
+        ".  .     meta  actions"
+        ".  .     chips chips";
+    align-items: start; column-gap: var(--wew-gap); row-gap: 0;
+    margin-inline: 0;
+    padding: 10px var(--wew-space-2) 8px var(--wew-gutter);
+    border-radius: 0;
+    transition: background-color var(--wew-motion-fast) var(--wew-ease);
+}
+.wew-menu[data-wew-layout="core"] .wew-copy:hover { background: var(--wew-surface-hover); }
+.wew-menu[data-wew-layout="core"] .wew-copy + .wew-copy::before {
+    content: ""; position: absolute; inset-block-start: 0; inset-inline: var(--wew-gutter) var(--wew-space-2);
+    block-size: 1px; background: var(--wew-core-divider); pointer-events: none;
+}
+.wew-menu[data-wew-layout="core"] .wew-copy:hover::before,
+.wew-menu[data-wew-layout="core"] .wew-copy:hover + .wew-copy::before { opacity: 0; }
+.wew-menu[data-wew-layout="core"] .wew-copy__title {
+    margin-block: calc((var(--wew-core-line) - var(--wew-core-title-line)) / 2);
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+    overflow: hidden; white-space: normal; text-overflow: clip;
+    overflow-wrap: anywhere; hyphens: auto; text-wrap: pretty;
+    font-weight: 600; line-height: var(--wew-core-title-line);
+}
+.wew-menu[data-wew-layout="core"] .wew-copy__actions {
+    grid-area: actions; align-self: center; display: inline-flex; align-items: center; margin-inline-end: -2px; color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="core"] .wew-copy__actions .wew-row__action--danger { margin-inline-start: 0; }
+.wew-menu[data-wew-layout="core"] .wew-copy__actions .wew-row__action--danger::before { content: none; }
+.wew-menu[data-wew-layout="core"] .wew-copy:hover .wew-copy__actions,
+.wew-menu[data-wew-layout="core"] .wew-copy:focus-within .wew-copy__actions { color: var(--wew-text); }
+.wew-menu[data-wew-layout="core"] .wew-copy__meta {
+    grid-area: meta; align-self: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--wew-font-size-xs); line-height: 16px; color: var(--wew-text-muted);
+}
+.wew-menu[data-wew-layout="core"] .wew-copy__chips { grid-area: chips; gap: 4px; margin-block-start: 4px; }
+
+/* ---- Loading: the skeleton draws the core row (title and badge, then meta and actions) ---- */
+.wew-menu[data-wew-layout="core"] .wew-skeleton { gap: 0; padding: var(--wew-space-1) 0; }
+.wew-menu[data-wew-layout="core"] .wew-skeleton__row {
+    position: relative;
+    grid-template-columns: var(--wew-col) var(--wew-col) minmax(0, 1fr) auto;
+    grid-template-areas: "check block title badge" ".  .  meta actions";
+    row-gap: 8px; padding: 12px var(--wew-space-2) 12px var(--wew-gutter);
+}
+.wew-menu[data-wew-layout="core"] .wew-skeleton__row + .wew-skeleton__row::before {
+    content: ""; position: absolute; inset-block-start: 0; inset-inline: var(--wew-gutter) var(--wew-space-2);
+    block-size: 1px; background: var(--wew-core-divider);
+}
+.wew-menu[data-wew-layout="core"] .wew-skeleton__meta { display: contents; }
+.wew-menu[data-wew-layout="core"] .wew-skeleton__badge { grid-area: badge; inline-size: 56px; }
+.wew-menu[data-wew-layout="core"] .wew-skeleton__line--short { grid-area: meta; inline-size: 48%; }
+.wew-menu[data-wew-layout="core"] .wew-skeleton__line--title { inline-size: 64%; }
+.wew-menu[data-wew-layout="core"] .wew-skeleton__actions { gap: 10px; padding-inline-end: 5px; }
+
+/* ---- Footer ---- */
+.wew-menu[data-wew-layout="core"] .wew-menu__foot { padding-block: 10px; }
+
+/* ---- Narrow: the actions take a line of their own, meta wraps ---- */
+@container wew-menu (max-width: 25rem) {
+    /* Three lines rather than losing the end of the sentence. */
+    .wew-menu[data-wew-layout="core"] .wew-menu__summary { -webkit-line-clamp: 3; line-clamp: 3; }
+    .wew-menu[data-wew-layout="core"] .wew-row {
+        grid-template-areas:
+            "select icon  head    head"
+            ".      .     meta    meta"
+            ".      .     kids    kids"
+            ".      glyph langs   langs"
+            ".      .     actions actions";
+    }
+    .wew-menu[data-wew-layout="core"] .wew-row__actions {
+        justify-self: start; margin-block-start: 4px; margin-inline-start: -5px;
+    }
+    /* Meta wraps here instead of losing parts: badges and parts flow as one
+       line of items, and a separator ends a line (like a comma) instead of
+       starting the next one. */
+    .wew-menu[data-wew-layout="core"] .wew-row__meta { flex-wrap: wrap; row-gap: 2px; padding-block: 1px; }
+    .wew-menu[data-wew-layout="core"] .wew-row__meta-text--parts { display: contents; }
+    .wew-menu[data-wew-layout="core"] .wew-row__part:first-child { flex: none; }
+    .wew-menu[data-wew-layout="core"] .wew-row__part + .wew-row__part::before { content: none; }
+    .wew-menu[data-wew-layout="core"] .wew-row__part:not(:last-child)::after { content: "·"; margin-inline-start: .45em; opacity: .6; }
+    /* The short hint repeats what the toggle's description says in full. */
+    .wew-menu[data-wew-layout="core"] .wew-section__meta { display: none; }
+    /* The section discard moves under the title, on the text column. */
+    .wew-menu[data-wew-layout="core"] .wew-section--cleanup .wew-cleanup__discard {
+        margin-inline-start: calc(var(--wew-col) + var(--wew-gap)); margin-block-end: var(--wew-space-1);
+    }
+}
+
+/* ---- Forced colours: dividers, ticks and the focus outline stay, the rail goes ---- */
+@media (forced-colors: active) {
+    .wew-menu[data-wew-layout="core"] .wew-row + .wew-row::before,
+    .wew-menu[data-wew-layout="core"] .wew-copy + .wew-copy::before,
+    .wew-menu[data-wew-layout="core"] .wew-row__action--danger::before { forced-color-adjust: none; background: CanvasText; }
+    .wew-menu[data-wew-layout="core"] .wew-row::after { display: none; }
+    .wew-menu[data-wew-layout="core"] .wew-companion { border-color: ButtonText; }
+    .wew-menu[data-wew-layout="core"] .wew-companion--static { border-style: none; }
+    /* Core's checkbox draws its tick as a white image on the accent colour;
+       forced colours paint the box Canvas and the tick vanishes. The native
+       checkbox follows the system colours. */
+    .wew-menu[data-wew-layout="core"] .form-check-input { appearance: auto; background-image: none; }
+    .wew-menu[data-wew-layout="core"] .wew-copy__discard:focus-visible,
+    .wew-menu[data-wew-layout="core"] .wew-cleanup__discard:focus-visible { outline-color: Highlight; }
+}
+
+/* ---- Reduced motion: no slide, no lift ---- */
+@media (prefers-reduced-motion: reduce) {
+    .wew-menu[data-wew-layout="core"] .wew-row::after,
+    .wew-menu[data-wew-layout="core"] .wew-row + .wew-row::before,
+    .wew-menu[data-wew-layout="core"] .wew-companion,
+    .wew-menu[data-wew-layout="core"] .wew-copy { transition: none; }
+    .wew-menu[data-wew-layout="core"] .wew-companion:active { translate: none; }
+}

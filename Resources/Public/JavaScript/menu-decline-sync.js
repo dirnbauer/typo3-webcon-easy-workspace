@@ -10,7 +10,13 @@ import { isKnownPreviewWindow } from '@webconsulting/webcon-easy-workspace/menu-
  * as top-window messages, and its responses (`wew:badge`) re-broadcast the
  * state to every preview.
  */
-export function onDeclineMessage(host, event) {
+function findDeclined(host, table, uid) {
+  return (host.items || []).find(
+    (i) => i.table === table && (i.workspaceUid === uid || i.liveUid === uid),
+  );
+}
+
+export async function onDeclineMessage(host, event) {
   const data = event.data;
   if (!data || (data.type !== 'wew-decline' && data.type !== 'wew-decline-state-request')) return;
   if (!isKnownPreviewWindow(host, event.source)) return;
@@ -28,10 +34,24 @@ export function onDeclineMessage(host, event) {
   const table = String(data.table || '');
   const uid = parseInt(data.uid, 10);
   if (!table || uid <= 0) return;
-  const known = host.items.find(
-    (i) => i.table === table && (i.workspaceUid === uid || i.liveUid === uid),
-  );
-  const item = known || {
+  // The list is only loaded while the dropdown is used and goes stale once
+  // it closes; the confirm must name the companions the server discards
+  // along and the dependents Core's discard takes with it (a translator's
+  // edits of a moved or deleted element's translations included), so the
+  // current list is asked for first (one request through BadgeSync, on a
+  // deliberate click — no polling). A record the list does not hold gets
+  // the plain confirm. A second click while it loads opens no second
+  // confirm.
+  if (host._declineBusy === true) return;
+  if (host.badge) {
+    host._declineBusy = true;
+    try {
+      await host._refreshList('decline');
+    } finally {
+      host._declineBusy = false;
+    }
+  }
+  const item = findDeclined(host, table, uid) || {
     table,
     workspaceUid: uid,
     liveUid: uid,

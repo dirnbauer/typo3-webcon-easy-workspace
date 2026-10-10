@@ -1,74 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { render } from 'lit';
 import { renderFooter } from '@webconsulting/webcon-easy-workspace/templates/footer.js';
-import { renderHeader, summaryText } from '@webconsulting/webcon-easy-workspace/templates/header.js';
+import { renderHeader } from '@webconsulting/webcon-easy-workspace/templates/header.js';
 import { renderGroup } from '@webconsulting/webcon-easy-workspace/templates/group.js';
 import { renderRow } from '@webconsulting/webcon-easy-workspace/templates/row.js';
+import { renderEmpty, renderLoading, renderNoContext } from '@webconsulting/webcon-easy-workspace/templates/states.js';
 import { groupRows } from '@webconsulting/webcon-easy-workspace/menu-toolbar-helpers.js';
-import { DEFAULT_CONFIG } from '@webconsulting/webcon-easy-workspace/menu-constants.js';
-
-const labels = {
-  'toolbar.title': 'Workspace',
-  'toolbar.count.none': 'Nothing pending',
-  'toolbar.count.workspace': '{count, plural, one {# pending in this workspace} other {# pending in this workspace}}',
-  'toolbar.summary.page': '{count, plural, one {# change on this page} other {# changes on this page}}',
-  'toolbar.summary.elsewhere': '{count, plural, one {# more elsewhere} other {# more elsewhere}}',
-  'toolbar.stage.label': 'Stage: {stage}',
-  'toolbar.selection.count': '{selected} of {total} selected',
-  'toolbar.languages.inView': '{language} · shown in this view',
-  'toolbar.languages.other': 'Other languages',
-  'toolbar.languages.otherHint': 'Not visible while the page is shown in {language}.',
-  'toolbar.languages.otherHintShort': 'Not shown in {language}',
-  'toolbar.languages.count': '{count, plural, one {# change} other {# changes}}',
-  'toolbar.languages.translations': 'Translations',
-  'toolbar.languages.changedCount': '{changed} of {total} changed',
-  'toolbar.section.unchanged': 'Without content change',
-  'toolbar.section.unchangedHint': 'Versioned along by TYPO3',
-  'toolbar.row.unchanged': 'Unchanged',
-  'toolbar.row.unchangedTitle': 'Versioned together with an edit elsewhere; content matches live.',
-  'toolbar.summary.unchanged': '{count, plural, one {# without content change} other {# without content change}}',
-  'toolbar.row.language': 'Language: {language}',
-  'toolbar.row.partOf': 'in {title}',
-  'toolbar.row.notInView': 'Only visible on the page in the {language} view',
-  'change.changed': 'Changed',
-  'change.new': 'New',
-};
-const languages = {
-  0: { uid: 0, title: 'English', flag: 'flags-us' },
-  1: { uid: 1, title: 'German', flag: 'flags-de' },
-};
-
-function host(items, selected = [], overrides = {}) {
-  return {
-    items,
-    languages,
-    viewLanguages: null,
-    selection: new Set(selected),
-    publishing: false,
-    splitOpen: false,
-    pageUid: 7,
-    newsUid: 0,
-    titleId: 'wew-title-test',
-    state: items.length > 0 ? 'loaded' : 'empty',
-    badgeCount: 0,
-    workspaceTitle: 'Staging',
-    stage: null,
-    contextRecord: { title: 'Start', path: '', iconIdentifier: 'apps-pagetree-page-default' },
-    _config: { ...DEFAULT_CONFIG, enableRevert: true, enablePreviewLink: true, moduleUrl: '#module', labels },
-    openSections: new Set(),
-    toggleSection(sectionId) {
-      if (this.openSections.has(sectionId)) this.openSections.delete(sectionId); else this.openSections.add(sectionId);
-    },
-    _highlightInIframe() {},
-    _clearIframeHighlight() {},
-    _previewDiscard() {},
-    ...overrides,
-  };
-}
-
-function changed(uid, extra = {}) {
-  return { table: 'tt_content', workspaceUid: uid, liveUid: uid, title: `Element ${uid}`, kindKey: 'modified', isChanged: true, editUrl: '#', historyUrl: '#', languageUid: 0, ...extra };
-}
+import { WebconEasyWorkspaceMenu } from '@webconsulting/webcon-easy-workspace/components/wew-toolbar-menu.js';
+import { change, companion, copy, GERMAN, host } from './fixtures/items.js';
 
 function mount(template) {
   const container = document.createElement('div');
@@ -76,203 +15,351 @@ function mount(template) {
   return container;
 }
 
-describe('footer template', () => {
-  it('draws the select-all checkbox as a Core .form-check with a label', () => {
-    const footer = mount(renderFooter(host([changed(1), changed(2)], ['tt_content:1'])));
-    const input = footer.querySelector('[data-wew-select-all]');
-
-    expect(input.closest('.form-check')).not.toBeNull();
-    expect(footer.querySelector(`label.form-check-label[for="${input.id}"]`)).not.toBeNull();
-    expect(input.indeterminate).toBe(true);
-    // Compact: the label shows n/m, the full sentence is the checkbox's name.
-    expect(footer.querySelector('[data-wew-selection-count]').textContent.trim()).toBe('1/2');
-    expect(input.getAttribute('aria-label')).toContain('1 of 2 selected');
-    expect(footer.querySelector('[data-wew-publish]').disabled).toBe(false);
-  });
-
-  it('leaves the selection controls out when there is nothing to select', () => {
-    const footer = mount(renderFooter(host([])));
-
-    expect(footer.querySelector('[data-wew-select-all]')).toBeNull();
-    expect(footer.querySelector('[data-wew-publish]')).toBeNull();
-    // The module link lives in the header, so the footer is one row.
-    expect(footer.querySelector('[data-wew-open-module]')).toBeNull();
-    expect(mount(renderHeader(host([]))).querySelector('[data-wew-open-module]')).not.toBeNull();
-  });
+const text = (node) => node?.textContent.replace(/\s+/g, ' ').trim();
+const hero = (extra = {}) => change(161266, {
+  title: 'Everything a TYPO3 client site needs',
+  companions: [companion(1), companion(2), companion(3)],
+  ...extra,
 });
 
 describe('row template', () => {
-  it('wraps the row checkbox in .form-check, which defines Core\'s checkbox tokens', () => {
-    const h = host([changed(1)], ['tt_content:1']);
-    const list = mount(renderRow(h, h.items[0], 0));
-    const checkbox = list.querySelector('[data-wew-row-check]');
+  it('gives the title its own line and starts line 2 with the change badge', () => {
+    const h = host([hero({ isHidden: true })]);
+    const row = mount(renderRow(h, h.items[0])).querySelector('[data-wew-row]');
 
-    expect(checkbox.closest('.form-check')).not.toBeNull();
-    expect(checkbox.checked).toBe(true);
+    expect(text(row.querySelector('.wew-row__title'))).toBe('Everything a TYPO3 client site needs');
+    expect(row.querySelector('.wew-row__title .badge')).toBeNull();
+    const meta = row.querySelector('.wew-row__meta');
+    expect(meta.firstElementChild.hasAttribute('data-wew-change-badge')).toBe(true);
+    expect(meta.firstElementChild.className).toContain('badge-info');
+    expect(text(meta.firstElementChild)).toBe('Geändert');
+    expect(text(meta.children[1])).toBe('Verborgen');
   });
 
-  it('keeps the action buttons out of the tab order until their row is active', () => {
-    const h = host([changed(1)]);
-    const list = mount(renderRow(h, h.items[0], 0));
-    const actions = list.querySelectorAll('[data-wew-action]');
+  it('tags the title with its language and describes the checkbox with the meta and translation lines', () => {
+    const h = host([hero(), change(5, { languageUid: 1 })], { viewLanguages: null });
+    const row = mount(renderRow(h, h.items[0])).querySelector('[data-wew-row]');
+    const checkbox = row.querySelector('[data-wew-row-check]');
 
-    expect(actions.length).toBeGreaterThan(0);
+    expect(row.querySelector('.wew-row__title').getAttribute('lang')).toBe('en-US');
+    expect(checkbox.getAttribute('aria-describedby')).toBe('wew-row-tt_content-161266-meta wew-row-tt_content-161266-companions');
+    expect(checkbox.hasAttribute('data-wew-stop')).toBe(true);
+    expect(checkbox.getAttribute('tabindex')).toBe('-1');
+    expect(checkbox.closest('.form-check')).not.toBeNull();
+    expect(row.querySelector('#wew-row-tt_content-161266-meta')).not.toBeNull();
+
+    const german = mount(renderRow(h, h.items[1])).querySelector('[data-wew-row]');
+    expect(german.querySelector('[data-wew-row-check]').getAttribute('aria-describedby')).toBe('wew-row-tt_content-5-meta');
+    // A view of several languages: the row says which one it is, as a code.
+    expect(text(german.querySelector('[data-wew-row-language] [aria-hidden="true"]:not(typo3-backend-icon)'))).toBe('DE');
+    expect(german.querySelector('.wew-row__title').getAttribute('lang')).toBe('de-AT');
+  });
+
+  it('orders the actions edit, compare, locate, discard — discard last', () => {
+    const h = host([hero({ locateTable: 'tt_content', locateLiveUid: 158035 })]);
+    const actions = Array.from(mount(renderRow(h, h.items[0])).querySelectorAll('[data-wew-action]'));
+
+    expect(actions.map((action) => action.getAttribute('data-wew-action'))).toEqual(['edit', 'diff', 'preview', 'discard']);
+    expect(actions.at(-1).className).toContain('wew-row__action--danger');
     for (const action of actions) {
       expect(action.getAttribute('tabindex')).toBe('-1');
+      expect(action.className).toContain('btn-borderless');
       expect(action.getAttribute('aria-label')).not.toBe('');
     }
   });
-});
 
-describe('row template: languages', () => {
-  it('marks a row of a language the module does not show and offers no preview for it', () => {
-    const h = host([changed(1, { languageUid: 1 })], [], { viewLanguages: [0] });
-    const list = mount(renderRow(h, h.items[0], 0));
-    const row = list.querySelector('[data-wew-row]');
+  it('keeps discard visible but disabled when reverting is switched off', () => {
+    const h = host([hero()], { config: { enableRevert: false } });
+    const discard = mount(renderRow(h, h.items[0])).querySelector('[data-wew-action="discard"]');
+    expect(discard.disabled).toBe(true);
+    expect(discard.getAttribute('title')).toBe('Verwerfen ist per Konfiguration deaktiviert (enableRevert = 0)');
+  });
+
+  it('folds the translations TYPO3 copied along into one line of chips', () => {
+    const h = host([hero()]);
+    const line = mount(renderRow(h, h.items[0])).querySelector('[data-wew-companions]');
+
+    expect(text(line.querySelector('.wew-row__companions-label'))).toBe('Übersetzungen unverändert:');
+    const chips = Array.from(line.querySelectorAll('button[data-wew-companion]'));
+    expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
+      'DE: Übersetzung „German“ bearbeiten',
+      'ZH: Übersetzung „Chinese (Simplified)“ bearbeiten',
+      'HU: Übersetzung „Hungarian“ bearbeiten',
+    ]);
+    expect(chips.map((chip) => text(chip))).toEqual(['DE', 'ZH', 'HU']);
+    expect(chips.every((chip) => chip.getAttribute('tabindex') === '-1')).toBe(true);
+    expect(text(line.querySelector('.visually-hidden'))).toContain('Beim Speichern legt TYPO3 auch Arbeitskopien');
+  });
+
+  it('names a shared field taken over, and shows moved or deleted translations as plain codes', () => {
+    const h = host([
+      hero({ companions: [companion(1, 'synced', ['Veröffentlichungsdatum']), companion(2, 'synced', ['Veröffentlichungsdatum'])] }),
+      hero({ workspaceUid: 7, kindKey: 'delete', companions: [companion(1, 'deleted'), companion(3, 'deleted')] }),
+      hero({ workspaceUid: 8, kindKey: 'move', companions: [companion(1, 'moved')] }),
+    ]);
+    const synced = mount(renderRow(h, h.items[0])).querySelector('[data-wew-companions]');
+    expect(text(synced.querySelector('.wew-row__companions-label'))).toBe('Gilt auch für die Übersetzungen (Veröffentlichungsdatum):');
+    expect(synced.querySelectorAll('button[data-wew-companion]')).toHaveLength(2);
+
+    const deleted = mount(renderRow(h, h.items[1]));
+    expect(text(deleted.querySelector('.wew-row__companions-label'))).toBe('Übersetzungen werden mitgelöscht:');
+    expect(deleted.querySelectorAll('button[data-wew-companion]')).toHaveLength(0);
+    expect(Array.from(deleted.querySelectorAll('.wew-companion--static')).map(text)).toEqual(['DE', 'HU']);
+    expect(deleted.querySelector('[data-wew-row]').getAttribute('data-change')).toBe('deleted');
+
+    expect(text(mount(renderRow(h, h.items[2])).querySelector('.wew-row__companions-label'))).toBe('Übersetzungen werden mitverschoben:');
+  });
+
+  it('marks a row the view does not show and offers no preview for it', () => {
+    const h = host([change(1, { languageUid: 1, locateTable: 'tt_content', locateLiveUid: 3 })]);
+    const row = mount(renderRow(h, h.items[0])).querySelector('[data-wew-row]');
 
     expect(row.getAttribute('data-wew-in-view')).toBe('0');
-    expect(row.classList.contains('wew-row--other-language')).toBe(true);
-    expect(row.getAttribute('title')).toBe('Only visible on the page in the German view');
-    // Its language header names the language; the row itself carries no chip.
-    expect(list.querySelector('[data-wew-row-language]')).toBeNull();
-    expect(list.querySelector('[data-wew-action="preview"]')).toBeNull();
-    // Still selectable and publishable.
-    expect(list.querySelector('[data-wew-row-check]')).not.toBeNull();
+    expect(row.getAttribute('title')).toBe('Auf der Seite nur in der Sprachansicht German zu sehen');
+    expect(row.querySelector('[data-wew-row-language]')).toBeNull();
+    expect(row.querySelector('[data-wew-action="preview"]')).toBeNull();
+    expect(row.querySelector('[data-wew-row-check]')).not.toBeNull();
   });
 
-  it('shows the language chip only where it tells the editor something', () => {
-    const inView = host([changed(1, { languageUid: 1 })], [], { viewLanguages: [1] });
-    expect(mount(renderRow(inView, inView.items[0], 0)).querySelector('[data-wew-row-language]')).toBeNull();
-
-    const noView = host([changed(1, { languageUid: 1 }), changed(2, { languageUid: 0 })]);
-    expect(mount(renderRow(noView, noView.items[0], 0)).querySelector('[data-wew-row-language]')).not.toBeNull();
-    expect(mount(renderRow(noView, noView.items[1], 0)).querySelector('[data-wew-row-language]')).toBeNull();
-  });
-
-  it('uses Core badges for the change type and names the element a collection item belongs to', () => {
-    const h = host([changed(1, { kindKey: 'new', table: 'tx_easyws_item', parent: { table: 'tt_content', uid: 5, title: 'Three steps' } })]);
-    const list = mount(renderRow(h, h.items[0], 0));
-
-    expect(list.querySelector('[data-wew-change-badge]').className).toContain('badge-success');
-    expect(list.querySelector('.wew-row__meta').textContent).toContain('in Three steps');
-    for (const action of list.querySelectorAll('[data-wew-action]')) {
-      expect(action.className).toContain('btn-borderless');
-    }
-  });
-});
-
-describe('row template: related changes', () => {
-  it('names them on one line when the user setting asks for them, the full list on hover', () => {
-    const item = changed(1, { childChanges: [
-      { table: 'tx_item', title: '3 days', kindKey: 'modified' },
+  it('names related changes on one line when the user setting asks for them', () => {
+    const item = change(1, { childChanges: [
+      { table: 'tx_item', title: '3 Tage', kindKey: 'modified', contentChanged: true },
       { table: 'sys_file_reference', title: 'hero.jpg', kindKey: 'new' },
+      { table: 'sys_file_reference', title: 'copy.jpg', kindKey: 'modified', contentChanged: false },
     ] });
-    const on = host([item], [], { _config: { ...DEFAULT_CONFIG, showSubelementsInToolbar: true, labels: { ...labels, 'toolbar.row.children': '{count, plural, one {# related change} other {# related changes}}' } } });
-    const children = mount(renderRow(on, item, 0)).querySelector('[data-wew-children]');
-
-    expect(children.textContent.replace(/\s+/g, ' ').trim()).toBe('2 related changes: 3 days · hero.jpg (New)');
-    expect(children.getAttribute('title')).toBe('3 days: Changed\nhero.jpg: New');
-
-    const off = host([item]);
-    expect(mount(renderRow(off, item, 0)).querySelector('[data-wew-children]')).toBeNull();
-  });
-
-  it('leaves out related records TYPO3 only versioned along', () => {
-    const item = changed(1, { childChanges: [
-      { table: 'tx_item', title: '3 days', kindKey: 'modified', contentChanged: true },
-      { table: 'sys_file_reference', title: 'hero.jpg', kindKey: 'modified', contentChanged: false },
-    ] });
-    const on = host([item], [], { _config: { ...DEFAULT_CONFIG, showSubelementsInToolbar: true, labels: { ...labels, 'toolbar.row.children': '{count, plural, one {# related change} other {# related changes}}' } } });
-    expect(mount(renderRow(on, item, 0)).querySelector('[data-wew-children]').textContent.replace(/\s+/g, ' ').trim())
-      .toBe('1 related change: 3 days');
-
-    const onlyAlong = changed(2, { childChanges: [{ table: 'sys_file_reference', title: 'hero.jpg', kindKey: 'modified', contentChanged: false }] });
-    expect(mount(renderRow(on, onlyAlong, 0)).querySelector('[data-wew-children]')).toBeNull();
+    const on = host([item], { config: { showSubelementsInToolbar: true } });
+    const children = mount(renderRow(on, item)).querySelector('[data-wew-children]');
+    expect(text(children)).toBe('2 zugehörige Änderungen: 3 Tage · hero.jpg (Neu)');
+    expect(children.getAttribute('title')).toBe('3 Tage: Geändert\nhero.jpg: Neu');
+    expect(mount(renderRow(host([item]), item)).querySelector('[data-wew-children]')).toBeNull();
   });
 });
 
 describe('group template', () => {
-  it('renders the current view first and folds the other languages under one header', () => {
-    const h = host([changed(1, { languageUid: 0 }), changed(2, { languageUid: 1 }), changed(3, { languageUid: 0 })], [], { viewLanguages: [0] });
-    let list = mount(renderGroup(h, groupRows(h)[0], 0));
+  it('heads a group with an h3 and shows a count only when there are two groups', () => {
+    const h = host([hero(), change(2, { table: 'sys_file_metadata' })]);
+    const [context, files] = groupRows(h);
+    const single = mount(renderGroup(h, context, { groupCount: 1 }));
+    expect(text(single.querySelector('h3.wew-group__title'))).toBe('Product');
+    expect(single.querySelector('section.wew-group').getAttribute('aria-labelledby')).toBe(single.querySelector('h3').id);
+    expect(single.querySelector('.wew-group__count')).toBeNull();
 
-    const sections = Array.from(list.querySelectorAll('[data-wew-section]')).map((section) => section.getAttribute('data-wew-section'));
-    expect(sections).toEqual(['in-view', 'other-languages']);
-    const toggle = list.querySelector('[data-wew-section="other-languages"] button');
-    // Folded by default: in the default-language view they are its translations.
+    const counted = mount(renderGroup(h, context, { groupCount: 2 }));
+    expect(text(counted.querySelector('.wew-group__count'))).toBe('1');
+    expect(counted.querySelector('.wew-group__count').getAttribute('title')).toBe('1 Änderung');
+    expect(text(mount(renderGroup(h, files, { groupCount: 2 })).querySelector('h3'))).toBe('Dateien in diesem Workspace');
+  });
+
+  it('folds the other languages under a heading with a tri-state checkbox', () => {
+    const h = host([hero(), change(2, { languageUid: 1 }), change(3, { languageUid: 2 })], { selected: ['tt_content:161266', 'tt_content:2'] });
+    let list = mount(renderGroup(h, groupRows(h)[0]));
+
+    expect(Array.from(list.querySelectorAll('[data-wew-section]')).map((node) => node.getAttribute('data-wew-section'))).toEqual(['in-view', 'other-languages']);
+    expect(text(list.querySelector('h4.wew-section--in-view'))).toBe('English · in dieser Ansicht 1');
+    const toggle = list.querySelector('[data-wew-section-toggle]');
+    expect(toggle.closest('h4')).not.toBeNull();
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.querySelector('.wew-section__title').textContent.trim()).toBe('Translations');
-    expect(toggle.querySelector('.wew-section__count').textContent.trim()).toBe('1 of 1 changed');
-    // One short line on screen, the full sentence on hover and for screen readers.
-    expect(toggle.querySelector('.wew-section__hint').textContent.trim()).toBe('Not shown in English');
-    expect(toggle.getAttribute('title')).toBe('Not visible while the page is shown in English.');
-    expect(list.querySelector('[data-wew-language="1"]')).toBeNull();
-    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual(['tt_content:1', 'tt_content:3']);
+    expect(toggle.hasAttribute('data-wew-stop')).toBe(true);
+    expect(text(toggle.querySelector('.wew-section__title'))).toBe('Übersetzungen');
+    expect(text(toggle.querySelector('.wew-section__count'))).toBe('2 Änderungen');
+    expect(text(toggle.querySelector('.wew-section__meta'))).toBe('in English nicht sichtbar');
+    const check = list.querySelector('[data-wew-section-check]');
+    expect(check.indeterminate).toBe(true);
+    expect(check.checked).toBe(false);
+    expect(check.getAttribute('aria-label')).toBe('Alle Änderungen in „Übersetzungen“ auswählen');
+    expect(check.getAttribute('title')).toBe('1 von 2 ausgewählt');
+    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual(['tt_content:161266']);
 
     toggle.click();
-    list = mount(renderGroup(h, groupRows(h)[0], 0));
-    expect(list.querySelector('[data-wew-section="other-languages"] button').getAttribute('aria-expanded')).toBe('true');
-    expect(list.querySelector('[data-wew-language="1"]').textContent).toContain('German');
+    list = mount(renderGroup(h, groupRows(h)[0]));
+    const opened = list.querySelector('[data-wew-section-toggle]');
+    expect(opened.getAttribute('aria-expanded')).toBe('true');
+    expect(list.querySelector(`#${opened.getAttribute('aria-controls')}`)).not.toBeNull();
+    expect(Array.from(list.querySelectorAll('h5.wew-language')).map(text)).toEqual(['German 1', 'Chinese (Simplified) 1']);
     expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual([
-      'tt_content:1', 'tt_content:3', 'tt_content:2',
+      'tt_content:161266', 'tt_content:2', 'tt_content:3',
     ]);
-    // Only the first row is tabbable; the others join the roving tabindex.
-    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
   });
 
-  it('folds the versions TYPO3 only made along with an edit, and marks them', () => {
-    const h = host([
-      changed(1),
-      changed(2, { contentChanged: false }),
-      changed(3, { languageUid: 1, contentChanged: false }),
-      changed(4, { languageUid: 1 }),
-    ], [], { viewLanguages: [0] });
-    let list = mount(renderGroup(h, groupRows(h)[0], 0));
-
-    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual(['tt_content:1']);
-    // The group counts the edits; its title gives the whole picture.
-    expect(list.querySelector('.wew-group__count').textContent.trim()).toBe('2');
-    expect(list.querySelector('.wew-group__count').getAttribute('title')).toBe('2 of 4 changed');
-    const unchanged = list.querySelector('[data-wew-section="unchanged"] button');
-    expect(unchanged.querySelector('.wew-section__title').textContent.trim()).toBe('Without content change');
-    expect(unchanged.querySelector('.wew-section__count').textContent.trim()).toBe('1');
-    expect(list.querySelector('[data-wew-section="other-languages"] .wew-section__count').textContent.trim()).toBe('1 of 2 changed');
-
-    unchanged.click();
-    list.querySelector('[data-wew-section="other-languages"] button').click();
-    list = mount(renderGroup(h, groupRows(h)[0], 0));
-    // Within a language the edited rows come first.
-    expect(Array.from(list.querySelectorAll('[data-wew-row]')).map((row) => row.getAttribute('data-wew-key'))).toEqual([
-      'tt_content:1', 'tt_content:2', 'tt_content:4', 'tt_content:3',
-    ]);
-    const quiet = list.querySelector('[data-wew-key="tt_content:2"]');
-    expect(quiet.classList.contains('wew-row--no-content-change')).toBe(true);
-    expect(quiet.querySelector('[data-wew-change-badge]').textContent.trim()).toBe('Unchanged');
-    expect(quiet.querySelector('[data-wew-change-badge]').getAttribute('title')).toBe('Versioned together with an edit elsewhere; content matches live.');
-    // Still a version: it can be selected, published and discarded.
-    expect(quiet.querySelector('[data-wew-row-check]')).not.toBeNull();
+  it('opens the other languages by itself when nothing of the page is in view', () => {
+    const h = host([change(2, { languageUid: 1 })]);
+    const list = mount(renderGroup(h, groupRows(h)[0]));
+    expect(list.querySelector('[data-wew-section="in-view"]')).toBeNull();
+    expect(list.querySelector('[data-wew-section-toggle]').getAttribute('aria-expanded')).toBe('true');
+    expect(list.querySelector('[data-wew-section-check]').checked).toBe(true);
   });
 
-  it('needs no section headers when every row is in view', () => {
-    const h = host([changed(1), changed(2)], [], { viewLanguages: [0] });
-    const list = mount(renderGroup(h, groupRows(h)[0], 0));
-    expect(list.querySelector('[data-wew-section]')).toBeNull();
+  it('lists leftover copies in a cleanup section with one discard action', () => {
+    const h = host([hero(), copy(9, { title: 'What is in the package', companions: [companion(1), companion(2)] })]);
+    let list = mount(renderGroup(h, groupRows(h)[0]));
+    const cleanup = list.querySelector('[data-wew-cleanup]');
+    // Folded while the page has edits.
+    expect(cleanup.querySelector('[data-wew-section-toggle]').getAttribute('aria-expanded')).toBe('false');
+    expect(text(cleanup.querySelector('.wew-section__title'))).toBe('Unveränderte Kopien');
+    expect(cleanup.querySelector('.wew-section__count').getAttribute('title')).toBe('3 unveränderte Kopien');
+    const discard = cleanup.querySelector('[data-wew-discard-copies]');
+    expect(text(discard)).toBe('Kopien verwerfen');
+    expect(discard.disabled).toBe(false);
+    expect(discard.getAttribute('tabindex')).toBe('-1');
+    expect(list.querySelector(`#${discard.getAttribute('aria-describedby')}`).className).toContain('visually-hidden');
+    expect(cleanup.querySelector('[data-wew-copy-group]')).toBeNull();
+
+    const disabled = host(h.items, { config: { enableRevert: false } });
+    expect(mount(renderGroup(disabled, groupRows(disabled)[0])).querySelector('[data-wew-discard-copies]').disabled).toBe(true);
+
+    const busy = host(h.items, { cleaning: true });
+    expect(text(mount(renderGroup(busy, groupRows(busy)[0])).querySelector('[data-wew-discard-copies]'))).toBe('Wird verworfen…');
+
+    cleanup.querySelector('[data-wew-section-toggle]').click();
+    list = mount(renderGroup(h, groupRows(h)[0]));
+    const line = list.querySelector('[data-wew-copy-group]');
+    expect(text(line.querySelector('.wew-copy__title'))).toBe('What is in the package');
+    const chips = Array.from(line.querySelectorAll('[data-wew-companion]'));
+    expect(chips.map(text)).toEqual(['EN', 'DE', 'ZH']);
+    expect(chips.map((chip) => chip.hasAttribute('data-wew-stop'))).toEqual([true, false, false]);
+    expect(chips[1].getAttribute('aria-label')).toBe('DE: Kopie „German“ bearbeiten');
+  });
+
+  it('opens the cleanup section when copies are all the page has', () => {
+    const h = host([copy(9)]);
+    const list = mount(renderGroup(h, groupRows(h)[0]));
+    expect(list.querySelector('[data-wew-cleanup] [data-wew-section-toggle]').getAttribute('aria-expanded')).toBe('true');
+    expect(text(list.querySelector('.wew-section__help'))).toBe('Von TYPO3 angelegt, Inhalt wie live. Verwerfen ändert nichts an der Website.');
+    expect(list.querySelector('.wew-section__help').className).not.toContain('visually-hidden');
+    expect(list.querySelector('[data-wew-row]')).toBeNull();
+  });
+});
+
+describe('footer template', () => {
+  it('shows select-all from two edits on: "Alle (n)" or "x von n"', () => {
+    const one = mount(renderFooter(host([hero()])));
+    expect(one.querySelector('[data-wew-select-all]')).toBeNull();
+    expect(text(one.querySelector('[data-wew-publish]'))).toBe('1 Änderung veröffentlichen');
+
+    const all = mount(renderFooter(host([hero(), change(2)])));
+    const input = all.querySelector('[data-wew-select-all]');
+    expect(input.closest('.form-check')).not.toBeNull();
+    expect(all.querySelector(`label.form-check-label[for="${input.id}"]`)).not.toBeNull();
+    expect(text(all.querySelector('[data-wew-selection-count]'))).toBe('Alle (2)');
+    expect(input.checked).toBe(true);
+
+    const some = mount(renderFooter(host([hero(), change(2), change(3)], { selected: ['tt_content:2'] })));
+    expect(text(some.querySelector('[data-wew-selection-count]'))).toBe('1 von 3');
+    expect(some.querySelector('[data-wew-select-all]').indeterminate).toBe(true);
+    expect(some.querySelector('[data-wew-select-all]').getAttribute('aria-label')).toBe('Alle Änderungen auswählen (1 von 3 ausgewählt)');
+    expect(text(some.querySelector('[data-wew-publish]'))).toBe('1 Änderung veröffentlichen');
+  });
+
+  it('says why publishing is disabled when nothing is selected', () => {
+    const footer = mount(renderFooter(host([hero(), change(2)], { selected: [] })));
+    const publish = footer.querySelector('[data-wew-publish]');
+    expect(publish.disabled).toBe(true);
+    expect(text(publish)).toBe('Live veröffentlichen');
+    expect(text(footer.querySelector(`#${publish.getAttribute('aria-describedby')}`))).toBe('Wählen Sie mindestens eine Änderung aus.');
+  });
+
+  it('has a status region and leaves the selection out when there is nothing to publish', () => {
+    const footer = mount(renderFooter(host([copy(1)], { statusMessage: 'Liste aktualisiert' })));
+    expect(footer.querySelector('[data-wew-select-all]')).toBeNull();
+    expect(footer.querySelector('[data-wew-publish]')).toBeNull();
+    expect(footer.querySelector('[data-wew-preview-open]').getAttribute('aria-label')).toBe('Vorschau');
+    const status = footer.querySelector('[data-wew-status]');
+    expect(status.getAttribute('role')).toBe('status');
+    expect(text(status)).toBe('Liste aktualisiert');
   });
 });
 
 describe('header template', () => {
-  it('names the workspace and sums up the numbers in one sentence', () => {
-    const h = host([changed(1), changed(2)], [], { badgeCount: 5, stage: { id: 0, label: 'Editing' } });
+  it('names the workspace, its stage with a hidden prefix, and the numbers without a live region', () => {
+    const h = host([hero(), copy(2)], { badgeCount: 4 });
     const header = mount(renderHeader(h));
 
-    expect(header.querySelector('.wew-menu__title').textContent.trim()).toBe('Staging');
-    expect(header.querySelector('[data-wew-count-chip]').textContent.trim()).toBe('2 changes on this page · 3 more elsewhere');
-    const withUnchanged = host([changed(1), changed(2, { contentChanged: false })], [], { badgeCount: 5 });
-    expect(mount(renderHeader(withUnchanged)).querySelector('[data-wew-count-chip]').textContent.trim())
-      .toBe('1 change on this page · 1 without content change · 3 more elsewhere');
-    expect(header.querySelector('[data-wew-stage]').textContent.trim()).toBe('Editing');
-    expect(header.querySelector('[data-wew-stage]').getAttribute('aria-label')).toBe('Stage: Editing');
-    expect(summaryText(host([]), 0, 0)).toBe('Nothing pending');
-    expect(summaryText(host([], [], { state: 'no-context' }), 0, 4)).toBe('4 pending in this workspace');
+    expect(text(header.querySelector('.wew-menu__title'))).toBe('AI Review Test');
+    const stage = header.querySelector('[data-wew-stage]');
+    expect(text(stage)).toBe('Stufe: Bearbeitung');
+    expect(text(stage.querySelector('.visually-hidden'))).toBe('Stufe:');
+    expect(stage.hasAttribute('aria-label')).toBe(false);
+    const summary = header.querySelector('[data-wew-count-chip]');
+    expect(summary.hasAttribute('aria-live')).toBe(false);
+    expect(summary.id).toBe('wew-summary-test');
+    expect(text(summary)).toBe('1 Änderung auf dieser Seite · 1 unveränderte Kopie · 3 weitere im Workspace');
+    expect(header.querySelector('[data-wew-open-module]')).not.toBeNull();
+  });
+
+  it('hides the summary line on error', () => {
+    const header = mount(renderHeader(host([], { state: 'error' })));
+    expect(header.querySelector('[data-wew-count-chip]').hidden).toBe(true);
+  });
+});
+
+describe('state templates', () => {
+  it('offers the module from the empty state when changes wait elsewhere', () => {
+    const empty = mount(renderEmpty(host([], { badgeCount: 3 })));
+    const title = empty.querySelector('[data-wew-empty-title]');
+    expect(title.tagName).toBe('H3');
+    expect(title.getAttribute('tabindex')).toBe('-1');
+    expect(text(empty.querySelector('[data-wew-empty-elsewhere]'))).toBe('3 Änderungen an anderer Stelle ansehen');
+    expect(mount(renderEmpty(host([], { badgeCount: 0 }))).querySelector('[data-wew-empty-elsewhere]')).toBeNull();
+  });
+
+  it('draws the skeleton on the row grid and gives the no-context state a module button', () => {
+    const loading = mount(renderLoading(host()));
+    expect(loading.querySelector('[data-wew-loading]').getAttribute('aria-busy')).toBe('true');
+    expect(loading.querySelectorAll('.wew-skeleton__row')).toHaveLength(3);
+    expect(loading.querySelectorAll('.wew-skeleton__badge')).toHaveLength(3);
+    expect(loading.querySelectorAll('.wew-skeleton__actions > span')).toHaveLength(9);
+    expect(text(mount(renderNoContext(host())).querySelector('[data-wew-no-context-module]'))).toBe('Modul öffnen');
+  });
+});
+
+describe('discard confirmation', () => {
+  it('names the translations discarded along and the new translations removed with a new element', () => {
+    const h = host();
+    const content = WebconEasyWorkspaceMenu.prototype.discardConfirmContent.call(h, hero({
+      kindKey: 'new',
+      companions: [companion(2), companion(1, 'synced', ['Spalte'])],
+      dependents: [{ table: 'tt_content', workspaceUid: 9, languageUid: 3 }],
+    }));
+    const paragraphs = Array.from(content.querySelectorAll('p')).map((paragraph) => paragraph.textContent);
+    expect(paragraphs).toHaveLength(4);
+    expect(paragraphs[1]).toBe('Die unveränderten Übersetzungskopien (Chinese (Simplified)) werden mit verworfen. Die veröffentlichten Übersetzungen bleiben, wie sie sind.');
+    expect(paragraphs[2]).toBe('Die Übersetzungen (German) behalten ihre veröffentlichten Werte.');
+    expect(paragraphs[3]).toBe('Neue Übersetzungen dieses Elements werden ebenfalls entfernt: Hungarian.');
+    expect(content.querySelectorAll('*')).toHaveLength(4);
+  });
+
+  it('names the translations Core discards with a move, their own edits included, apart from new ones', () => {
+    const h = host();
+    const content = WebconEasyWorkspaceMenu.prototype.discardConfirmContent.call(h, hero({
+      kindKey: 'move',
+      companions: [companion(2, 'moved')],
+      dependents: [
+        { table: 'tt_content', workspaceUid: 12, languageUid: 3, edited: true },
+        { table: 'tt_content', workspaceUid: 11, languageUid: 1, edited: true },
+        { table: 'tx_easyws_item', workspaceUid: 13, languageUid: 1, edited: true },
+      ],
+    }));
+    const paragraphs = Array.from(content.querySelectorAll('p')).map((paragraph) => paragraph.textContent);
+
+    expect(paragraphs).toHaveLength(3);
+    expect(paragraphs[0]).toBe(GERMAN['discard.modal.message.move'].replace('{title}', 'Everything a TYPO3 client site needs').replace('{table}', 'Seiteninhalt'));
+    expect(paragraphs[1]).toBe('Auch die Übersetzungen (Chinese (Simplified)) bleiben an ihrer Stelle.');
+    expect(paragraphs[2]).toBe('TYPO3 verwirft dabei auch diese Übersetzungen, samt ihren eigenen Änderungen: German, Hungarian.');
+  });
+
+  it('falls back to the plain text where the payload does not know the dependents', () => {
+    const h = host();
+    const plain = WebconEasyWorkspaceMenu.prototype.discardConfirmContent.call(h, { table: 'tt_content', workspaceUid: 7, liveUid: 7, title: 'tt_content #7', tableLabel: 'Seiteninhalt', isChanged: true });
+    expect(plain.querySelectorAll('p')).toHaveLength(1);
+
+    // A dependent of an earlier payload is a new translation.
+    const earlier = WebconEasyWorkspaceMenu.prototype.discardConfirmContent.call(h, hero({
+      kindKey: 'new',
+      companions: [],
+      dependents: [{ table: 'tt_content', workspaceUid: 9, languageUid: 1 }],
+    }));
+    expect(Array.from(earlier.querySelectorAll('p'), (paragraph) => paragraph.textContent).slice(1)).toEqual([
+      'Neue Übersetzungen dieses Elements werden ebenfalls entfernt: German.',
+    ]);
   });
 });

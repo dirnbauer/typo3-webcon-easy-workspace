@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webconsulting\WebconEasyWorkspace\Configuration;
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use Webconsulting\WebconEasyWorkspace\Enum\ToolbarLayout;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
@@ -26,6 +27,8 @@ final readonly class ConfigurationProvider
         'userEnabledDefault' => true,
         'showSubelementsInToolbar' => false,
         'showSubelementsInModule' => true,
+        // Default for the personal dropdown layout (see ToolbarLayout)
+        'layout' => 'clarity',
         // Header
         'enableWorkspaceChip' => true,
         'enablePreviewLink' => true,
@@ -60,6 +63,7 @@ final readonly class ConfigurationProvider
      *     userEnabled: bool,
      *     showSubelementsInToolbar: bool,
      *     showSubelementsInModule: bool,
+     *     layout: string,
      *     enableWorkspaceChip: bool,
      *     enablePreviewLink: bool,
      *     enableThumbnails: bool,
@@ -96,6 +100,7 @@ final readonly class ConfigurationProvider
             'userEnabled' => $userEnabled,
             'showSubelementsInToolbar' => $this->getUserSettingBool('webconEasyWorkspaceShowSubelementsToolbar', $this->toBool($merged['showSubelementsInToolbar'])),
             'showSubelementsInModule' => $this->getUserSettingBool('webconEasyWorkspaceShowSubelementsModule', $this->toBool($merged['showSubelementsInModule'])),
+            'layout' => $this->layout($merged['layout']),
             'enableWorkspaceChip' => $this->toBool($merged['enableWorkspaceChip']),
             'enablePreviewLink' => $this->toBool($merged['enablePreviewLink']),
             'enableThumbnails' => $this->toBool($merged['enableThumbnails']),
@@ -144,6 +149,27 @@ final readonly class ConfigurationProvider
             return [];
         }
         return Value::stringKeyArray($backendUser->getTSConfig());
+    }
+
+    /**
+     * The editor's own choice in User Settings wins over the TSconfig
+     * default. A value no layout answers to (a typo, a layout of a later
+     * release) is skipped: the TSconfig default, then the default layout.
+     */
+    private function layout(mixed $tsConfigDefault): string
+    {
+        $userSettings = $this->accessGuard->user()?->getUserSettings();
+        $choice = $userSettings !== null && $userSettings->has('webconEasyWorkspaceLayout')
+            ? $userSettings->get('webconEasyWorkspaceLayout')
+            : null;
+        foreach ([$choice, $tsConfigDefault] as $value) {
+            $layout = ToolbarLayout::tryFromSetting($value);
+            if ($layout !== null) {
+                return $layout->value;
+            }
+        }
+
+        return ToolbarLayout::Clarity->value;
     }
 
     private function getUserSettingBool(string $key, bool $default): bool

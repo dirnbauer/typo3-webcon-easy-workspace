@@ -40,5 +40,25 @@ final class WorkspaceChangeCountTest extends UnitTestCase
         self::assertSame([], $payload['byTable']);
         self::assertSame(['new' => 0, 'changed' => 0, 'deleted' => 0, 'moved' => 0], $payload['byState']);
         self::assertSame(WorkspaceChangeCount::stamp(7, 0, 0), $payload['stamp']);
+        self::assertSame(0, $payload['versionCount']);
+        self::assertSame(0, $payload['copyCount']);
+    }
+
+    #[Test]
+    public function changesRowsAndCopiesAreReportedApartAndOnlyChangesMoveTheStamp(): void
+    {
+        // The lab's header edit: one change, its three translation copies,
+        // and a leftover copy group of four rows.
+        $count = new WorkspaceChangeCount(4, 1, ['tt_content' => 1], ['new' => 0, 'changed' => 1, 'deleted' => 0, 'moved' => 0], 0, WorkspaceChangeCount::stamp(4, 1, 0, 'r1'), 8, 4);
+        $payload = $count->toArray();
+
+        self::assertSame(1, $payload['changedCount']);
+        self::assertSame(8, $payload['versionCount']);
+        self::assertSame(4, $payload['copyCount']);
+        self::assertSame(
+            ['workspaceId', 'changedCount', 'versionCount', 'copyCount', 'byTable', 'byState', 'latestChangeAt', 'stamp'],
+            array_keys($payload),
+        );
+        self::assertSame(sha1('4|1|0|r1'), $payload['stamp']);
     }
 }

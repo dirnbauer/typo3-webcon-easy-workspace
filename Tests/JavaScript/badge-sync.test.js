@@ -658,6 +658,9 @@ describe('normalizeBadgePayload', () => {
       workspaceTitle: '',
       changedCount: 4,
       contextCount: null,
+      copies: null,
+      versionCount: 0,
+      copyCount: 0,
       records: null,
       stamp: '',
       latestChangeAt: 0,
@@ -670,6 +673,13 @@ describe('normalizeBadgePayload', () => {
     expect(normalizeBadgePayload({ changedCount: 9, contextCount: 0 }).contextCount).toBe(0);
     expect(normalizeBadgePayload({ records: [{ table: 'pages', liveUid: '3', workspaceUid: 4 }, null, { liveUid: 1 }] }).records)
       .toEqual([{ table: 'pages', liveUid: 3, workspaceUid: 4 }]);
+  });
+
+  it('reads the 1.11 copy counts and tolerates payloads without them', () => {
+    expect(normalizeBadgePayload({ changedCount: 1, contextCount: 1, copies: '4', versionCount: '5', copyCount: 4 }))
+      .toMatchObject({ changedCount: 1, contextCount: 1, copies: 4, versionCount: 5, copyCount: 4 });
+    expect(normalizeBadgePayload({ changedCount: 1, copies: null })).toMatchObject({ copies: null, versionCount: 0, copyCount: 0 });
+    expect(normalizeBadgePayload({ changedCount: 1, copies: 'x', versionCount: -2 })).toMatchObject({ copies: null, versionCount: 0 });
   });
 });
 

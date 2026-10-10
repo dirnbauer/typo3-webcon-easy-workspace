@@ -136,17 +136,44 @@ function onHistory(btn) {
   return true;
 }
 
+/**
+ * The confirm text: what discarding the change does and which other
+ * translations Core's discard removes with it — new ones, and, named apart,
+ * ones with edits of their own (`data-wew-dependents` and
+ * `data-wew-dependent-edits`: language titles, rendered by Fluid). Built
+ * from text nodes only.
+ */
+export function discardConfirmContent(btn) {
+  const title = btn.dataset.wewTitle || '';
+  const table = btn.dataset.wewTable || '';
+  const paragraphs = [formatMessage(label(discardMessageKey(btn.dataset.wewKindKey || '')), { title, table })];
+  const added = btn.dataset.wewDependents || '';
+  const edited = btn.dataset.wewDependentEdits || '';
+  if (added !== '') {
+    paragraphs.push(formatMessage(label('discard.modal.dependents'), { languages: added }));
+  }
+  if (edited !== '') {
+    paragraphs.push(formatMessage(label('discard.modal.dependentEdits'), { languages: edited }));
+  }
+  const content = document.createElement('div');
+  content.className = 'wew-confirm';
+  for (const text of paragraphs) {
+    const paragraph = document.createElement('p');
+    paragraph.textContent = text;
+    content.append(paragraph);
+  }
+  return content;
+}
+
 function onDiscard(btn) {
   const table = btn.dataset.wewTable || '';
   const workspaceUid = parseInt(btn.dataset.wewWorkspaceUid || '0', 10);
-  const title = btn.dataset.wewTitle || '';
-  const kindKey = btn.dataset.wewKindKey || '';
   if (!table || workspaceUid <= 0) return;
 
   const form = btn.closest('form');
   const modal = Modal.confirm(
     label('discard.modal.title'),
-    formatMessage(label(discardMessageKey(kindKey)), { title, table }),
+    discardConfirmContent(btn),
     SeverityEnum.warning,
     [
       { text: label('discard.modal.cancel'), btnClass: 'btn-default', name: 'cancel', trigger: () => modal.hideModal() },

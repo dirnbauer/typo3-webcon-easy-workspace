@@ -7,14 +7,18 @@ namespace Webconsulting\WebconEasyWorkspace\Service;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChangeCount;
+use Webconsulting\WebconEasyWorkspace\Enum\ChangeRole;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\CoreWorkspaceChanges;
 use Webconsulting\WebconEasyWorkspace\Utility\Value;
 
 /**
- * The whole workspace's number of changes, as the Workspaces module counts
- * them: its top-level rows. A changed element counts once however many of
- * its collection items or file references changed with it; a changed item
- * of an unchanged element is a row of its own.
+ * The whole workspace's number of changes: the Workspaces module's
+ * top-level rows that someone edited. A changed element counts once however
+ * many of its collection items or file references changed with it, and the
+ * translation copies TYPO3 made along with it (its companions) do not count;
+ * a changed item of an unchanged element is a row of its own. Rows that
+ * change nothing (copies) are counted apart, and `versionCount` keeps the
+ * module's own number of rows.
  *
  * Core's list depends on the editor's table and page permissions, so it is
  * remembered per editor, and only until the workspace revision moves — with
@@ -42,38 +46,61 @@ final readonly class WorkspaceChangeCounter
         // Keyed by workspace and editor and overwritten in place (the cache
         // is a file backend without garbage collection); valid while the
         // revision it was counted at is current.
-        $identifier = sha1(implode('|', ['count', $workspaceId, $this->userUid()]));
+        $identifier = sha1(implode('|', ['count|2', $workspaceId, $this->userUid()]));
         $cached = $this->cache->get($identifier);
         if (is_array($cached)
             && ($cached['revision'] ?? null) === $revision
             && Value::int($cached['expires'] ?? null) > time()
             && is_array($cached['byTable'] ?? null)
             && is_array($cached['byState'] ?? null)
+            && isset($cached['versionCount'], $cached['copyCount'])
         ) {
-            return $this->build($workspaceId, $revision, $cached['byTable'], $cached['byState']);
+            return $this->build(
+                $workspaceId,
+                $revision,
+                $cached['byTable'],
+                $cached['byState'],
+                Value::int($cached['versionCount']),
+                Value::int($cached['copyCount']),
+            );
         }
 
         $byTable = [];
         $byState = WorkspaceChangeCount::EMPTY_STATES;
+        $versionCount = 0;
+        $copyCount = 0;
         foreach ($this->coreWorkspaceChanges->entries($workspaceId) as $entry) {
+            $records = 1 + count($entry->companions);
+            $versionCount += $records;
+            if ($entry->role === ChangeRole::Copy) {
+                $copyCount += $records;
+                continue;
+            }
             $byTable[$entry->table] = ($byTable[$entry->table] ?? 0) + 1;
-            ++$byState[$entry->isNew() ? 'new' : 'changed'];
+            ++$byState[match ($entry->versionState) {
+                1 => 'new',
+                2 => 'deleted',
+                4 => 'moved',
+                default => 'changed',
+            }];
         }
         $this->cache->set($identifier, [
             'revision' => $revision,
             'expires' => time() + self::LIFETIME,
             'byTable' => $byTable,
             'byState' => $byState,
+            'versionCount' => $versionCount,
+            'copyCount' => $copyCount,
         ]);
 
-        return $this->build($workspaceId, $revision, $byTable, $byState);
+        return $this->build($workspaceId, $revision, $byTable, $byState, $versionCount, $copyCount);
     }
 
     /**
      * @param array<mixed> $byTable
      * @param array<mixed> $byState
      */
-    private function build(int $workspaceId, string $revision, array $byTable, array $byState): WorkspaceChangeCount
+    private function build(int $workspaceId, string $revision, array $byTable, array $byState, int $versionCount, int $copyCount): WorkspaceChangeCount
     {
         $tables = [];
         foreach ($byTable as $table => $changes) {
@@ -92,6 +119,8 @@ final readonly class WorkspaceChangeCounter
             byState: $states,
             latestChangeAt: 0,
             stamp: WorkspaceChangeCount::stamp($workspaceId, $total, 0, $revision),
+            versionCount: $versionCount,
+            copyCount: $copyCount,
         );
     }
 

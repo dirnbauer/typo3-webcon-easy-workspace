@@ -20,7 +20,7 @@
     data-multi-record-selection-element=""
     data-multi-record-selection-identifier="wew-pending-selection">
     <td class="col-checkbox">
-        <f:if condition="{item.isChanged} && {selectable}">
+        <f:if condition="{item.isChanged} && {item.role} == 'change' && {selectable}">
             <span class="form-check form-check-type-toggle">
                 <input type="checkbox"
                        name="selections[]"
@@ -48,7 +48,7 @@
                 <f:if condition="{primaryKicker}">
                     <span class="d-block text-muted small">{primaryKicker}</span>
                 </f:if>
-                <f:if condition="{item.isChanged} && {selectable}">
+                <f:if condition="{item.isChanged} && {item.role} == 'change' && {selectable}">
                     <f:then>
                         <label class="fw-semibold text-truncate d-block mb-0" for="wew-{item.table}-{item.workspaceUid}" title="{item.title}">
                             {item.title}
@@ -57,6 +57,13 @@
                     <f:else>
                         <span class="fw-semibold text-truncate d-block" title="{item.title}">{item.title}</span>
                     </f:else>
+                </f:if>
+                <f:if condition="{item.companionText}">
+                    <span class="d-block text-muted small" data-wew-companions="">
+                        <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:{item.companionLabelKey}"
+                                     arguments="{fields: item.companionFields}" />
+                        {item.companionText}
+                    </span>
                 </f:if>
                 <f:if condition="{config.enableTypeLabels}">
                     <span class="d-block text-muted small">
@@ -94,6 +101,11 @@
     </td>
     <td class="text-nowrap">
         <div class="d-flex flex-wrap gap-1">
+            <f:if condition="{item.role} == 'copy'">
+                <span class="badge badge-default" data-wew-copy-badge="">
+                    <f:translate key="LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:module.copy.badge" />
+                </span>
+            </f:if>
             <f:if condition="{showStatePills}">
                 <f:for each="{item.changeBadges}" as="badge">
                     <span class="badge badge-{badge.badge}">{badge.kindLabel}</span>
@@ -138,6 +150,8 @@
                                 data-wew-workspace-uid="{item.workspaceUid}"
                                 data-wew-title="{item.title}"
                                 data-wew-kind-key="{item.kindKey}"
+                                data-wew-dependents="{item.dependentText}"
+                                data-wew-dependent-edits="{item.dependentEditText}"
                                 title="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:discard.button.title')}"
                                 aria-label="{f:translate(key: 'LLL:EXT:webcon_easy_workspace/Resources/Private/Language/locallang.xlf:discard.button.aria')}">
                             <core:icon identifier="actions-undo" size="small" />

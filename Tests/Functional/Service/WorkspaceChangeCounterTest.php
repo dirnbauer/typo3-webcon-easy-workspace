@@ -38,8 +38,12 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
         self::assertSame(4, $count->workspaceId);
         self::assertSame(3, $count->total);
         self::assertSame(['pages' => 1, 'tt_content' => 1, 'tx_news_domain_model_news' => 1], $count->byTable);
-        // A new record is told apart; a change and a deletion are both changes.
-        self::assertSame(['new' => 1, 'changed' => 2, 'deleted' => 0, 'moved' => 0], $count->byState);
+        // Each change by its version state: the edited page, the new
+        // element, the deleted article.
+        self::assertSame(['new' => 1, 'changed' => 1, 'deleted' => 1, 'moved' => 0], $count->byState);
+        // Every row the module lists; none of them a copy.
+        self::assertSame(3, $count->versionCount);
+        self::assertSame(0, $count->copyCount);
         self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $count->stamp);
     }
 
@@ -84,6 +88,26 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function aSaveWithoutChangesAddsACopyNotAChange(): void
+    {
+        $backendUser = $this->setUpBackendUser(1);
+        $backendUser->setWorkspace(4);
+        $counter = $this->get(WorkspaceChangeCounter::class);
+
+        // TYPO3 versions the element although nothing differs from live.
+        $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
+        $dataHandler->start(['tt_content' => [1 => ['header' => 'Live content']]], [], $backendUser);
+        $dataHandler->process_datamap();
+        self::assertSame([], $dataHandler->errorLog);
+
+        $after = $counter->count(4);
+        self::assertSame(3, $after->total, 'a copy is no change');
+        self::assertSame(['pages' => 1, 'tt_content' => 1, 'tx_news_domain_model_news' => 1], $after->byTable);
+        self::assertSame(4, $after->versionCount, 'the module lists the copy');
+        self::assertSame(1, $after->copyCount);
+    }
+
+    #[Test]
     public function countGrowsWhenANewVersionIsCreated(): void
     {
         $backendUser = $this->setUpBackendUser(1);
@@ -99,7 +123,8 @@ final class WorkspaceChangeCounterTest extends FunctionalTestCase
         $after = $counter->count(4);
         self::assertSame(4, $after->total);
         self::assertSame(2, $after->byTable['tt_content']);
-        self::assertSame(3, $after->byState['changed'], 'the page, the news deletion and this edit');
+        self::assertSame(2, $after->byState['changed'], 'the page and this edit');
+        self::assertSame(1, $after->byState['deleted'], 'the news deletion');
         self::assertNotSame($before->stamp, $after->stamp);
     }
 }

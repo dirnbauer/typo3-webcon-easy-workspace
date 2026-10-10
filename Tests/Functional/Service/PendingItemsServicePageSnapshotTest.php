@@ -24,6 +24,8 @@ use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
  * around batched queries, so it proves the rewrite returns exactly what the
  * per-row implementation returned. Record a new one only for an intended
  * behaviour change: EASYWS_UPDATE_SNAPSHOT=1 vendor/bin/phpunit …
+ * (1.11.0: items carry role, companions, dependents and copy group; counts
+ * leave the unchanged copy out; a move no longer shows in every language.)
  */
 final class PendingItemsServicePageSnapshotTest extends FunctionalTestCase
 {
@@ -79,6 +81,21 @@ final class PendingItemsServicePageSnapshotTest extends FunctionalTestCase
 
         $expected = json_decode((string)file_get_contents(self::SNAPSHOT), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame($expected, $actual);
+    }
+
+    #[Test]
+    public function theSummaryCountsChangesAndCountsCopiesApart(): void
+    {
+        $summary = $this->get(PendingItemsService::class)->changesForContext(2, 0, []);
+        self::assertIsArray($summary);
+
+        $records = array_map(static fn(array $record): string => $record['table'] . ':' . $record['workspaceUid'], $summary['records']);
+        // Element 13's draft is identical to live: a copy, not a change.
+        self::assertNotContains('tt_content:14', $records);
+        self::assertContains('tt_content:12', $records);
+        self::assertSame(count($records), $summary['count']);
+        self::assertSame(1, $summary['copies']);
+        self::assertSame(['workspaceId' => 1, 'pageUid' => 2, 'languageUid' => null, 'hasChanges' => true, 'hasCopies' => true], $this->get(PendingItemsService::class)->hasChangesForPage(2));
     }
 
     private static function normalize(mixed $value): mixed

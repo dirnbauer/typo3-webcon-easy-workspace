@@ -88,6 +88,12 @@ it needs an instance, a workspace and a content element to edit.
     * - ``WEW_E2E_PAGE_UID`` / ``WEW_E2E_CONTENT_UID``
       - A page and one of its content elements. Required. Both stay
         untouched: every version the run creates is discarded again.
+    * - ``WEW_E2E_TRANSLATION_UID``
+      - A translation of ``WEW_E2E_CONTENT_UID`` in another site language.
+        Optional; with it, the translation-copy cases run (the copies ride
+        on the edited row, a translator's edit stays a change of its own,
+        discarding takes the copies along). Every version is discarded
+        again.
     * - ``WEW_E2E_RECORDS_MODULE``
       - Module used as the iframe host, default
         ``/typo3/module/content/records?id=<page>``. Point it elsewhere when

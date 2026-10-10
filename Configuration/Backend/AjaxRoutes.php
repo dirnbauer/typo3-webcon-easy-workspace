@@ -35,6 +35,12 @@ return [
         'methods' => ['POST'],
         'target' => EasyWorkspaceAjaxController::class . '::discardAction',
     ],
+    // The unchanged copies of a page or news article (cleanup).
+    'webcon_easy_workspace_discard_copies' => [
+        'path' => '/webcon-easy-workspace/discard-copies',
+        'methods' => ['POST'],
+        'target' => EasyWorkspaceAjaxController::class . '::discardCopiesAction',
+    ],
     'webcon_easy_workspace_diff' => [
         'path' => '/webcon-easy-workspace/diff',
         'methods' => ['GET'],

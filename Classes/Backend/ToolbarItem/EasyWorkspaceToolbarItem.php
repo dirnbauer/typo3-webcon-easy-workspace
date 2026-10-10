@@ -16,6 +16,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Enum\ModuleSection;
+use Webconsulting\WebconEasyWorkspace\Enum\ToolbarLayout;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
 use Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
@@ -103,6 +104,12 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         $this->pageRenderer->loadJavaScriptModule('@webconsulting/webcon-easy-workspace/components/wew-toolbar-menu.js');
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/tokens.css');
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/toolbar-menu.css');
+        // Each layout's styles are scoped to its `data-wew-layout` and build
+        // on the shared ones, so they come after them. All three ship: the
+        // editor can switch layouts without a new set of assets.
+        foreach (ToolbarLayout::cases() as $layout) {
+            $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/layouts/' . $layout->value . '.css');
+        }
         // The diff/history modal opens in the top frame, so its styles ship with the toolbar.
         $this->pageRenderer->addCssFile('EXT:webcon_easy_workspace/Resources/Public/Css/diff.css');
         $workspaceId = $this->activeWorkspaceId();
@@ -171,6 +178,7 @@ final class EasyWorkspaceToolbarItem implements ToolbarItemInterface, RequestAwa
         // Translated UI strings the JS reads through `this._config.labels`.
         // Keeping them server-rendered keeps the JS bundle locale-free
         // and lets editors switch backend language without rebuilds.
+        // `layout` (from the configuration) picks the dropdown's layout.
         $payload = array_replace($this->configurationProvider->get(), [
             'activeWorkspaceId' => $this->activeWorkspaceId(),
             'hasVisualEditor' => ExtensionManagementUtility::isLoaded('visual_editor'),

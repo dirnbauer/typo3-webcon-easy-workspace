@@ -165,8 +165,8 @@
     </unit>
     <unit id="toolbar.selectedOf">
       <segment>
-        <source>{selected} / {total}</source>
-        <target state="translated">{selected} / {total}</target>
+        <source>{selected} of {total}</source>
+        <target state="translated">{selected} von {total}</target>
       </segment>
     </unit>
     <unit id="toolbar.of">
@@ -1483,6 +1483,12 @@
         <target state="translated">Vorgemerkte Verschiebung von "{title}" wurde aufgehoben.</target>
       </segment>
     </unit>
+    <unit id="discard.success.dependents">
+      <segment>
+        <source>{count, plural, one {# translation was discarded with it.} other {# translations were discarded with it.}}</source>
+        <target state="translated">{count, plural, one {# Übersetzung wurde mit verworfen.} other {# Übersetzungen wurden mit verworfen.}}</target>
+      </segment>
+    </unit>
     <unit id="discard.error.title">
       <segment>
         <source>Could not discard</source>
@@ -1701,8 +1707,8 @@
     </unit>
     <unit id="publish.success.message">
       <segment>
-        <source>{count, plural, one {# item published.} other {# items published.}}</source>
-        <target state="translated">{count, plural, one {# Element veröffentlicht.} other {# Elemente veröffentlicht.}}</target>
+        <source>{count, plural, one {# change published.} other {# changes published.}}</source>
+        <target state="translated">{count, plural, one {# Änderung veröffentlicht.} other {# Änderungen veröffentlicht.}}</target>
       </segment>
     </unit>
     <unit id="publish.warning.title">
@@ -2041,12 +2047,6 @@
         <target state="translated">Nichts ausstehend</target>
       </segment>
     </unit>
-    <unit id="toolbar.stage.title">
-      <segment>
-        <source>Stage</source>
-        <target state="translated">Stufe</target>
-      </segment>
-    </unit>
     <unit id="toolbar.stage.mixed">
       <segment>
         <source>Mixed stages</source>
@@ -2073,8 +2073,8 @@
     </unit>
     <unit id="toolbar.publishCount">
       <segment>
-        <source>Publish {count}</source>
-        <target state="translated">{count} veröffentlichen</target>
+        <source>{count, plural, one {Publish # change} other {Publish # changes}}</source>
+        <target state="translated">{count, plural, one {# Änderung veröffentlichen} other {# Änderungen veröffentlichen}}</target>
       </segment>
     </unit>
     <unit id="toolbar.preview.open">
@@ -2133,8 +2133,8 @@
     </unit>
     <unit id="toolbar.keyboardHint">
       <segment>
-        <source>Arrow keys move, Space selects, Enter edits, Tab reaches the row actions, Escape closes.</source>
-        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Tab erreicht die Aktionen der Zeile, Escape schließt.</target>
+        <source>Arrow keys move, Space selects, Enter edits, Right arrow reaches the actions and opens sections, Left arrow closes them, Escape closes.</source>
+        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Pfeil rechts erreicht die Aktionen und öffnet Abschnitte, Pfeil links schließt sie, Escape schließt.</target>
       </segment>
     </unit>
     <unit id="change.new">
@@ -2205,8 +2205,8 @@
     </unit>
     <unit id="toolbar.summary.elsewhere">
       <segment>
-        <source>{count, plural, one {# more elsewhere in the workspace} other {# more elsewhere in the workspace}}</source>
-        <target state="translated">{count, plural, one {# weitere an anderer Stelle im Workspace} other {# weitere an anderer Stelle im Workspace}}</target>
+        <source>{count, plural, one {# more in this workspace} other {# more in this workspace}}</source>
+        <target state="translated">{count, plural, one {# weitere im Workspace} other {# weitere im Workspace}}</target>
       </segment>
     </unit>
     <unit id="toolbar.summary.otherLanguages">
@@ -2283,38 +2283,14 @@
     </unit>
     <unit id="toolbar.languages.otherHintShort">
       <segment>
-        <source>Not shown in {language} · published with the rest</source>
-        <target state="translated">In {language} nicht sichtbar · wird mitveröffentlicht</target>
+        <source>not shown in {language}</source>
+        <target state="translated">in {language} nicht sichtbar</target>
       </segment>
     </unit>
     <unit id="toolbar.languages.otherHintShortMany">
       <segment>
-        <source>Not shown in this view · published with the rest</source>
-        <target state="translated">In dieser Ansicht nicht sichtbar · wird mitveröffentlicht</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.row.unchanged">
-      <segment>
-        <source>Unchanged</source>
-        <target state="translated">Unverändert</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.row.unchangedTitle">
-      <segment>
-        <source>TYPO3 versioned this record together with an edit elsewhere, in another language or in the element it belongs to. Its content matches live; it is published with the rest.</source>
-        <target state="translated">TYPO3 hat diesen Datensatz zusammen mit einer Änderung an anderer Stelle versioniert, in einer anderen Sprache oder im Element, zu dem er gehört. Sein Inhalt entspricht dem Live-Stand; er wird mitveröffentlicht.</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.section.unchanged">
-      <segment>
-        <source>Without content change</source>
-        <target state="translated">Ohne inhaltliche Änderung</target>
-      </segment>
-    </unit>
-    <unit id="toolbar.section.unchangedHint">
-      <segment>
-        <source>Versioned along by TYPO3 · published with the rest</source>
-        <target state="translated">Von TYPO3 mitversioniert · wird mitveröffentlicht</target>
+        <source>not shown in this view</source>
+        <target state="translated">in dieser Ansicht nicht sichtbar</target>
       </segment>
     </unit>
     <unit id="toolbar.languages.translations">
@@ -2323,16 +2299,448 @@
         <target state="translated">Übersetzungen</target>
       </segment>
     </unit>
-    <unit id="toolbar.languages.changedCount">
+    <unit id="toolbar.summary.nonePage">
       <segment>
-        <source>{changed} of {total} changed</source>
-        <target state="translated">{changed} von {total} geändert</target>
+        <source>No changes on this page</source>
+        <target state="translated">Keine Änderungen auf dieser Seite</target>
       </segment>
     </unit>
-    <unit id="toolbar.summary.unchanged">
+    <unit id="toolbar.summary.noneNews">
       <segment>
-        <source>{count, plural, one {# without content change} other {# without content change}}</source>
-        <target state="translated">{count, plural, one {# ohne inhaltliche Änderung} other {# ohne inhaltliche Änderung}}</target>
+        <source>No changes in this article</source>
+        <target state="translated">Keine Änderungen in diesem Artikel</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.copies">
+      <segment>
+        <source>{count, plural, one {# unchanged copy} other {# unchanged copies}}</source>
+        <target state="translated">{count, plural, one {# unveränderte Kopie} other {# unveränderte Kopien}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.summary.drafts">
+      <segment>
+        <source>{count, plural, one {# draft without changes} other {# drafts without changes}}</source>
+        <target state="translated">{count, plural, one {# Entwurf ohne Änderung} other {# Entwürfe ohne Änderung}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.identical">
+      <segment>
+        <source>Translations unchanged:</source>
+        <target state="translated">Übersetzungen unverändert:</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.synced">
+      <segment>
+        <source>Also applies to the translations ({fields}):</source>
+        <target state="translated">Gilt auch für die Übersetzungen ({fields}):</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.moved">
+      <segment>
+        <source>Translations move along:</source>
+        <target state="translated">Übersetzungen werden mitverschoben:</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.deleted">
+      <segment>
+        <source>Translations are deleted along:</source>
+        <target state="translated">Übersetzungen werden mitgelöscht:</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.help">
+      <segment>
+        <source>When you save, TYPO3 also creates working copies of the translations. They carry no change of their own, go live with this change and are discarded with it. They do not count as changes.</source>
+        <target state="translated">Beim Speichern legt TYPO3 auch Arbeitskopien der Übersetzungen an. Sie enthalten keine eigene Änderung, gehen mit dieser Änderung live und werden mit ihr verworfen. Sie zählen nicht als eigene Änderung.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.edit">
+      <segment>
+        <source>{code}: edit the "{language}" translation</source>
+        <target state="translated">{code}: Übersetzung „{language}“ bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.companions.nowOwn">
+      <segment>
+        <source>The "{language}" translation is now a change of its own.</source>
+        <target state="translated">Die Übersetzung „{language}“ ist jetzt eine eigene Änderung.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.title">
+      <segment>
+        <source>Unchanged copies</source>
+        <target state="translated">Unveränderte Kopien</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.hint">
+      <segment>
+        <source>Made by TYPO3, same content as live. Discarding them changes nothing on the website.</source>
+        <target state="translated">Von TYPO3 angelegt, Inhalt wie live. Verwerfen ändert nichts an der Website.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.discard">
+      <segment>
+        <source>Discard copies</source>
+        <target state="translated">Kopien verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.discarding">
+      <segment>
+        <source>Discarding…</source>
+        <target state="translated">Wird verworfen…</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.success.title">
+      <segment>
+        <source>Cleaned up</source>
+        <target state="translated">Aufgeräumt</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.success.message">
+      <segment>
+        <source>{count, plural, one {# unchanged copy discarded.} other {# unchanged copies discarded.}}</source>
+        <target state="translated">{count, plural, one {# unveränderte Kopie verworfen.} other {# unveränderte Kopien verworfen.}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.skipped">
+      <segment>
+        <source>{count, plural, one {# copy was edited meanwhile and was kept.} other {# copies were edited meanwhile and were kept.}}</source>
+        <target state="translated">{count, plural, one {# Kopie wurde inzwischen bearbeitet und bleibt erhalten.} other {# Kopien wurden inzwischen bearbeitet und bleiben erhalten.}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.section.select">
+      <segment>
+        <source>Select all changes in "{section}"</source>
+        <target state="translated">Alle Änderungen in „{section}“ auswählen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.byYou">
+      <segment>
+        <source>by you</source>
+        <target state="translated">von Ihnen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.row.by">
+      <segment>
+        <source>by {name}</source>
+        <target state="translated">von {name}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.selection.all">
+      <segment>
+        <source>All ({total})</source>
+        <target state="translated">Alle ({total})</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.publish.noneSelected">
+      <segment>
+        <source>Select at least one change.</source>
+        <target state="translated">Wählen Sie mindestens eine Änderung aus.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.empty.elsewhere">
+      <segment>
+        <source>{count, plural, one {View # change elsewhere} other {View # changes elsewhere}}</source>
+        <target state="translated">{count, plural, one {# Änderung an anderer Stelle ansehen} other {# Änderungen an anderer Stelle ansehen}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.status.refreshed">
+      <segment>
+        <source>List updated</source>
+        <target state="translated">Liste aktualisiert</target>
+      </segment>
+    </unit>
+    <unit id="publish.companionsSkipped">
+      <segment>
+        <source>Not published along because they were edited meanwhile: {languages}. These translations are now listed as changes of their own.</source>
+        <target state="translated">Nicht mitveröffentlicht, weil inzwischen bearbeitet: {languages}. Diese Übersetzungen stehen jetzt als eigene Änderung in der Liste.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.companions.identical">
+      <segment>
+        <source>The unchanged translation copies ({languages}) are discarded too. The published translations stay as they are.</source>
+        <target state="translated">Die unveränderten Übersetzungskopien ({languages}) werden mit verworfen. Die veröffentlichten Übersetzungen bleiben, wie sie sind.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.companions.synced">
+      <segment>
+        <source>The translations ({languages}) keep their published values.</source>
+        <target state="translated">Die Übersetzungen ({languages}) behalten ihre veröffentlichten Werte.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.companions.moved">
+      <segment>
+        <source>The translations ({languages}) stay in place too.</source>
+        <target state="translated">Auch die Übersetzungen ({languages}) bleiben an ihrer Stelle.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.companions.deleted">
+      <segment>
+        <source>The translations ({languages}) are not deleted either.</source>
+        <target state="translated">Auch die Übersetzungen ({languages}) werden nicht gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.dependents">
+      <segment>
+        <source>New translations of this element are removed too: {languages}.</source>
+        <target state="translated">Neue Übersetzungen dieses Elements werden ebenfalls entfernt: {languages}.</target>
+      </segment>
+    </unit>
+    <unit id="discard.modal.dependentEdits">
+      <segment>
+        <source>Core discards these translations with it, including their own edits: {languages}.</source>
+        <target state="translated">TYPO3 verwirft dabei auch diese Übersetzungen, samt ihren eigenen Änderungen: {languages}.</target>
+      </segment>
+    </unit>
+    <unit id="discard.warning.title">
+      <segment>
+        <source>Discarded with notes</source>
+        <target state="translated">Verworfen – mit Hinweisen</target>
+      </segment>
+    </unit>
+    <unit id="module.copy.badge">
+      <segment>
+        <source>Unchanged copy</source>
+        <target state="translated">Unveränderte Kopie</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.stage.prefix">
+      <segment>
+        <source>Stage:</source>
+        <target state="translated">Stufe:</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.edit">
+      <segment>
+        <source>{code}: edit the "{language}" copy</source>
+        <target state="translated">{code}: Kopie „{language}“ bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.refreshing">
+      <segment>
+        <source>Refreshing…</source>
+        <target state="translated">Wird aktualisiert…</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.layout">
+      <segment>
+        <source>Dropdown layout</source>
+        <target state="translated">Darstellung der Veröffentlichungsliste</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.layout.default">
+      <segment>
+        <source>Site default</source>
+        <target state="translated">Standard der Website</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.layout.clarity">
+      <segment>
+        <source>Clear — explains what goes live (recommended)</source>
+        <target state="translated">Klar – erklärt, was live geht (empfohlen)</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.layout.efficiency">
+      <segment>
+        <source>Efficient — dense, with keyboard shortcuts</source>
+        <target state="translated">Effizient – kompakt, mit Tastenkürzeln</target>
+      </segment>
+    </unit>
+    <unit id="userSettings.layout.core">
+      <segment>
+        <source>TYPO3 Core — accessible, in the backend's style</source>
+        <target state="translated">TYPO3 Core – barrierefrei, im Stil des Backends</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.explainer.title">
+      <segment>
+        <source>Your translations stay as they are</source>
+        <target state="translated">Ihre Übersetzungen bleiben, wie sie sind</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.explainer.text">
+      <segment>
+        <source>When you save, TYPO3 also copies the translations. Their content stays the same: on the website, only what was edited changes.</source>
+        <target state="translated">Beim Speichern legt TYPO3 Kopien der Übersetzungen an. Deren Inhalt bleibt gleich: Auf der Website ändert sich nur, was bearbeitet wurde.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.explainer.dismiss">
+      <segment>
+        <source>Got it</source>
+        <target state="translated">Verstanden</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.explainer.dismissTitle">
+      <segment>
+        <source>Do not show this note again</source>
+        <target state="translated">Diesen Hinweis nicht mehr anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.shortcut.publish">
+      <segment>
+        <source>publish</source>
+        <target state="translated">veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.shortcut.discard">
+      <segment>
+        <source>discard</source>
+        <target state="translated">verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.shortcut.move">
+      <segment>
+        <source>move</source>
+        <target state="translated">bewegen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.shortcut.selectAll">
+      <segment>
+        <source>all</source>
+        <target state="translated">alle</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.shortcut.publishTitle">
+      <segment>
+        <source>Publish the selected changes ({shortcut})</source>
+        <target state="translated">Ausgewählte Änderungen veröffentlichen ({shortcut})</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.shortcut.discardTitle">
+      <segment>
+        <source>Discard this change ({shortcut})</source>
+        <target state="translated">Diese Änderung verwerfen ({shortcut})</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.ctrl">
+      <segment>
+        <source>Ctrl</source>
+        <target state="translated">Strg</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.ctrlTitle">
+      <segment>
+        <source>Control key</source>
+        <target state="translated">Steuerungstaste</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.cmd">
+      <segment>
+        <source>⌘</source>
+        <target state="translated">⌘</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.cmdTitle">
+      <segment>
+        <source>Command key</source>
+        <target state="translated">Befehlstaste</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.enter">
+      <segment>
+        <source>Enter</source>
+        <target state="translated">Enter</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.enterTitle">
+      <segment>
+        <source>Enter key</source>
+        <target state="translated">Eingabetaste</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.delete">
+      <segment>
+        <source>Del</source>
+        <target state="translated">Entf</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.deleteTitle">
+      <segment>
+        <source>Delete key</source>
+        <target state="translated">Entfernen-Taste</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.arrows">
+      <segment>
+        <source>↑ ↓</source>
+        <target state="translated">↑ ↓</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.kbd.arrowsTitle">
+      <segment>
+        <source>Arrow keys</source>
+        <target state="translated">Pfeiltasten</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.keyboardHint.efficiency">
+      <segment>
+        <source>Arrow keys move, Space selects, Enter edits, Delete discards, Right arrow reaches the actions, Ctrl+Enter or Cmd+Enter publishes, A selects or clears all, Escape closes.</source>
+        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Entf verwirft, Pfeil rechts erreicht die Aktionen, Strg+Enter oder Cmd+Enter veröffentlicht, A wählt alle aus oder ab, Escape schließt.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.titleDrafts">
+      <segment>
+        <source>Drafts without changes</source>
+        <target state="translated">Entwürfe ohne Änderung</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.draftsShort">
+      <segment>
+        <source>same as live</source>
+        <target state="translated">Inhalt wie live</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.draftsHelp">
+      <segment>
+        <source>TYPO3 copied these records when another element was saved. Their content matches live; discarding them changes nothing on the website.</source>
+        <target state="translated">TYPO3 hat diese Datensätze beim Speichern eines anderen Elements mitkopiert. Ihr Inhalt entspricht dem Live-Stand; Verwerfen ändert nichts auf der Website.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.confirm.title">
+      <segment>
+        <source>Discard the drafts without changes?</source>
+        <target state="translated">Entwürfe ohne Änderung verwerfen?</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.confirm.message">
+      <segment>
+        <source>{count, plural, one {# draft matches} other {# drafts match}} the live content. Discarding changes nothing on the website.</source>
+        <target state="translated">{count, plural, one {# Entwurf entspricht} other {# Entwürfe entsprechen}} dem Live-Stand. Verwerfen ändert nichts auf der Website.</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.confirm.button">
+      <segment>
+        <source>Discard</source>
+        <target state="translated">Verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.discardOne">
+      <segment>
+        <source>Discard the unchanged draft "{title}"</source>
+        <target state="translated">Unveränderten Entwurf „{title}“ verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.editDraft">
+      <segment>
+        <source>{code}: edit the "{language}" draft</source>
+        <target state="translated">{code}: Entwurf „{language}“ bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.successDrafts">
+      <segment>
+        <source>{count, plural, one {# draft without changes discarded.} other {# drafts without changes discarded.}}</source>
+        <target state="translated">{count, plural, one {# Entwurf ohne Änderung verworfen.} other {# Entwürfe ohne Änderung verworfen.}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.cleanup.skippedDrafts">
+      <segment>
+        <source>{count, plural, one {# draft was edited meanwhile and was kept.} other {# drafts were edited meanwhile and were kept.}}</source>
+        <target state="translated">{count, plural, one {# Entwurf wurde inzwischen bearbeitet und bleibt erhalten.} other {# Entwürfe wurden inzwischen bearbeitet und bleiben erhalten.}}</target>
+      </segment>
+    </unit>
+    <unit id="toolbar.keyboardHint.efficiencyNoDiscard">
+      <segment>
+        <source>Arrow keys move, Space selects, Enter edits, Right arrow reaches the actions, Ctrl+Enter or Cmd+Enter publishes, A selects or clears all, Escape closes.</source>
+        <target state="translated">Pfeiltasten bewegen, Leertaste wählt aus, Enter bearbeitet, Pfeil rechts erreicht die Aktionen, Strg+Enter oder Cmd+Enter veröffentlicht, A wählt alle aus oder ab, Escape schließt.</target>
       </segment>
     </unit>
   </file>

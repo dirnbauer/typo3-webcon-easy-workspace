@@ -39,5 +39,77 @@ final class ContentChangeDetectorTest extends TestCase
     public function testARecordWithoutLiveRowIsAChange(): void
     {
         self::assertTrue(ContentChangeDetector::differs(self::LIVE, null));
+        // What is new is decided by the version state, not by fields.
+        self::assertSame([], ContentChangeDetector::changedFields(self::LIVE, null));
+    }
+
+    public function testChangedFieldsNameEachEditedFieldWithAHashOfItsValue(): void
+    {
+        $changed = ContentChangeDetector::changedFields(
+            ['header' => 'Thank you (edited)', 'starttime' => 1767225600, 'uid' => 1, 'tstamp' => 2] + self::LIVE,
+            self::LIVE,
+        );
+
+        self::assertSame(['header' => sha1('Thank you (edited)'), 'starttime' => sha1('1767225600')], $changed);
+    }
+
+    public function testSystemFieldsAndLooseEmptyValuesAreNoChange(): void
+    {
+        $version = ['uid' => 112964, 'tstamp' => 1790457105, 't3ver_oid' => 84566, 't3ver_wsid' => 4, 't3ver_state' => 0,
+            'l10n_state' => '{"header":"custom"}', 'fe_group' => '', 'selected_categories' => '0'] + self::LIVE;
+
+        self::assertSame([], ContentChangeDetector::changedFields($version, self::LIVE));
+    }
+
+    public function testTheFrontendsLastChangedStampIsNoChange(): void
+    {
+        // A live render writes SYS_LASTCHANGED into the live page row without
+        // DataHandler; the page's version keeps the value it was copied with.
+        $live = ['uid' => 2, 'title' => 'Translated page', 'SYS_LASTCHANGED' => 1791100000];
+        $version = ['uid' => 7, 't3ver_oid' => 2, 't3ver_wsid' => 1, 'title' => 'Translated page', 'SYS_LASTCHANGED' => 1791056338];
+
+        self::assertSame([], ContentChangeDetector::changedFields($version, $live));
+        self::assertFalse(ContentChangeDetector::differs($version, $live));
+    }
+
+    public function testEqualValuesGiveEqualHashes(): void
+    {
+        // TYPO3 writes the synchronized value into each translation: the
+        // default element's version and a translation's carry the same hash.
+        $default = ContentChangeDetector::changedFields(['starttime' => '1767225600 '] + self::LIVE, self::LIVE);
+        $translation = ContentChangeDetector::changedFields(['starttime' => 1767225600, 'header' => 'Danke'] + self::LIVE, ['header' => 'Danke'] + self::LIVE);
+
+        self::assertSame($default, $translation);
+    }
+
+    public function testPointerFieldsAreComparedByTheLiveRecordTheyStandFor(): void
+    {
+        // Moving or deleting the default element (live 26233, version 26300)
+        // points its translations at the version.
+        $version = ['l18n_parent' => 26300, 'l10n_source' => 26300] + self::LIVE;
+        $live = ['l10n_source' => 26233] + self::LIVE;
+        $liveOf = static fn(int $uid): int => [26300 => 26233][$uid] ?? $uid;
+
+        self::assertSame([], ContentChangeDetector::changedFields($version, $live, ['l18n_parent', 'l10n_source'], $liveOf));
+        // Without the mapping the pointers read as edits.
+        self::assertSame(
+            ['l18n_parent' => sha1('26300'), 'l10n_source' => sha1('26300')],
+            ContentChangeDetector::changedFields($version, $live),
+        );
+        // A pointer at another record is an edit, mapped or not.
+        self::assertSame(
+            ['l18n_parent' => sha1('99')],
+            ContentChangeDetector::changedFields(['l18n_parent' => 99] + $live, $live, ['l18n_parent'], $liveOf),
+        );
+    }
+
+    public function testDiffersIsWhetherAnyFieldChanged(): void
+    {
+        foreach ([['header' => 'Edited'] + self::LIVE, ['fe_group' => ''] + self::LIVE, ['sorting' => 512] + self::LIVE] as $version) {
+            self::assertSame(
+                ContentChangeDetector::changedFields($version, self::LIVE) !== [],
+                ContentChangeDetector::differs($version, self::LIVE),
+            );
+        }
     }
 }

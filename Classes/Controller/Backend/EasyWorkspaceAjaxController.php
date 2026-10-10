@@ -20,7 +20,9 @@ use TYPO3\CMS\Workspaces\Preview\PreviewUriBuilder;
 use TYPO3\CMS\Workspaces\Service\StagesService;
 use Webconsulting\WebconEasyWorkspace\Configuration\ConfigurationProvider;
 use Webconsulting\WebconEasyWorkspace\Dto\PendingItem;
+use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChange;
 use Webconsulting\WebconEasyWorkspace\Dto\WorkspaceChangeCount;
+use Webconsulting\WebconEasyWorkspace\Enum\ChangeRole;
 use Webconsulting\WebconEasyWorkspace\Enum\PendingItemsMode;
 use Webconsulting\WebconEasyWorkspace\Enum\ToolbarContext;
 use Webconsulting\WebconEasyWorkspace\Security\BackendAccessGuard;
@@ -28,6 +30,7 @@ use Webconsulting\WebconEasyWorkspace\Service\ContextChangeSummary;
 use Webconsulting\WebconEasyWorkspace\Service\ContextRecordResolver;
 use Webconsulting\WebconEasyWorkspace\Service\LanguageContext;
 use Webconsulting\WebconEasyWorkspace\Service\LocalizationService;
+use Webconsulting\WebconEasyWorkspace\Service\PendingItems\PendingItemsCollector;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItems\WorkspaceRecordQuery;
 use Webconsulting\WebconEasyWorkspace\Service\PendingItemsService;
 use Webconsulting\WebconEasyWorkspace\Service\PublishSelectedService;
@@ -66,6 +69,7 @@ final readonly class EasyWorkspaceAjaxController
         private StagesService $stagesService,
         private LanguageContext $languageContext,
         private LoggerInterface $logger,
+        private PendingItemsCollector $pendingItemsCollector,
     ) {}
 
     /**
@@ -114,6 +118,8 @@ final readonly class EasyWorkspaceAjaxController
             'languages' => array_values($this->languageContext->languagesForPage($this->sitePageUid($context, $pageUid, $newsUid))),
             'viewLanguages' => $this->languageContext->viewLanguages($module),
             'viewModule' => $module,
+            // The acting editor: the list says "by you" on their own changes.
+            'userUid' => Value::int($this->accessGuard->user($request)?->user['uid'] ?? null),
             ...$payload->toToolbarArray($context),
             // The list already holds this page's count: the client applies it
             // instead of asking /badge a second time.
@@ -140,8 +146,9 @@ final readonly class EasyWorkspaceAjaxController
     }
 
     /**
-     * Stage chip for the dropdown header: the common stage of all changed
-     * rows, or a "mixed" marker when the list spans several stages.
+     * Stage chip for the dropdown header: the common stage of all changes,
+     * or a "mixed" marker when the list spans several stages. Copies and
+     * the translation copies folded into a change do not count.
      *
      * @param list<PendingItem> $items
      * @return array{id: int|null, label: string}|null
@@ -150,7 +157,7 @@ final readonly class EasyWorkspaceAjaxController
     {
         $stageIds = [];
         foreach ($items as $item) {
-            if ($item->isChanged) {
+            if ($item->isChanged && $item->isChangeRole()) {
                 $stageIds[$item->stageId] = true;
             }
         }
@@ -212,12 +219,17 @@ final readonly class EasyWorkspaceAjaxController
      * in items, publish and discard responses so the client never derives
      * the count from a list and never needs a second request.
      *
-     * `changedCount` is the whole workspace, `contextCount` only the page
-     * or news article the client reported — null when there is no context,
-     * which lets the badge fall back to the workspace total. `records` names
-     * the changed rows of that context (the Visual Editor draws its decline
-     * buttons from it). `stamp` moves with every write that can change a
-     * count; the page summary is cached under it.
+     * Every number counts changes — what someone edited; the translation
+     * copies TYPO3 made along with a change travel with it and do not
+     * count. `changedCount` is the whole workspace, `contextCount` only the
+     * page or news article the client reported — null when there is no
+     * context, which lets the badge fall back to the workspace total.
+     * `records` names the changes of that context (the Visual Editor draws
+     * its decline buttons from it), `copies` the unchanged copy records
+     * waiting for cleanup there. `versionCount` is every row the Workspaces
+     * module lists, `copyCount` the workspace's copy records. `stamp` moves
+     * with every write that can change a count; the page summary is cached
+     * under it.
      *
      * @param array<string, mixed> $config Normalized config; resolved from TSconfig when empty.
      * @return array{
@@ -226,7 +238,10 @@ final readonly class EasyWorkspaceAjaxController
      *     workspaceTitle: string,
      *     contextCount: int|null,
      *     records: list<array{table: string, liveUid: int, workspaceUid: int}>,
+     *     copies: int|null,
      *     changedCount: int,
+     *     versionCount: int,
+     *     copyCount: int,
      *     byTable: array<string, int>,
      *     byState: array{new: int, changed: int, deleted: int, moved: int},
      *     latestChangeAt: int,
@@ -252,7 +267,7 @@ final readonly class EasyWorkspaceAjaxController
     }
 
     /**
-     * @param array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>} $summary
+     * @param array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>, copies: int} $summary
      * @return array<string, mixed>
      */
     private function badgePayloadFromSummary(ServerRequestInterface $request, ToolbarContext $context, array $summary): array
@@ -263,14 +278,17 @@ final readonly class EasyWorkspaceAjaxController
     }
 
     /**
-     * @param array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>}|null $summary
+     * @param array{count: int, records: list<array{table: string, liveUid: int, workspaceUid: int}>, copies: int}|null $summary
      * @return array{
      *     context: string,
      *     workspaceId: int,
      *     workspaceTitle: string,
      *     contextCount: int|null,
      *     records: list<array{table: string, liveUid: int, workspaceUid: int}>,
+     *     copies: int|null,
      *     changedCount: int,
+     *     versionCount: int,
+     *     copyCount: int,
      *     byTable: array<string, int>,
      *     byState: array{new: int, changed: int, deleted: int, moved: int},
      *     latestChangeAt: int,
@@ -285,6 +303,7 @@ final readonly class EasyWorkspaceAjaxController
             'workspaceTitle' => $workspaceId > 0 ? $this->workspaceRecordQuery->resolveWorkspaceTitle($workspaceId) : '',
             'contextCount' => $summary['count'] ?? null,
             'records' => $summary['records'] ?? [],
+            'copies' => $summary['copies'] ?? null,
             ...$count->toArray(),
         ];
     }
@@ -519,6 +538,9 @@ final readonly class EasyWorkspaceAjaxController
             return new JsonResponse([
                 'success' => false,
                 'published' => 0,
+                'companions' => 0,
+                'skippedCompanions' => [],
+                'warnings' => [],
                 'errors' => [$this->localizationService->translate('error.noPublishableRecords')],
                 'badge' => $this->badgePayload($request, $pageUid, $newsUid),
             ]);
@@ -554,6 +576,59 @@ final readonly class EasyWorkspaceAjaxController
             Value::int($payload['pageUid'] ?? null),
             Value::int($payload['newsUid'] ?? null),
         )]);
+    }
+
+    /**
+     * Discards the unchanged copies of the page or news article: entries
+     * that change nothing, with the translation copies folded into them.
+     * `records` narrows it to some of them (a cleanup group); a posted
+     * record that is no copy of the context counts as skipped. The service
+     * checks each again on fresh rows and never publishes.
+     */
+    public function discardCopiesAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $payload = $this->decodeBody($request);
+        $pageUid = Value::int($payload['pageUid'] ?? null);
+        $newsUid = Value::int($payload['newsUid'] ?? null);
+        $config = $this->configurationProvider->get($pageUid > 0 ? $pageUid : null);
+        if (!$config['enabled']) {
+            return new JsonResponse(['error' => $this->localizationService->translate('error.disabled')], 403);
+        }
+        if (!$config['enableRevert']) {
+            return new JsonResponse(['error' => $this->localizationService->translate('error.revertDisabled')], 403);
+        }
+        if (!$this->canReadContext($request, $pageUid, $newsUid)) {
+            return $this->accessDeniedJson();
+        }
+        $workspaceId = $this->accessGuard->activeWorkspaceId($request);
+        if ($workspaceId <= 0) {
+            return new JsonResponse(['error' => $this->localizationService->translate('error.publishFromLive')], 400);
+        }
+
+        $copies = array_values(array_filter(
+            $this->pendingItemsCollector->entriesForContext(ToolbarContext::resolve($pageUid, $newsUid), $pageUid, $newsUid, $workspaceId),
+            static fn(WorkspaceChange $entry): bool => $entry->role === ChangeRole::Copy,
+        ));
+        $notCopies = 0;
+        $records = $payload['records'] ?? null;
+        if (is_array($records)) {
+            $requested = [];
+            foreach ($records as $record) {
+                if (is_array($record)) {
+                    $requested[Value::string($record['table'] ?? null) . ':' . Value::int($record['workspaceUid'] ?? null)] = true;
+                }
+            }
+            $copies = array_values(array_filter(
+                $copies,
+                static fn(WorkspaceChange $entry): bool => isset($requested[$entry->table . ':' . $entry->workspaceUid]),
+            ));
+            $notCopies = count($requested) - count($copies);
+        }
+
+        $result = $this->publishService->discardCopies($copies, $this->accessGuard->user($request));
+        $result['skipped'] += $notCopies;
+
+        return new JsonResponse($result + ['badge' => $this->badgePayload($request, $pageUid, $newsUid)]);
     }
 
     public function previewLinkAction(ServerRequestInterface $request): ResponseInterface
