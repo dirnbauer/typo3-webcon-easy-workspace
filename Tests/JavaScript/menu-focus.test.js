@@ -27,10 +27,11 @@ function toolbar() {
   return { item, toggle, menu };
 }
 
-/** The component, not connected (no BadgeSync), inside the dropdown. */
+/** The component inside an active workspace's dropdown. */
 function menuElement(menu, extra = {}) {
   const element = new WebconEasyWorkspaceMenu();
   element._config = { ...element._config, labels: GERMAN, enableRevert: true, pageUid: 2228 };
+  element.setAttribute('config', JSON.stringify({ ...element._config, activeWorkspaceId: 1 }));
   element.languages = LANGUAGES;
   element.state = 'loaded';
   Object.assign(element, extra);
@@ -51,7 +52,7 @@ function formMessage(actionName, extra = {}) {
  */
 async function renderedMenu(menu, items, request = () => {}) {
   const element = new WebconEasyWorkspaceMenu();
-  element.setAttribute('config', JSON.stringify({ pageUid: 2228, enableRevert: true, labels: GERMAN }));
+  element.setAttribute('config', JSON.stringify({ pageUid: 2228, activeWorkspaceId: 1, enableRevert: true, labels: GERMAN }));
   element.languages = LANGUAGES;
   element.items = items;
   element.state = 'loaded';

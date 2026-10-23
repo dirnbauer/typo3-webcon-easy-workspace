@@ -2,6 +2,11 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## 1.11.1 — 2026-10-23
+
+- Update Playwright to 1.64.1, jsdom to 30.1.3 and Vitest to 5.0.5.
+- Initialize focus-test fixtures in an active workspace: jsdom now correctly prevents focus in the hidden Live-workspace toolbar.
+
 ## [1.11.0] — 2026-10-10
 
 One edit reads as one change. The translation copies TYPO3 makes when a
