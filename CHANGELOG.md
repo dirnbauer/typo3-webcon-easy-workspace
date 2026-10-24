@@ -2,6 +2,10 @@
 
 All notable changes to Easy Workspace are documented in this file.
 
+## 1.11.2 — 2026-10-24
+
+- Refresh the jsdom support dependencies and run JavaScript checks on Node 26.12.1 with npm 12.2.1.
+
 ## 1.11.1 — 2026-10-23
 
 - Update Playwright to 1.64.1, jsdom to 30.1.3 and Vitest to 5.0.5.
